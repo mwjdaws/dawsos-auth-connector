@@ -1,7 +1,9 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TagPanel, MarkdownPanel } from "@/components";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/use-toast";
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("tag-generator");
@@ -31,6 +33,29 @@ console.log(greeting);
     author: "Lovable AI",
     created_at: new Date().toLocaleDateString()
   };
+
+  // Set up Supabase Realtime listener for tag updates
+  useEffect(() => {
+    // Create a Supabase Realtime channel
+    const channel = supabase
+      .channel('public:tags')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'tags' },
+        (payload) => {
+          console.log('New tag added:', payload.new);
+          toast({
+            title: "New Tag Added",
+            description: `A new tag "${payload.new.name}" was added to the system.`,
+          });
+        }
+      )
+      .subscribe();
+
+    // Clean up the subscription when component unmounts
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   return (
     <div className="container mx-auto p-6">
