@@ -1,48 +1,25 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Auth from "./pages/Auth";
-import { AuthProvider } from "./context/AuthContext";
-import Navigation from "./components/Navigation";
-import ProtectedRoute from "./components/ProtectedRoute";
+import { Button } from "@/components/ui/button";
 
-const queryClient = new QueryClient();
-
-const App = () => {
+function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Navigation />
-            <div className="min-h-screen bg-gray-50">
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                {/* Protected routes example:
-                <Route 
-                  path="/dashboard" 
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  } 
-                /> */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </div>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-6">
+            DawsOS
+          </h1>
+          <p className="text-lg text-muted-foreground mb-8">
+            AI-augmented knowledge management system
+          </p>
+        </div>
+        <div className="flex flex-col space-y-4">
+          <Button>Get Started</Button>
+          <Button variant="outline">Learn More</Button>
+        </div>
+      </div>
+    </div>
   );
-};
+}
 
 export default App;
