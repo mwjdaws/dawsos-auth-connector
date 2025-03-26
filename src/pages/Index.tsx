@@ -23,15 +23,15 @@ const HomePage = () => {
               <p className="text-center text-muted-foreground">
                 Welcome back, {user.email}
               </p>
-              <Button as={Link} to="/dashboard">
-                Go to Dashboard
+              <Button asChild>
+                <Link to="/dashboard">Go to Dashboard</Link>
               </Button>
             </div>
           ) : (
             <>
-              <Link to="/auth">
-                <Button className="w-full">Get Started</Button>
-              </Link>
+              <Button asChild className="w-full">
+                <Link to="/auth">Get Started</Link>
+              </Button>
               <Button variant="outline" className="w-full">Learn More</Button>
             </>
           )}
