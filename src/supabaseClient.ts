@@ -1,6 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
+import { supabase } from '@/integrations/supabase/client';
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Re-export the client from the integrations folder for backward compatibility
+export { supabase };
