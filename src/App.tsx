@@ -14,17 +14,27 @@ const queryClient = new QueryClient();
 const App = () => {
   const [data, setData] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data, error } = await supabase
-        .from('knowledge_sources')
-        .select('*');
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('knowledge_sources')
+          .select('*');
 
-      if (error) {
-        setError(error.message);
-      } else {
-        setData(data || []);
+        if (error) {
+          console.error('Error fetching data:', error);
+          setError(error.message);
+        } else {
+          setData(data || []);
+        }
+      } catch (err) {
+        console.error('Unexpected error:', err);
+        setError('An unexpected error occurred');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -44,12 +54,18 @@ const App = () => {
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
-      <div>
-        <h1>Knowledge Sources</h1>
-        {error && <p>Error: {error}</p>}
-        <ul>
+      <div className="container mx-auto p-4 mt-8">
+        <h1 className="text-2xl font-bold mb-4">Knowledge Sources</h1>
+        {loading && <p>Loading data...</p>}
+        {error && <p className="text-red-500">Error: {error}</p>}
+        {!loading && !error && data.length === 0 && (
+          <p>No knowledge sources found.</p>
+        )}
+        <ul className="space-y-2 mt-4">
           {data.map((item) => (
-            <li key={item.id}>{item.name}</li>
+            <li key={item.id} className="p-3 border rounded shadow-sm">
+              {item.title}
+            </li>
           ))}
         </ul>
       </div>
