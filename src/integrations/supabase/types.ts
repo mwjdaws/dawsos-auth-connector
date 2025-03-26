@@ -287,7 +287,10 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      refresh_tag_summary_view: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { TagPanel, MarkdownPanel } from "@/components";
+import { TagSummary } from "@/components/TagSummary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -60,6 +61,21 @@ console.log(greeting);
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2">
+          <TagSummary />
+        </div>
+        <div className="lg:col-span-1">
+          <div className="bg-card border rounded-lg p-6 shadow-sm h-full">
+            <h2 className="text-xl font-semibold mb-4">Tag Statistics</h2>
+            <p className="text-muted-foreground">
+              The tag usage statistics are automatically updated on a schedule.
+              The materialized view is refreshed using a Supabase Edge Function.
+            </p>
+          </div>
+        </div>
+      </div>
       
       <Tabs defaultValue="tag-generator" onValueChange={setActiveTab} className="mb-6">
         <TabsList>
