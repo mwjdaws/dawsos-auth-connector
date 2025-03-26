@@ -278,7 +278,13 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      tag_summary: {
+        Row: {
+          name: string | null
+          usage_count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
