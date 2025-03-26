@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { TagPanel, MarkdownPanel } from "@/components";
+import { TagPanel, MarkdownPanel, MetadataPanel } from "@/components";
 import { TagSummary } from "@/components/TagSummary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,7 @@ import { toast } from "@/components/ui/use-toast";
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("tag-generator");
+  const [contentId, setContentId] = useState(`temp-${Date.now()}`);
   
   // Sample markdown with metadata for demo purposes
   const sampleMarkdown = `# Sample Markdown
@@ -33,6 +34,15 @@ console.log(greeting);
     ontology_terms: ["content", "metadata", "rendering"],
     author: "Lovable AI",
     created_at: new Date().toLocaleDateString()
+  };
+
+  // Refresh metadata when changes occur
+  const handleMetadataChange = () => {
+    // In a real app, this would fetch the latest metadata
+    toast({
+      title: "Metadata Updated",
+      description: "The metadata has been refreshed.",
+    });
   };
 
   // Set up Supabase Realtime listener for tag updates
@@ -81,6 +91,7 @@ console.log(greeting);
         <TabsList>
           <TabsTrigger value="tag-generator">Tag Generator</TabsTrigger>
           <TabsTrigger value="markdown-viewer">Markdown Viewer</TabsTrigger>
+          <TabsTrigger value="metadata">Metadata</TabsTrigger>
         </TabsList>
         
         <TabsContent value="tag-generator" className="mt-4">
@@ -96,6 +107,16 @@ console.log(greeting);
             <MarkdownPanel 
               content={sampleMarkdown} 
               metadata={sampleMetadata} 
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="metadata" className="mt-4">
+          <div className="bg-card border rounded-lg p-6 shadow-sm">
+            <h2 className="text-xl font-semibold mb-4">Content Metadata</h2>
+            <MetadataPanel 
+              contentId={contentId}
+              onMetadataChange={handleMetadataChange}
             />
           </div>
         </TabsContent>
