@@ -1,4 +1,3 @@
-
 import { supabase, handleError, ApiError, parseSupabaseErrorCode } from './base';
 import { KnowledgeTemplate, PaginationParams, PaginatedResponse } from './types';
 import { updateKnowledgeSource, createKnowledgeSource } from './knowledgeSources';
@@ -9,14 +8,12 @@ export const fetchKnowledgeTemplates = async (pagination?: PaginationParams): Pr
     const pageSize = pagination?.pageSize || 10;
     const startIndex = (page - 1) * pageSize;
     
-    // First get the total count
     const { count, error: countError } = await supabase
       .from('knowledge_templates')
       .select('*', { count: 'exact', head: true });
     
     if (countError) throw new ApiError(countError.message, parseSupabaseErrorCode(countError));
     
-    // Then fetch the paginated data
     const { data, error } = await supabase
       .from('knowledge_templates')
       .select('*')
@@ -40,7 +37,6 @@ export const fetchKnowledgeTemplates = async (pagination?: PaginationParams): Pr
 
 export const fetchKnowledgeTemplateById = async (id: string): Promise<KnowledgeTemplate> => {
   try {
-    // Validate that id is a valid UUID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!id || !uuidRegex.test(id)) {
       throw new ApiError(`Invalid template ID format: ${id}`, 400);
@@ -64,7 +60,6 @@ export const fetchKnowledgeTemplateById = async (id: string): Promise<KnowledgeT
 
 export const createKnowledgeTemplate = async (template: Omit<KnowledgeTemplate, 'id'>) => {
   try {
-    // Validate template object to ensure required fields are present
     if (!template.name || template.name.trim() === '') {
       throw new ApiError('Template name is required', 400);
     }
@@ -73,7 +68,6 @@ export const createKnowledgeTemplate = async (template: Omit<KnowledgeTemplate, 
       throw new ApiError('Template content is required', 400);
     }
     
-    // If there's a structure field in metadata, validate it
     if (template.metadata && typeof template.metadata === 'object' && 'structure' in template.metadata) {
       if (!template.metadata.structure) {
         throw new ApiError('Template structure is required if provided', 400);
@@ -95,6 +89,29 @@ export const createKnowledgeTemplate = async (template: Omit<KnowledgeTemplate, 
 
 export const updateKnowledgeTemplate = async (id: string, updates: Partial<KnowledgeTemplate>) => {
   try {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!id || !uuidRegex.test(id)) {
+      throw new ApiError(`Invalid template ID format: ${id}`, 400);
+    }
+    
+    if (!updates || Object.keys(updates).length === 0) {
+      throw new ApiError('No updates provided', 400);
+    }
+    
+    if (updates.name !== undefined && updates.name.trim() === '') {
+      throw new ApiError('Template name cannot be empty', 400);
+    }
+    
+    if (updates.content !== undefined && !updates.content) {
+      throw new ApiError('Template content cannot be empty', 400);
+    }
+    
+    if (updates.metadata && typeof updates.metadata === 'object' && 'structure' in updates.metadata) {
+      if (!updates.metadata.structure) {
+        throw new ApiError('Template structure is required if provided', 400);
+      }
+    }
+    
     const { data, error } = await supabase
       .from('knowledge_templates')
       .update(updates)
@@ -127,7 +144,6 @@ export const deleteKnowledgeTemplate = async (id: string) => {
 
 export const applyTemplateToSource = async (templateId: string, sourceId: string) => {
   try {
-    // First, get the template
     const { data: templateData, error: templateError } = await supabase
       .from('knowledge_templates')
       .select('*')
@@ -137,7 +153,6 @@ export const applyTemplateToSource = async (templateId: string, sourceId: string
     if (templateError) throw new ApiError(templateError.message, parseSupabaseErrorCode(templateError));
     if (!templateData) throw new Error('Template not found');
     
-    // Update the source with content from the template
     return await updateKnowledgeSource(sourceId, {
       content: templateData.content,
       template_id: templateId
@@ -153,7 +168,6 @@ export const createKnowledgeSourceFromTemplate = async (
   sourceData: { title: string, user_id?: string }
 ) => {
   try {
-    // First, get the template
     const { data: templateData, error: templateError } = await supabase
       .from('knowledge_templates')
       .select('*')
@@ -163,7 +177,6 @@ export const createKnowledgeSourceFromTemplate = async (
     if (templateError) throw new ApiError(templateError.message, parseSupabaseErrorCode(templateError));
     if (!templateData) throw new Error('Template not found');
     
-    // Create new source with template content
     return await createKnowledgeSource({
       title: sourceData.title,
       content: templateData.content,
