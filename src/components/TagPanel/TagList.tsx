@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface TagListProps {
   tags: string[];
   isLoading: boolean;
-  expectedTags?: number; // New prop for expected number of tags
+  expectedTags?: number;
 }
 
 export function TagList({ tags, isLoading, expectedTags = 5 }: TagListProps) {
@@ -26,7 +26,11 @@ export function TagList({ tags, isLoading, expectedTags = 5 }: TagListProps) {
   }
 
   if (tags.length === 0) {
-    return null;
+    return (
+      <div className="mt-4 p-4 border border-dashed border-gray-300 rounded-md text-center">
+        <p className="text-sm text-muted-foreground">No tags generated yet</p>
+      </div>
+    );
   }
 
   return (

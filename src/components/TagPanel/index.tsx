@@ -10,12 +10,12 @@ import { useTagGeneration } from "@/hooks/useTagGeneration";
 
 interface TagPanelProps {
   onTagsGenerated?: (contentId: string) => void;
-  expectedTags?: number; // New prop for expected number of tags
+  expectedTags?: number;
 }
 
 export function TagPanel({ 
   onTagsGenerated, 
-  expectedTags = 8  // Default to 8 expected tags
+  expectedTags = 8
 }: TagPanelProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -62,7 +62,8 @@ export function TagPanel({
 
     setIsSaving(true);
     try {
-      const success = await saveTags("", tags, contentId);
+      // Pass the contentId as part of the options object
+      const success = await saveTags("", tags, { contentId });
       if (success && onTagsGenerated) {
         // Notify parent component of the contentId when tags are saved
         console.log("Tags saved, notifying parent of contentId:", contentId);
