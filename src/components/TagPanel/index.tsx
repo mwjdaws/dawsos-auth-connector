@@ -1,15 +1,13 @@
 
-import { useState, useEffect, useTransition, useRef, useCallback, useMemo } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { toast } from "@/hooks/use-toast";
-import { TagList } from "./TagList";
-import { TagGenerator } from "./TagGenerator";
-import { TagSaveButton } from "./TagSaveButton";
-import { useSaveTags } from "./hooks/useSaveTags";
-import { useTagGeneration } from "@/hooks/useTagGeneration";
-import { handleError } from "@/utils/error-handling";
+import { useState, useEffect, useTransition, useRef, useCallback } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { memo } from "react";
+import { TagList } from "./TagList";
+import { TagContentGenerator } from "./TagContentGenerator";
+import { TagSaver } from "./TagSaver";
+import { TagPanelErrorFallback } from "./TagPanelErrorFallback";
+import { useTagGeneration } from "@/hooks/useTagGeneration";
+import { useSaveTags } from "./hooks/useSaveTags";
 
 interface TagPanelProps {
   onTagsGenerated?: (contentId: string) => void;
@@ -20,10 +18,8 @@ export const TagPanel = memo(function TagPanel({
   onTagsGenerated, 
   expectedTags = 8
 }: TagPanelProps) {
-  const [isSaving, setIsSaving] = useState(false);
   const [lastSavedContentId, setLastSavedContentId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const { user } = useAuth();
   const isMounted = useRef(true);
   
   const { 
@@ -58,144 +54,31 @@ export const TagPanel = memo(function TagPanel({
     }
   }, [lastSavedContentId, contentId, onTagsGenerated]);
 
-  // Enhanced error handling for tag generation with automatic retry
-  const handleTagging = useCallback(async (text: string) => {
-    if (!text.trim()) {
-      toast({
-        title: "Empty Content",
-        description: "Please provide some content to generate tags",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    try {
-      // Use startTransition to avoid UI freezing during processing
-      startTransition(() => {}); 
-      
-      // Implement debouncing in case of rapid clicks
-      const newContentId = await handleGenerateTags(text);
-      console.log("TagPanel: handleTagging completed with contentId:", newContentId);
-      
-      // Store the new contentId but don't notify parent yet (wait for save)
-      if (newContentId) {
-        setLastSavedContentId(newContentId);
-      }
-    } catch (error) {
-      handleError(
-        error, 
-        "Failed to generate tags", 
-        {
-          actionLabel: "Try Again",
-          action: () => handleTagging(text)
-        }
-      );
-    }
-  }, [handleGenerateTags, startTransition]);
-
-  // Optimized tag saving with better error handling
-  const handleSaveTags = useCallback(async () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to save tags",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (tags.length === 0) {
-      toast({
-        title: "No Tags",
-        description: "Please generate some tags before saving",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Prevent duplicate save operations
-    if (isSaving || isProcessing) {
-      toast({
-        title: "Save in Progress",
-        description: "Please wait for the current save operation to complete",
-      });
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      // Add a timeout to prevent UI from being stuck in saving state
-      const timeoutId = setTimeout(() => {
-        if (isMounted.current && isSaving) {
-          setIsSaving(false);
-          toast({
-            title: "Operation Timeout",
-            description: "The save operation is taking longer than expected. It may still complete in the background.",
-            variant: "default",
-          });
-        }
-      }, 10000);
-      
-      const success = await saveTags("", tags, { 
-        contentId,
-        maxRetries: isRetrying ? 0 : 1
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (success && typeof success === 'string') {
-        console.log("Tags saved successfully with contentId:", success);
-        setLastSavedContentId(success);
-        
-        toast({
-          title: "Success",
-          description: `${tags.length} tags saved successfully`,
-          variant: "default",
-        });
-      }
-    } catch (error) {
-      handleError(error, "Failed to save tags");
-    } finally {
-      if (isMounted.current) {
-        setIsSaving(false);
-      }
-    }
-  }, [user, tags, contentId, saveTags, isRetrying, isSaving, isProcessing]);
-
-  // Memoize the error fallback content to avoid recreating on every render
-  const errorFallback = useMemo(() => (
-    <div className="p-4 border border-red-300 bg-red-50 rounded-md">
-      <h3 className="text-red-700 font-medium mb-2">Something went wrong with the tag generator</h3>
-      <p className="text-sm text-red-600 mb-4">
-        We encountered an error while processing your request. Please try again or contact support.
-      </p>
-      <button 
-        onClick={() => window.location.reload()}
-        className="px-3 py-1 bg-red-100 text-red-700 rounded-md text-sm hover:bg-red-200 transition-colors"
-      >
-        Reload Page
-      </button>
-    </div>
-  ), []);
+  // Handle successful tag saving
+  const handleTagsSaved = useCallback((savedContentId: string) => {
+    setLastSavedContentId(savedContentId);
+  }, []);
 
   return (
-    <ErrorBoundary fallback={errorFallback}>
+    <ErrorBoundary fallback={<TagPanelErrorFallback />}>
       <div className="space-y-4">
-        <TagGenerator 
-          isLoading={isLoading} 
-          onGenerateTags={handleTagging} 
+        <TagContentGenerator
+          isLoading={isLoading}
+          contentId={contentId}
+          handleGenerateTags={handleGenerateTags}
+          setLastSavedContentId={setLastSavedContentId}
+          isPending={isPending}
         />
         
-        <div className="flex flex-wrap gap-2 mt-4">
-          <TagSaveButton
-            isSaving={isSaving || isProcessing}
-            tags={tags}
-            isUserLoggedIn={!!user}
-            onSaveTags={handleSaveTags}
-          />
-        </div>
+        <TagSaver
+          tags={tags}
+          contentId={contentId}
+          saveTags={saveTags}
+          isProcessing={isProcessing}
+          isRetrying={isRetrying}
+          onTagsSaved={handleTagsSaved}
+        />
         
-        {isPending && <div className="text-sm text-muted-foreground mt-2">Processing...</div>}
         <TagList 
           tags={tags} 
           isLoading={isLoading} 
