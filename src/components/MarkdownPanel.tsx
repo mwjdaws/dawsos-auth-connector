@@ -17,6 +17,14 @@ interface MarkdownPanelProps {
   className?: string;
 }
 
+// Helper function to process wikilinks in markdown content
+const processWikilinks = (content: string): string => {
+  // Replace [[wikilinks]] with a link format
+  return content.replace(/\[\[(.*?)\]\]/g, (match, linkText) => {
+    return `[${linkText}](#/wiki/${encodeURIComponent(linkText)})`;
+  });
+};
+
 const MarkdownPanel: React.FC<MarkdownPanelProps> = ({ 
   content, 
   metadata = {}, 
@@ -37,7 +45,9 @@ const MarkdownPanel: React.FC<MarkdownPanelProps> = ({
   useEffect(() => {
     if (content !== renderedContent && isMounted.current) {
       startTransition(() => {
-        setRenderedContent(content);
+        // Process wikilinks before setting the content
+        const processedContent = processWikilinks(content);
+        setRenderedContent(processedContent);
       });
     }
   }, [content, renderedContent]);
