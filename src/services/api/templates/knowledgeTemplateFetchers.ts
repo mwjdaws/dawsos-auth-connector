@@ -52,14 +52,14 @@ export const fetchKnowledgeTemplates = async (
       for (const item of data) {
         if (item && typeof item === 'object' && 'id' in item && 'name' in item && 'content' in item) {
           templates.push({
-            id: item.id,
-            name: item.name,
-            content: item.content,
+            id: String(item.id),
+            name: String(item.name),
+            content: String(item.content),
             metadata: item.metadata || undefined,
             structure: item.structure || undefined,
-            is_global: item.is_global,
-            created_at: item.created_at,
-            updated_at: item.updated_at
+            is_global: Boolean(item.is_global),
+            created_at: item.created_at ? String(item.created_at) : undefined,
+            updated_at: item.updated_at ? String(item.updated_at) : undefined
           });
         }
       }
@@ -109,9 +109,9 @@ export const fetchKnowledgeTemplateById = async (id: string): Promise<KnowledgeT
       content: data.content,
       metadata: data.metadata || undefined,
       structure: data.structure || undefined,
-      is_global: data.is_global,
-      created_at: data.created_at,
-      updated_at: data.updated_at
+      is_global: Boolean(data.is_global),
+      created_at: data.created_at || undefined,
+      updated_at: data.updated_at || undefined
     };
     
     return template;
