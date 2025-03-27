@@ -14,7 +14,7 @@ export function TagList({ tags, isLoading, expectedTags = 5 }: TagListProps) {
 
   if (isLoading) {
     return (
-      <div className="mt-4">
+      <div className="mt-4" aria-live="polite">
         <h3 className="text-sm font-medium mb-2">Generating Tags...</h3>
         <div className="flex flex-wrap gap-2">
           {Array.from({ length: skeletonCount }).map((_, i) => (
@@ -27,14 +27,14 @@ export function TagList({ tags, isLoading, expectedTags = 5 }: TagListProps) {
 
   if (tags.length === 0) {
     return (
-      <div className="mt-4 p-4 border border-dashed border-gray-300 rounded-md text-center">
+      <div className="mt-4 p-4 border border-dashed border-gray-300 rounded-md text-center" aria-live="polite">
         <p className="text-sm text-muted-foreground">No tags generated yet</p>
       </div>
     );
   }
 
   return (
-    <div className="mt-4">
+    <div className="mt-4" aria-live="polite">
       <h3 className="text-sm font-medium mb-2">Generated Tags:</h3>
       <div className="flex flex-wrap gap-2">
         {tags.map((tag) => (
