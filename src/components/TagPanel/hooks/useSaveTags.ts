@@ -16,6 +16,7 @@ interface SaveTagsOptions {
 export function useSaveTags() {
   const [isRetrying, setIsRetrying] = useState(false);
   const previousOptions = useRef<SaveTagsOptions | null>(null);
+  const previousTags = useRef<string[] | null>(null);
   const previousResult = useRef<SaveTagsResult | null>(null);
   
   const validateTags = useCallback((tags: string[]): boolean => {
@@ -46,8 +47,14 @@ export function useSaveTags() {
     options: SaveTagsOptions = {}
   ): Promise<SaveTagsResult> => {
     // Simple memoization for identical requests
-    const optionsString = JSON.stringify({ tags, options });
-    if (previousOptions.current === optionsString && previousResult.current) {
+    const isSameOptions = 
+      previousOptions.current && 
+      previousTags.current && 
+      previousResult.current && 
+      JSON.stringify(previousOptions.current) === JSON.stringify(options) &&
+      JSON.stringify(previousTags.current) === JSON.stringify(tags);
+      
+    if (isSameOptions) {
       return previousResult.current;
     }
     
@@ -81,7 +88,8 @@ export function useSaveTags() {
             });
             
             // Store result for memoization
-            previousOptions.current = optionsString;
+            previousOptions.current = { ...options };
+            previousTags.current = [...tags];
             previousResult.current = validContentId;
             return validContentId;
           }
@@ -118,7 +126,8 @@ export function useSaveTags() {
       });
       
       // Store result for memoization
-      previousOptions.current = optionsString;
+      previousOptions.current = { ...options };
+      previousTags.current = [...tags];
       previousResult.current = validContentId;
       return validContentId;
     } catch (error: any) {
