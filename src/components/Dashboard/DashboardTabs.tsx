@@ -3,7 +3,7 @@ import { ReactNode, useTransition, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TagPanel } from "@/components";
-import { MarkdownPanel, MetadataPanel } from "@/components";
+import { MarkdownPanel, MetadataPanel, MarkdownEditor } from "@/components";
 import { TagCards } from "@/components/TagPanel/TagCards";
 import TemplatesPanel from "@/components/TemplatesPanel";
 
@@ -61,6 +61,7 @@ console.log(greeting);
         <TabsList>
           <TabsTrigger value="tag-generator">Tag Generator</TabsTrigger>
           <TabsTrigger value="markdown-viewer">Markdown Viewer</TabsTrigger>
+          <TabsTrigger value="markdown-editor">Markdown Editor</TabsTrigger>
           <TabsTrigger value="metadata">Metadata</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
         </TabsList>
@@ -86,6 +87,24 @@ console.log(greeting);
               <MarkdownPanel 
                 content={sampleMarkdown} 
                 metadata={sampleMetadata} 
+              />
+            </Suspense>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="markdown-editor" className="mt-4">
+          <div className="bg-card border rounded-lg p-6 shadow-sm">
+            <h2 className="text-xl font-semibold mb-4">Markdown Editor</h2>
+            <Suspense fallback={<Skeleton className="h-[300px] w-full rounded-lg" />}>
+              <MarkdownEditor 
+                initialTitle="Draft Document"
+                initialContent={sampleMarkdown}
+                onSaveDraft={(title, content) => {
+                  console.log("Saving draft:", { title, content });
+                }}
+                onPublish={(title, content) => {
+                  console.log("Publishing:", { title, content });
+                }}
               />
             </Suspense>
           </div>
