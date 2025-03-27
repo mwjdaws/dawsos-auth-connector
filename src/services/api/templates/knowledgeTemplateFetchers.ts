@@ -49,15 +49,20 @@ export const fetchKnowledgeTemplates = async (
     const templates: KnowledgeTemplate[] = [];
     
     if (Array.isArray(data)) {
-      for (const item of data) {
+      for (const rawItem of data) {
+        // Skip null items
+        if (!rawItem) continue;
+        
+        const item = rawItem as Record<string, any>;
+        
         if (item && typeof item === 'object' && 'id' in item && 'name' in item && 'content' in item) {
           templates.push({
-            id: String(item.id),
-            name: String(item.name),
-            content: String(item.content),
+            id: String(item.id || ''),
+            name: String(item.name || ''),
+            content: String(item.content || ''),
             metadata: item.metadata || undefined,
             structure: item.structure || undefined,
-            is_global: Boolean(item.is_global),
+            is_global: Boolean(item.is_global || false),
             created_at: item.created_at ? String(item.created_at) : undefined,
             updated_at: item.updated_at ? String(item.updated_at) : undefined
           });
@@ -104,14 +109,14 @@ export const fetchKnowledgeTemplateById = async (id: string): Promise<KnowledgeT
     
     // Create template object with verified properties
     const template: KnowledgeTemplate = {
-      id: data.id,
-      name: data.name,
-      content: data.content,
+      id: String(data.id),
+      name: String(data.name),
+      content: String(data.content),
       metadata: data.metadata || undefined,
       structure: data.structure || undefined,
-      is_global: Boolean(data.is_global),
-      created_at: data.created_at || undefined,
-      updated_at: data.updated_at || undefined
+      is_global: Boolean(data.is_global || false),
+      created_at: data.created_at ? String(data.created_at) : undefined,
+      updated_at: data.updated_at ? String(data.updated_at) : undefined
     };
     
     return template;
