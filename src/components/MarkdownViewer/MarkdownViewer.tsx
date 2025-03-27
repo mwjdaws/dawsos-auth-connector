@@ -1,17 +1,12 @@
 
 import React, { useState, useEffect, useTransition } from "react";
-import ReactMarkdown from "react-markdown";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { X, Copy, ChevronRight, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { TagInput } from "./TagInput";
+import { ContentPanel } from "./ContentPanel";
+import { MetadataPanel } from "./MetadataPanel";
+import { processWikilinks } from "./utils/wikilinksProcessor";
 
 interface MarkdownViewerProps {
   content: string;
@@ -32,21 +27,12 @@ interface OntologyTerm {
   description?: string;
 }
 
-// Helper function to process wikilinks in markdown content
-const processWikilinks = (content: string): string => {
-  // Replace [[wikilinks]] with a link format
-  return content.replace(/\[\[(.*?)\]\]/g, (match, linkText) => {
-    return `[${linkText}](#/wiki/${encodeURIComponent(linkText)})`;
-  });
-};
-
 export function MarkdownViewer({ content, contentId, editable = false, className }: MarkdownViewerProps) {
   const [tags, setTags] = useState<Tag[]>([]);
   const [ontologyTerms, setOntologyTerms] = useState<OntologyTerm[]>([]);
   const [domain, setDomain] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [newTag, setNewTag] = useState("");
-  const [isMetadataCollapsed, setIsMetadataCollapsed] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [processedContent, setProcessedContent] = useState(content);
   const { user } = useAuth();
@@ -173,192 +159,28 @@ export function MarkdownViewer({ content, contentId, editable = false, className
     }
   };
 
-  const handleCopyMarkdown = () => {
-    navigator.clipboard.writeText(content);
-    toast({
-      title: "Copied",
-      description: "Markdown content copied to clipboard",
-    });
-  };
-
-  // Render wikilinks as clickable spans
-  const renderWikiLinks = (text: string) => {
-    const wikiLinkPattern = /\[\[(.*?)\]\]/g;
-    const parts = [];
-    let lastIndex = 0;
-    let match;
-
-    while ((match = wikiLinkPattern.exec(text)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push(text.substring(lastIndex, match.index));
-      }
-      
-      const linkText = match[1];
-      parts.push(
-        <span 
-          key={match.index} 
-          className="text-blue-500 cursor-pointer hover:underline"
-          onClick={() => {
-            console.log(`Wiki link clicked: ${linkText}`);
-            toast({
-              title: "Wiki Link Clicked",
-              description: `You clicked on the wiki link: ${linkText}`,
-            });
-          }}
-        >
-          {linkText}
-        </span>
-      );
-      
-      lastIndex = match.index + match[0].length;
-    }
-    
-    if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex));
-    }
-    
-    return <>{parts}</>;
-  };
-
   return (
     <div className={cn("flex flex-col lg:flex-row gap-6", className)}>
       <div className="flex-1">
-        <div className="bg-card border rounded-lg p-6 shadow-sm mb-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Content</h2>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleCopyMarkdown}
-              className="flex items-center gap-1"
-            >
-              <Copy className="h-4 w-4" />
-              Copy
-            </Button>
-          </div>
-          <div className="prose prose-slate dark:prose-invert max-w-none">
-            <ReactMarkdown
-              components={{
-                p: ({ children }) => {
-                  if (typeof children === 'string') {
-                    return <p>{renderWikiLinks(children)}</p>;
-                  }
-                  return <p>{children}</p>;
-                },
-                a: ({ node, ...props }) => (
-                  <a {...props} className="text-blue-500 hover:underline" />
-                )
-              }}
-            >
-              {processedContent}
-            </ReactMarkdown>
-          </div>
-        </div>
+        <ContentPanel 
+          content={content} 
+          processedContent={processedContent} 
+        />
       </div>
 
       <div className="w-full lg:w-1/3 lg:max-w-xs">
-        <Card className="border rounded-lg shadow-sm">
-          <div className="p-4 border-b">
-            <button
-              className="flex w-full items-center justify-between"
-              onClick={() => setIsMetadataCollapsed(!isMetadataCollapsed)}
-            >
-              <h2 className="text-xl font-semibold">Metadata</h2>
-              {isMetadataCollapsed ? (
-                <ChevronRight className="h-5 w-5" />
-              ) : (
-                <ChevronDown className="h-5 w-5" />
-              )}
-            </button>
-          </div>
-
-          {!isMetadataCollapsed && (
-            <div className="p-4 space-y-4">
-              {isLoading ? (
-                <>
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Tags</h3>
-                    <Skeleton className="h-8 w-full" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Ontology Terms</h3>
-                    <Skeleton className="h-8 w-full" />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Tags</h3>
-                    {tags.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {tags.map((tag) => (
-                          <Badge 
-                            key={tag.id} 
-                            variant="secondary"
-                            className="flex items-center gap-1"
-                          >
-                            {tag.name}
-                            {editable && (
-                              <button 
-                                onClick={() => handleDeleteTag(tag.id)}
-                                className="text-muted-foreground hover:text-foreground ml-1"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            )}
-                          </Badge>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No tags available</p>
-                    )}
-                    
-                    {editable && (
-                      <div className="mt-2">
-                        <TagInput 
-                          onAddTag={handleAddTag} 
-                          newTag={newTag} 
-                          setNewTag={setNewTag} 
-                        />
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Ontology Terms</h3>
-                    {ontologyTerms.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {ontologyTerms.map((term) => (
-                          <Badge 
-                            key={term.id} 
-                            variant="outline"
-                            className="bg-green-50"
-                          >
-                            {term.term}
-                          </Badge>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No ontology terms available</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Domain</h3>
-                    {domain ? (
-                      <Badge className="bg-blue-50 text-blue-800 border-blue-200">
-                        {domain}
-                      </Badge>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No domain specified</p>
-                    )}
-                  </div>
-                </>
-              )}
-              {isPending && <div className="text-sm text-muted-foreground">Updating metadata...</div>}
-            </div>
-          )}
-        </Card>
+        <MetadataPanel
+          tags={tags}
+          ontologyTerms={ontologyTerms}
+          domain={domain}
+          isLoading={isLoading}
+          newTag={newTag}
+          setNewTag={setNewTag}
+          editable={editable}
+          onAddTag={handleAddTag}
+          onDeleteTag={handleDeleteTag}
+          isPending={isPending}
+        />
       </div>
     </div>
   );
