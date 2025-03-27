@@ -1,69 +1,101 @@
-# Welcome to your Lovable project
 
-## Project info
+# DawsOS - AI-Augmented Knowledge Management System
 
-**URL**: https://lovable.dev/projects/c6bc2207-49e0-4109-b128-fa584cf8401a
+## Project Overview
 
-## How can I edit this code?
+DawsOS is an advanced knowledge management system designed to enhance how users interact with and organize information. Built with modern web technologies, DawsOS leverages artificial intelligence to provide intelligent tagging, content categorization, and knowledge organization features.
 
-There are several ways of editing your application.
+## Core Features
 
-**Use Lovable**
+- **AI-Powered Tag Generation**: Automatically generate relevant tags for content using OpenAI's GPT models
+- **Knowledge Templates**: Use and create templates for consistent knowledge structuring
+- **Markdown Support**: Edit and view content with full markdown capabilities
+- **Real-time Collaboration**: Work with team members in real-time on knowledge resources
+- **Intelligent Metadata**: Enhance content with rich metadata for better discoverability
+- **Tag Relationships**: Create meaningful connections between tagged content
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/c6bc2207-49e0-4109-b128-fa584cf8401a) and start prompting.
+## Technical Architecture
 
-Changes made via Lovable will be committed automatically to this repo.
+DawsOS is built with a modern tech stack:
 
-**Use your preferred IDE**
+- **Frontend**: React with TypeScript, using Vite for fast development
+- **UI Components**: Shadcn UI with Tailwind CSS for a clean, responsive interface
+- **State Management**: React Query for efficient data fetching and state management
+- **Backend**: Supabase for authentication, database, and serverless functions
+- **AI Integration**: OpenAI API for intelligent tag generation and content analysis
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Application Structure
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+The application is organized into several key components:
 
-Follow these steps:
+### Tag Generation System
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- Uses AI to analyze content and suggest relevant tags
+- Provides caching and validation for improved performance
+- Handles retries and fallbacks for reliability
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Content Management
 
-# Step 3: Install the necessary dependencies.
-npm i
+- Markdown editing and viewing with preview
+- Metadata panel for viewing and editing content attributes
+- Knowledge source version tracking
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+### Template System
 
-**Edit a file directly in GitHub**
+- Create, use, and manage knowledge templates
+- Apply templates to standardize knowledge structure
+- Filter and browse existing templates
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Getting Started
 
-**Use GitHub Codespaces**
+To get started with DawsOS, follow these steps:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1. **Clone the repository**:
+   ```
+   git clone <repository-url>
+   cd dawsos
+   ```
 
-## What technologies are used for this project?
+2. **Install dependencies**:
+   ```
+   npm install
+   ```
 
-This project is built with .
+3. **Set up environment variables**:
+   Create a `.env` file based on `.env.example` with your Supabase and OpenAI API credentials.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+4. **Run the application**:
+   ```
+   npm run dev
+   ```
 
-## How can I deploy this project?
+5. **Open your browser**:
+   Navigate to `http://localhost:5173` to view the application.
 
-Simply open [Lovable](https://lovable.dev/projects/c6bc2207-49e0-4109-b128-fa584cf8401a) and click on Share -> Publish.
+## Key Modules
 
-## I want to use a custom domain - is that possible?
+### Tag Generation
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+The tag generation system uses a modular approach:
+
+- `useTagGenerationCore`: Main hook for tag generation logic
+- `useTagValidator`: Validates input before processing
+- `useTagCache`: Caches previous results for improved performance
+- `useTagGenerationProcess`: Handles the actual tag generation process
+
+### Dashboard
+
+The dashboard provides a central interface with:
+
+- Tag Generator for creating tags from content
+- Markdown Viewer for viewing content with metadata
+- Metadata Panel for editing content attributes
+- Templates Panel for managing knowledge templates
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a pull request or open an issue for any enhancements or bug fixes.
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for more details.

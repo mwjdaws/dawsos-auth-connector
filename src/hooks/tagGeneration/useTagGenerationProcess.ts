@@ -1,5 +1,4 @@
-
-import { RefObject, useCallback } from "react";
+import { RefObject, useCallback, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 import { handleError } from "@/utils/error-handling";
 import { generateTags } from "@/utils/supabase-functions";
