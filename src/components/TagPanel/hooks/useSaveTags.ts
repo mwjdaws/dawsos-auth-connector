@@ -1,9 +1,10 @@
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { generateTags } from "@/utils/supabase-functions";
 import { handleError, ValidationError } from "@/utils/error-handling";
+import { isEqual } from "lodash";
 
 type SaveTagsResult = string | false;
 
@@ -13,11 +14,26 @@ interface SaveTagsOptions {
   maxRetries?: number;
 }
 
+// Cache data structure
+interface PreviousData {
+  options: SaveTagsOptions;
+  tags: string[];
+  result: SaveTagsResult;
+}
+
 export function useSaveTags() {
   const [isRetrying, setIsRetrying] = useState(false);
-  const previousOptions = useRef<SaveTagsOptions | null>(null);
-  const previousTags = useRef<string[] | null>(null);
-  const previousResult = useRef<SaveTagsResult | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const previousData = useRef<PreviousData | null>(null);
+  
+  // Cleanup function to cancel any in-flight requests when component unmounts
+  useEffect(() => {
+    const abortController = new AbortController();
+    
+    return () => {
+      abortController.abort();
+    };
+  }, []);
   
   const validateTags = useCallback((tags: string[]): boolean => {
     if (!tags?.length) {
@@ -53,15 +69,13 @@ export function useSaveTags() {
     options: SaveTagsOptions = {}
   ): Promise<SaveTagsResult> => {
     // Enhanced memoization with deep equality check to prevent unnecessary API calls
-    const isSameOptions = 
-      previousOptions.current && 
-      previousTags.current && 
-      previousResult.current &&
-      JSON.stringify(previousOptions.current) === JSON.stringify(options) &&
-      JSON.stringify(previousTags.current) === JSON.stringify(tags);
-      
-    if (isSameOptions) {
-      return previousResult.current;
+    if (
+      previousData.current && 
+      isEqual(previousData.current.options, options) &&
+      isEqual(previousData.current.tags, tags)
+    ) {
+      console.log('Using cached result from previous identical call');
+      return previousData.current.result;
     }
     
     const { 
@@ -75,6 +89,8 @@ export function useSaveTags() {
       return false;
     }
 
+    setIsProcessing(true);
+    
     // Create an AbortController to handle timeouts and cancellations
     const abortController = new AbortController();
     const timeoutId = setTimeout(() => abortController.abort(), 30000); // 30 second timeout
@@ -101,9 +117,13 @@ export function useSaveTags() {
             });
             
             // Store result for memoization with defensive copying to avoid reference issues
-            previousOptions.current = { ...options };
-            previousTags.current = [...tags];
-            previousResult.current = validContentId;
+            previousData.current = {
+              options: { ...options },
+              tags: [...tags],
+              result: validContentId
+            };
+            
+            setIsProcessing(false);
             return validContentId;
           }
           
@@ -130,6 +150,11 @@ export function useSaveTags() {
       
       for (let i = 0; i < tagObjects.length; i += BATCH_SIZE) {
         const batch = tagObjects.slice(i, i + BATCH_SIZE);
+        
+        // Track progress for large tag sets
+        if (tagObjects.length > BATCH_SIZE) {
+          console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(tagObjects.length / BATCH_SIZE)}`);
+        }
         
         const { error } = await supabase
           .from("tags")
@@ -160,13 +185,18 @@ export function useSaveTags() {
       });
       
       // Store result for memoization with defensive copying
-      previousOptions.current = { ...options };
-      previousTags.current = [...tags];
-      previousResult.current = validContentId;
+      previousData.current = {
+        options: { ...options },
+        tags: [...tags],
+        result: validContentId
+      };
+      
+      setIsProcessing(false);
       return validContentId;
     } catch (error: any) {
       // Clear timeout if there was an error
       clearTimeout(timeoutId);
+      setIsProcessing(false);
       
       console.error("Error saving tags:", error);
       
@@ -218,5 +248,5 @@ export function useSaveTags() {
     }
   }, [validateTags, isRetrying]);
 
-  return { saveTags, isRetrying };
+  return { saveTags, isRetrying, isProcessing };
 }

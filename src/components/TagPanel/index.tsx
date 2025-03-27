@@ -21,6 +21,7 @@ export const TagPanel = memo(function TagPanel({
   expectedTags = 8
 }: TagPanelProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const [lastSavedContentId, setLastSavedContentId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const { user } = useAuth();
   const isMounted = useRef(true);
@@ -36,7 +37,7 @@ export const TagPanel = memo(function TagPanel({
     retryDelay: 2000
   });
 
-  const { saveTags, isRetrying } = useSaveTags();
+  const { saveTags, isRetrying, isProcessing } = useSaveTags();
 
   // Cleanup on unmount
   useEffect(() => {
@@ -44,6 +45,18 @@ export const TagPanel = memo(function TagPanel({
       isMounted.current = false;
     };
   }, []);
+
+  // Prevent duplicate notifications when contentId doesn't change
+  useEffect(() => {
+    if (contentId && lastSavedContentId === contentId) {
+      return;
+    }
+    
+    if (lastSavedContentId && onTagsGenerated) {
+      console.log("TagPanel: Notifying parent of contentId change:", lastSavedContentId);
+      onTagsGenerated(lastSavedContentId);
+    }
+  }, [lastSavedContentId, contentId, onTagsGenerated]);
 
   // Enhanced error handling for tag generation with automatic retry
   const handleTagging = useCallback(async (text: string) => {
@@ -64,10 +77,9 @@ export const TagPanel = memo(function TagPanel({
       const newContentId = await handleGenerateTags(text);
       console.log("TagPanel: handleTagging completed with contentId:", newContentId);
       
-      // Notify parent component of the new contentId only if successfully generated
-      if (onTagsGenerated && newContentId) {
-        console.log("TagPanel: Notifying parent of contentId:", newContentId);
-        onTagsGenerated(newContentId);
+      // Store the new contentId but don't notify parent yet (wait for save)
+      if (newContentId) {
+        setLastSavedContentId(newContentId);
       }
     } catch (error) {
       handleError(
@@ -79,7 +91,7 @@ export const TagPanel = memo(function TagPanel({
         }
       );
     }
-  }, [handleGenerateTags, onTagsGenerated]);
+  }, [handleGenerateTags, startTransition]);
 
   // Optimized tag saving with better error handling
   const handleSaveTags = useCallback(async () => {
@@ -97,6 +109,15 @@ export const TagPanel = memo(function TagPanel({
         title: "No Tags",
         description: "Please generate some tags before saving",
         variant: "destructive",
+      });
+      return;
+    }
+
+    // Prevent duplicate save operations
+    if (isSaving || isProcessing) {
+      toast({
+        title: "Save in Progress",
+        description: "Please wait for the current save operation to complete",
       });
       return;
     }
@@ -122,9 +143,9 @@ export const TagPanel = memo(function TagPanel({
       
       clearTimeout(timeoutId);
       
-      if (success && onTagsGenerated) {
-        console.log("Tags saved, notifying parent of contentId:", contentId);
-        onTagsGenerated(contentId);
+      if (success && typeof success === 'string') {
+        console.log("Tags saved successfully with contentId:", success);
+        setLastSavedContentId(success);
         
         toast({
           title: "Success",
@@ -139,7 +160,7 @@ export const TagPanel = memo(function TagPanel({
         setIsSaving(false);
       }
     }
-  }, [user, tags, contentId, saveTags, onTagsGenerated, isRetrying, isSaving]);
+  }, [user, tags, contentId, saveTags, isRetrying, isSaving, isProcessing]);
 
   // Memoize the error fallback content to avoid recreating on every render
   const errorFallback = useMemo(() => (
@@ -167,7 +188,7 @@ export const TagPanel = memo(function TagPanel({
         
         <div className="flex flex-wrap gap-2 mt-4">
           <TagSaveButton
-            isSaving={isSaving}
+            isSaving={isSaving || isProcessing}
             tags={tags}
             isUserLoggedIn={!!user}
             onSaveTags={handleSaveTags}

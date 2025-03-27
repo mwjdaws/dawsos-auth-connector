@@ -39,7 +39,7 @@ export const generateTags = async (
     const newTimeoutId = setTimeout(() => abortController.abort(), dynamicTimeout);
     
     // Add retry mechanism
-    const MAX_RETRIES = 2;
+    const MAX_RETRIES = 3;
     let retryCount = 0;
     let lastError: Error | null = null;
     
@@ -52,6 +52,7 @@ export const generateTags = async (
             contentId,
             retryCount  // Send retry count to help the edge function adapt
           },
+          signal: abortController.signal, // Add AbortSignal for proper timeout handling
         });
 
         if (error) {
@@ -61,7 +62,9 @@ export const generateTags = async (
           
           // Exponential backoff between retries
           if (retryCount <= MAX_RETRIES) {
-            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount - 1)));
+            const backoffTime = 1000 * Math.pow(2, retryCount - 1);
+            console.log(`Retrying tag generation in ${backoffTime}ms (attempt ${retryCount}/${MAX_RETRIES})`);
+            await new Promise(resolve => setTimeout(resolve, backoffTime));
             continue;
           }
           
@@ -81,7 +84,9 @@ export const generateTags = async (
         
         // Exponential backoff between retries
         if (retryCount <= MAX_RETRIES) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount - 1)));
+          const backoffTime = 1000 * Math.pow(2, retryCount - 1);
+          console.log(`Retrying tag generation in ${backoffTime}ms (attempt ${retryCount}/${MAX_RETRIES})`);
+          await new Promise(resolve => setTimeout(resolve, backoffTime));
           continue;
         }
       }
@@ -100,6 +105,12 @@ export const generateTags = async (
     if (error instanceof DOMException && error.name === 'AbortError') {
       console.error('Tag generation request timed out');
       return ["content", "text", "document", "timeout", "error"];
+    }
+    
+    // Check if it's a network error
+    if (error instanceof Error && error.message.includes('network')) {
+      console.error('Network error during tag generation');
+      return ["content", "text", "document", "network", "error"];
     }
     
     // Return fallback tags instead of throwing
