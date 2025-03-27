@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { handleError, ApiError } from '@/utils/error-handling';
 import { Json } from '@/integrations/supabase/types';
@@ -37,7 +36,7 @@ export const fetchKnowledgeSources = async () => {
       .select('*')
       .order('updated_at', { ascending: false });
     
-    if (error) throw new ApiError(error.message, error.code || "");
+    if (error) throw new ApiError(error.message, error.code ? parseInt(error.code) : 500);
     return data;
   } catch (error) {
     handleError(error, "Failed to fetch knowledge sources");
@@ -53,7 +52,7 @@ export const fetchKnowledgeSourceById = async (id: string) => {
       .eq('id', id)
       .single();
     
-    if (error) throw new ApiError(error.message, error.code || "");
+    if (error) throw new ApiError(error.message, error.code ? parseInt(error.code) : 500);
     return data;
   } catch (error) {
     handleError(error, `Failed to fetch knowledge source with ID: ${id}`);
@@ -68,7 +67,7 @@ export const createKnowledgeSource = async (source: Omit<KnowledgeSource, 'id' |
       .insert([source])
       .select();
     
-    if (error) throw new ApiError(error.message, error.code || "");
+    if (error) throw new ApiError(error.message, error.code ? parseInt(error.code) : 500);
     
     // Create initial version (version 1)
     if (data && data.length > 0) {
@@ -114,7 +113,7 @@ export const updateKnowledgeSource = async (id: string, updates: Partial<Knowled
       .eq('id', id)
       .select();
     
-    if (error) throw new ApiError(error.message, error.code || "");
+    if (error) throw new ApiError(error.message, error.code ? parseInt(error.code) : 500);
     
     // If content was updated, create a new version
     if (updates.content && data && data.length > 0) {
@@ -143,7 +142,7 @@ export const deleteKnowledgeSource = async (id: string) => {
       .eq('id', id)
       .select();
     
-    if (error) throw new ApiError(error.message, error.code || "");
+    if (error) throw new ApiError(error.message, error.code ? parseInt(error.code) : 500);
     return data;
   } catch (error) {
     handleError(error, `Failed to delete knowledge source with ID: ${id}`);
@@ -160,7 +159,7 @@ export const fetchKnowledgeSourceVersions = async (sourceId: string) => {
       .eq('source_id', sourceId)
       .order('version_number', { ascending: false });
     
-    if (error) throw new ApiError(error.message, error.code || "");
+    if (error) throw new ApiError(error.message, error.code ? parseInt(error.code) : 500);
     return data;
   } catch (error) {
     handleError(error, `Failed to fetch versions for knowledge source with ID: ${sourceId}`);
@@ -176,7 +175,7 @@ export const fetchKnowledgeSourceVersionById = async (versionId: string) => {
       .eq('id', versionId)
       .single();
     
-    if (error) throw new ApiError(error.message, error.code || "");
+    if (error) throw new ApiError(error.message, error.code ? parseInt(error.code) : 500);
     return data;
   } catch (error) {
     handleError(error, `Failed to fetch version with ID: ${versionId}`);
@@ -193,7 +192,7 @@ export const createKnowledgeSourceVersion = async (
       .insert([version])
       .select();
     
-    if (error) throw new ApiError(error.message, error.code || "");
+    if (error) throw new ApiError(error.message, error.code ? parseInt(error.code) : 500);
     return data;
   } catch (error) {
     handleError(error, "Failed to create knowledge source version");
@@ -210,7 +209,7 @@ export const restoreKnowledgeSourceVersion = async (versionId: string) => {
       .eq('id', versionId)
       .single();
     
-    if (versionError) throw new ApiError(versionError.message, versionError.code || "");
+    if (versionError) throw new ApiError(versionError.message, versionError.code ? parseInt(versionError.code) : 500);
     if (!versionData) throw new Error('Version not found');
     
     // Get source info
@@ -220,7 +219,7 @@ export const restoreKnowledgeSourceVersion = async (versionId: string) => {
       .eq('id', versionData.source_id)
       .single();
     
-    if (sourceError) throw new ApiError(sourceError.message, sourceError.code || "");
+    if (sourceError) throw new ApiError(sourceError.message, sourceError.code ? parseInt(sourceError.code) : 500);
     if (!sourceData) throw new Error('Source not found');
     
     // Update the source with content from the version
@@ -241,7 +240,7 @@ export const fetchKnowledgeTemplates = async () => {
       .select('*')
       .order('name', { ascending: true });
     
-    if (error) throw new ApiError(error.message, error.code || "");
+    if (error) throw new ApiError(error.message, error.code ? parseInt(error.code) : 500);
     return data;
   } catch (error) {
     handleError(error, "Failed to fetch knowledge templates");
@@ -257,7 +256,7 @@ export const fetchKnowledgeTemplateById = async (id: string) => {
       .eq('id', id)
       .single();
     
-    if (error) throw new ApiError(error.message, error.code || "");
+    if (error) throw new ApiError(error.message, error.code ? parseInt(error.code) : 500);
     return data;
   } catch (error) {
     handleError(error, `Failed to fetch knowledge template with ID: ${id}`);
@@ -272,7 +271,7 @@ export const createKnowledgeTemplate = async (template: Omit<KnowledgeTemplate, 
       .insert([template])
       .select();
     
-    if (error) throw new ApiError(error.message, error.code || "");
+    if (error) throw new ApiError(error.message, error.code ? parseInt(error.code) : 500);
     return data;
   } catch (error) {
     handleError(error, "Failed to create knowledge template");
@@ -288,7 +287,7 @@ export const updateKnowledgeTemplate = async (id: string, updates: Partial<Knowl
       .eq('id', id)
       .select();
     
-    if (error) throw new ApiError(error.message, error.code || "");
+    if (error) throw new ApiError(error.message, error.code ? parseInt(error.code) : 500);
     return data;
   } catch (error) {
     handleError(error, `Failed to update knowledge template with ID: ${id}`);
@@ -304,7 +303,7 @@ export const deleteKnowledgeTemplate = async (id: string) => {
       .eq('id', id)
       .select();
     
-    if (error) throw new ApiError(error.message, error.code || "");
+    if (error) throw new ApiError(error.message, error.code ? parseInt(error.code) : 500);
     return data;
   } catch (error) {
     handleError(error, `Failed to delete knowledge template with ID: ${id}`);
@@ -321,7 +320,7 @@ export const applyTemplateToSource = async (templateId: string, sourceId: string
       .eq('id', templateId)
       .single();
     
-    if (templateError) throw new ApiError(templateError.message, templateError.code || "");
+    if (templateError) throw new ApiError(templateError.message, templateError.code ? parseInt(templateError.code) : 500);
     if (!templateData) throw new Error('Template not found');
     
     // Update the source with content from the template
@@ -348,7 +347,7 @@ export const createKnowledgeSourceFromTemplate = async (
       .eq('id', templateId)
       .single();
     
-    if (templateError) throw new ApiError(templateError.message, templateError.code || "");
+    if (templateError) throw new ApiError(templateError.message, templateError.code ? parseInt(templateError.code) : 500);
     if (!templateData) throw new Error('Template not found');
     
     // Create new source with template content
