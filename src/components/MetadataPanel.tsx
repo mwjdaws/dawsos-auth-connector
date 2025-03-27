@@ -1,9 +1,10 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface MetadataProps {
   contentId: string;
@@ -22,9 +23,14 @@ export function MetadataPanel({ contentId, onMetadataChange }: MetadataProps) {
     ontology_terms: [],
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchMetadata = async () => {
+      if (!contentId) return;
+      
       setIsLoading(true);
       try {
         // Fetch tags associated with the contentId
@@ -36,10 +42,14 @@ export function MetadataPanel({ contentId, onMetadataChange }: MetadataProps) {
         if (tagError) throw tagError;
         
         // Update metadata with fetched tags
-        setMetadata(prev => ({
-          ...prev,
-          tags: tagData?.map(t => t.name) || []
-        }));
+        if (isMounted) {
+          startTransition(() => {
+            setMetadata(prev => ({
+              ...prev,
+              tags: tagData?.map(t => t.name) || []
+            }));
+          });
+        }
 
         if (onMetadataChange) onMetadataChange();
       } catch (error) {
@@ -50,13 +60,15 @@ export function MetadataPanel({ contentId, onMetadataChange }: MetadataProps) {
           variant: "destructive",
         });
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
-    if (contentId) {
-      fetchMetadata();
-    }
+    fetchMetadata();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [contentId, onMetadataChange]);
 
   const renderBadges = (items: string[], type: string) => {
@@ -78,7 +90,12 @@ export function MetadataPanel({ contentId, onMetadataChange }: MetadataProps) {
   return (
     <div className="space-y-4">
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading metadata...</p>
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-20 w-full" />
+        </div>
       ) : (
         <>
           <div>
@@ -104,6 +121,7 @@ export function MetadataPanel({ contentId, onMetadataChange }: MetadataProps) {
           }
         </>
       )}
+      {isPending && <div className="mt-2 text-sm text-muted-foreground">Updating metadata...</div>}
     </div>
   );
 }

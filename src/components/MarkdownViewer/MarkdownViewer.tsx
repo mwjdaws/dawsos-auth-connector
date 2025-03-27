@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useTransition } from "react";
 import ReactMarkdown from "react-markdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,10 +38,15 @@ export function MarkdownViewer({ content, contentId, editable = false, className
   const [isLoading, setIsLoading] = useState(true);
   const [newTag, setNewTag] = useState("");
   const [isMetadataCollapsed, setIsMetadataCollapsed] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const { user } = useAuth();
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchMetadata = async () => {
+      if (!contentId) return;
+      
       setIsLoading(true);
       try {
         // Fetch tags for the content
@@ -52,12 +56,19 @@ export function MarkdownViewer({ content, contentId, editable = false, className
           .eq("content_id", contentId);
         
         if (tagError) throw tagError;
-        setTags(tagData || []);
+        
+        if (isMounted) {
+          startTransition(() => {
+            setTags(tagData || []);
+          });
+        }
 
         // In the future, fetch ontology terms and domain information
         // For now, we'll use placeholder data
-        setOntologyTerms([]);
-        setDomain(null);
+        if (isMounted) {
+          setOntologyTerms([]);
+          setDomain(null);
+        }
       } catch (error) {
         console.error("Error fetching metadata:", error);
         toast({
@@ -66,13 +77,17 @@ export function MarkdownViewer({ content, contentId, editable = false, className
           variant: "destructive",
         });
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
     if (contentId) {
       fetchMetadata();
     }
+    
+    return () => {
+      isMounted = false;
+    };
   }, [contentId]);
 
   const handleAddTag = async () => {
@@ -92,8 +107,11 @@ export function MarkdownViewer({ content, contentId, editable = false, className
       if (error) throw error;
       
       if (data && data.length > 0) {
-        setTags([...tags, data[0]]);
-        setNewTag("");
+        startTransition(() => {
+          setTags([...tags, data[0]]);
+          setNewTag("");
+        });
+        
         toast({
           title: "Success",
           description: "Tag added successfully",
@@ -120,7 +138,10 @@ export function MarkdownViewer({ content, contentId, editable = false, className
       
       if (error) throw error;
       
-      setTags(tags.filter(tag => tag.id !== tagId));
+      startTransition(() => {
+        setTags(tags.filter(tag => tag.id !== tagId));
+      });
+      
       toast({
         title: "Success",
         description: "Tag removed successfully",
@@ -314,6 +335,7 @@ export function MarkdownViewer({ content, contentId, editable = false, className
                   </div>
                 </>
               )}
+              {isPending && <div className="text-sm text-muted-foreground">Updating metadata...</div>}
             </div>
           )}
         </Card>

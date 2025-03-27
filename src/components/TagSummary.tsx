@@ -19,6 +19,8 @@ export function TagSummary() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    
     async function fetchTagSummary() {
       try {
         setIsLoading(true);
@@ -31,7 +33,7 @@ export function TagSummary() {
 
         if (error) {
           console.error("Error fetching tag summary:", error);
-          setError(error.message);
+          if (isMounted) setError(error.message);
           return;
         }
 
@@ -41,16 +43,20 @@ export function TagSummary() {
           usage_count: Number(item.usage_count) || 0
         }));
 
-        setTagData(formattedData);
+        if (isMounted) setTagData(formattedData);
       } catch (err) {
         console.error("Unexpected error:", err);
-        setError("An unexpected error occurred");
+        if (isMounted) setError("An unexpected error occurred");
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     }
 
     fetchTagSummary();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   if (error) {

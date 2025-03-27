@@ -1,14 +1,17 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { TagPanel, MarkdownPanel, MetadataPanel } from "@/components";
 import { TagSummary } from "@/components/TagSummary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("tag-generator");
   const [contentId, setContentId] = useState(`temp-${Date.now()}`);
+  const [isPending, startTransition] = useTransition();
   
   // Sample markdown with metadata for demo purposes
   const sampleMarkdown = `# Sample Markdown
@@ -68,13 +71,21 @@ console.log(greeting);
     };
   }, []);
 
+  const handleTabChange = (value: string) => {
+    startTransition(() => {
+      setActiveTab(value);
+    });
+  };
+
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2">
-          <TagSummary />
+          <Suspense fallback={<Skeleton className="h-[300px] w-full" />}>
+            <TagSummary />
+          </Suspense>
         </div>
         <div className="lg:col-span-1">
           <div className="bg-card border rounded-lg p-6 shadow-sm h-full">
@@ -87,7 +98,7 @@ console.log(greeting);
         </div>
       </div>
       
-      <Tabs defaultValue="tag-generator" onValueChange={setActiveTab} className="mb-6">
+      <Tabs defaultValue="tag-generator" onValueChange={handleTabChange} className="mb-6">
         <TabsList>
           <TabsTrigger value="tag-generator">Tag Generator</TabsTrigger>
           <TabsTrigger value="markdown-viewer">Markdown Viewer</TabsTrigger>
@@ -97,30 +108,37 @@ console.log(greeting);
         <TabsContent value="tag-generator" className="mt-4">
           <div className="bg-card border rounded-lg p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Tag Generator</h2>
-            <TagPanel />
+            <Suspense fallback={<Skeleton className="h-[200px] w-full" />}>
+              <TagPanel />
+            </Suspense>
           </div>
         </TabsContent>
         
         <TabsContent value="markdown-viewer" className="mt-4">
           <div className="bg-card border rounded-lg p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Markdown Viewer</h2>
-            <MarkdownPanel 
-              content={sampleMarkdown} 
-              metadata={sampleMetadata} 
-            />
+            <Suspense fallback={<Skeleton className="h-[300px] w-full" />}>
+              <MarkdownPanel 
+                content={sampleMarkdown} 
+                metadata={sampleMetadata} 
+              />
+            </Suspense>
           </div>
         </TabsContent>
 
         <TabsContent value="metadata" className="mt-4">
           <div className="bg-card border rounded-lg p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Content Metadata</h2>
-            <MetadataPanel 
-              contentId={contentId}
-              onMetadataChange={handleMetadataChange}
-            />
+            <Suspense fallback={<Skeleton className="h-[200px] w-full" />}>
+              <MetadataPanel 
+                contentId={contentId}
+                onMetadataChange={handleMetadataChange}
+              />
+            </Suspense>
           </div>
         </TabsContent>
       </Tabs>
+      {isPending && <div className="fixed bottom-4 right-4 bg-primary text-white px-4 py-2 rounded-md">Loading...</div>}
     </div>
   );
 };

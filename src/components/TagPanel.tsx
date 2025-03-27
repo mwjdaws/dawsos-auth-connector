@@ -1,11 +1,12 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Save } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function TagPanel() {
   const [text, setText] = useState("");
@@ -13,6 +14,7 @@ export function TagPanel() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [contentId, setContentId] = useState<string>(`temp-${Date.now()}`); // Temporary content ID
+  const [isPending, startTransition] = useTransition();
   const { user } = useAuth();
 
   const handleTagging = async () => {
@@ -33,8 +35,10 @@ export function TagPanel() {
       
       if (error) throw error;
       
-      setTags(data?.tags || []);
-      setContentId(`temp-${Date.now()}`);
+      startTransition(() => {
+        setTags(data?.tags || []);
+        setContentId(`temp-${Date.now()}`);
+      });
       
       toast({
         title: "Success",
@@ -118,7 +122,7 @@ export function TagPanel() {
       <div className="flex flex-wrap gap-2">
         <Button 
           onClick={handleTagging}
-          disabled={isLoading || !text.trim()}
+          disabled={isLoading || !text.trim() || isPending}
           className="mr-2"
         >
           {isLoading ? "Generating..." : "Suggest Tags"}
@@ -126,7 +130,7 @@ export function TagPanel() {
         {tags.length > 0 && (
           <Button
             onClick={handleSaveTags}
-            disabled={isSaving || tags.length === 0 || !user}
+            disabled={isSaving || tags.length === 0 || !user || isPending}
             variant="outline"
           >
             {isSaving ? "Saving..." : (
@@ -138,6 +142,7 @@ export function TagPanel() {
           </Button>
         )}
       </div>
+      {isPending && <div className="text-sm text-muted-foreground mt-2">Processing...</div>}
       {tags.length > 0 && (
         <div className="mt-4">
           <h3 className="text-sm font-medium mb-2">Generated Tags:</h3>
