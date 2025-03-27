@@ -45,15 +45,21 @@ export const fetchKnowledgeTemplates = async (
       throw new ApiError(error.message, parseSupabaseErrorCode(error));
     }
     
-    // Ensure proper type handling
-    const templates: KnowledgeTemplate[] = Array.isArray(data) 
-      ? data.map(item => ({
-          id: item.id,
-          name: item.name,
-          content: item.content,
-          metadata: item.metadata
-        }))
-      : [];
+    // Ensure proper type handling with type checking
+    const templates: KnowledgeTemplate[] = [];
+    
+    if (Array.isArray(data)) {
+      for (const item of data) {
+        if (item && typeof item === 'object' && 'id' in item && 'name' in item && 'content' in item) {
+          templates.push({
+            id: item.id,
+            name: item.name,
+            content: item.content,
+            metadata: item.metadata || undefined
+          });
+        }
+      }
+    }
     
     return {
       data: templates,
@@ -87,12 +93,17 @@ export const fetchKnowledgeTemplateById = async (id: string): Promise<KnowledgeT
     if (error) throw new ApiError(error.message, parseSupabaseErrorCode(error));
     if (!data) throw new ApiError(`Knowledge template with ID: ${id} not found`, 404);
     
-    // Ensure proper type handling with explicit casting
+    // Ensure proper type handling with type checking
+    if (!data.id || !data.name || !data.content) {
+      throw new ApiError(`Invalid template data returned for ID: ${id}`, 500);
+    }
+    
+    // Create template object with verified properties
     const template: KnowledgeTemplate = {
       id: data.id,
       name: data.name,
       content: data.content,
-      metadata: data.metadata
+      metadata: data.metadata || undefined
     };
     
     return template;
