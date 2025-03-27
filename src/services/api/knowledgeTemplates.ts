@@ -1,27 +1,45 @@
-
 import { supabase, handleError, ApiError, parseSupabaseErrorCode } from './base';
 import { KnowledgeTemplate, PaginationParams, PaginatedResponse } from './types';
 import { updateKnowledgeSource, createKnowledgeSource } from './knowledgeSources';
 
-export const fetchKnowledgeTemplates = async (pagination?: PaginationParams): Promise<PaginatedResponse<KnowledgeTemplate>> => {
+export const fetchKnowledgeTemplates = async (
+  pagination?: PaginationParams,
+  fields?: string[]
+): Promise<PaginatedResponse<KnowledgeTemplate>> => {
   try {
     const page = pagination?.page || 1;
     const pageSize = pagination?.pageSize || 10;
+    
+    if (page < 1 || pageSize < 1) {
+      throw new ApiError('Invalid pagination parameters: page and pageSize must be positive', 400);
+    }
+    
     const startIndex = (page - 1) * pageSize;
+    
+    const selectQuery = fields?.length ? fields.join(', ') : '*';
     
     const { count, error: countError } = await supabase
       .from('knowledge_templates')
       .select('*', { count: 'exact', head: true });
     
-    if (countError) throw new ApiError(countError.message, parseSupabaseErrorCode(countError));
+    if (countError) {
+      handleError(countError, `Error counting knowledge templates: ${countError.message}`);
+      throw new ApiError(countError.message, parseSupabaseErrorCode(countError));
+    }
     
     const { data, error } = await supabase
       .from('knowledge_templates')
-      .select('*')
+      .select(selectQuery)
       .order('name', { ascending: true })
       .range(startIndex, startIndex + pageSize - 1);
     
-    if (error) throw new ApiError(error.message, parseSupabaseErrorCode(error));
+    if (error) {
+      handleError(error, `Error fetching knowledge templates: ${error.message}`, {
+        technical: true,
+        level: 'error'
+      });
+      throw new ApiError(error.message, parseSupabaseErrorCode(error));
+    }
     
     return {
       data: data || [],
@@ -31,7 +49,10 @@ export const fetchKnowledgeTemplates = async (pagination?: PaginationParams): Pr
       totalPages: count ? Math.ceil(count / pageSize) : 0
     };
   } catch (error) {
-    handleError(error, "Failed to fetch knowledge templates");
+    handleError(error, "Failed to fetch knowledge templates", {
+      technical: true,
+      level: 'error'
+    });
     throw error;
   }
 };
@@ -155,21 +176,42 @@ export const deleteKnowledgeTemplate = async (id: string) => {
 
 export const applyTemplateToSource = async (templateId: string, sourceId: string) => {
   try {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!templateId || !uuidRegex.test(templateId)) {
+      throw new ApiError(`Invalid template ID format: ${templateId}`, 400);
+    }
+    
+    if (!sourceId || !uuidRegex.test(sourceId)) {
+      throw new ApiError(`Invalid source ID format: ${sourceId}`, 400);
+    }
+    
     const { data: templateData, error: templateError } = await supabase
       .from('knowledge_templates')
       .select('*')
       .eq('id', templateId)
       .single();
     
-    if (templateError) throw new ApiError(templateError.message, parseSupabaseErrorCode(templateError));
-    if (!templateData) throw new Error('Template not found');
+    if (templateError) {
+      handleError(templateError, `Error fetching template with ID: ${templateId}`, {
+        technical: true,
+        level: 'error'
+      });
+      throw new ApiError(templateError.message, parseSupabaseErrorCode(templateError));
+    }
+    
+    if (!templateData) {
+      throw new ApiError(`Template with ID: ${templateId} not found`, 404);
+    }
     
     return await updateKnowledgeSource(sourceId, {
       content: templateData.content,
       template_id: templateId
     });
   } catch (error) {
-    handleError(error, `Failed to apply template with ID: ${templateId} to source with ID: ${sourceId}`);
+    handleError(error, `Failed to apply template with ID: ${templateId} to source with ID: ${sourceId}`, {
+      technical: true,
+      level: 'error'
+    });
     throw error;
   }
 };
@@ -179,14 +221,32 @@ export const createKnowledgeSourceFromTemplate = async (
   sourceData: { title: string, user_id?: string }
 ) => {
   try {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!templateId || !uuidRegex.test(templateId)) {
+      throw new ApiError(`Invalid template ID format: ${templateId}`, 400);
+    }
+    
+    if (!sourceData.title || sourceData.title.trim() === '') {
+      throw new ApiError('Source title is required', 400);
+    }
+    
     const { data: templateData, error: templateError } = await supabase
       .from('knowledge_templates')
       .select('*')
       .eq('id', templateId)
       .single();
     
-    if (templateError) throw new ApiError(templateError.message, parseSupabaseErrorCode(templateError));
-    if (!templateData) throw new Error('Template not found');
+    if (templateError) {
+      handleError(templateError, `Error fetching template with ID: ${templateId}`, {
+        technical: true,
+        level: 'error'
+      });
+      throw new ApiError(templateError.message, parseSupabaseErrorCode(templateError));
+    }
+    
+    if (!templateData) {
+      throw new ApiError(`Template with ID: ${templateId} not found`, 404);
+    }
     
     return await createKnowledgeSource({
       title: sourceData.title,
@@ -195,7 +255,10 @@ export const createKnowledgeSourceFromTemplate = async (
       user_id: sourceData.user_id
     });
   } catch (error) {
-    handleError(error, `Failed to create knowledge source from template with ID: ${templateId}`);
+    handleError(error, `Failed to create knowledge source from template with ID: ${templateId}`, {
+      technical: true,
+      level: 'error'
+    });
     throw error;
   }
 };
