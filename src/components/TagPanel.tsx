@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -32,7 +31,6 @@ export function TagPanel() {
       if (error) throw error;
       
       setTags(data?.tags || []);
-      // Generate a new content ID for this set of tags
       setContentId(`temp-${Date.now()}`);
       
       toast({
@@ -63,13 +61,13 @@ export function TagPanel() {
 
     setIsSaving(true);
     try {
-      // Prepare tags for insertion
+      const validContentId = contentId || `content-${Date.now()}`;
+      
       const tagsToInsert = tags.map(tag => ({
         name: tag,
-        content_id: contentId // Now using the content_id field that exists in the database
+        content_id: validContentId
       }));
 
-      // Insert tags into the database
       const { error } = await supabase
         .from("tags")
         .insert(tagsToInsert);
@@ -80,6 +78,8 @@ export function TagPanel() {
         title: "Success",
         description: `${tags.length} tags saved successfully`,
       });
+      
+      console.log(`Saved ${tags.length} tags with content_id: ${validContentId}`);
     } catch (error) {
       console.error("Error saving tags:", error);
       toast({
