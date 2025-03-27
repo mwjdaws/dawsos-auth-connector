@@ -1,11 +1,10 @@
 
 import { useState, useEffect, useTransition, useRef } from "react";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Save } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { TagList } from "./TagList";
+import { TagGenerator } from "./TagGenerator";
+import { TagSaveButton } from "./TagSaveButton";
 import { useTagGeneration } from "@/hooks/useTagGeneration";
 import { saveTags } from "@/utils/tagUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +14,6 @@ interface TagPanelProps {
 }
 
 export function TagPanel({ onTagsGenerated }: TagPanelProps) {
-  const [text, setText] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { user } = useAuth();
@@ -62,7 +60,7 @@ export function TagPanel({ onTagsGenerated }: TagPanelProps) {
     };
   }, [contentId]);
 
-  const handleTagging = async () => {
+  const handleTagging = async (text: string) => {
     const newContentId = await handleGenerateTags(text);
     console.log("TagPanel: handleTagging completed with contentId:", newContentId);
     
@@ -85,7 +83,7 @@ export function TagPanel({ onTagsGenerated }: TagPanelProps) {
 
     setIsSaving(true);
     try {
-      const success = await saveTags(text, tags, contentId);
+      const success = await saveTags("", tags, contentId);
       if (success && onTagsGenerated) {
         // Notify parent component of the contentId when tags are saved
         console.log("Tags saved, notifying parent of contentId:", contentId);
@@ -100,35 +98,20 @@ export function TagPanel({ onTagsGenerated }: TagPanelProps) {
 
   return (
     <div className="space-y-4">
-      <Textarea 
-        value={text} 
-        onChange={(e) => setText(e.target.value)} 
-        placeholder="Paste content here..."
-        className="min-h-[150px]"
+      <TagGenerator 
+        isLoading={isLoading} 
+        onGenerateTags={handleTagging} 
       />
-      <div className="flex flex-wrap gap-2">
-        <Button 
-          onClick={handleTagging}
-          disabled={isLoading || !text.trim()}
-          className="mr-2"
-        >
-          {isLoading ? "Generating..." : "Suggest Tags"}
-        </Button>
-        {tags.length > 0 && (
-          <Button
-            onClick={handleSaveTags}
-            disabled={isSaving || tags.length === 0 || !user}
-            variant="outline"
-          >
-            {isSaving ? "Saving..." : (
-              <span className="flex items-center gap-1">
-                <Save className="h-4 w-4" />
-                Save Tags
-              </span>
-            )}
-          </Button>
-        )}
+      
+      <div className="flex flex-wrap gap-2 mt-4">
+        <TagSaveButton
+          isSaving={isSaving}
+          tags={tags}
+          isUserLoggedIn={!!user}
+          onSaveTags={handleSaveTags}
+        />
       </div>
+      
       {isPending && <div className="text-sm text-muted-foreground mt-2">Processing...</div>}
       <TagList tags={tags} isLoading={isLoading} />
     </div>
