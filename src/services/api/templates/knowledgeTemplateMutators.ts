@@ -24,7 +24,9 @@ export const createKnowledgeTemplate = async (template: Omit<KnowledgeTemplate, 
     const templateData = {
       name: template.name,
       content: template.content,
-      metadata: template.metadata
+      metadata: template.metadata,
+      structure: template.structure,
+      is_global: template.is_global || false
     };
     
     const { data, error } = await supabase

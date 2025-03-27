@@ -55,7 +55,11 @@ export const fetchKnowledgeTemplates = async (
             id: item.id,
             name: item.name,
             content: item.content,
-            metadata: item.metadata || undefined
+            metadata: item.metadata || undefined,
+            structure: item.structure || undefined,
+            is_global: item.is_global,
+            created_at: item.created_at,
+            updated_at: item.updated_at
           });
         }
       }
@@ -103,7 +107,11 @@ export const fetchKnowledgeTemplateById = async (id: string): Promise<KnowledgeT
       id: data.id,
       name: data.name,
       content: data.content,
-      metadata: data.metadata || undefined
+      metadata: data.metadata || undefined,
+      structure: data.structure || undefined,
+      is_global: data.is_global,
+      created_at: data.created_at,
+      updated_at: data.updated_at
     };
     
     return template;

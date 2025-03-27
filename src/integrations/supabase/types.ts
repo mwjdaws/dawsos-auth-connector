@@ -91,21 +91,33 @@ export type Database = {
       knowledge_templates: {
         Row: {
           content: string
+          created_at: string | null
           id: string
+          is_global: boolean | null
           metadata: Json | null
           name: string
+          structure: Json | null
+          updated_at: string | null
         }
         Insert: {
           content: string
+          created_at?: string | null
           id?: string
+          is_global?: boolean | null
           metadata?: Json | null
           name: string
+          structure?: Json | null
+          updated_at?: string | null
         }
         Update: {
           content?: string
+          created_at?: string | null
           id?: string
+          is_global?: boolean | null
           metadata?: Json | null
           name?: string
+          structure?: Json | null
+          updated_at?: string | null
         }
         Relationships: []
       }

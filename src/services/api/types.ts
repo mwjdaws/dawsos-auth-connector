@@ -38,4 +38,8 @@ export interface KnowledgeTemplate {
   name: string;
   content: string;
   metadata?: Json;
+  structure?: Json;
+  is_global?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }

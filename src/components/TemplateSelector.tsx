@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { 
   Select, 
@@ -110,10 +111,15 @@ export function TemplateSelector({ onSelectTemplate, className }: TemplateSelect
 
     try {
       setLoading(true);
+      
+      // Parse the content to create a structure if possible
+      const structure = generateStructureFromContent(newTemplate.content);
+      
       const data = await createKnowledgeTemplate({
         name: newTemplate.name,
         content: newTemplate.content,
-        metadata: { custom: true }
+        metadata: { custom: true },
+        structure: structure
       });
 
       if (data && data.length > 0) {
@@ -134,6 +140,48 @@ export function TemplateSelector({ onSelectTemplate, className }: TemplateSelect
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Helper function to generate structure from markdown content
+  const generateStructureFromContent = (content: string) => {
+    try {
+      const lines = content.split('\n');
+      const sections = [];
+      
+      let currentSection = null;
+      
+      for (const line of lines) {
+        // Match h2 headers (## Title)
+        const h2Match = line.match(/^## (.+)$/);
+        
+        if (h2Match) {
+          if (currentSection) {
+            sections.push(currentSection);
+          }
+          currentSection = {
+            title: h2Match[1].trim(),
+            content: ""
+          };
+        } else if (currentSection) {
+          // Add content to current section
+          if (currentSection.content) {
+            currentSection.content += "\n" + line;
+          } else {
+            currentSection.content = line;
+          }
+        }
+      }
+      
+      // Add the last section
+      if (currentSection) {
+        sections.push(currentSection);
+      }
+      
+      return { sections };
+    } catch (error) {
+      console.error("Error generating structure from content:", error);
+      return null;
     }
   };
 

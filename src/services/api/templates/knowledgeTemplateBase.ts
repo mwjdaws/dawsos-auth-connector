@@ -36,6 +36,18 @@ export const validateTemplateMetadata = (metadata: any): boolean => {
 };
 
 /**
+ * Validates template structure if provided
+ */
+export const validateTemplateStructure = (structure: any): boolean => {
+  if (structure && typeof structure === 'object') {
+    if (!structure.sections || !Array.isArray(structure.sections)) {
+      throw new ApiError('Template structure must contain sections array', 400);
+    }
+  }
+  return true;
+};
+
+/**
  * Validates template name
  */
 export const validateTemplateName = (name: string | undefined): boolean => {
