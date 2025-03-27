@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useTransition } from "react";
 import ReactMarkdown from "react-markdown";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,14 @@ interface OntologyTerm {
   description?: string;
 }
 
+// Helper function to process wikilinks in markdown content
+const processWikilinks = (content: string): string => {
+  // Replace [[wikilinks]] with a link format
+  return content.replace(/\[\[(.*?)\]\]/g, (match, linkText) => {
+    return `[${linkText}](#/wiki/${encodeURIComponent(linkText)})`;
+  });
+};
+
 export function MarkdownViewer({ content, contentId, editable = false, className }: MarkdownViewerProps) {
   const [tags, setTags] = useState<Tag[]>([]);
   const [ontologyTerms, setOntologyTerms] = useState<OntologyTerm[]>([]);
@@ -39,7 +48,15 @@ export function MarkdownViewer({ content, contentId, editable = false, className
   const [newTag, setNewTag] = useState("");
   const [isMetadataCollapsed, setIsMetadataCollapsed] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [processedContent, setProcessedContent] = useState(content);
   const { user } = useAuth();
+
+  // Process the content for wikilinks when it changes
+  useEffect(() => {
+    startTransition(() => {
+      setProcessedContent(processWikilinks(content));
+    });
+  }, [content]);
 
   useEffect(() => {
     let isMounted = true;
@@ -164,6 +181,7 @@ export function MarkdownViewer({ content, contentId, editable = false, className
     });
   };
 
+  // Render wikilinks as clickable spans
   const renderWikiLinks = (text: string) => {
     const wikiLinkPattern = /\[\[(.*?)\]\]/g;
     const parts = [];
@@ -180,7 +198,13 @@ export function MarkdownViewer({ content, contentId, editable = false, className
         <span 
           key={match.index} 
           className="text-blue-500 cursor-pointer hover:underline"
-          onClick={() => console.log(`Wiki link clicked: ${linkText}`)}
+          onClick={() => {
+            console.log(`Wiki link clicked: ${linkText}`);
+            toast({
+              title: "Wiki Link Clicked",
+              description: `You clicked on the wiki link: ${linkText}`,
+            });
+          }}
         >
           {linkText}
         </span>
@@ -220,10 +244,13 @@ export function MarkdownViewer({ content, contentId, editable = false, className
                     return <p>{renderWikiLinks(children)}</p>;
                   }
                   return <p>{children}</p>;
-                }
+                },
+                a: ({ node, ...props }) => (
+                  <a {...props} className="text-blue-500 hover:underline" />
+                )
               }}
             >
-              {content}
+              {processedContent}
             </ReactMarkdown>
           </div>
         </div>
