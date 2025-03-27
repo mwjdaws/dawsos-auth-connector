@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useTransition, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -38,13 +37,13 @@ export function TagPanel() {
 
     setIsLoading(true);
     try {
+      console.log("Starting tag generation");
       const generatedTags = await generateTags(text);
+      console.log("Tag generation completed:", generatedTags);
       
       if (isMounted.current) {
-        startTransition(() => {
-          setTags(generatedTags);
-          setContentId(`temp-${Date.now()}`);
-        });
+        setTags(generatedTags);
+        setContentId(`temp-${Date.now()}`);
         
         toast({
           title: "Success",
@@ -139,7 +138,7 @@ export function TagPanel() {
       <div className="flex flex-wrap gap-2">
         <Button 
           onClick={handleTagging}
-          disabled={isLoading || !text.trim() || isPending}
+          disabled={isLoading || !text.trim()}
           className="mr-2"
         >
           {isLoading ? "Generating..." : "Suggest Tags"}
@@ -147,7 +146,7 @@ export function TagPanel() {
         {tags.length > 0 && (
           <Button
             onClick={handleSaveTags}
-            disabled={isSaving || tags.length === 0 || !user || isPending}
+            disabled={isSaving || tags.length === 0 || !user}
             variant="outline"
           >
             {isSaving ? "Saving..." : (

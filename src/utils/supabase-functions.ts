@@ -19,9 +19,22 @@ export const generateTags = async (
 
     console.log(`Generating tags for content: ${content.substring(0, 30)}...`);
     
-    const { data, error } = await supabase.functions.invoke('generate-tags', {
+    // Add a timeout to prevent hanging indefinitely
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("Tag generation timed out")), 30000);
+    });
+    
+    const functionPromise = supabase.functions.invoke('generate-tags', {
       body: { content, save, contentId },
     });
+    
+    // Race between the function call and the timeout
+    const { data, error } = await Promise.race([
+      functionPromise,
+      timeoutPromise.then(() => {
+        throw new Error("Tag generation timed out");
+      })
+    ]);
 
     if (error) {
       console.error('Error invoking generate-tags function:', error);
