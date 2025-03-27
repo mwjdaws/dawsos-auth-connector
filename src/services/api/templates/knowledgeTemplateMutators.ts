@@ -20,9 +20,16 @@ export const createKnowledgeTemplate = async (template: Omit<KnowledgeTemplate, 
     validateTemplateContent(template.content);
     validateTemplateMetadata(template.metadata);
     
+    // Create a clean object with only the properties we need
+    const templateData = {
+      name: template.name,
+      content: template.content,
+      metadata: template.metadata
+    };
+    
     const { data, error } = await supabase
       .from('knowledge_templates')
-      .insert([template])
+      .insert([templateData])
       .select();
     
     if (error) throw new ApiError(error.message, parseSupabaseErrorCode(error));

@@ -4,13 +4,28 @@ import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { DashboardTabs } from "@/components/Dashboard/DashboardTabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("tag-generator");
   const [contentId, setContentId] = useState(`temp-${Date.now()}`);
   const [isRefreshingStats, setIsRefreshingStats] = useState(false);
+  const navigate = useNavigate();
   
   useEffect(() => {
+    // Check if user is authenticated
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log("No session found, but continuing as guest for development");
+        // Uncomment the line below to redirect to login in production
+        // navigate("/auth");
+      }
+    };
+    
+    checkAuth();
+    
+    // Set up realtime subscription
     const channel = supabase
       .channel('public:tags')
       .on('postgres_changes', 
@@ -38,7 +53,7 @@ const DashboardPage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [navigate]);
 
   const handleTagGenerationComplete = (newContentId: string) => {
     console.log("Tag generation complete, setting new contentId:", newContentId);
