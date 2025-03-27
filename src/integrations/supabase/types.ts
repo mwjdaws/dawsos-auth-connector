@@ -51,10 +51,8 @@ export type Database = {
           created_by: string | null
           id: string
           metadata: Json | null
-          template_id: string | null
           title: string
           updated_at: string | null
-          user_id: string | null
         }
         Insert: {
           content: string
@@ -62,10 +60,8 @@ export type Database = {
           created_by?: string | null
           id?: string
           metadata?: Json | null
-          template_id?: string | null
           title: string
           updated_at?: string | null
-          user_id?: string | null
         }
         Update: {
           content?: string
@@ -73,20 +69,10 @@ export type Database = {
           created_by?: string | null
           id?: string
           metadata?: Json | null
-          template_id?: string | null
           title?: string
           updated_at?: string | null
-          user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "knowledge_sources_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "knowledge_templates"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       knowledge_templates: {
         Row: {
