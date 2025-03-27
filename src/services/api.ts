@@ -1,5 +1,4 @@
-
-import { supabase } from './supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 import { handleError, ApiError } from '@/utils/error-handling';
 
 export interface KnowledgeSource {
