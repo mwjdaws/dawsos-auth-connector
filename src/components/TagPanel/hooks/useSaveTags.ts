@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { generateTags } from "@/utils/supabase-functions";
@@ -15,6 +15,8 @@ interface SaveTagsOptions {
 
 export function useSaveTags() {
   const [isRetrying, setIsRetrying] = useState(false);
+  const previousOptions = useRef<SaveTagsOptions | null>(null);
+  const previousResult = useRef<SaveTagsResult | null>(null);
   
   const validateTags = useCallback((tags: string[]): boolean => {
     if (tags.length === 0) {
@@ -43,6 +45,12 @@ export function useSaveTags() {
     tags: string[], 
     options: SaveTagsOptions = {}
   ): Promise<SaveTagsResult> => {
+    // Simple memoization for identical requests
+    const optionsString = JSON.stringify({ tags, options });
+    if (previousOptions.current === optionsString && previousResult.current) {
+      return previousResult.current;
+    }
+    
     const { 
       contentId: initialContentId, 
       skipGenerateFunction = false,
@@ -71,6 +79,10 @@ export function useSaveTags() {
               title: "Success",
               description: `${tags.length} tags saved successfully via edge function`,
             });
+            
+            // Store result for memoization
+            previousOptions.current = optionsString;
+            previousResult.current = validContentId;
             return validContentId;
           }
           
@@ -105,6 +117,9 @@ export function useSaveTags() {
         description: `${tags.length} tags saved successfully via direct insertion`,
       });
       
+      // Store result for memoization
+      previousOptions.current = optionsString;
+      previousResult.current = validContentId;
       return validContentId;
     } catch (error: any) {
       console.error("Error saving tags:", error);

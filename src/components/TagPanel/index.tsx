@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useTransition, useRef } from "react";
+import { useState, useEffect, useTransition, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { TagList } from "./TagList";
@@ -9,13 +9,14 @@ import { useSaveTags } from "./hooks/useSaveTags";
 import { useTagGeneration } from "@/hooks/useTagGeneration";
 import { handleError } from "@/utils/error-handling";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { memo } from "react";
 
 interface TagPanelProps {
   onTagsGenerated?: (contentId: string) => void;
   expectedTags?: number;
 }
 
-export function TagPanel({ 
+export const TagPanel = memo(function TagPanel({ 
   onTagsGenerated, 
   expectedTags = 8
 }: TagPanelProps) {
@@ -31,7 +32,7 @@ export function TagPanel({
     contentId,
     handleGenerateTags 
   } = useTagGeneration({
-    maxRetries: 1, // Configure retry behavior
+    maxRetries: 1,
     retryDelay: 2000
   });
 
@@ -44,7 +45,7 @@ export function TagPanel({
     };
   }, []);
 
-  const handleTagging = async (text: string) => {
+  const handleTagging = useCallback(async (text: string) => {
     try {
       startTransition(() => {}); // Start transition to indicate processing
       const newContentId = await handleGenerateTags(text);
@@ -58,9 +59,9 @@ export function TagPanel({
     } catch (error) {
       handleError(error, "Failed to generate tags");
     }
-  };
+  }, [handleGenerateTags, onTagsGenerated]);
 
-  const handleSaveTags = async () => {
+  const handleSaveTags = useCallback(async () => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -81,10 +82,8 @@ export function TagPanel({
 
     setIsSaving(true);
     try {
-      // Pass the contentId as part of the options object
       const success = await saveTags("", tags, { contentId });
       if (success && onTagsGenerated) {
-        // Notify parent component of the contentId when tags are saved
         console.log("Tags saved, notifying parent of contentId:", contentId);
         onTagsGenerated(contentId);
         
@@ -101,7 +100,7 @@ export function TagPanel({
         setIsSaving(false);
       }
     }
-  };
+  }, [user, tags, contentId, saveTags, onTagsGenerated]);
 
   return (
     <ErrorBoundary
@@ -144,6 +143,6 @@ export function TagPanel({
       </div>
     </ErrorBoundary>
   );
-}
+});
 
 export default TagPanel;

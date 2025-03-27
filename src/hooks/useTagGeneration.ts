@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { toast } from "@/hooks/use-toast";
 import { generateTags } from "@/utils/supabase-functions";
 import { handleError, ValidationError } from "@/utils/error-handling";
@@ -20,6 +20,12 @@ export function useTagGeneration(options: TagGenerationOptions = {}) {
   const isMounted = useRef(true);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const previousTextRef = useRef<string>("");
+  const previousResultRef = useRef<{
+    text: string;
+    contentId: string;
+    tags: string[];
+  } | null>(null);
 
   // Reset contentId when component mounts
   useEffect(() => {
@@ -57,6 +63,13 @@ export function useTagGeneration(options: TagGenerationOptions = {}) {
   }, []);
 
   const handleGenerateTags = useCallback(async (text: string): Promise<string | undefined> => {
+    // Check cache first for the exact same text
+    if (previousResultRef.current && previousResultRef.current.text === text) {
+      setTags(previousResultRef.current.tags);
+      setContentId(previousResultRef.current.contentId);
+      return previousResultRef.current.contentId;
+    }
+    
     // Input validation
     if (!validateInput(text)) return;
 
@@ -96,6 +109,13 @@ export function useTagGeneration(options: TagGenerationOptions = {}) {
         clearTimeoutRef();
         
         setTags(generatedTags);
+        
+        // Store in cache
+        previousResultRef.current = {
+          text,
+          contentId: newContentId,
+          tags: generatedTags
+        };
         
         if (generatedTags.includes("fallback") || generatedTags.includes("error")) {
           // If it's not the max retry count yet, attempt a retry
@@ -153,7 +173,8 @@ export function useTagGeneration(options: TagGenerationOptions = {}) {
     return newContentId;
   }, [clearTimeoutRef, isLoading, retryCount, maxRetries, retryDelay, validateInput]);
   
-  return {
+  // Memoize returning object to prevent unnecessary re-renders
+  const tagGenerationApi = useMemo(() => ({
     tags,
     setTags,
     isLoading,
@@ -162,5 +183,7 @@ export function useTagGeneration(options: TagGenerationOptions = {}) {
     handleGenerateTags,
     retryCount,
     resetRetryCount: () => setRetryCount(0)
-  };
+  }), [tags, isLoading, contentId, handleGenerateTags, retryCount]);
+  
+  return tagGenerationApi;
 }

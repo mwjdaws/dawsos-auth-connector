@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef, useTransition } from "react";
+import { useState, useEffect, useRef, useTransition, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,8 +12,9 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from "recharts";
+import { memo } from "react";
 
-export function TagSummary() {
+export const TagSummary = memo(function TagSummary() {
   const [tagData, setTagData] = useState<Array<{ name: string, usage_count: number }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,13 +50,12 @@ export function TagSummary() {
         }
 
         // Transform data for the chart if needed
-        const formattedData = data.map(item => ({
-          name: item.name || 'Unknown',
-          usage_count: Number(item.usage_count) || 0
-        }));
-
         if (isMounted.current) {
           startTransition(() => {
+            const formattedData = data.map(item => ({
+              name: item.name || 'Unknown',
+              usage_count: Number(item.usage_count) || 0
+            }));
             setTagData(formattedData);
           });
         }
@@ -76,20 +76,50 @@ export function TagSummary() {
     fetchTagSummary();
   }, []);
 
-  if (error) {
+  const renderContent = useMemo(() => {
+    if (error) {
+      return (
+        <div className="p-4 text-destructive">
+          Error loading tag statistics: {error}
+        </div>
+      );
+    }
+
+    if (isLoading) {
+      return (
+        <div className="space-y-2">
+          <Skeleton className="h-[250px] w-full" />
+        </div>
+      );
+    }
+
+    if (tagData.length === 0) {
+      return (
+        <div className="p-4 text-center text-muted-foreground">
+          No tag usage data available yet.
+        </div>
+      );
+    }
+
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Tag Usage Statistics</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="p-4 text-destructive">
-            Error loading tag statistics: {error}
-          </div>
-        </CardContent>
-      </Card>
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={tagData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis 
+            dataKey="name" 
+            angle={-45} 
+            textAnchor="end" 
+            height={70} 
+            interval={0}
+            tick={{ fontSize: 12 }}
+          />
+          <YAxis />
+          <Tooltip />
+          <Bar dataKey="usage_count" fill="#8884d8" name="Usage Count" />
+        </BarChart>
+      </ResponsiveContainer>
     );
-  }
+  }, [error, isLoading, tagData]);
 
   return (
     <Card>
@@ -97,36 +127,11 @@ export function TagSummary() {
         <CardTitle>Tag Usage Statistics</CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-[250px] w-full" />
-          </div>
-        ) : tagData.length === 0 ? (
-          <div className="p-4 text-center text-muted-foreground">
-            No tag usage data available yet.
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={tagData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="name" 
-                angle={-45} 
-                textAnchor="end" 
-                height={70} 
-                interval={0}
-                tick={{ fontSize: 12 }}
-              />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="usage_count" fill="#8884d8" name="Usage Count" />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
+        {renderContent}
         {isPending && <div className="text-sm text-muted-foreground mt-2">Updating chart data...</div>}
       </CardContent>
     </Card>
   );
-}
+});
 
 export default TagSummary;
