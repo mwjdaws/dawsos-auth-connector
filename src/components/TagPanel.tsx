@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useTransition, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ export function TagPanel() {
   const [tags, setTags] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [contentId, setContentId] = useState<string>(`temp-${Date.now()}`); // Temporary content ID
+  const [contentId, setContentId] = useState<string>(`temp-${Date.now()}`);
   const [isPending, startTransition] = useTransition();
   const { user } = useAuth();
   const isMounted = useRef(true);
@@ -124,8 +125,6 @@ export function TagPanel() {
       // Generate a valid content ID if not already present
       const validContentId = contentId || `content-${Date.now()}`;
       
-      // Method 1: Direct database insertion (as a fallback)
-      // Method 2: Using the edge function with save=true (preferred)
       console.log(`Attempting to save tags with content_id: ${validContentId}`);
       
       // Call generateTags with save=true to use the edge function

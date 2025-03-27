@@ -21,7 +21,7 @@ export const generateTags = async (
     
     // Add a timeout to prevent hanging indefinitely
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("Tag generation timed out")), 15000); // Reduced timeout to 15 seconds
+      setTimeout(() => reject(new Error("Tag generation timed out")), 15000);
     });
     
     const functionPromise = supabase.functions.invoke('generate-tags', {
