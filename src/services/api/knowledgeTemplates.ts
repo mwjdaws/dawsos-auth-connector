@@ -1,3 +1,4 @@
+
 import { supabase, handleError, ApiError, parseSupabaseErrorCode } from './base';
 import { KnowledgeTemplate, PaginationParams, PaginatedResponse } from './types';
 import { updateKnowledgeSource, createKnowledgeSource } from './knowledgeSources';
@@ -63,6 +64,22 @@ export const fetchKnowledgeTemplateById = async (id: string): Promise<KnowledgeT
 
 export const createKnowledgeTemplate = async (template: Omit<KnowledgeTemplate, 'id'>) => {
   try {
+    // Validate template object to ensure required fields are present
+    if (!template.name || template.name.trim() === '') {
+      throw new ApiError('Template name is required', 400);
+    }
+    
+    if (!template.content) {
+      throw new ApiError('Template content is required', 400);
+    }
+    
+    // If there's a structure field in metadata, validate it
+    if (template.metadata && typeof template.metadata === 'object' && 'structure' in template.metadata) {
+      if (!template.metadata.structure) {
+        throw new ApiError('Template structure is required if provided', 400);
+      }
+    }
+    
     const { data, error } = await supabase
       .from('knowledge_templates')
       .insert([template])
