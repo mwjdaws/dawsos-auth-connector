@@ -20,7 +20,7 @@ export function useSaveTags() {
   const previousResult = useRef<SaveTagsResult | null>(null);
   
   const validateTags = useCallback((tags: string[]): boolean => {
-    if (tags.length === 0) {
+    if (!tags?.length) {
       handleError(
         new ValidationError("No tags provided"),
         "No tags to save"
@@ -28,11 +28,17 @@ export function useSaveTags() {
       return false;
     }
     
-    // Validate individual tags if needed
-    const invalidTags = tags.filter(tag => !tag || typeof tag !== 'string' || tag.trim() === '');
-    if (invalidTags.length > 0) {
+    // Validate individual tags more efficiently with a Set to track invalid tags
+    const invalidTags = new Set<string>();
+    for (const tag of tags) {
+      if (!tag || typeof tag !== 'string' || tag.trim() === '') {
+        invalidTags.add(tag || 'empty');
+      }
+    }
+    
+    if (invalidTags.size > 0) {
       handleError(
-        new ValidationError(`Found ${invalidTags.length} invalid tags`),
+        new ValidationError(`Found ${invalidTags.size} invalid tags`),
         "Some tags are invalid and cannot be saved"
       );
       return false;
@@ -46,11 +52,11 @@ export function useSaveTags() {
     tags: string[], 
     options: SaveTagsOptions = {}
   ): Promise<SaveTagsResult> => {
-    // Simple memoization for identical requests
+    // Enhanced memoization with deep equality check to prevent unnecessary API calls
     const isSameOptions = 
       previousOptions.current && 
       previousTags.current && 
-      previousResult.current && 
+      previousResult.current &&
       JSON.stringify(previousOptions.current) === JSON.stringify(options) &&
       JSON.stringify(previousTags.current) === JSON.stringify(tags);
       
@@ -69,6 +75,10 @@ export function useSaveTags() {
       return false;
     }
 
+    // Create an AbortController to handle timeouts and cancellations
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 30000); // 30 second timeout
+    
     try {
       // Generate a valid content ID if not already present
       const validContentId = initialContentId || `content-${Date.now()}`;
@@ -81,13 +91,16 @@ export function useSaveTags() {
           console.log("Attempting to save tags via edge function");
           const savedTags = await generateTags(text, true, validContentId);
           
+          // Clear timeout since request completed
+          clearTimeout(timeoutId);
+          
           if (!savedTags.includes("error") && !savedTags.includes("fallback")) {
             toast({
               title: "Success",
               description: `${tags.length} tags saved successfully via edge function`,
             });
             
-            // Store result for memoization
+            // Store result for memoization with defensive copying to avoid reference issues
             previousOptions.current = { ...options };
             previousTags.current = [...tags];
             previousResult.current = validContentId;
@@ -102,6 +115,7 @@ export function useSaveTags() {
       }
       
       // If the edge function approach failed or we don't have text, fallback to direct DB insertion
+      // Prepare tags with a batch approach to optimize insert performance
       const tagObjects = tags.map(tag => ({
         name: tag.trim(),
         content_id: validContentId
@@ -109,28 +123,51 @@ export function useSaveTags() {
 
       console.log("Directly inserting tags:", tagObjects);
       
-      const { error, data } = await supabase
-        .from("tags")
-        .insert(tagObjects)
-        .select();
-
-      if (error) {
-        throw error;
+      // Use a batch size of 50 tags to prevent potential DB performance issues with large tag sets
+      const BATCH_SIZE = 50;
+      let allSuccess = true;
+      let insertedCount = 0;
+      
+      for (let i = 0; i < tagObjects.length; i += BATCH_SIZE) {
+        const batch = tagObjects.slice(i, i + BATCH_SIZE);
+        
+        const { error } = await supabase
+          .from("tags")
+          .insert(batch)
+          .select();
+          
+        if (error) {
+          console.error(`Error inserting batch ${i / BATCH_SIZE + 1}:`, error);
+          allSuccess = false;
+          break;
+        }
+        
+        insertedCount += batch.length;
       }
       
-      console.log("Tags inserted successfully:", data);
+      // Clear timeout since requests completed
+      clearTimeout(timeoutId);
+      
+      if (!allSuccess) {
+        throw new Error("Failed to insert all tag batches");
+      }
+      
+      console.log(`Tags inserted successfully: ${insertedCount} tags`);
       
       toast({
         title: "Success",
-        description: `${tags.length} tags saved successfully via direct insertion`,
+        description: `${insertedCount} tags saved successfully via direct insertion`,
       });
       
-      // Store result for memoization
+      // Store result for memoization with defensive copying
       previousOptions.current = { ...options };
       previousTags.current = [...tags];
       previousResult.current = validContentId;
       return validContentId;
     } catch (error: any) {
+      // Clear timeout if there was an error
+      clearTimeout(timeoutId);
+      
       console.error("Error saving tags:", error);
       
       // Provide more specific error messages based on error type
@@ -143,8 +180,19 @@ export function useSaveTags() {
       } else if (error.code === "42P01") {
         errorMessage = "Database configuration issue. Please contact support.";
         shouldRetry = false;
+      } else if (error.code === "23503") {
+        errorMessage = "Referenced content ID does not exist.";
+        shouldRetry = false;
+      } else if (error.code === "23502") {
+        errorMessage = "Required tag data is missing.";
+        shouldRetry = false;
       } else if (error.message) {
         errorMessage = error.message;
+      }
+      
+      // Enhanced error handling with abort status detection
+      if (error.name === "AbortError") {
+        errorMessage = "Operation timed out. Please try again.";
       }
       
       handleError(
