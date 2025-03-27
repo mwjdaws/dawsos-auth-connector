@@ -1,29 +1,56 @@
 
+import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { generateTags } from "@/utils/supabase-functions";
+import { handleError, ValidationError } from "@/utils/error-handling";
 
 type SaveTagsResult = string | false;
 
 interface SaveTagsOptions {
   contentId?: string;
   skipGenerateFunction?: boolean;
+  maxRetries?: number;
 }
 
 export function useSaveTags() {
-  const saveTags = async (
+  const [isRetrying, setIsRetrying] = useState(false);
+  
+  const validateTags = useCallback((tags: string[]): boolean => {
+    if (tags.length === 0) {
+      handleError(
+        new ValidationError("No tags provided"),
+        "No tags to save"
+      );
+      return false;
+    }
+    
+    // Validate individual tags if needed
+    const invalidTags = tags.filter(tag => !tag || typeof tag !== 'string' || tag.trim() === '');
+    if (invalidTags.length > 0) {
+      handleError(
+        new ValidationError(`Found ${invalidTags.length} invalid tags`),
+        "Some tags are invalid and cannot be saved"
+      );
+      return false;
+    }
+    
+    return true;
+  }, []);
+
+  const saveTags = useCallback(async (
     text: string, 
     tags: string[], 
     options: SaveTagsOptions = {}
   ): Promise<SaveTagsResult> => {
-    const { contentId: initialContentId, skipGenerateFunction = false } = options;
+    const { 
+      contentId: initialContentId, 
+      skipGenerateFunction = false,
+      maxRetries = 1 
+    } = options;
 
-    if (tags.length === 0) {
-      toast({
-        title: "Error",
-        description: "No tags to save",
-        variant: "destructive",
-      });
+    // Validate input tags
+    if (!validateTags(tags)) {
       return false;
     }
 
@@ -55,16 +82,16 @@ export function useSaveTags() {
       }
       
       // If the edge function approach failed or we don't have text, fallback to direct DB insertion
-      const tagsToInsert = tags.map(tag => ({
-        name: tag,
+      const tagObjects = tags.map(tag => ({
+        name: tag.trim(),
         content_id: validContentId
       }));
 
-      console.log("Directly inserting tags:", tagsToInsert);
+      console.log("Directly inserting tags:", tagObjects);
       
       const { error, data } = await supabase
         .from("tags")
-        .insert(tagsToInsert)
+        .insert(tagObjects)
         .select();
 
       if (error) {
@@ -84,24 +111,40 @@ export function useSaveTags() {
       
       // Provide more specific error messages based on error type
       let errorMessage = "Failed to save tags. Please try again.";
+      let shouldRetry = maxRetries > 0 && !isRetrying;
       
       if (error.code === "23505") {
         errorMessage = "Some tags already exist for this content.";
+        shouldRetry = false;
       } else if (error.code === "42P01") {
         errorMessage = "Database configuration issue. Please contact support.";
+        shouldRetry = false;
       } else if (error.message) {
         errorMessage = error.message;
       }
       
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      handleError(
+        error,
+        errorMessage,
+        { 
+          actionLabel: shouldRetry ? "Retry" : undefined,
+          action: shouldRetry ? async () => {
+            setIsRetrying(true);
+            try {
+              await saveTags(text, tags, { 
+                ...options, 
+                maxRetries: 0 // Prevent infinite retries
+              });
+            } finally {
+              setIsRetrying(false);
+            }
+          } : undefined
+        }
+      );
       
       return false;
     }
-  };
+  }, [validateTags, isRetrying]);
 
-  return { saveTags };
+  return { saveTags, isRetrying };
 }
