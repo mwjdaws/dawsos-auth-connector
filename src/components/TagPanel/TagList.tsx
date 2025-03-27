@@ -37,8 +37,8 @@ export function TagList({ tags, isLoading, expectedTags = 5 }: TagListProps) {
     <div className="mt-4">
       <h3 className="text-sm font-medium mb-2">Generated Tags:</h3>
       <div className="flex flex-wrap gap-2">
-        {tags.map((tag, index) => (
-          <span key={index} className="px-2 py-1 bg-blue-100 rounded-xl text-sm">{tag}</span>
+        {tags.map((tag) => (
+          <span key={tag} className="px-2 py-1 bg-blue-100 rounded-xl text-sm">{tag}</span>
         ))}
       </div>
     </div>
