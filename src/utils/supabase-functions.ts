@@ -51,8 +51,8 @@ export const generateTags = async (
             save, 
             contentId,
             retryCount  // Send retry count to help the edge function adapt
-          },
-          signal: abortController.signal, // Add AbortSignal for proper timeout handling
+          }
+          // Removed the 'signal' property which was causing the error
         });
 
         if (error) {
