@@ -1,4 +1,3 @@
-
 import { supabase, handleError, ApiError, parseSupabaseErrorCode } from './base';
 import { KnowledgeTemplate, PaginationParams, PaginatedResponse } from './types';
 import { updateKnowledgeSource, createKnowledgeSource } from './knowledgeSources';
@@ -126,7 +125,7 @@ export const applyTemplateToSource = async (templateId: string, sourceId: string
 
 export const createKnowledgeSourceFromTemplate = async (
   templateId: string, 
-  sourceData: Omit<KnowledgeTemplate, 'id' | 'created_at' | 'updated_at' | 'content' | 'template_id'>
+  sourceData: { title: string, user_id?: string }
 ) => {
   try {
     // First, get the template
@@ -141,9 +140,10 @@ export const createKnowledgeSourceFromTemplate = async (
     
     // Create new source with template content
     return await createKnowledgeSource({
-      ...sourceData,
+      title: sourceData.title,
       content: templateData.content,
-      template_id: templateId
+      template_id: templateId,
+      user_id: sourceData.user_id
     });
   } catch (error) {
     handleError(error, `Failed to create knowledge source from template with ID: ${templateId}`);
