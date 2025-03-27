@@ -55,8 +55,7 @@ export function handleError(
     description: errorMessage,
     variant: level === "error" ? "destructive" : undefined,
     action: actionLabel && action ? (
-      // Fix: Create the ToastAction component directly instead of using an object
-      <ToastAction onClick={action}>
+      <ToastAction altText={actionLabel} onClick={action}>
         {actionLabel}
       </ToastAction>
     ) : undefined
