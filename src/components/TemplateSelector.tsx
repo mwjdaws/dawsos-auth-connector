@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   Select, 
@@ -118,7 +117,6 @@ export function TemplateSelector({ onSelectTemplate, className }: TemplateSelect
       });
 
       if (data && data.length > 0) {
-        // Refresh the templates list
         await loadTemplates({ page: 1 });
         setNewTemplate({ name: '', content: '' });
         setDialogOpen(false);
@@ -139,7 +137,6 @@ export function TemplateSelector({ onSelectTemplate, className }: TemplateSelect
     }
   };
 
-  // Generate pagination links
   const renderPaginationLinks = () => {
     const links = [];
     const maxVisiblePages = 5;
