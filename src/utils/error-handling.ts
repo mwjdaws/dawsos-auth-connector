@@ -54,7 +54,8 @@ export function handleError(
     description: errorMessage,
     variant: level === "error" ? "destructive" : undefined,
     action: actionLabel && action ? {
-      label: actionLabel,
+      // Fix: Correctly name the property as 'children' instead of 'label'
+      children: actionLabel,
       onClick: action
     } : undefined
   });
