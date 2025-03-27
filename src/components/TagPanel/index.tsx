@@ -6,7 +6,7 @@ import { TagList } from "./TagList";
 import { TagContentGenerator } from "./TagContentGenerator";
 import { TagSaver } from "./TagSaver";
 import { TagPanelErrorFallback } from "./TagPanelErrorFallback";
-import { useTagGeneration } from "@/hooks/useTagGeneration";
+import { useTagGeneration } from "@/hooks/tagGeneration";
 import { useSaveTags } from "./hooks/useSaveTags";
 
 interface TagPanelProps {
