@@ -57,7 +57,7 @@ export async function saveTags(text: string, tags: string[], contentId: string) 
       description: `${tags.length} tags saved successfully via direct insertion`,
     });
     
-    return true;
+    return validContentId;
   } catch (error: any) {
     console.error("Error saving tags:", error);
     toast({

@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("tag-generator");
@@ -85,13 +86,6 @@ console.log(greeting);
   const handleTabChange = (value: string) => {
     startTransition(() => {
       setActiveTab(value);
-      
-      // When the Tab changes to metadata, let's generate a new content ID
-      // only if we're on the Tag Generator tab
-      if (value === "metadata" && activeTab === "tag-generator") {
-        console.log("Updating contentId for metadata tab");
-        // Keep the existing ID if we already have one set
-      }
     });
   };
 
@@ -99,6 +93,13 @@ console.log(greeting);
   const handleTagGenerationComplete = (newContentId: string) => {
     console.log("Tag generation complete, setting new contentId:", newContentId);
     setContentId(newContentId);
+    
+    // If we're not already on the metadata tab, switch to it
+    if (activeTab !== "metadata") {
+      startTransition(() => {
+        setActiveTab("metadata");
+      });
+    }
   };
 
   return (
@@ -112,17 +113,23 @@ console.log(greeting);
           </Suspense>
         </div>
         <div className="lg:col-span-1">
-          <div className="bg-card border rounded-lg p-6 shadow-sm h-full">
-            <h2 className="text-xl font-semibold mb-4">Tag Statistics</h2>
-            <p className="text-muted-foreground">
-              The tag usage statistics are automatically updated on a schedule.
-              The materialized view is refreshed using a Supabase Edge Function.
-            </p>
-          </div>
+          <Card className="h-full">
+            <CardContent className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Tag Statistics</h2>
+              <p className="text-muted-foreground">
+                The tag usage statistics are automatically updated on a schedule.
+                The materialized view is refreshed using a Supabase Edge Function.
+              </p>
+              
+              <div className="mt-4 text-sm text-muted-foreground">
+                <p>Current Content ID: <span className="font-mono">{contentId}</span></p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
       
-      <Tabs defaultValue="tag-generator" onValueChange={handleTabChange} className="mb-6">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-6">
         <TabsList>
           <TabsTrigger value="tag-generator">Tag Generator</TabsTrigger>
           <TabsTrigger value="markdown-viewer">Markdown Viewer</TabsTrigger>
@@ -153,9 +160,6 @@ console.log(greeting);
         <TabsContent value="metadata" className="mt-4">
           <div className="bg-card border rounded-lg p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Content Metadata</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Current Content ID: {contentId}
-            </p>
             <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
               <MetadataPanel 
                 contentId={contentId}

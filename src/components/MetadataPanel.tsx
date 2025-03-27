@@ -1,13 +1,14 @@
 
-import React, { useState, useEffect, useTransition } from "react";
+import React, { useState, useEffect, useTransition, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RefreshCw, X } from "lucide-react";
+import { RefreshCw, X, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { Input } from "@/components/ui/input";
 
 interface Tag {
   id: string;
@@ -28,7 +29,9 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [newTag, setNewTag] = useState("");
   const { user } = useAuth();
+  const isMounted = useRef(true);
 
   const fetchMetadata = async () => {
     if (!contentId || contentId.startsWith('temp-')) {
@@ -54,23 +57,29 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
       
       console.log("Tags fetched:", tagData);
       
-      startTransition(() => {
-        setTags(tagData || []);
-      });
+      if (isMounted.current) {
+        startTransition(() => {
+          setTags(tagData || []);
+        });
+      }
       
       if (onMetadataChange) {
         onMetadataChange();
       }
     } catch (err: any) {
       console.error("Error fetching metadata:", err);
-      setError(err.message || "Failed to fetch metadata");
-      toast({
-        title: "Error",
-        description: "Failed to load metadata",
-        variant: "destructive",
-      });
+      if (isMounted.current) {
+        setError(err.message || "Failed to fetch metadata");
+        toast({
+          title: "Error",
+          description: "Failed to load metadata",
+          variant: "destructive",
+        });
+      }
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -78,10 +87,56 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   useEffect(() => {
     console.log("MetadataPanel: contentId changed to", contentId);
     fetchMetadata();
+    
+    return () => {
+      isMounted.current = false;
+    };
   }, [contentId]);
 
   const handleRefresh = () => {
     fetchMetadata();
+  };
+
+  const handleAddTag = async () => {
+    if (!newTag.trim() || !user) {
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to add tags",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    try {
+      const newTagData = {
+        name: newTag.trim(),
+        content_id: contentId
+      };
+      
+      const { data, error } = await supabase
+        .from("tags")
+        .insert(newTagData)
+        .select();
+      
+      if (error) throw error;
+      
+      setTags(prev => [...prev, data![0]]);
+      setNewTag("");
+      
+      toast({
+        title: "Success",
+        description: "Tag added successfully",
+      });
+    } catch (error: any) {
+      console.error("Error adding tag:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add tag",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeleteTag = async (tagId: string) => {
@@ -118,6 +173,13 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && newTag.trim()) {
+      e.preventDefault();
+      handleAddTag();
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -147,6 +209,26 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
           <div className="space-y-4">
             <div>
               <h3 className="text-sm font-medium mb-2">Tags</h3>
+              {user && (
+                <div className="flex items-center space-x-2 mb-3">
+                  <Input
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Add a new tag..."
+                    className="flex-1"
+                  />
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={handleAddTag}
+                    disabled={!newTag.trim()}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              
               {tags.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {tags.map((tag) => (
