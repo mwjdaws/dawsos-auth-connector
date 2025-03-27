@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { HomePage } from './pages';
 import { Navbar } from './components';
 
@@ -8,10 +9,10 @@ const App: React.FC = () => {
     <Router>
       <div>
         <Navbar />
-        <Switch>
-          <Route path="/" exact component={HomePage} />
+        <Routes>
+          <Route path="/" element={<HomePage />} />
           {/* Add more routes as needed */}
-        </Switch>
+        </Routes>
       </div>
     </Router>
   );

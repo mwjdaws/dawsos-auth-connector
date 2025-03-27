@@ -2,8 +2,8 @@
 import { ReactNode, useTransition, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TagPanel } from "@/components/TagPanel/index";
-import { MarkdownPanel, MetadataPanel } from "@/components/";
+import { TagPanel } from "@/components";
+import { MarkdownPanel, MetadataPanel } from "@/components";
 import { TagCards } from "@/components/TagPanel/TagCards";
 import TemplatesPanel from "@/components/TemplatesPanel";
 
