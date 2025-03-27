@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { X, Copy, ChevronRight, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { TagInput } from "./TagInput";
 
@@ -164,7 +164,6 @@ export function MarkdownViewer({ content, contentId, editable = false, className
     });
   };
 
-  // Custom component to render wikilinks as clickable elements
   const renderWikiLinks = (text: string) => {
     const wikiLinkPattern = /\[\[(.*?)\]\]/g;
     const parts = [];
@@ -172,12 +171,10 @@ export function MarkdownViewer({ content, contentId, editable = false, className
     let match;
 
     while ((match = wikiLinkPattern.exec(text)) !== null) {
-      // Add text before the match
       if (match.index > lastIndex) {
         parts.push(text.substring(lastIndex, match.index));
       }
       
-      // Add the wikilink as a span with styling
       const linkText = match[1];
       parts.push(
         <span 
@@ -192,7 +189,6 @@ export function MarkdownViewer({ content, contentId, editable = false, className
       lastIndex = match.index + match[0].length;
     }
     
-    // Add remaining text
     if (lastIndex < text.length) {
       parts.push(text.substring(lastIndex));
     }
@@ -202,7 +198,6 @@ export function MarkdownViewer({ content, contentId, editable = false, className
 
   return (
     <div className={cn("flex flex-col lg:flex-row gap-6", className)}>
-      {/* Markdown Content Section */}
       <div className="flex-1">
         <div className="bg-card border rounded-lg p-6 shadow-sm mb-4">
           <div className="flex justify-between items-center mb-4">
@@ -220,7 +215,6 @@ export function MarkdownViewer({ content, contentId, editable = false, className
           <div className="prose prose-slate dark:prose-invert max-w-none">
             <ReactMarkdown
               components={{
-                // Custom component to handle wikilinks
                 p: ({ children }) => {
                   if (typeof children === 'string') {
                     return <p>{renderWikiLinks(children)}</p>;
@@ -235,7 +229,6 @@ export function MarkdownViewer({ content, contentId, editable = false, className
         </div>
       </div>
 
-      {/* Metadata Panel Section */}
       <div className="w-full lg:w-1/3 lg:max-w-xs">
         <Card className="border rounded-lg shadow-sm">
           <div className="p-4 border-b">
