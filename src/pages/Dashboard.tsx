@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useTransition, Suspense, lazy } from "react";
 import { TagPanel } from "@/components/TagPanel/index";
 import { MarkdownPanel, MetadataPanel } from "@/components";
@@ -10,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { TagCards } from "@/components/TagPanel/TagCards";
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("tag-generator");
@@ -17,7 +17,6 @@ const DashboardPage = () => {
   const [isPending, startTransition] = useTransition();
   const [isRefreshingStats, setIsRefreshingStats] = useState(false);
   
-  // Sample markdown with metadata for demo purposes
   const sampleMarkdown = `# Sample Markdown
   
 This is an example of markdown content with metadata displayed above.
@@ -43,9 +42,7 @@ console.log(greeting);
     created_at: new Date().toLocaleDateString()
   };
 
-  // Refresh metadata when changes occur
   const handleMetadataChange = () => {
-    // In a real app, this would fetch the latest metadata
     console.log("Metadata refresh triggered, contentId:", contentId);
     toast({
       title: "Metadata Updated",
@@ -53,9 +50,7 @@ console.log(greeting);
     });
   };
 
-  // Set up Supabase Realtime listener for tag updates
   useEffect(() => {
-    // Create a Supabase Realtime channel
     const channel = supabase
       .channel('public:tags')
       .on('postgres_changes', 
@@ -80,7 +75,6 @@ console.log(greeting);
       )
       .subscribe();
 
-    // Clean up the subscription when component unmounts
     return () => {
       supabase.removeChannel(channel);
     };
@@ -92,12 +86,10 @@ console.log(greeting);
     });
   };
 
-  // Handle tag generation completion
   const handleTagGenerationComplete = (newContentId: string) => {
     console.log("Tag generation complete, setting new contentId:", newContentId);
     setContentId(newContentId);
     
-    // If we're not already on the metadata tab, switch to it
     if (activeTab !== "metadata") {
       startTransition(() => {
         setActiveTab("metadata");
@@ -105,7 +97,6 @@ console.log(greeting);
     }
   };
 
-  // Manually refresh the tag summary statistics
   const refreshTagStats = async () => {
     try {
       setIsRefreshingStats(true);
@@ -184,6 +175,11 @@ console.log(greeting);
             <h2 className="text-xl font-semibold mb-4">Tag Generator</h2>
             <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
               <TagPanel onTagsGenerated={handleTagGenerationComplete} />
+            </Suspense>
+            
+            <h2 className="text-xl font-semibold mb-4 mt-8">Recent Tags</h2>
+            <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
+              <TagCards />
             </Suspense>
           </div>
         </TabsContent>
