@@ -45,8 +45,8 @@ export const fetchKnowledgeTemplates = async (
       throw new ApiError(error.message, parseSupabaseErrorCode(error));
     }
     
-    // Make sure we handle the null case and explicitly type the response data
-    const safeData = Array.isArray(data) ? data : [];
+    // Ensure data is an array and properly typed as KnowledgeTemplate[]
+    const safeData = Array.isArray(data) ? data as KnowledgeTemplate[] : [];
     
     return {
       data: safeData,
@@ -80,7 +80,8 @@ export const fetchKnowledgeTemplateById = async (id: string): Promise<KnowledgeT
     if (error) throw new ApiError(error.message, parseSupabaseErrorCode(error));
     if (!data) throw new ApiError(`Knowledge template with ID: ${id} not found`, 404);
     
-    return data;
+    // Explicitly type the returned data as KnowledgeTemplate
+    return data as KnowledgeTemplate;
   } catch (error) {
     handleError(error, `Failed to fetch knowledge template with ID: ${id}`);
     throw error;
