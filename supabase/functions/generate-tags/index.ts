@@ -1,3 +1,4 @@
+
 // Deno Edge Function for tag generation
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
@@ -140,32 +141,76 @@ serve(async (req) => {
         
         if (!supabaseUrl || !supabaseKey) {
           console.error("Supabase credentials not configured");
+          // Still return the tags even if we couldn't save them
+          return new Response(
+            JSON.stringify({ 
+              tags, 
+              warning: "Tags generated but not saved due to missing Supabase credentials" 
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+        
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        // Prepare tags for insertion
+        const tagsToInsert = tags.map(name => ({
+          name,
+          content_id: contentId
+        }));
+        
+        // Insert tags into the database
+        const { error } = await supabase
+          .from("tags")
+          .insert(tagsToInsert);
+          
+        if (error) {
+          console.error("Error saving tags to database:", error);
+          return new Response(
+            JSON.stringify({ 
+              tags, 
+              error: "Tags generated but could not be saved to database", 
+              details: error.message 
+            }),
+            {
+              status: 200, // Still return the tags with a warning
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
         } else {
-          const supabase = createClient(supabaseUrl, supabaseKey);
-          
-          // Prepare tags for insertion
-          const tagsToInsert = tags.map(name => ({
-            name,
-            content_id: contentId
-          }));
-          
-          // Insert tags into the database
-          const { error } = await supabase
-            .from("tags")
-            .insert(tagsToInsert);
-            
-          if (error) {
-            console.error("Error saving tags to database:", error);
-          } else {
-            console.log(`Successfully saved ${tagsToInsert.length} tags to database`);
-          }
+          console.log(`Successfully saved ${tagsToInsert.length} tags to database`);
+          return new Response(
+            JSON.stringify({ 
+              tags, 
+              success: true, 
+              message: `${tagsToInsert.length} tags saved to database` 
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
         }
       } catch (error) {
         console.error("Error in database operation:", error);
+        return new Response(
+          JSON.stringify({ 
+            tags, 
+            error: "Tags generated but error occurred during database save operation", 
+            details: error.message 
+          }),
+          {
+            status: 200, // Still return the tags with a warning
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
     }
     
-    // Return the generated tags
+    // Return the generated tags if not saving to database
     return new Response(
       JSON.stringify({ tags }),
       {

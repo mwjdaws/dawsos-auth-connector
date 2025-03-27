@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useTransition, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -122,30 +121,38 @@ export function TagPanel() {
 
     setIsSaving(true);
     try {
+      // Generate a valid content ID if not already present
       const validContentId = contentId || `content-${Date.now()}`;
       
-      const tagsToInsert = tags.map(tag => ({
-        name: tag,
-        content_id: validContentId
-      }));
-
-      const { error } = await supabase
-        .from("tags")
-        .insert(tagsToInsert);
-
-      if (error) {
-        console.error("Supabase error saving tags:", error);
-        throw error;
-      }
-
+      // Method 1: Direct database insertion (as a fallback)
+      // Method 2: Using the edge function with save=true (preferred)
+      console.log(`Attempting to save tags with content_id: ${validContentId}`);
+      
+      // Call generateTags with save=true to use the edge function
+      const savedTags = await generateTags(text, true, validContentId);
+      
       if (isMounted.current) {
+        if (savedTags.includes("error") || savedTags.includes("fallback")) {
+          // If the edge function approach failed, fallback to direct DB insertion
+          const tagsToInsert = tags.map(tag => ({
+            name: tag,
+            content_id: validContentId
+          }));
+
+          const { error } = await supabase
+            .from("tags")
+            .insert(tagsToInsert);
+
+          if (error) {
+            throw error;
+          }
+        }
+        
         toast({
           title: "Success",
           description: `${tags.length} tags saved successfully`,
         });
       }
-      
-      console.log(`Saved ${tags.length} tags with content_id: ${validContentId}`);
     } catch (error: any) {
       console.error("Error saving tags:", error);
       if (isMounted.current) {
