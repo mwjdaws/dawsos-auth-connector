@@ -10,9 +10,9 @@ export function useTagGeneration() {
   const isMounted = useRef(true);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const clearTimeout = () => {
+  const clearTimeoutRef = () => {
     if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+      global.clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
   };
@@ -47,7 +47,7 @@ export function useTagGeneration() {
       console.log("Tag generation completed:", generatedTags);
       
       if (isMounted.current) {
-        clearTimeout();
+        clearTimeoutRef();
         
         setTags(generatedTags);
         setContentId(`temp-${Date.now()}`);
@@ -77,7 +77,7 @@ export function useTagGeneration() {
     } finally {
       if (isMounted.current) {
         setIsLoading(false);
-        clearTimeout();
+        clearTimeoutRef();
       }
     }
   };
