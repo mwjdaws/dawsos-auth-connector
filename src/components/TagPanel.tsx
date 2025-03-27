@@ -1,9 +1,11 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Save } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export function TagPanel() {
   const [text, setText] = useState("");
@@ -11,6 +13,7 @@ export function TagPanel() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [contentId, setContentId] = useState<string>(`temp-${Date.now()}`); // Temporary content ID
+  const { user } = useAuth();
 
   const handleTagging = async () => {
     if (!text.trim()) {
@@ -50,6 +53,15 @@ export function TagPanel() {
   };
 
   const handleSaveTags = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to save tags",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (tags.length === 0) {
       toast({
         title: "Error",
@@ -72,7 +84,10 @@ export function TagPanel() {
         .from("tags")
         .insert(tagsToInsert);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error saving tags:", error);
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -80,11 +95,11 @@ export function TagPanel() {
       });
       
       console.log(`Saved ${tags.length} tags with content_id: ${validContentId}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving tags:", error);
       toast({
         title: "Error",
-        description: "Failed to save tags. Please try again.",
+        description: error.message || "Failed to save tags. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -111,7 +126,7 @@ export function TagPanel() {
         {tags.length > 0 && (
           <Button
             onClick={handleSaveTags}
-            disabled={isSaving || tags.length === 0}
+            disabled={isSaving || tags.length === 0 || !user}
             variant="outline"
           >
             {isSaving ? "Saving..." : (
