@@ -1,7 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { handleError, ApiError } from '@/utils/error-handling';
-import { Json } from '@/integrations/supabase/types';
 
 export interface KnowledgeSource {
   id: string;
@@ -18,7 +17,7 @@ export interface KnowledgeSourceVersion {
   source_id: string;
   version_number: number;
   content: string;
-  metadata?: Record<string, any> | null;
+  metadata?: Record<string, any>;
   created_at?: string;
 }
 
@@ -26,7 +25,7 @@ export interface KnowledgeTemplate {
   id: string;
   name: string;
   content: string;
-  metadata?: Record<string, any> | null;
+  metadata?: Record<string, any>;
 }
 
 // Knowledge Sources CRUD Operations
@@ -242,7 +241,7 @@ export const fetchKnowledgeTemplates = async () => {
       .order('name', { ascending: true });
     
     if (error) throw new ApiError(error.message, error.code || "");
-    return data as KnowledgeTemplate[];
+    return data;
   } catch (error) {
     handleError(error, "Failed to fetch knowledge templates");
     throw error;
@@ -258,7 +257,7 @@ export const fetchKnowledgeTemplateById = async (id: string) => {
       .single();
     
     if (error) throw new ApiError(error.message, error.code || "");
-    return data as KnowledgeTemplate;
+    return data;
   } catch (error) {
     handleError(error, `Failed to fetch knowledge template with ID: ${id}`);
     throw error;
@@ -273,7 +272,7 @@ export const createKnowledgeTemplate = async (template: Omit<KnowledgeTemplate, 
       .select();
     
     if (error) throw new ApiError(error.message, error.code || "");
-    return data as KnowledgeTemplate[];
+    return data;
   } catch (error) {
     handleError(error, "Failed to create knowledge template");
     throw error;
@@ -289,7 +288,7 @@ export const updateKnowledgeTemplate = async (id: string, updates: Partial<Knowl
       .select();
     
     if (error) throw new ApiError(error.message, error.code || "");
-    return data as KnowledgeTemplate[];
+    return data;
   } catch (error) {
     handleError(error, `Failed to update knowledge template with ID: ${id}`);
     throw error;

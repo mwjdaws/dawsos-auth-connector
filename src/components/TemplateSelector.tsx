@@ -24,7 +24,7 @@ import {
   createKnowledgeTemplate,
   KnowledgeTemplate
 } from "@/services/api";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { PlusCircle } from "lucide-react";
 
 interface TemplateSelectorProps {
