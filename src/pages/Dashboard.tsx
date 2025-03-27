@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect } from "react";
 import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { DashboardTabs } from "@/components/Dashboard/DashboardTabs";
 import { supabase } from "@/integrations/supabase/client";

@@ -3,8 +3,9 @@ import { ReactNode, useTransition, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TagPanel } from "@/components/TagPanel/index";
-import { MarkdownPanel, MetadataPanel } from "@/components";
+import { MarkdownPanel, MetadataPanel } from "@/components/";
 import { TagCards } from "@/components/TagPanel/TagCards";
+import { TemplatesPanel } from "@/components/TemplatesPanel";
 
 interface DashboardTabsProps {
   activeTab: string;
@@ -61,6 +62,7 @@ console.log(greeting);
           <TabsTrigger value="tag-generator">Tag Generator</TabsTrigger>
           <TabsTrigger value="markdown-viewer">Markdown Viewer</TabsTrigger>
           <TabsTrigger value="metadata">Metadata</TabsTrigger>
+          <TabsTrigger value="templates">Templates</TabsTrigger>
         </TabsList>
         
         <TabsContent value="tag-generator" className="mt-4">
@@ -97,6 +99,15 @@ console.log(greeting);
                 contentId={contentId}
                 onMetadataChange={onMetadataChange}
               />
+            </Suspense>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="templates" className="mt-4">
+          <div className="bg-card border rounded-lg p-6 shadow-sm">
+            <h2 className="text-xl font-semibold mb-4">Knowledge Templates</h2>
+            <Suspense fallback={<Skeleton className="h-[300px] w-full rounded-lg" />}>
+              <TemplatesPanel />
             </Suspense>
           </div>
         </TabsContent>
