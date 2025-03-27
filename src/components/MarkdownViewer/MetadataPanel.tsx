@@ -1,10 +1,11 @@
-
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { X, ChevronRight, ChevronDown } from "lucide-react";
 import { TagInput } from "./TagInput";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/use-toast";
 
 interface Tag {
   id: string;
@@ -44,6 +45,31 @@ export function MetadataPanel({
   isPending
 }: MetadataPanelProps) {
   const [isMetadataCollapsed, setIsMetadataCollapsed] = useState(false);
+
+  const handleDeleteTag = async (tagId: string) => {
+    try {
+      const { error } = await supabase
+        .from("tags")
+        .delete()
+        .eq("id", tagId);
+
+      if (error) throw error;
+
+      onDeleteTag(tagId);
+      
+      toast({
+        title: "Success",
+        description: "Tag deleted successfully",
+      });
+    } catch (error: any) {
+      console.error("Error deleting tag:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete tag. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <Card className="border rounded-lg shadow-sm">
@@ -89,7 +115,7 @@ export function MetadataPanel({
                         {tag.name}
                         {editable && (
                           <button 
-                            onClick={() => onDeleteTag(tag.id)}
+                            onClick={() => handleDeleteTag(tag.id)}
                             className="text-muted-foreground hover:text-foreground ml-1"
                           >
                             <X className="h-3 w-3" />

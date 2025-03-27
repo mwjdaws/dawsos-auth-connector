@@ -1,4 +1,6 @@
 
+import React from 'react';
+
 /**
  * Helper functions for processing wikilinks in markdown content
  */
@@ -18,7 +20,7 @@ export const processWikilinks = (content: string): string => {
  */
 export const renderWikiLinks = (text: string, handleWikiLinkClick: (linkText: string) => void) => {
   const wikiLinkPattern = /\[\[(.*?)\]\]/g;
-  const parts = [];
+  const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   let match;
 
