@@ -37,8 +37,14 @@ export const fetchKnowledgeTemplates = async (pagination?: PaginationParams): Pr
   }
 };
 
-export const fetchKnowledgeTemplateById = async (id: string) => {
+export const fetchKnowledgeTemplateById = async (id: string): Promise<KnowledgeTemplate> => {
   try {
+    // Validate that id is a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!id || !uuidRegex.test(id)) {
+      throw new ApiError(`Invalid template ID format: ${id}`, 400);
+    }
+    
     const { data, error } = await supabase
       .from('knowledge_templates')
       .select('*')
@@ -46,6 +52,8 @@ export const fetchKnowledgeTemplateById = async (id: string) => {
       .single();
     
     if (error) throw new ApiError(error.message, parseSupabaseErrorCode(error));
+    if (!data) throw new ApiError(`Knowledge template with ID: ${id} not found`, 404);
+    
     return data;
   } catch (error) {
     handleError(error, `Failed to fetch knowledge template with ID: ${id}`);
