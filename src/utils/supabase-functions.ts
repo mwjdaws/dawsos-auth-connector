@@ -17,6 +17,8 @@ export const generateTags = async (
       throw new Error("Content ID is required when saving tags");
     }
 
+    console.log(`Generating tags for content: ${content.substring(0, 30)}...`);
+    
     const { data, error } = await supabase.functions.invoke('generate-tags', {
       body: { content, save, contentId },
     });
@@ -26,7 +28,8 @@ export const generateTags = async (
       throw error;
     }
 
-    return data.tags || [];
+    console.log('Tags generated successfully:', data?.tags);
+    return data?.tags || [];
   } catch (error) {
     console.error('Error generating tags:', error);
     throw error;

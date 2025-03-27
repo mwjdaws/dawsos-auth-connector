@@ -2,11 +2,12 @@
 import { useState, useEffect, useTransition, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Save } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
+import { generateTags } from "@/utils/supabase-functions";
 
 export function TagPanel() {
   const [text, setText] = useState("");
@@ -37,15 +38,11 @@ export function TagPanel() {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-tags', {
-        body: { content: text }
-      });
-      
-      if (error) throw error;
+      const generatedTags = await generateTags(text);
       
       if (isMounted.current) {
         startTransition(() => {
-          setTags(data?.tags || []);
+          setTags(generatedTags);
           setContentId(`temp-${Date.now()}`);
         });
         
@@ -167,8 +164,8 @@ export function TagPanel() {
         <div className="mt-4">
           <h3 className="text-sm font-medium mb-2">Generated Tags:</h3>
           <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <span key={tag} className="px-2 py-1 bg-blue-100 rounded-xl text-sm">{tag}</span>
+            {tags.map((tag, index) => (
+              <span key={index} className="px-2 py-1 bg-blue-100 rounded-xl text-sm">{tag}</span>
             ))}
           </div>
         </div>
