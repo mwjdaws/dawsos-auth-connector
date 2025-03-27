@@ -3,4 +3,4 @@
 export * from './types';
 export * from './knowledgeSources';
 export * from './knowledgeSourceVersions';
-export * from './knowledgeTemplates';  // This now imports from './templates'
+export * from './templates';  // Import from the templates directory
