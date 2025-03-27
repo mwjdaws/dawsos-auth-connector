@@ -10,9 +10,13 @@ import { useTagGeneration } from "@/hooks/useTagGeneration";
 
 interface TagPanelProps {
   onTagsGenerated?: (contentId: string) => void;
+  expectedTags?: number; // New prop for expected number of tags
 }
 
-export function TagPanel({ onTagsGenerated }: TagPanelProps) {
+export function TagPanel({ 
+  onTagsGenerated, 
+  expectedTags = 8  // Default to 8 expected tags
+}: TagPanelProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { user } = useAuth();
@@ -88,7 +92,11 @@ export function TagPanel({ onTagsGenerated }: TagPanelProps) {
       </div>
       
       {isPending && <div className="text-sm text-muted-foreground mt-2">Processing...</div>}
-      <TagList tags={tags} isLoading={isLoading} />
+      <TagList 
+        tags={tags} 
+        isLoading={isLoading} 
+        expectedTags={expectedTags} 
+      />
     </div>
   );
 }

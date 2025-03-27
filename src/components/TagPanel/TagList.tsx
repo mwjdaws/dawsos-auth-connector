@@ -5,15 +5,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface TagListProps {
   tags: string[];
   isLoading: boolean;
+  expectedTags?: number; // New prop for expected number of tags
 }
 
-export function TagList({ tags, isLoading }: TagListProps) {
+export function TagList({ tags, isLoading, expectedTags = 5 }: TagListProps) {
+  // Dynamic skeleton count based on expected number of tags
+  const skeletonCount = expectedTags > 0 ? expectedTags : 5;
+
   if (isLoading) {
     return (
       <div className="mt-4">
         <h3 className="text-sm font-medium mb-2">Generating Tags...</h3>
         <div className="flex flex-wrap gap-2">
-          {[1, 2, 3, 4, 5].map((i) => (
+          {Array.from({ length: skeletonCount }).map((_, i) => (
             <Skeleton key={i} className="h-8 w-20 rounded-xl" />
           ))}
         </div>
