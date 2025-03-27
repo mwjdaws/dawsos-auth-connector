@@ -7,12 +7,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("tag-generator");
   const [contentId, setContentId] = useState(`temp-${Date.now()}`);
   const [isPending, startTransition] = useTransition();
+  const [isRefreshingStats, setIsRefreshingStats] = useState(false);
   
   // Sample markdown with metadata for demo purposes
   const sampleMarkdown = `# Sample Markdown
@@ -102,6 +105,32 @@ console.log(greeting);
     }
   };
 
+  // Manually refresh the tag summary statistics
+  const refreshTagStats = async () => {
+    try {
+      setIsRefreshingStats(true);
+      const { error } = await supabase.rpc('refresh_tag_summary_view');
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Statistics Updated",
+        description: "Tag usage statistics have been refreshed.",
+      });
+    } catch (error) {
+      console.error("Error refreshing tag statistics:", error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh tag statistics. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshingStats(false);
+    }
+  };
+
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
@@ -114,9 +143,23 @@ console.log(greeting);
         </div>
         <div className="lg:col-span-1">
           <Card className="h-full">
-            <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Tag Statistics</h2>
-              <p className="text-muted-foreground">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xl">Tag Statistics</CardTitle>
+                <Button 
+                  onClick={refreshTagStats} 
+                  size="sm" 
+                  variant="outline"
+                  disabled={isRefreshingStats}
+                  className="h-8"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshingStats ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 pt-2">
+              <p className="text-muted-foreground text-sm mb-4">
                 The tag usage statistics are automatically updated on a schedule.
                 The materialized view is refreshed using a Supabase Edge Function.
               </p>
