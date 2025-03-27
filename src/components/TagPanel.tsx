@@ -66,7 +66,7 @@ export function TagPanel() {
       // Prepare tags for insertion
       const tagsToInsert = tags.map(tag => ({
         name: tag,
-        content_id: contentId
+        content_id: contentId // Now using the content_id field that exists in the database
       }));
 
       // Insert tags into the database
