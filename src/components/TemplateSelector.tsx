@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   Select, 
@@ -16,6 +15,11 @@ import {
   DialogFooter,
   DialogDescription
 } from "@/components/ui/dialog";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,7 +38,7 @@ import {
   PaginationParams
 } from "@/services/api";
 import { toast } from "@/hooks/use-toast";
-import { PlusCircle, Globe, User } from "lucide-react";
+import { PlusCircle, Globe, User, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TemplateSelectorProps {
@@ -70,7 +74,6 @@ export function TemplateSelector({
       setLoading(true);
       const response = await fetchKnowledgeTemplates(params);
       
-      // Filter templates based on the selected filter
       let filteredTemplates = response.data;
       if (templateFilter === 'global') {
         filteredTemplates = response.data.filter(template => template.is_global);
@@ -99,7 +102,7 @@ export function TemplateSelector({
 
   useEffect(() => {
     loadTemplates();
-  }, [templateFilter]); // Reload when filter changes
+  }, [templateFilter]);
 
   const handlePageChange = (page: number) => {
     loadTemplates({ page, pageSize: pagination.pageSize });
@@ -130,7 +133,6 @@ export function TemplateSelector({
     try {
       setLoading(true);
       
-      // Parse the content to create a structure if possible
       const structure = generateStructureFromContent(newTemplate.content);
       
       const data = await createKnowledgeTemplate({
@@ -138,11 +140,10 @@ export function TemplateSelector({
         content: newTemplate.content,
         metadata: { custom: true },
         structure: structure,
-        is_global: false // Custom templates are not global by default
+        is_global: false
       });
 
       if (data && data.length > 0) {
-        // Set filter to custom to show the newly created template
         setTemplateFilter('custom');
         await loadTemplates({ page: 1 });
         setNewTemplate({ name: '', content: '' });
@@ -164,7 +165,6 @@ export function TemplateSelector({
     }
   };
 
-  // Helper function to generate structure from markdown content
   const generateStructureFromContent = (content: string) => {
     try {
       const lines = content.split('\n');
@@ -173,7 +173,6 @@ export function TemplateSelector({
       let currentSection = null;
       
       for (const line of lines) {
-        // Match h2 headers (## Title)
         const h2Match = line.match(/^## (.+)$/);
         
         if (h2Match) {
@@ -185,7 +184,6 @@ export function TemplateSelector({
             content: ""
           };
         } else if (currentSection) {
-          // Add content to current section
           if (currentSection.content) {
             currentSection.content += "\n" + line;
           } else {
@@ -194,7 +192,6 @@ export function TemplateSelector({
         }
       }
       
-      // Add the last section
       if (currentSection) {
         sections.push(currentSection);
       }
@@ -204,6 +201,51 @@ export function TemplateSelector({
       console.error("Error generating structure from content:", error);
       return null;
     }
+  };
+
+  const renderTemplatePreview = (template: KnowledgeTemplate) => {
+    if (!template.structure) {
+      return (
+        <div className="max-h-[300px] overflow-y-auto rounded-md border p-3 text-sm font-mono">
+          {template.content.slice(0, 150)}
+          {template.content.length > 150 && '...'}
+        </div>
+      );
+    }
+
+    try {
+      const structure = typeof template.structure === 'string' 
+        ? JSON.parse(template.structure) 
+        : template.structure;
+      
+      if (structure.sections && Array.isArray(structure.sections)) {
+        return (
+          <div className="space-y-2">
+            <div className="font-medium border-b pb-1 mb-2">{template.name}</div>
+            {structure.sections.map((section, index) => (
+              <div key={index} className="space-y-1">
+                <div className="font-medium text-sm text-primary">{section.title}</div>
+                <div className="text-xs text-muted-foreground italic">
+                  {section.content || '(Empty content)'}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      }
+    } catch (error) {
+      console.error("Error parsing template structure:", error);
+    }
+
+    return (
+      <div className="max-h-[300px] overflow-y-auto rounded-md border p-3 text-sm">
+        <div className="font-medium mb-2">{template.name}</div>
+        <div className="text-xs font-mono">
+          {template.content.slice(0, 150)}
+          {template.content.length > 150 && '...'}
+        </div>
+      </div>
+    );
   };
 
   const renderPaginationLinks = () => {
@@ -260,16 +302,36 @@ export function TemplateSelector({
         </SelectTrigger>
         <SelectContent>
           {templates.map((template) => (
-            <SelectItem key={template.id} value={template.id}>
-              <div className="flex items-center gap-2">
-                {template.is_global ? (
-                  <Globe className="h-4 w-4 text-blue-500" />
-                ) : (
-                  <User className="h-4 w-4 text-green-500" />
-                )}
-                {template.name}
-              </div>
-            </SelectItem>
+            <HoverCard key={template.id} openDelay={300} closeDelay={100}>
+              <HoverCardTrigger asChild>
+                <SelectItem value={template.id}>
+                  <div className="flex items-center gap-2">
+                    {template.is_global ? (
+                      <Globe className="h-4 w-4 text-blue-500" />
+                    ) : (
+                      <User className="h-4 w-4 text-green-500" />
+                    )}
+                    {template.name}
+                  </div>
+                </SelectItem>
+              </HoverCardTrigger>
+              <HoverCardContent className="w-80 p-4">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <span className="font-medium">{template.name}</span>
+                    {template.is_global && (
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                        Global
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-2">
+                    {renderTemplatePreview(template)}
+                  </div>
+                </div>
+              </HoverCardContent>
+            </HoverCard>
           ))}
           <SelectItem value="create-new" className="text-primary font-medium">
             <div className="flex items-center">
