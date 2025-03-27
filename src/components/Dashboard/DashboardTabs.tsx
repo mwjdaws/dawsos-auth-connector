@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TagPanel } from "@/components/TagPanel/index";
 import { MarkdownPanel, MetadataPanel } from "@/components/";
 import { TagCards } from "@/components/TagPanel/TagCards";
-import { TemplatesPanel } from "@/components/TemplatesPanel";
+import TemplatesPanel from "@/components/TemplatesPanel";
 
 interface DashboardTabsProps {
   activeTab: string;
