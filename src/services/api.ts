@@ -28,7 +28,19 @@ export interface KnowledgeTemplate {
   metadata?: Json;
 }
 
-// Knowledge Sources CRUD Operations
+export interface PaginationParams {
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  count: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 export const fetchKnowledgeSources = async () => {
   try {
     const { data, error } = await supabase
@@ -150,7 +162,6 @@ export const deleteKnowledgeSource = async (id: string) => {
   }
 };
 
-// Knowledge Source Versions Operations
 export const fetchKnowledgeSourceVersions = async (sourceId: string) => {
   try {
     const { data, error } = await supabase
@@ -232,16 +243,35 @@ export const restoreKnowledgeSourceVersion = async (versionId: string) => {
   }
 };
 
-// Knowledge Templates Operations
-export const fetchKnowledgeTemplates = async () => {
+export const fetchKnowledgeTemplates = async (pagination?: PaginationParams): Promise<PaginatedResponse<KnowledgeTemplate>> => {
   try {
+    const page = pagination?.page || 1;
+    const pageSize = pagination?.pageSize || 10;
+    const startIndex = (page - 1) * pageSize;
+    
+    // First get the total count
+    const { count, error: countError } = await supabase
+      .from('knowledge_templates')
+      .select('*', { count: 'exact', head: true });
+    
+    if (countError) throw new ApiError(countError.message, countError.code ? parseInt(countError.code) : 500);
+    
+    // Then fetch the paginated data
     const { data, error } = await supabase
       .from('knowledge_templates')
       .select('*')
-      .order('name', { ascending: true });
+      .order('name', { ascending: true })
+      .range(startIndex, startIndex + pageSize - 1);
     
     if (error) throw new ApiError(error.message, error.code ? parseInt(error.code) : 500);
-    return data;
+    
+    return {
+      data: data || [],
+      count: count || 0,
+      page,
+      pageSize,
+      totalPages: count ? Math.ceil(count / pageSize) : 0
+    };
   } catch (error) {
     handleError(error, "Failed to fetch knowledge templates");
     throw error;
@@ -334,7 +364,6 @@ export const applyTemplateToSource = async (templateId: string, sourceId: string
   }
 };
 
-// Create a new knowledge source from a template
 export const createKnowledgeSourceFromTemplate = async (
   templateId: string, 
   sourceData: Omit<KnowledgeSource, 'id' | 'created_at' | 'updated_at' | 'content' | 'template_id'>

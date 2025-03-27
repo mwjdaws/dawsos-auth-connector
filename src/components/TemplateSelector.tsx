@@ -19,10 +19,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious
+} from "@/components/ui/pagination";
 import { 
   fetchKnowledgeTemplates,
   createKnowledgeTemplate,
-  KnowledgeTemplate
+  KnowledgeTemplate,
+  PaginationParams
 } from "@/services/api";
 import { toast } from "@/hooks/use-toast";
 import { PlusCircle } from "lucide-react";
@@ -36,31 +45,47 @@ export function TemplateSelector({ onSelectTemplate, className }: TemplateSelect
   const [templates, setTemplates] = useState<KnowledgeTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: 10,
+    totalPages: 1,
+    count: 0
+  });
   const [newTemplate, setNewTemplate] = useState({
     name: '',
     content: ''
   });
 
-  useEffect(() => {
-    const loadTemplates = async () => {
-      try {
-        const data = await fetchKnowledgeTemplates();
-        // Type assertion to ensure compatibility
-        setTemplates(data as KnowledgeTemplate[] || []);
-      } catch (error) {
-        console.error("Failed to load templates:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load templates",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadTemplates = async (params?: PaginationParams) => {
+    try {
+      setLoading(true);
+      const response = await fetchKnowledgeTemplates(params);
+      setTemplates(response.data);
+      setPagination({
+        page: response.page,
+        pageSize: response.pageSize,
+        totalPages: response.totalPages,
+        count: response.count
+      });
+    } catch (error) {
+      console.error("Failed to load templates:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load templates",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadTemplates();
   }, []);
+
+  const handlePageChange = (page: number) => {
+    loadTemplates({ page, pageSize: pagination.pageSize });
+  };
 
   const handleTemplateChange = async (value: string) => {
     if (value === "create-new") {
@@ -93,8 +118,8 @@ export function TemplateSelector({ onSelectTemplate, className }: TemplateSelect
       });
 
       if (data && data.length > 0) {
-        // Type assertion to ensure compatibility
-        setTemplates([...templates, data[0] as KnowledgeTemplate]);
+        // Refresh the templates list
+        await loadTemplates({ page: 1 });
         setNewTemplate({ name: '', content: '' });
         setDialogOpen(false);
         toast({
@@ -112,6 +137,35 @@ export function TemplateSelector({ onSelectTemplate, className }: TemplateSelect
     } finally {
       setLoading(false);
     }
+  };
+
+  // Generate pagination links
+  const renderPaginationLinks = () => {
+    const links = [];
+    const maxVisiblePages = 5;
+    const startPage = Math.max(
+      1,
+      pagination.page - Math.floor(maxVisiblePages / 2)
+    );
+    const endPage = Math.min(
+      pagination.totalPages,
+      startPage + maxVisiblePages - 1
+    );
+
+    for (let i = startPage; i <= endPage; i++) {
+      links.push(
+        <PaginationItem key={i}>
+          <PaginationLink
+            isActive={i === pagination.page}
+            onClick={() => handlePageChange(i)}
+          >
+            {i}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    return links;
   };
 
   return (
@@ -134,6 +188,28 @@ export function TemplateSelector({ onSelectTemplate, className }: TemplateSelect
           </SelectItem>
         </SelectContent>
       </Select>
+
+      {pagination.totalPages > 1 && (
+        <Pagination className="mt-4">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious 
+                onClick={() => handlePageChange(Math.max(1, pagination.page - 1))} 
+                className={pagination.page <= 1 ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+            
+            {renderPaginationLinks()}
+            
+            <PaginationItem>
+              <PaginationNext 
+                onClick={() => handlePageChange(Math.min(pagination.totalPages, pagination.page + 1))} 
+                className={pagination.page >= pagination.totalPages ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
