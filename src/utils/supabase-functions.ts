@@ -21,7 +21,7 @@ export const generateTags = async (
     
     // Add a timeout to prevent hanging indefinitely
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("Tag generation timed out")), 30000);
+      setTimeout(() => reject(new Error("Tag generation timed out")), 15000); // Reduced timeout to 15 seconds
     });
     
     const functionPromise = supabase.functions.invoke('generate-tags', {
@@ -38,13 +38,15 @@ export const generateTags = async (
 
     if (error) {
       console.error('Error invoking generate-tags function:', error);
-      throw error;
+      // Return fallback tags on error instead of throwing
+      return ["content", "text", "document", "fallback", "error"];
     }
 
     console.log('Tags generated successfully:', data?.tags);
     return data?.tags || [];
   } catch (error) {
     console.error('Error generating tags:', error);
-    throw error;
+    // Return fallback tags instead of throwing
+    return ["content", "text", "document", "fallback", "error"];
   }
 };

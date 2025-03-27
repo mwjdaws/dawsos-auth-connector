@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useTransition, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -17,11 +18,15 @@ export function TagPanel() {
   const [isPending, startTransition] = useTransition();
   const { user } = useAuth();
   const isMounted = useRef(true);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       isMounted.current = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
     };
   }, []);
 
@@ -36,19 +41,45 @@ export function TagPanel() {
     }
 
     setIsLoading(true);
+    
+    // Set a UI timeout to prevent the button from getting stuck
+    timeoutRef.current = setTimeout(() => {
+      if (isMounted.current && isLoading) {
+        setIsLoading(false);
+        toast({
+          title: "Operation timed out",
+          description: "Tag generation is taking longer than expected. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }, 20000); // 20 second UI timeout
+    
     try {
       console.log("Starting tag generation");
       const generatedTags = await generateTags(text);
       console.log("Tag generation completed:", generatedTags);
       
       if (isMounted.current) {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+        
         setTags(generatedTags);
         setContentId(`temp-${Date.now()}`);
         
-        toast({
-          title: "Success",
-          description: "Tags generated successfully",
-        });
+        if (generatedTags.includes("fallback") || generatedTags.includes("error")) {
+          toast({
+            title: "Limited results",
+            description: "We had trouble generating optimal tags, so we've provided some basic ones.",
+            variant: "default",
+          });
+        } else {
+          toast({
+            title: "Success",
+            description: "Tags generated successfully",
+          });
+        }
       }
     } catch (error) {
       console.error("Error generating tags:", error);
@@ -62,6 +93,10 @@ export function TagPanel() {
     } finally {
       if (isMounted.current) {
         setIsLoading(false);
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
       }
     }
   };
@@ -159,7 +194,17 @@ export function TagPanel() {
         )}
       </div>
       {isPending && <div className="text-sm text-muted-foreground mt-2">Processing...</div>}
-      {tags.length > 0 && (
+      {isLoading && (
+        <div className="mt-4">
+          <h3 className="text-sm font-medium mb-2">Generating Tags...</h3>
+          <div className="flex flex-wrap gap-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className="h-8 w-20 rounded-xl" />
+            ))}
+          </div>
+        </div>
+      )}
+      {tags.length > 0 && !isLoading && (
         <div className="mt-4">
           <h3 className="text-sm font-medium mb-2">Generated Tags:</h3>
           <div className="flex flex-wrap gap-2">
