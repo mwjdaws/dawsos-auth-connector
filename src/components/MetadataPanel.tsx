@@ -33,6 +33,69 @@ export function MetadataPanel({ contentId, onMetadataChange }: MetadataProps) {
     };
   }, []);
 
+  // Set up Supabase Realtime listener for tag updates
+  useEffect(() => {
+    if (!contentId) return;
+    
+    // Create a Supabase Realtime channel for this specific content
+    const channel = supabase
+      .channel(`content-tags-${contentId}`)
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'tags',
+          filter: `content_id=eq.${contentId}`
+        },
+        (payload) => {
+          console.log('Tag added to content:', payload.new);
+          if (isMounted.current) {
+            startTransition(() => {
+              setMetadata(prev => ({
+                ...prev,
+                tags: [...prev.tags, payload.new.name]
+              }));
+            });
+            
+            toast({
+              title: "Tag Added",
+              description: `Tag "${payload.new.name}" was added to the content.`,
+            });
+          }
+        }
+      )
+      .on('postgres_changes',
+        { 
+          event: 'DELETE', 
+          schema: 'public', 
+          table: 'tags',
+          filter: `content_id=eq.${contentId}`
+        },
+        (payload) => {
+          console.log('Tag removed from content:', payload.old);
+          if (isMounted.current) {
+            startTransition(() => {
+              setMetadata(prev => ({
+                ...prev,
+                tags: prev.tags.filter(tag => tag !== payload.old.name)
+              }));
+            });
+            
+            toast({
+              title: "Tag Removed",
+              description: `A tag was removed from the content.`,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    // Clean up the subscription when component unmounts or contentId changes
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [contentId]);
+
   useEffect(() => {
     if (!contentId) return;
     

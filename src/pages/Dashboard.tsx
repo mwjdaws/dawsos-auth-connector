@@ -49,8 +49,6 @@ console.log(greeting);
 
   // Set up Supabase Realtime listener for tag updates
   useEffect(() => {
-    let isMounted = true;
-    
     // Create a Supabase Realtime channel
     const channel = supabase
       .channel('public:tags')
@@ -58,19 +56,26 @@ console.log(greeting);
         { event: 'INSERT', schema: 'public', table: 'tags' },
         (payload) => {
           console.log('New tag added:', payload.new);
-          if (isMounted) {
-            toast({
-              title: "New Tag Added",
-              description: `A new tag "${payload.new.name}" was added to the system.`,
-            });
-          }
+          toast({
+            title: "New Tag Added",
+            description: `A new tag "${payload.new.name}" was added to the system.`,
+          });
+        }
+      )
+      .on('postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'tags' },
+        (payload) => {
+          console.log('Tag deleted:', payload.old);
+          toast({
+            title: "Tag Removed",
+            description: `A tag was removed from the system.`,
+          });
         }
       )
       .subscribe();
 
     // Clean up the subscription when component unmounts
     return () => {
-      isMounted = false;
       supabase.removeChannel(channel);
     };
   }, []);
