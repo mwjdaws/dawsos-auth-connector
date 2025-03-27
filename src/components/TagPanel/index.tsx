@@ -10,7 +10,11 @@ import { useTagGeneration } from "@/hooks/useTagGeneration";
 import { saveTags } from "@/utils/tagUtils";
 import { supabase } from "@/integrations/supabase/client";
 
-export function TagPanel() {
+interface TagPanelProps {
+  onTagsGenerated?: (contentId: string) => void;
+}
+
+export function TagPanel({ onTagsGenerated }: TagPanelProps) {
   const [text, setText] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -58,8 +62,13 @@ export function TagPanel() {
     };
   }, [contentId]);
 
-  const handleTagging = () => {
-    handleGenerateTags(text);
+  const handleTagging = async () => {
+    await handleGenerateTags(text);
+    // Notify parent component of the new contentId
+    if (onTagsGenerated) {
+      console.log("Notifying parent of contentId:", contentId);
+      onTagsGenerated(contentId);
+    }
   };
 
   const handleSaveTags = async () => {
@@ -74,7 +83,12 @@ export function TagPanel() {
 
     setIsSaving(true);
     try {
-      await saveTags(text, tags, contentId);
+      const success = await saveTags(text, tags, contentId);
+      if (success && onTagsGenerated) {
+        // Notify parent component of the contentId when tags are saved
+        console.log("Tags saved, notifying parent of contentId:", contentId);
+        onTagsGenerated(contentId);
+      }
     } finally {
       if (isMounted.current) {
         setIsSaving(false);

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useTransition, Suspense, lazy } from "react";
 import { TagPanel, MarkdownPanel, MetadataPanel } from "@/components";
 import { TagSummary } from "@/components/TagSummary";
@@ -41,6 +40,7 @@ console.log(greeting);
   // Refresh metadata when changes occur
   const handleMetadataChange = () => {
     // In a real app, this would fetch the latest metadata
+    console.log("Metadata refresh triggered, contentId:", contentId);
     toast({
       title: "Metadata Updated",
       description: "The metadata has been refreshed.",
@@ -83,7 +83,20 @@ console.log(greeting);
   const handleTabChange = (value: string) => {
     startTransition(() => {
       setActiveTab(value);
+      
+      // When the Tab changes to metadata, let's generate a new content ID
+      // only if we're on the Tag Generator tab
+      if (value === "metadata" && activeTab === "tag-generator") {
+        console.log("Updating contentId for metadata tab");
+        // Keep the existing ID if we already have one set
+      }
     });
+  };
+
+  // Handle tag generation completion
+  const handleTagGenerationComplete = (newContentId: string) => {
+    console.log("Tag generation complete, setting new contentId:", newContentId);
+    setContentId(newContentId);
   };
 
   return (
@@ -118,7 +131,7 @@ console.log(greeting);
           <div className="bg-card border rounded-lg p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Tag Generator</h2>
             <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
-              <TagPanel />
+              <TagPanel onTagsGenerated={handleTagGenerationComplete} />
             </Suspense>
           </div>
         </TabsContent>
@@ -138,6 +151,9 @@ console.log(greeting);
         <TabsContent value="metadata" className="mt-4">
           <div className="bg-card border rounded-lg p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Content Metadata</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Current Content ID: {contentId}
+            </p>
             <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
               <MetadataPanel 
                 contentId={contentId}

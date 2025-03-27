@@ -25,6 +25,7 @@ export function MetadataPanel({ contentId, onMetadataChange }: MetadataProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const isMounted = useRef(true);
+  const previousContentId = useRef<string | null>(null);
 
   useEffect(() => {
     // Set up cleanup function
@@ -33,9 +34,28 @@ export function MetadataPanel({ contentId, onMetadataChange }: MetadataProps) {
     };
   }, []);
 
+  // Debug when contentId changes
+  useEffect(() => {
+    console.log("MetadataPanel - contentId changed:", contentId);
+    console.log("Previous contentId was:", previousContentId.current);
+    
+    // If contentId changed, force a refresh
+    if (previousContentId.current && previousContentId.current !== contentId) {
+      console.log("ContentId changed, forcing metadata refresh");
+      fetchMetadata();
+    }
+    
+    previousContentId.current = contentId;
+  }, [contentId]);
+
   // Set up Supabase Realtime listener for tag updates
   useEffect(() => {
-    if (!contentId) return;
+    if (!contentId) {
+      console.log("No contentId for Realtime channel");
+      return;
+    }
+    
+    console.log("Setting up Realtime channel for contentId:", contentId);
     
     // Create a Supabase Realtime channel for this specific content
     const channel = supabase
@@ -92,55 +112,69 @@ export function MetadataPanel({ contentId, onMetadataChange }: MetadataProps) {
 
     // Clean up the subscription when component unmounts or contentId changes
     return () => {
+      console.log("Cleaning up Realtime channel for contentId:", contentId);
       supabase.removeChannel(channel);
     };
   }, [contentId]);
 
-  useEffect(() => {
-    if (!contentId) return;
+  const fetchMetadata = async () => {
+    if (!contentId) {
+      console.log("No contentId provided for fetching metadata");
+      return;
+    }
     
-    const fetchMetadata = async () => {
-      setIsLoading(true);
-      try {
-        // Fetch tags associated with the contentId
-        const { data: tagData, error: tagError } = await supabase
-          .from("tags")
-          .select("name")
-          .eq("content_id", contentId);
-        
-        if (tagError) throw tagError;
-        
-        // Update metadata with fetched tags
-        if (isMounted.current) {
-          startTransition(() => {
-            setMetadata(prev => ({
-              ...prev,
-              tags: tagData?.map(t => t.name) || []
-            }));
-          });
-        }
-
-        if (onMetadataChange && isMounted.current) {
-          onMetadataChange();
-        }
-      } catch (error) {
-        console.error("Error fetching metadata:", error);
-        if (isMounted.current) {
-          toast({
-            title: "Error",
-            description: "Failed to load metadata. Please try again.",
-            variant: "destructive",
-          });
-        }
-      } finally {
-        if (isMounted.current) {
-          setIsLoading(false);
-        }
+    setIsLoading(true);
+    console.log("Fetching metadata for contentId:", contentId);
+    
+    try {
+      // Fetch tags associated with the contentId
+      const { data: tagData, error: tagError } = await supabase
+        .from("tags")
+        .select("name")
+        .eq("content_id", contentId);
+      
+      if (tagError) {
+        console.error("Error fetching tags:", tagError);
+        throw tagError;
       }
-    };
+      
+      console.log("Fetched tag data:", tagData);
+      
+      // Update metadata with fetched tags
+      if (isMounted.current) {
+        startTransition(() => {
+          setMetadata(prev => ({
+            ...prev,
+            tags: tagData?.map(t => t.name) || []
+          }));
+        });
+      }
 
-    fetchMetadata();
-  }, [contentId, onMetadataChange]);
+      if (onMetadataChange && isMounted.current) {
+        onMetadataChange();
+      }
+    } catch (error) {
+      console.error("Error fetching metadata:", error);
+      if (isMounted.current) {
+        toast({
+          title: "Error",
+          description: "Failed to load metadata. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  // Fetch metadata whenever contentId changes
+  useEffect(() => {
+    if (contentId) {
+      fetchMetadata();
+    }
+  }, [contentId]);
 
   const renderBadges = (items: string[], type: string) => {
     if (!items || items.length === 0) {
@@ -158,8 +192,24 @@ export function MetadataPanel({ contentId, onMetadataChange }: MetadataProps) {
     );
   };
 
+  const handleRefresh = () => {
+    fetchMetadata();
+  };
+
   return (
     <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-sm font-medium">Content ID: {contentId}</h3>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          disabled={isLoading}
+        >
+          Refresh Metadata
+        </Button>
+      </div>
+      
       {isLoading ? (
         <div className="space-y-4">
           <Skeleton className="h-8 w-full" />

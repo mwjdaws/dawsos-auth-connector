@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { generateTags } from "@/utils/supabase-functions";
 
@@ -9,6 +9,15 @@ export function useTagGeneration() {
   const [contentId, setContentId] = useState<string>(`temp-${Date.now()}`);
   const isMounted = useRef(true);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Reset contentId when component mounts
+  useEffect(() => {
+    setContentId(`temp-${Date.now()}`);
+    
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const clearTimeoutRef = () => {
     if (timeoutRef.current) {
@@ -29,6 +38,11 @@ export function useTagGeneration() {
 
     setIsLoading(true);
     
+    // Generate a new contentId for this content
+    const newContentId = `content-${Date.now()}`;
+    setContentId(newContentId);
+    console.log("Generated new contentId:", newContentId);
+    
     // Set a UI timeout to prevent the button from getting stuck
     timeoutRef.current = setTimeout(() => {
       if (isMounted.current && isLoading) {
@@ -42,7 +56,7 @@ export function useTagGeneration() {
     }, 20000); // 20 second UI timeout
     
     try {
-      console.log("Starting tag generation");
+      console.log("Starting tag generation for contentId:", newContentId);
       const generatedTags = await generateTags(text);
       console.log("Tag generation completed:", generatedTags);
       
@@ -50,7 +64,6 @@ export function useTagGeneration() {
         clearTimeoutRef();
         
         setTags(generatedTags);
-        setContentId(`temp-${Date.now()}`);
         
         if (generatedTags.includes("fallback") || generatedTags.includes("error")) {
           toast({
@@ -80,6 +93,8 @@ export function useTagGeneration() {
         clearTimeoutRef();
       }
     }
+    
+    return newContentId;
   };
   
   return {
@@ -87,6 +102,7 @@ export function useTagGeneration() {
     setTags,
     isLoading,
     contentId,
+    setContentId,
     handleGenerateTags
   };
 }
