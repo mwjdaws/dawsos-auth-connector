@@ -1,5 +1,7 @@
+
 import { useState, useEffect, useTransition, Suspense, lazy } from "react";
-import { TagPanel, MarkdownPanel, MetadataPanel } from "@/components";
+import { TagPanel } from "@/components/TagPanel/index";
+import { MarkdownPanel, MetadataPanel } from "@/components";
 import { TagSummary } from "@/components/TagSummary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";

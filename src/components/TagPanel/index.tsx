@@ -63,11 +63,13 @@ export function TagPanel({ onTagsGenerated }: TagPanelProps) {
   }, [contentId]);
 
   const handleTagging = async () => {
-    await handleGenerateTags(text);
+    const newContentId = await handleGenerateTags(text);
+    console.log("TagPanel: handleTagging completed with contentId:", newContentId);
+    
     // Notify parent component of the new contentId
-    if (onTagsGenerated) {
-      console.log("Notifying parent of contentId:", contentId);
-      onTagsGenerated(contentId);
+    if (onTagsGenerated && newContentId) {
+      console.log("TagPanel: Notifying parent of contentId:", newContentId);
+      onTagsGenerated(newContentId);
     }
   };
 

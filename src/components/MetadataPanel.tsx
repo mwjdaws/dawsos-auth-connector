@@ -1,250 +1,192 @@
 
-import { useState, useEffect, useTransition, useRef } from "react";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useEffect, useTransition } from "react";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RefreshCw, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
-interface MetadataProps {
+interface Tag {
+  id: string;
+  name: string;
+  content_id: string;
+}
+
+interface MetadataPanelProps {
   contentId: string;
   onMetadataChange?: () => void;
 }
 
-interface Metadata {
-  tags: string[];
-  ontology_terms: string[];
-  [key: string]: any;
-}
-
-export function MetadataPanel({ contentId, onMetadataChange }: MetadataProps) {
-  const [metadata, setMetadata] = useState<Metadata>({
-    tags: [],
-    ontology_terms: [],
-  });
+const MetadataPanel: React.FC<MetadataPanelProps> = ({ 
+  contentId,
+  onMetadataChange 
+}) => {
+  const [tags, setTags] = useState<Tag[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const isMounted = useRef(true);
-  const previousContentId = useRef<string | null>(null);
-
-  useEffect(() => {
-    // Set up cleanup function
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  // Debug when contentId changes
-  useEffect(() => {
-    console.log("MetadataPanel - contentId changed:", contentId);
-    console.log("Previous contentId was:", previousContentId.current);
-    
-    // If contentId changed, force a refresh
-    if (previousContentId.current && previousContentId.current !== contentId) {
-      console.log("ContentId changed, forcing metadata refresh");
-      fetchMetadata();
-    }
-    
-    previousContentId.current = contentId;
-  }, [contentId]);
-
-  // Set up Supabase Realtime listener for tag updates
-  useEffect(() => {
-    if (!contentId) {
-      console.log("No contentId for Realtime channel");
-      return;
-    }
-    
-    console.log("Setting up Realtime channel for contentId:", contentId);
-    
-    // Create a Supabase Realtime channel for this specific content
-    const channel = supabase
-      .channel(`content-tags-${contentId}`)
-      .on('postgres_changes', 
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'tags',
-          filter: `content_id=eq.${contentId}`
-        },
-        (payload) => {
-          console.log('Tag added to content:', payload.new);
-          if (isMounted.current) {
-            startTransition(() => {
-              setMetadata(prev => ({
-                ...prev,
-                tags: [...prev.tags, payload.new.name]
-              }));
-            });
-            
-            toast({
-              title: "Tag Added",
-              description: `Tag "${payload.new.name}" was added to the content.`,
-            });
-          }
-        }
-      )
-      .on('postgres_changes',
-        { 
-          event: 'DELETE', 
-          schema: 'public', 
-          table: 'tags',
-          filter: `content_id=eq.${contentId}`
-        },
-        (payload) => {
-          console.log('Tag removed from content:', payload.old);
-          if (isMounted.current) {
-            startTransition(() => {
-              setMetadata(prev => ({
-                ...prev,
-                tags: prev.tags.filter(tag => tag !== payload.old.name)
-              }));
-            });
-            
-            toast({
-              title: "Tag Removed",
-              description: `A tag was removed from the content.`,
-            });
-          }
-        }
-      )
-      .subscribe();
-
-    // Clean up the subscription when component unmounts or contentId changes
-    return () => {
-      console.log("Cleaning up Realtime channel for contentId:", contentId);
-      supabase.removeChannel(channel);
-    };
-  }, [contentId]);
+  const { user } = useAuth();
 
   const fetchMetadata = async () => {
-    if (!contentId) {
-      console.log("No contentId provided for fetching metadata");
+    if (!contentId || contentId.startsWith('temp-')) {
+      console.log("Invalid contentId for fetching metadata:", contentId);
+      setIsLoading(false);
       return;
     }
     
     setIsLoading(true);
-    console.log("Fetching metadata for contentId:", contentId);
+    setError(null);
     
     try {
-      // Fetch tags associated with the contentId
+      console.log("Fetching tags for contentId:", contentId);
+      
       const { data: tagData, error: tagError } = await supabase
         .from("tags")
-        .select("name")
+        .select("*")
         .eq("content_id", contentId);
       
       if (tagError) {
-        console.error("Error fetching tags:", tagError);
         throw tagError;
       }
       
-      console.log("Fetched tag data:", tagData);
+      console.log("Tags fetched:", tagData);
       
-      // Update metadata with fetched tags
-      if (isMounted.current) {
-        startTransition(() => {
-          setMetadata(prev => ({
-            ...prev,
-            tags: tagData?.map(t => t.name) || []
-          }));
-        });
-      }
-
-      if (onMetadataChange && isMounted.current) {
+      startTransition(() => {
+        setTags(tagData || []);
+      });
+      
+      if (onMetadataChange) {
         onMetadataChange();
       }
-    } catch (error) {
-      console.error("Error fetching metadata:", error);
-      if (isMounted.current) {
-        toast({
-          title: "Error",
-          description: "Failed to load metadata. Please try again.",
-          variant: "destructive",
-        });
-      }
+    } catch (err: any) {
+      console.error("Error fetching metadata:", err);
+      setError(err.message || "Failed to fetch metadata");
+      toast({
+        title: "Error",
+        description: "Failed to load metadata",
+        variant: "destructive",
+      });
     } finally {
-      if (isMounted.current) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   };
 
-  // Fetch metadata whenever contentId changes
+  // Fetch metadata when contentId changes
   useEffect(() => {
-    if (contentId) {
-      fetchMetadata();
-    }
+    console.log("MetadataPanel: contentId changed to", contentId);
+    fetchMetadata();
   }, [contentId]);
-
-  const renderBadges = (items: string[], type: string) => {
-    if (!items || items.length === 0) {
-      return <p className="text-sm text-muted-foreground">No {type} available</p>;
-    }
-
-    return (
-      <div className="flex flex-wrap gap-2">
-        {items.map((item) => (
-          <Badge key={`${type}-${item}`} variant="secondary">
-            {item}
-          </Badge>
-        ))}
-      </div>
-    );
-  };
 
   const handleRefresh = () => {
     fetchMetadata();
   };
 
+  const handleDeleteTag = async (tagId: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to delete tags",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from("tags")
+        .delete()
+        .eq("id", tagId);
+      
+      if (error) throw error;
+      
+      setTags(tags.filter(tag => tag.id !== tagId));
+      
+      toast({
+        title: "Success",
+        description: "Tag deleted successfully",
+      });
+    } catch (error: any) {
+      console.error("Error deleting tag:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete tag",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-sm font-medium">Content ID: {contentId}</h3>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle>Content Metadata</CardTitle>
         <Button 
           variant="outline" 
           size="sm" 
           onClick={handleRefresh}
           disabled={isLoading}
         >
-          Refresh Metadata
+          <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+          <span className="sr-only">Refresh</span>
         </Button>
-      </div>
-      
-      {isLoading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-full" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-8 w-full" />
-          <Skeleton className="h-20 w-full" />
-        </div>
-      ) : (
-        <>
-          <div>
-            <h3 className="text-sm font-medium mb-2">Tags:</h3>
-            {renderBadges(metadata.tags, "tags")}
+      </CardHeader>
+      <CardContent className="pt-4">
+        {isLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
           </div>
-          
-          <div>
-            <h3 className="text-sm font-medium mb-2">Ontology Terms:</h3>
-            {renderBadges(metadata.ontology_terms, "ontology terms")}
+        ) : error ? (
+          <div className="text-sm text-destructive">
+            {error}
           </div>
-          
-          {Object.entries(metadata)
-            .filter(([key]) => !["tags", "ontology_terms"].includes(key))
-            .map(([key, value]) => (
-              <div key={key}>
-                <h3 className="text-sm font-medium mb-2 capitalize">{key.replace(/_/g, " ")}:</h3>
-                {typeof value === "object" && Array.isArray(value) 
-                  ? renderBadges(value, key)
-                  : <p className="text-sm">{String(value)}</p>}
-              </div>
-            ))
-          }
-        </>
-      )}
-      {isPending && <div className="mt-2 text-sm text-muted-foreground">Updating metadata...</div>}
-    </div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium mb-2">Tags</h3>
+              {tags.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {tags.map((tag) => (
+                    <Badge 
+                      key={tag.id} 
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
+                      {tag.name}
+                      {user && (
+                        <button 
+                          onClick={() => handleDeleteTag(tag.id)}
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No tags available for this content.
+                </p>
+              )}
+            </div>
+            
+            <div className="text-xs text-muted-foreground">
+              Content ID: {contentId}
+            </div>
+          </div>
+        )}
+        {isPending && (
+          <div className="text-sm text-muted-foreground mt-2">
+            Updating...
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
-}
+};
 
 export default MetadataPanel;

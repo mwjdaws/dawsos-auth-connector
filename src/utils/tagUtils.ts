@@ -19,28 +19,40 @@ export async function saveTags(text: string, tags: string[], contentId: string) 
     
     console.log(`Attempting to save tags with content_id: ${validContentId}`);
     
-    // Call generateTags with save=true to use the edge function
-    const savedTags = await generateTags(text, true, validContentId);
-    
-    if (savedTags.includes("error") || savedTags.includes("fallback")) {
-      // If the edge function approach failed, fallback to direct DB insertion
-      const tagsToInsert = tags.map(tag => ({
-        name: tag,
-        content_id: validContentId
-      }));
-
-      const { error } = await supabase
-        .from("tags")
-        .insert(tagsToInsert);
-
-      if (error) {
-        throw error;
+    // Try to use the edge function first
+    try {
+      const savedTags = await generateTags(text, true, validContentId);
+      
+      if (!savedTags.includes("error") && !savedTags.includes("fallback")) {
+        toast({
+          title: "Success",
+          description: `${tags.length} tags saved successfully via edge function`,
+        });
+        return true;
       }
+    } catch (edgeFunctionError) {
+      console.log("Edge function approach failed, falling back to direct DB insertion");
+    }
+    
+    // If the edge function approach failed, fallback to direct DB insertion
+    const tagsToInsert = tags.map(tag => ({
+      name: tag,
+      content_id: validContentId
+    }));
+
+    console.log("Directly inserting tags:", tagsToInsert);
+    
+    const { error } = await supabase
+      .from("tags")
+      .insert(tagsToInsert);
+
+    if (error) {
+      throw error;
     }
     
     toast({
       title: "Success",
-      description: `${tags.length} tags saved successfully`,
+      description: `${tags.length} tags saved successfully via direct insertion`,
     });
     
     return true;
