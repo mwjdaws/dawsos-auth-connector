@@ -1,3 +1,4 @@
+
 import { supabase, handleError, ApiError, parseSupabaseErrorCode } from './base';
 import { KnowledgeTemplate, PaginationParams, PaginatedResponse } from './types';
 import { updateKnowledgeSource, createKnowledgeSource } from './knowledgeSources';
@@ -128,6 +129,11 @@ export const updateKnowledgeTemplate = async (id: string, updates: Partial<Knowl
 
 export const deleteKnowledgeTemplate = async (id: string) => {
   try {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!id || !uuidRegex.test(id)) {
+      throw new ApiError(`Invalid template ID format: ${id}`, 400);
+    }
+    
     const { data, error } = await supabase
       .from('knowledge_templates')
       .delete()
@@ -135,6 +141,11 @@ export const deleteKnowledgeTemplate = async (id: string) => {
       .select();
     
     if (error) throw new ApiError(error.message, parseSupabaseErrorCode(error));
+    
+    if (!data || data.length === 0) {
+      throw new ApiError(`Template with ID: ${id} not found or already deleted`, 404);
+    }
+    
     return data;
   } catch (error) {
     handleError(error, `Failed to delete knowledge template with ID: ${id}`);
