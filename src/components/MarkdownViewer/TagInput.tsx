@@ -38,5 +38,3 @@ export function TagInput({ newTag, setNewTag, onAddTag }: TagInputProps) {
     </div>
   );
 }
-
-export default TagInput;
