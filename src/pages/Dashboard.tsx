@@ -1,11 +1,10 @@
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, Suspense } from "react";
 import { TagPanel, MarkdownPanel, MetadataPanel } from "@/components";
 import { TagSummary } from "@/components/TagSummary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
-import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const DashboardPage = () => {
