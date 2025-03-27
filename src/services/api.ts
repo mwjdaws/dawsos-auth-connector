@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { handleError, ApiError } from '@/utils/error-handling';
+import { Json } from '@/integrations/supabase/types';
 
 export interface KnowledgeSource {
   id: string;
@@ -17,7 +18,7 @@ export interface KnowledgeSourceVersion {
   source_id: string;
   version_number: number;
   content: string;
-  metadata?: Record<string, any>;
+  metadata?: Json;
   created_at?: string;
 }
 
@@ -25,7 +26,7 @@ export interface KnowledgeTemplate {
   id: string;
   name: string;
   content: string;
-  metadata?: Record<string, any>;
+  metadata?: Json;
 }
 
 // Knowledge Sources CRUD Operations

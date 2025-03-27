@@ -45,7 +45,8 @@ export function TemplateSelector({ onSelectTemplate, className }: TemplateSelect
     const loadTemplates = async () => {
       try {
         const data = await fetchKnowledgeTemplates();
-        setTemplates(data || []);
+        // Type assertion to ensure compatibility
+        setTemplates(data as KnowledgeTemplate[] || []);
       } catch (error) {
         console.error("Failed to load templates:", error);
         toast({
@@ -92,7 +93,8 @@ export function TemplateSelector({ onSelectTemplate, className }: TemplateSelect
       });
 
       if (data && data.length > 0) {
-        setTemplates(prev => [...prev, data[0]]);
+        // Type assertion to ensure compatibility
+        setTemplates([...templates, data[0] as KnowledgeTemplate]);
         setNewTemplate({ name: '', content: '' });
         setDialogOpen(false);
         toast({
