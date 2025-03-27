@@ -34,17 +34,26 @@ import {
   PaginationParams
 } from "@/services/api";
 import { toast } from "@/hooks/use-toast";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Globe, User } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TemplateSelectorProps {
   onSelectTemplate: (template: KnowledgeTemplate) => void;
   className?: string;
+  defaultShowGlobal?: boolean;
 }
 
-export function TemplateSelector({ onSelectTemplate, className }: TemplateSelectorProps) {
+export function TemplateSelector({ 
+  onSelectTemplate, 
+  className, 
+  defaultShowGlobal = true 
+}: TemplateSelectorProps) {
   const [templates, setTemplates] = useState<KnowledgeTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [templateFilter, setTemplateFilter] = useState<'all' | 'global' | 'custom'>(
+    defaultShowGlobal ? 'global' : 'all'
+  );
   const [pagination, setPagination] = useState({
     page: 1,
     pageSize: 10,
@@ -60,12 +69,21 @@ export function TemplateSelector({ onSelectTemplate, className }: TemplateSelect
     try {
       setLoading(true);
       const response = await fetchKnowledgeTemplates(params);
-      setTemplates(response.data);
+      
+      // Filter templates based on the selected filter
+      let filteredTemplates = response.data;
+      if (templateFilter === 'global') {
+        filteredTemplates = response.data.filter(template => template.is_global);
+      } else if (templateFilter === 'custom') {
+        filteredTemplates = response.data.filter(template => !template.is_global);
+      }
+      
+      setTemplates(filteredTemplates);
       setPagination({
         page: response.page,
         pageSize: response.pageSize,
         totalPages: response.totalPages,
-        count: response.count
+        count: filteredTemplates.length
       });
     } catch (error) {
       console.error("Failed to load templates:", error);
@@ -81,7 +99,7 @@ export function TemplateSelector({ onSelectTemplate, className }: TemplateSelect
 
   useEffect(() => {
     loadTemplates();
-  }, []);
+  }, [templateFilter]); // Reload when filter changes
 
   const handlePageChange = (page: number) => {
     loadTemplates({ page, pageSize: pagination.pageSize });
@@ -119,10 +137,13 @@ export function TemplateSelector({ onSelectTemplate, className }: TemplateSelect
         name: newTemplate.name,
         content: newTemplate.content,
         metadata: { custom: true },
-        structure: structure
+        structure: structure,
+        is_global: false // Custom templates are not global by default
       });
 
       if (data && data.length > 0) {
+        // Set filter to custom to show the newly created template
+        setTemplateFilter('custom');
         await loadTemplates({ page: 1 });
         setNewTemplate({ name: '', content: '' });
         setDialogOpen(false);
@@ -215,6 +236,24 @@ export function TemplateSelector({ onSelectTemplate, className }: TemplateSelect
 
   return (
     <div className={className}>
+      <div className="mb-4">
+        <Tabs 
+          defaultValue={templateFilter} 
+          onValueChange={(value) => setTemplateFilter(value as 'all' | 'global' | 'custom')}
+          className="w-full"
+        >
+          <TabsList className="w-full grid grid-cols-3">
+            <TabsTrigger value="all">All Templates</TabsTrigger>
+            <TabsTrigger value="global" className="flex items-center gap-1">
+              <Globe className="h-4 w-4" /> Global
+            </TabsTrigger>
+            <TabsTrigger value="custom" className="flex items-center gap-1">
+              <User className="h-4 w-4" /> Custom
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
       <Select onValueChange={handleTemplateChange} disabled={loading}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Select a template" />
@@ -222,7 +261,14 @@ export function TemplateSelector({ onSelectTemplate, className }: TemplateSelect
         <SelectContent>
           {templates.map((template) => (
             <SelectItem key={template.id} value={template.id}>
-              {template.name}
+              <div className="flex items-center gap-2">
+                {template.is_global ? (
+                  <Globe className="h-4 w-4 text-blue-500" />
+                ) : (
+                  <User className="h-4 w-4 text-green-500" />
+                )}
+                {template.name}
+              </div>
             </SelectItem>
           ))}
           <SelectItem value="create-new" className="text-primary font-medium">
