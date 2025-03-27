@@ -1,8 +1,17 @@
 
-import { lazy } from 'react';
+import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
+import { Skeleton } from "@/components/ui/skeleton";
+
+const PageFallback = () => (
+  <div className="container mx-auto p-4">
+    <Skeleton className="h-8 w-64 mb-4" />
+    <Skeleton className="h-32 w-full mb-4" />
+    <Skeleton className="h-32 w-full" />
+  </div>
+);
 
 // Pages
 import { NotFound, Index } from '@/pages';
@@ -15,20 +24,29 @@ export function AppRoutes() {
 
   // Show nothing while checking authentication status
   if (isLoading) {
-    return null;
+    return <PageFallback />;
   }
 
   return (
     <Routes>
       <Route path="/" element={<Index />} />
-      <Route path="/auth" element={<Auth />} />
+      <Route 
+        path="/auth" 
+        element={
+          <Suspense fallback={<PageFallback />}>
+            <Auth />
+          </Suspense>
+        } 
+      />
       
       {/* Protected Routes */}
       <Route 
         path="/dashboard" 
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <Suspense fallback={<PageFallback />}>
+              <Dashboard />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -38,7 +56,9 @@ export function AppRoutes() {
         path="/markdown-viewer" 
         element={
           <ProtectedRoute>
-            <MarkdownViewerPage />
+            <Suspense fallback={<PageFallback />}>
+              <MarkdownViewerPage />
+            </Suspense>
           </ProtectedRoute>
         }
       />
