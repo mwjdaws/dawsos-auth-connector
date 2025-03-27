@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
@@ -24,13 +24,19 @@ export function MetadataPanel({ contentId, onMetadataChange }: MetadataProps) {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+  const isMounted = useRef(true);
 
   useEffect(() => {
-    let isMounted = true;
+    // Set up cleanup function
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!contentId) return;
     
     const fetchMetadata = async () => {
-      if (!contentId) return;
-      
       setIsLoading(true);
       try {
         // Fetch tags associated with the contentId
@@ -42,7 +48,7 @@ export function MetadataPanel({ contentId, onMetadataChange }: MetadataProps) {
         if (tagError) throw tagError;
         
         // Update metadata with fetched tags
-        if (isMounted) {
+        if (isMounted.current) {
           startTransition(() => {
             setMetadata(prev => ({
               ...prev,
@@ -51,24 +57,26 @@ export function MetadataPanel({ contentId, onMetadataChange }: MetadataProps) {
           });
         }
 
-        if (onMetadataChange) onMetadataChange();
+        if (onMetadataChange && isMounted.current) {
+          onMetadataChange();
+        }
       } catch (error) {
         console.error("Error fetching metadata:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load metadata. Please try again.",
-          variant: "destructive",
-        });
+        if (isMounted.current) {
+          toast({
+            title: "Error",
+            description: "Failed to load metadata. Please try again.",
+            variant: "destructive",
+          });
+        }
       } finally {
-        if (isMounted) setIsLoading(false);
+        if (isMounted.current) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchMetadata();
-    
-    return () => {
-      isMounted = false;
-    };
   }, [contentId, onMetadataChange]);
 
   const renderBadges = (items: string[], type: string) => {

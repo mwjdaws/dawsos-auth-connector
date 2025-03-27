@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useTransition, Suspense } from "react";
+import { useState, useEffect, useTransition, Suspense, lazy } from "react";
 import { TagPanel, MarkdownPanel, MetadataPanel } from "@/components";
 import { TagSummary } from "@/components/TagSummary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -49,6 +49,8 @@ console.log(greeting);
 
   // Set up Supabase Realtime listener for tag updates
   useEffect(() => {
+    let isMounted = true;
+    
     // Create a Supabase Realtime channel
     const channel = supabase
       .channel('public:tags')
@@ -56,16 +58,19 @@ console.log(greeting);
         { event: 'INSERT', schema: 'public', table: 'tags' },
         (payload) => {
           console.log('New tag added:', payload.new);
-          toast({
-            title: "New Tag Added",
-            description: `A new tag "${payload.new.name}" was added to the system.`,
-          });
+          if (isMounted) {
+            toast({
+              title: "New Tag Added",
+              description: `A new tag "${payload.new.name}" was added to the system.`,
+            });
+          }
         }
       )
       .subscribe();
 
     // Clean up the subscription when component unmounts
     return () => {
+      isMounted = false;
       supabase.removeChannel(channel);
     };
   }, []);
@@ -82,7 +87,7 @@ console.log(greeting);
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2">
-          <Suspense fallback={<Skeleton className="h-[300px] w-full" />}>
+          <Suspense fallback={<Skeleton className="h-[300px] w-full rounded-lg" />}>
             <TagSummary />
           </Suspense>
         </div>
@@ -107,7 +112,7 @@ console.log(greeting);
         <TabsContent value="tag-generator" className="mt-4">
           <div className="bg-card border rounded-lg p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Tag Generator</h2>
-            <Suspense fallback={<Skeleton className="h-[200px] w-full" />}>
+            <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
               <TagPanel />
             </Suspense>
           </div>
@@ -116,7 +121,7 @@ console.log(greeting);
         <TabsContent value="markdown-viewer" className="mt-4">
           <div className="bg-card border rounded-lg p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Markdown Viewer</h2>
-            <Suspense fallback={<Skeleton className="h-[300px] w-full" />}>
+            <Suspense fallback={<Skeleton className="h-[300px] w-full rounded-lg" />}>
               <MarkdownPanel 
                 content={sampleMarkdown} 
                 metadata={sampleMetadata} 
@@ -128,7 +133,7 @@ console.log(greeting);
         <TabsContent value="metadata" className="mt-4">
           <div className="bg-card border rounded-lg p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Content Metadata</h2>
-            <Suspense fallback={<Skeleton className="h-[200px] w-full" />}>
+            <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
               <MetadataPanel 
                 contentId={contentId}
                 onMetadataChange={handleMetadataChange}
@@ -137,7 +142,7 @@ console.log(greeting);
           </div>
         </TabsContent>
       </Tabs>
-      {isPending && <div className="fixed bottom-4 right-4 bg-primary text-white px-4 py-2 rounded-md">Loading...</div>}
+      {isPending && <div className="fixed bottom-4 right-4 bg-primary text-white px-4 py-2 rounded-md shadow-lg">Loading...</div>}
     </div>
   );
 };

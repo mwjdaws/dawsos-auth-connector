@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useTransition } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,10 +17,17 @@ export function TagSummary() {
   const [tagData, setTagData] = useState<Array<{ name: string, usage_count: number }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const isMounted = useRef(true);
 
   useEffect(() => {
-    let isMounted = true;
-    
+    // Set up cleanup function
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+  
+  useEffect(() => {
     async function fetchTagSummary() {
       try {
         setIsLoading(true);
@@ -33,7 +40,11 @@ export function TagSummary() {
 
         if (error) {
           console.error("Error fetching tag summary:", error);
-          if (isMounted) setError(error.message);
+          if (isMounted.current) {
+            startTransition(() => {
+              setError(error.message);
+            });
+          }
           return;
         }
 
@@ -43,20 +54,26 @@ export function TagSummary() {
           usage_count: Number(item.usage_count) || 0
         }));
 
-        if (isMounted) setTagData(formattedData);
+        if (isMounted.current) {
+          startTransition(() => {
+            setTagData(formattedData);
+          });
+        }
       } catch (err) {
         console.error("Unexpected error:", err);
-        if (isMounted) setError("An unexpected error occurred");
+        if (isMounted.current) {
+          startTransition(() => {
+            setError("An unexpected error occurred");
+          });
+        }
       } finally {
-        if (isMounted) setIsLoading(false);
+        if (isMounted.current) {
+          setIsLoading(false);
+        }
       }
     }
 
     fetchTagSummary();
-    
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   if (error) {
@@ -106,7 +123,10 @@ export function TagSummary() {
             </BarChart>
           </ResponsiveContainer>
         )}
+        {isPending && <div className="text-sm text-muted-foreground mt-2">Updating chart data...</div>}
       </CardContent>
     </Card>
   );
 }
+
+export default TagSummary;

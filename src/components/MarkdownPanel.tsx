@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect, useTransition, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +22,26 @@ const MarkdownPanel: React.FC<MarkdownPanelProps> = ({
   metadata = {}, 
   className 
 }) => {
+  const [isPending, startTransition] = useTransition();
+  const [renderedContent, setRenderedContent] = useState<string>(content);
+  const isMounted = useRef(true);
+
+  // Set up cleanup
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  // Update the rendered content when the input content changes
+  useEffect(() => {
+    if (content !== renderedContent && isMounted.current) {
+      startTransition(() => {
+        setRenderedContent(content);
+      });
+    }
+  }, [content, renderedContent]);
+  
   // Extract metadata
   const { tags = [], ontology_terms = [], ...otherMetadata } = metadata;
   
@@ -75,8 +95,10 @@ const MarkdownPanel: React.FC<MarkdownPanelProps> = ({
       )}
       
       <div className="prose prose-slate dark:prose-invert max-w-none">
-        <ReactMarkdown>{content}</ReactMarkdown>
+        <ReactMarkdown>{renderedContent}</ReactMarkdown>
       </div>
+      
+      {isPending && <div className="text-sm text-muted-foreground mt-2">Rendering content...</div>}
     </div>
   );
 };

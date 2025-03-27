@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
@@ -16,6 +16,14 @@ export function TagPanel() {
   const [contentId, setContentId] = useState<string>(`temp-${Date.now()}`); // Temporary content ID
   const [isPending, startTransition] = useTransition();
   const { user } = useAuth();
+  const isMounted = useRef(true);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const handleTagging = async () => {
     if (!text.trim()) {
@@ -35,24 +43,30 @@ export function TagPanel() {
       
       if (error) throw error;
       
-      startTransition(() => {
-        setTags(data?.tags || []);
-        setContentId(`temp-${Date.now()}`);
-      });
-      
-      toast({
-        title: "Success",
-        description: "Tags generated successfully",
-      });
+      if (isMounted.current) {
+        startTransition(() => {
+          setTags(data?.tags || []);
+          setContentId(`temp-${Date.now()}`);
+        });
+        
+        toast({
+          title: "Success",
+          description: "Tags generated successfully",
+        });
+      }
     } catch (error) {
       console.error("Error generating tags:", error);
-      toast({
-        title: "Error",
-        description: "Failed to generate tags. Please try again.",
-        variant: "destructive",
-      });
+      if (isMounted.current) {
+        toast({
+          title: "Error",
+          description: "Failed to generate tags. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -93,21 +107,27 @@ export function TagPanel() {
         throw error;
       }
 
-      toast({
-        title: "Success",
-        description: `${tags.length} tags saved successfully`,
-      });
+      if (isMounted.current) {
+        toast({
+          title: "Success",
+          description: `${tags.length} tags saved successfully`,
+        });
+      }
       
       console.log(`Saved ${tags.length} tags with content_id: ${validContentId}`);
     } catch (error: any) {
       console.error("Error saving tags:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save tags. Please try again.",
-        variant: "destructive",
-      });
+      if (isMounted.current) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to save tags. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
-      setIsSaving(false);
+      if (isMounted.current) {
+        setIsSaving(false);
+      }
     }
   };
 
