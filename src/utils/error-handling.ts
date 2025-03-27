@@ -1,5 +1,6 @@
 
 import { toast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 
 export type ErrorLevel = "info" | "warning" | "error" | "success";
 
@@ -53,11 +54,12 @@ export function handleError(
     title,
     description: errorMessage,
     variant: level === "error" ? "destructive" : undefined,
-    action: actionLabel && action ? {
-      // Fix: Correctly name the property as 'children' instead of 'label'
-      children: actionLabel,
-      onClick: action
-    } : undefined
+    action: actionLabel && action ? (
+      // Fix: Create the ToastAction component directly instead of using an object
+      <ToastAction onClick={action}>
+        {actionLabel}
+      </ToastAction>
+    ) : undefined
   });
 }
 
