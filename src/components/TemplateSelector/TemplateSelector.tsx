@@ -160,3 +160,6 @@ export function TemplateSelector({
     </div>
   );
 }
+
+// Adding default export
+export default TemplateSelector;

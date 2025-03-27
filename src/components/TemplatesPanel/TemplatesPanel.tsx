@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { KnowledgeTemplate, PaginationParams } from "@/services/api/types";
 import { fetchKnowledgeTemplates } from "@/services/api";
-import { TemplateSelector } from "@/components/TemplateSelector";
+import TemplateSelector from "@/components/TemplateSelector";
 import { TemplatePreviewCard } from "./TemplatePreviewCard";
 import { TemplateListCard } from "./TemplateListCard";
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card";
