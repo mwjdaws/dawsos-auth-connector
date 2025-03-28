@@ -1,146 +1,121 @@
 
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { createKnowledgeSourceVersion, restoreKnowledgeSourceVersion } from '@/services/api/knowledgeSourceVersions';
-import { toast } from '@/hooks/use-toast';
+import { fetchKnowledgeSourceVersions } from '@/services/api/knowledgeSourceVersions';
+import { handleError } from '@/utils/error-handling';
 
-interface DocumentData {
+interface DocumentVersion {
   id: string;
-  title: string;
+  version_number: number;
   content: string;
-  templateId: string | null;
-  userId: string | undefined;
+  created_at: string;
+  metadata?: any;
 }
 
 /**
- * Hook for handling document versioning operations
+ * Hook for managing document version history
  */
 export const useDocumentVersioning = () => {
-  /**
-   * Creates a version of the current document content
-   * @param documentId The document ID
-   * @param isAutoSave Whether this is triggered by autosave
-   * @param metadata Additional metadata to store with the version
-   */
-  const createVersion = async (
-    documentId: string, 
-    isAutoSave = false,
-    metadata: Record<string, any> = {}
-  ) => {
-    try {
-      // Fetch the current content to save as a version
-      const { data: currentDocument, error: fetchError } = await supabase
-        .from('knowledge_sources')
-        .select('content, user_id')
-        .eq('id', documentId)
-        .single();
-      
-      if (fetchError) {
-        console.error('Error fetching current document content:', fetchError);
-        return false;
-      } 
-      
-      if (currentDocument) {
-        // Create a version record with enhanced metadata
-        const versionMetadata = {
-          saved_from: isAutoSave ? "auto_save" : "manual_save",
-          saved_by: currentDocument.user_id || null,
-          ...metadata
-        };
+  const [isLoading, setIsLoading] = useState(false);
+  const [versions, setVersions] = useState<DocumentVersion[]>([]);
 
-        // Create the version
-        await createKnowledgeSourceVersion({
-          source_id: documentId,
-          version_number: 1, // The API will determine the correct version number
-          content: currentDocument.content,
-          metadata: versionMetadata
-        });
-        
-        return true;
-      }
-      return false;
+  /**
+   * Fetch version history for a document
+   */
+  const fetchVersions = async (documentId: string) => {
+    // Skip operation for temporary IDs
+    if (documentId.startsWith('temp-')) {
+      setVersions([]);
+      return [];
+    }
+    
+    setIsLoading(true);
+    try {
+      const data = await fetchKnowledgeSourceVersions(documentId);
+      setVersions(data || []);
+      return data;
     } catch (error) {
-      console.error('Error creating version:', error);
-      return false;
+      console.error('Failed to load versions:', error);
+      handleError(
+        error,
+        "Failed to load version history",
+        { level: "warning" }
+      );
+      return [];
+    } finally {
+      setIsLoading(false);
     }
   };
 
   /**
-   * Loads a specific version of a document
-   * @param versionId The version ID to load
+   * Create a new version of a document
    */
-  const loadVersion = async (versionId: string) => {
+  const createVersion = async (
+    documentId: string,
+    content: string,
+    metadata: Record<string, any> = {}
+  ) => {
+    // Skip version creation for temporary IDs
+    if (!documentId || documentId.startsWith('temp-')) {
+      return null;
+    }
+    
     try {
+      const newVersion = {
+        source_id: documentId,
+        content,
+        metadata
+      };
+      
       const { data, error } = await supabase
         .from('knowledge_source_versions')
-        .select('*')
-        .eq('id', versionId)
+        .insert(newVersion)
+        .select()
         .single();
       
-      if (error) {
-        throw new Error(`Failed to load version: ${error.message}`);
-      }
+      if (error) throw error;
+      
+      // Refresh the versions list
+      await fetchVersions(documentId);
       
       return data;
     } catch (error) {
-      console.error('Error loading version:', error);
-      toast({
-        title: "Error Loading Version",
-        description: "Failed to load the requested version",
-        variant: "destructive"
-      });
+      console.error('Failed to create version:', error);
+      // Silent failure for versioning - it shouldn't block the main operation
       return null;
     }
   };
 
   /**
-   * Restores a specific version of a document
-   * @param versionId The version ID to restore
+   * Restore a specific version of a document
    */
   const restoreVersion = async (versionId: string) => {
+    setIsLoading(true);
     try {
-      // First create a new version of the current state as a backup
-      const { data: versionData, error: versionError } = await supabase
-        .from('knowledge_source_versions')
-        .select('source_id')
-        .eq('id', versionId)
-        .single();
-        
-      if (versionError) {
-        throw new Error(`Failed to get version info: ${versionError.message}`);
-      }
-      
-      // Create a backup of the current state
-      const backupCreated = await createVersion(versionData.source_id, false, {
-        restore_operation: `backup_before_restoring_${versionId}`
+      const { data, error } = await supabase.rpc('restore_knowledge_source_version', {
+        version_id: versionId
       });
       
-      if (!backupCreated) {
-        console.warn('Could not create backup before restoring version');
-      }
-      
-      // Now restore the version
-      await restoreKnowledgeSourceVersion(versionId);
-      
-      toast({
-        title: "Version Restored",
-        description: "The selected version has been restored successfully",
-      });
-      
+      if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Error restoring version:', error);
-      toast({
-        title: "Error Restoring Version",
-        description: "Failed to restore the selected version",
-        variant: "destructive"
-      });
+      console.error('Failed to restore version:', error);
+      handleError(
+        error,
+        "Failed to restore version",
+        { level: "error" }
+      );
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return {
+    versions,
+    isLoading,
+    fetchVersions,
     createVersion,
-    loadVersion,
     restoreVersion
   };
 };

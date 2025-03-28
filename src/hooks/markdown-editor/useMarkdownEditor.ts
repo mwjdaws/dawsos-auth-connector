@@ -70,7 +70,8 @@ export const useMarkdownEditor = ({
   // Operation handlers (with UI feedback)
   const {
     handleSaveDraft,
-    handlePublish
+    handlePublish,
+    isSavingManually
   } = useDocumentOperationHandlers({
     title,
     content,
@@ -97,15 +98,18 @@ export const useMarkdownEditor = ({
     setIsDirty
   });
 
-  // Configure autosave
+  // Configure autosave - avoid autosaving for temp documents
+  const effectiveDocumentId = documentId || sourceId;
+  const isTemp = effectiveDocumentId ? effectiveDocumentId.startsWith('temp-') : false;
+  
   useAutosave({
     isDirty,
     isSaving,
     isPublishing,
-    documentId: documentId || sourceId,
+    documentId: effectiveDocumentId,
     onSave: () => handleSaveDraft(false),
     interval: 30000, // Increased to 30 seconds to reduce save frequency
-    enabled: !!documentId || !!sourceId // Only enable when we have a valid document
+    enabled: !isTemp && (!!documentId || !!sourceId) // Only enable when we have a valid document
   });
 
   // Initialize content when props change
@@ -136,7 +140,7 @@ export const useMarkdownEditor = ({
     
     // Operation states
     isLoadingTemplate,
-    isSaving,
+    isSaving: isSaving || isSavingManually,
     isPublishing,
     isDirty,
     isPublished,

@@ -2,6 +2,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { handleError } from '@/utils/error-handling';
 
 interface UseContentLoaderProps {
   sourceId?: string;
@@ -30,9 +31,15 @@ export const useContentLoader = ({
   const [isLoading, setIsLoading] = useState(!!sourceId);
   const [isPending, startTransition] = useTransition();
 
-  // Load existing content if sourceId is provided
+  // Load existing content if sourceId is provided and not a temporary ID
   useEffect(() => {
     const fetchExistingContent = async () => {
+      // Skip loading for temporary IDs (which start with "temp-")
+      if (sourceId && sourceId.startsWith('temp-')) {
+        setIsLoading(false);
+        return;
+      }
+      
       if (sourceId) {
         try {
           setIsLoading(true);
@@ -59,11 +66,14 @@ export const useContentLoader = ({
           }
         } catch (error) {
           console.error('Error loading existing content:', error);
-          toast({
-            title: "Error Loading Content",
-            description: "There was an error loading the existing content. Please try again.",
-            variant: "destructive",
-          });
+          handleError(
+            error,
+            "Error loading content", 
+            { 
+              level: "error",
+              technical: false
+            }
+          );
         } finally {
           setIsLoading(false);
         }

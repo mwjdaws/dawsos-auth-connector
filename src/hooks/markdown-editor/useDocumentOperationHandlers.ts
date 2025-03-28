@@ -50,6 +50,10 @@ export const useDocumentOperationHandlers = ({
   const { user } = useAuth();
   const [isSavingManually, setIsSavingManually] = useState(false);
 
+  // Get the effective document ID (either documentId or sourceId)
+  const effectiveDocumentId = documentId || sourceId;
+  const isTemp = effectiveDocumentId ? effectiveDocumentId.startsWith('temp-') : false;
+
   /**
    * Handle saving a draft with feedback
    */
@@ -67,6 +71,11 @@ export const useDocumentOperationHandlers = ({
 
     if (!showFeedback) {
       // For autosave, don't show UI feedback but still save
+      // Skip autosave for temporary documents
+      if (isTemp) {
+        return null;
+      }
+      
       try {
         const savedId = await saveDraft(title, content, templateId, user?.id, true);
         
@@ -131,6 +140,16 @@ export const useDocumentOperationHandlers = ({
         title: "Title Required",
         description: "Please enter a title before publishing",
         variant: "destructive",
+      });
+      return null;
+    }
+    
+    // Cannot publish temporary documents
+    if (isTemp) {
+      toast({
+        title: "Save Required",
+        description: "Please save the document as a draft before publishing",
+        variant: "warning",
       });
       return null;
     }
