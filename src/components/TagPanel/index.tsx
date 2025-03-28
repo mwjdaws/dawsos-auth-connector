@@ -54,20 +54,24 @@ export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
     });
   }, [contentId, tagContentId, tags, isLoading, isPending, isProcessing, isRetrying]);
   
+  // Force refresh when contentId changes to ensure correct display
+  useEffect(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, [contentId, tagContentId]);
+  
   // Handle tag generation from content
   const processTagGeneration = (text: string) => {
     if (text && text.trim()) {
       setContent(text);
       console.log("[TagPanel] Generating tags for text:", text.substring(0, 50) + "...");
       
-      // Fixed: Use startTransition properly
       startTransition(() => {
-        // Call the tag generation function from the hook
         handleGenerateTags(text)
           .then(newContentId => {
             if (newContentId) {
               console.log("[TagPanel] Generation complete, new contentId:", newContentId);
               setContentId(newContentId);
+              setRefreshTrigger(prev => prev + 1); // Force refresh
             } else {
               console.error("[TagPanel] No contentId returned from tag generation");
             }
@@ -103,6 +107,7 @@ export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
     if (result && typeof result === 'string') {
       console.log("[TagPanel] Tags saved, calling onTagsSaved with:", result);
       onTagsSaved(result);
+      setRefreshTrigger(prev => prev + 1); // Force refresh after save
     }
   };
   

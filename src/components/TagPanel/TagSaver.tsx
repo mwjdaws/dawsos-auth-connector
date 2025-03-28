@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Save, CheckCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -24,6 +24,12 @@ export function TagSaver({
 }: TagSaverProps) {
   const [saveComplete, setSaveComplete] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Reset save status when tags or contentId changes
+  useEffect(() => {
+    setSaveComplete(false);
+    setSaveError(null);
+  }, [tags, contentId]);
 
   const handleSave = async () => {
     if (tags.length === 0) {
@@ -58,8 +64,10 @@ export function TagSaver({
           description: `${tags.length} tags saved successfully`,
         });
         
-        // Notify parent component
-        onTagsSaved(result);
+        // Notify parent component with a slight delay to allow UI state to update
+        setTimeout(() => {
+          onTagsSaved(result);
+        }, 100);
       } else {
         setSaveError("Failed to save tags");
         toast({

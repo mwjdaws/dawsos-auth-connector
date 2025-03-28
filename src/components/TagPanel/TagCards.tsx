@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface TagGroup {
   content_id: string;
@@ -14,6 +16,7 @@ export function TagCards() {
   const [tagGroups, setTagGroups] = useState<TagGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     async function fetchTags() {
@@ -69,7 +72,11 @@ export function TagCards() {
     }
 
     fetchTags();
-  }, []);
+  }, [refreshKey]);
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   if (isLoading) {
     return (
@@ -100,28 +107,47 @@ export function TagCards() {
     return (
       <Card className="mt-6">
         <CardContent className="p-6">
-          <p className="text-center text-muted-foreground">No tags found. Generate and save some tags to see them here.</p>
+          <div className="flex flex-col items-center space-y-4 py-4">
+            <p className="text-center text-muted-foreground">No tags found. Generate and save some tags to see them here.</p>
+            <Button variant="outline" onClick={handleRefresh} className="flex items-center">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-      {tagGroups.map((group, index) => (
-        <Card key={index}>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Content ID: {group.content_id}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {group.tags.map((tag, tagIndex) => (
-                <Badge key={tagIndex} variant="secondary">{tag}</Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh} 
+          className="flex items-center"
+        >
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Refresh
+        </Button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {tagGroups.map((group, index) => (
+          <Card key={index}>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Content ID: {group.content_id}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {group.tags.map((tag, tagIndex) => (
+                  <Badge key={tagIndex} variant="secondary">{tag}</Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }
