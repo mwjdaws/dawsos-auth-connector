@@ -10,7 +10,14 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Calendar, CheckCircle, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from "@/components/ui/tooltip";
+import { ExternalLink, Calendar, CheckCircle, AlertTriangle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "@/components/ui/use-toast";
 import { handleError } from "@/utils/errors";
@@ -28,34 +35,57 @@ export function ComplianceTab() {
   const [reviewItems, setReviewItems] = useState<ExternalReviewItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState<Record<string, boolean>>({});
   
   // Fetch items that need external review
-  useEffect(() => {
-    async function fetchReviewItems() {
-      try {
-        setLoading(true);
-        
-        const { data, error } = await supabase
-          .from('knowledge_sources')
-          .select('id, title, external_source_url, external_source_checked_at, needs_external_review')
-          .eq('needs_external_review', true)
-          .order('title');
-        
-        if (error) throw error;
-        
-        setReviewItems(data || []);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching review items:", err);
-        setError("Failed to load review items. Please try again.");
-        handleError(err, "Failed to load compliance review items.");
-      } finally {
-        setLoading(false);
-      }
+  const fetchReviewItems = async () => {
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase
+        .from('knowledge_sources')
+        .select('id, title, external_source_url, external_source_checked_at, needs_external_review')
+        .eq('needs_external_review', true)
+        .order('title');
+      
+      if (error) throw error;
+      
+      setReviewItems(data || []);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching review items:", err);
+      setError("Failed to load review items. Please try again.");
+      handleError(err, "Failed to load compliance review items.");
+    } finally {
+      setLoading(false);
     }
-    
+  };
+  
+  useEffect(() => {
     fetchReviewItems();
   }, []);
+  
+  // Handle validating an external source
+  const handleValidateSource = async (id: string) => {
+    try {
+      setRefreshing(prev => ({ ...prev, [id]: true }));
+      
+      await validateExternalSource(id);
+      
+      // Refresh the item data
+      await fetchReviewItems();
+      
+      toast({
+        title: "Validation complete",
+        description: "External source has been validated."
+      });
+    } catch (err) {
+      console.error("Error validating source:", err);
+      // Error is already handled in validateExternalSource
+    } finally {
+      setRefreshing(prev => ({ ...prev, [id]: false }));
+    }
+  };
   
   // Handle toggling the review flag
   const toggleReviewFlag = async (id: string, currentValue: boolean) => {
@@ -95,6 +125,24 @@ export function ComplianceTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Content Requiring Review</h2>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={fetchReviewItems}
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              Loading...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </>
+          )}
+        </Button>
       </div>
       
       {error && (
@@ -113,65 +161,93 @@ export function ComplianceTab() {
           <p className="text-gray-500">No items flagged for external review.</p>
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>External Source</TableHead>
-              <TableHead>Last Checked</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {reviewItems.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.title}</TableCell>
-                <TableCell>
-                  {item.external_source_url ? (
-                    <a 
-                      href={item.external_source_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center text-primary hover:underline"
-                    >
-                      <ExternalLink className="h-4 w-4 mr-1" />
-                      View Source
-                    </a>
-                  ) : (
-                    <span className="text-gray-500">No source URL</span>
-                  )}
-                </TableCell>
-                <TableCell className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-1 text-gray-500" />
-                  {formatDate(item.external_source_checked_at)}
-                </TableCell>
-                <TableCell>
-                  {item.needs_external_review ? (
-                    <div className="flex items-center text-amber-600">
-                      <AlertTriangle className="h-4 w-4 mr-1" />
-                      Needs Review
-                    </div>
-                  ) : (
-                    <div className="flex items-center text-green-600">
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      Reviewed
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => toggleReviewFlag(item.id, item.needs_external_review)}
-                  >
-                    {item.needs_external_review ? "Clear Flag" : "Flag for Review"}
-                  </Button>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>External Source</TableHead>
+                <TableHead>Last Checked</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {reviewItems.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium">{item.title}</TableCell>
+                  <TableCell>
+                    {item.external_source_url ? (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <a 
+                              href={item.external_source_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="flex items-center text-primary hover:underline"
+                            >
+                              <ExternalLink className="h-4 w-4 mr-1" />
+                              View Source
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-xs break-all">{item.external_source_url}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      <span className="text-gray-500">No source URL</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="flex items-center">
+                    <Calendar className="h-4 w-4 mr-1 text-gray-500" />
+                    {formatDate(item.external_source_checked_at)}
+                  </TableCell>
+                  <TableCell>
+                    {item.needs_external_review ? (
+                      <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
+                        <AlertTriangle className="h-4 w-4 mr-1" />
+                        Needs Review
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Reviewed
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleReviewFlag(item.id, item.needs_external_review)}
+                      >
+                        {item.needs_external_review ? "Mark as Reviewed" : "Flag for Review"}
+                      </Button>
+                      
+                      {item.external_source_url && (
+                        <Button 
+                          variant="secondary" 
+                          size="sm"
+                          onClick={() => handleValidateSource(item.id)}
+                          disabled={refreshing[item.id]}
+                        >
+                          {refreshing[item.id] ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Validate URL"
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   );
