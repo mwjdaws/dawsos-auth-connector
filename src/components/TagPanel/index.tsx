@@ -56,6 +56,12 @@ export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
     }
   };
   
+  // Handle tag click for filtering or navigation
+  const handleTagClick = (tag: string) => {
+    console.log(`Tag clicked: ${tag} - Ready for filtering or navigation implementation`);
+    // Future implementation: Add filtering or navigation logic here
+  };
+  
   return (
     <ErrorBoundary fallback={<TagPanelErrorFallback />}>
       <div className="space-y-6 w-full">
@@ -68,6 +74,7 @@ export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
           tags={generatedTags}
           isLoading={isGeneratingTags}
           knowledgeSourceId={contentId}
+          onTagClick={handleTagClick}
         />
         
         <TagSaver
