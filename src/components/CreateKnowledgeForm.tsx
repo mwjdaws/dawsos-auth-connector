@@ -19,6 +19,7 @@ export function CreateKnowledgeForm() {
     title: "",
     content: ""
   });
+  const [templateId, setTemplateId] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -26,7 +27,13 @@ export function CreateKnowledgeForm() {
   };
 
   const handleTemplateSelect = (template: KnowledgeTemplate) => {
-    setFormData(prev => ({ ...prev, content: template.content }));
+    setFormData(prev => ({ 
+      ...prev, 
+      content: template.content,
+      title: prev.title || template.name 
+    }));
+    setTemplateId(template.id);
+    
     toast({
       title: "Template Applied",
       description: `Template "${template.name}" has been applied`
@@ -45,12 +52,22 @@ export function CreateKnowledgeForm() {
       return;
     }
 
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to create content",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       const result = await createKnowledgeSource({
         title: formData.title,
         content: formData.content || "# New Document\n\nStart writing here...",
-        user_id: user?.id
+        user_id: user.id,
+        template_id: templateId
       });
 
       if (result) {
@@ -61,6 +78,7 @@ export function CreateKnowledgeForm() {
         
         // Reset form after successful creation
         setFormData({ title: "", content: "" });
+        setTemplateId(null);
       }
     } catch (error) {
       console.error("Error creating knowledge source:", error);

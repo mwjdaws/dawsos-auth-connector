@@ -20,13 +20,17 @@ export const createKnowledgeTemplate = async (template: Omit<KnowledgeTemplate, 
     validateTemplateContent(template.content);
     validateTemplateMetadata(template.metadata);
     
+    // Get the current user ID
+    const { data: { user } } = await supabase.auth.getUser();
+    
     // Create a clean object with only the properties we need
     const templateData = {
       name: template.name,
       content: template.content,
       metadata: template.metadata,
       structure: template.structure,
-      is_global: template.is_global || false
+      is_global: template.is_global || false,
+      user_id: user?.id || template.user_id // Use provided user_id as fallback
     };
     
     const { data, error } = await supabase

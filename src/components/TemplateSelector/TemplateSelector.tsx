@@ -12,6 +12,7 @@ import { TemplateDropdown } from "./TemplateDropdown";
 import { TemplatePagination } from "./TemplatePagination";
 import { CreateTemplateDialog } from "./CreateTemplateDialog";
 import { generateStructureFromContent } from "./utils";
+import { useAuth } from "@/hooks/useAuth";
 
 export function TemplateSelector({ 
   onSelectTemplate, 
@@ -34,6 +35,7 @@ export function TemplateSelector({
     name: '',
     content: ''
   });
+  const { user } = useAuth();
 
   const loadTemplates = async () => {
     try {
@@ -100,6 +102,15 @@ export function TemplateSelector({
       return;
     }
 
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to create templates",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       
@@ -110,7 +121,8 @@ export function TemplateSelector({
         content: newTemplate.content,
         metadata: { custom: true },
         structure: structure,
-        is_global: false
+        is_global: false,
+        user_id: user.id
       });
 
       if (data && data.length > 0) {

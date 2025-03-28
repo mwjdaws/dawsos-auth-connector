@@ -9,6 +9,7 @@ import { TemplateListCard } from "./TemplateListCard";
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export function TemplatesPanel() {
   const [templates, setTemplates] = useState<KnowledgeTemplate[]>([]);
@@ -21,6 +22,7 @@ export function TemplatesPanel() {
   });
   const [selectedTemplate, setSelectedTemplate] = useState<KnowledgeTemplate | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const { user } = useAuth();
 
   const loadTemplates = async () => {
     try {
@@ -67,14 +69,26 @@ export function TemplatesPanel() {
   };
 
   const handleCreateFromTemplate = () => {
-    if (selectedTemplate) {
-      toast({
-        title: "Creating Content",
-        description: `Creating new content from template: ${selectedTemplate.name}`,
-      });
-      // Here you would typically redirect to a creation page or open a modal
-      // For now, we'll just show a toast
+    if (!selectedTemplate) {
+      return;
     }
+
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to create content from templates",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "Creating Content",
+      description: `Creating new content from template: ${selectedTemplate.name}`,
+    });
+    
+    // Here you would typically redirect to a creation page or open a modal
+    // For now, we'll just show a toast
   };
 
   // Get paginated templates
