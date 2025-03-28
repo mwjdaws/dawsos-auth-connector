@@ -2,11 +2,13 @@
 import { ReactNode, useTransition, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingIndicator } from "./LoadingIndicator";
-import { TagGeneratorTab } from "./TabContents/TagGeneratorTab";
-import { MarkdownViewerTab } from "./TabContents/MarkdownViewerTab";
-import { MarkdownEditorTab } from "./TabContents/MarkdownEditorTab";
-import { MetadataTab } from "./TabContents/MetadataTab";
-import { TemplatesTab } from "./TabContents/TemplatesTab";
+import { 
+  TagGeneratorTab, 
+  MarkdownViewerTab, 
+  MarkdownEditorTab, 
+  MetadataTab, 
+  TemplatesTab 
+} from "./TabContents";
 import { useDashboardTabs } from "@/hooks/dashboard/useDashboardTabs";
 
 interface DashboardTabsProps {
