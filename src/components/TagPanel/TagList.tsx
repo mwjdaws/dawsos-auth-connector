@@ -1,10 +1,8 @@
-
 import React, { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { handleError } from "@/utils/error-handling";
 import { TagPill } from "./TagPill";
-import { supabase } from "@/integrations/supabase/client";
 
 interface TagListProps {
   tags: string[]; // Direct tags
@@ -35,18 +33,16 @@ export function TagList({
     const fetchRelatedTags = async () => {
       setIsRelatedLoading(true);
       try {
-        // Use the Supabase edge function to get related tags
-        const { data, error } = await supabase.functions.invoke('get-related-tags', {
-          query: { knowledgeSourceId }
-        });
+        const response = await fetch(`/api/ontology-relationships?knowledgeSourceId=${knowledgeSourceId}`);
         
-        if (error) {
-          throw new Error(`Function error: ${error.message}`);
+        if (!response.ok) {
+          throw new Error(`API returned status: ${response.status}`);
         }
         
-        setRelatedTags(data?.relatedTags || []);
+        const data = await response.json();
+        setRelatedTags(data.relatedTags || []);
         
-        console.log(`Related tags fetched for source ID ${knowledgeSourceId}:`, data?.relatedTags);
+        console.log(`Related tags fetched for source ID ${knowledgeSourceId}:`, data.relatedTags);
       } catch (error) {
         console.error("Failed to fetch related tags:", error);
         handleError(error, "Failed to fetch related tags. Please try again later.", {
@@ -103,11 +99,7 @@ export function TagList({
         <>
           <h3 className="text-sm font-medium mt-4 mb-2">Related Tags:</h3>
           {isRelatedLoading ? (
-            <div className="flex flex-wrap gap-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-8 w-20 rounded-xl" />
-              ))}
-            </div>
+            renderSkeletons(3)
           ) : relatedTags.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {relatedTags.map((tag, index) => (
