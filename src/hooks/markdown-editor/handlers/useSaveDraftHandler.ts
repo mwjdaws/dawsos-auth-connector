@@ -18,7 +18,7 @@ interface UseSaveDraftHandlerProps {
   setLastSavedExternalSourceUrl: (url: string) => void;
   setIsDirty: (isDirty: boolean) => void;
   onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
-  createVersion: (documentId: string, content: string, metadata?: any) => Promise<void>;
+  createVersion: (documentId: string, content: string, metadata?: any) => Promise<any>;
 }
 
 export const useSaveDraftHandler = ({

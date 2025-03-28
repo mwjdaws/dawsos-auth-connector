@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useDocumentVersioning } from '../useDocumentVersioning';
-import { useDraftOperations } from '../useDraftOperations';
+import { useDraftOperations } from '../draft-operations/useDraftOperations';
 import { usePublishOperations } from '../usePublishOperations';
 import { handleError } from '@/utils/error-handling';
 import { DocumentOperationsProps, DocumentOperationResult } from '../types';

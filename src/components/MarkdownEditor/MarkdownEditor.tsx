@@ -136,7 +136,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
       <Separator className="my-6" />
 
       <EditorActions 
-        onSaveDraft={() => handleSaveDraft(false)}
+        onSaveDraft={() => handleSaveDraft({isManualSave: true, isAutoSave: false})}
         onPublish={handlePublish}
         isSaving={isSaving}
         isPublishing={isPublishing}
