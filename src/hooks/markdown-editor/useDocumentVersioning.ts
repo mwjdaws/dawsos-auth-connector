@@ -111,11 +111,43 @@ export const useDocumentVersioning = () => {
     setIsLoading(true);
     try {
       // Call the restore_knowledge_source_version function
-      const { data, error } = await supabase.rpc('restore_knowledge_source_version', {
-        version_id: versionId
-      });
+      // Fix: Use a more generic approach instead of .rpc with a specific function name
+      const { data, error } = await supabase
+        .from('knowledge_source_versions')
+        .select('source_id, content')
+        .eq('id', versionId)
+        .single();
       
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error('Version not found');
+      }
+      
+      // Create a backup of the current state
+      const { data: currentSource, error: sourceError } = await supabase
+        .from('knowledge_sources')
+        .select('content')
+        .eq('id', data.source_id)
+        .single();
+        
+      if (sourceError) throw sourceError;
+      
+      if (currentSource) {
+        // Create a backup before restoring
+        await createVersion(data.source_id, currentSource.content, {
+          restore_operation: `backup_before_restoring_${versionId}`
+        });
+      }
+      
+      // Update the source with the version content
+      const { error: updateError } = await supabase
+        .from('knowledge_sources')
+        .update({ content: data.content })
+        .eq('id', data.source_id);
+        
+      if (updateError) throw updateError;
+      
       return true;
     } catch (error) {
       console.error('Failed to restore version:', error);

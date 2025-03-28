@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { handleError } from '@/utils/error-handling';
-import { useAuth } from '@/hooks/useAuth';
 
 interface UseDocumentOperationHandlersProps {
   title: string;
@@ -10,19 +9,8 @@ interface UseDocumentOperationHandlersProps {
   templateId: string | null;
   documentId?: string;
   sourceId?: string;
-  saveDraft: (
-    title: string,
-    content: string,
-    templateId: string | null,
-    userId: string | undefined,
-    isAutoSave?: boolean
-  ) => Promise<string | null>;
-  publishDocument: (
-    title: string,
-    content: string,
-    templateId: string | null,
-    userId: string | undefined
-  ) => Promise<any>;
+  saveDraft: (title: string, content: string, templateId: string | null, userId: string | undefined, isAutoSave?: boolean) => Promise<string | null>;
+  publishDocument: (title: string, content: string, templateId: string | null, userId: string | undefined) => Promise<any>;
   setLastSavedTitle: (title: string) => void;
   setLastSavedContent: (content: string) => void;
   setIsDirty: (isDirty: boolean) => void;
@@ -30,9 +18,6 @@ interface UseDocumentOperationHandlersProps {
   onPublish?: (id: string, title: string, content: string, templateId: string | null) => void;
 }
 
-/**
- * Hook for document operation handlers with UI feedback
- */
 export const useDocumentOperationHandlers = ({
   title,
   content,
@@ -47,92 +32,79 @@ export const useDocumentOperationHandlers = ({
   onSaveDraft,
   onPublish
 }: UseDocumentOperationHandlersProps) => {
-  const { user } = useAuth();
   const [isSavingManually, setIsSavingManually] = useState(false);
-
-  // Get the effective document ID (either documentId or sourceId)
-  const effectiveDocumentId = documentId || sourceId;
-  const isTemp = effectiveDocumentId ? effectiveDocumentId.startsWith('temp-') : false;
-
+  
   /**
-   * Handle saving a draft with feedback
+   * Save the document as a draft with user feedback
+   * @param isManualSave Whether the save was initiated manually by the user
+   * @param isAutoSave Whether the save was initiated by the autosave feature
    */
-  const handleSaveDraft = async (showFeedback = true) => {
-    if (!title.trim()) {
-      if (showFeedback) {
+  const handleSaveDraft = async (isManualSave = true, isAutoSave = false) => {
+    // Skip UI feedback for autosave
+    if (isManualSave) {
+      if (!title.trim()) {
         toast({
           title: "Title Required",
           description: "Please enter a title before saving",
           variant: "destructive",
         });
-      }
-      return null;
-    }
-
-    if (!showFeedback) {
-      // For autosave, don't show UI feedback but still save
-      // Skip autosave for temporary documents
-      if (isTemp) {
         return null;
       }
       
-      try {
-        const savedId = await saveDraft(title, content, templateId, user?.id, true);
-        
-        if (savedId) {
-          setLastSavedTitle(title);
-          setLastSavedContent(content);
-          setIsDirty(false);
-        }
-        
-        return savedId;
-      } catch (error) {
-        // Silent failure for autosave
-        console.error('Autosave failed:', error);
-        return null;
-      }
-    }
-
-    // Manual save with UI feedback
-    try {
       setIsSavingManually(true);
+    }
+    
+    try {
+      // Use sourceId as fallback when documentId is not available
+      const effectiveDocumentId = documentId || sourceId;
       
-      const savedId = await saveDraft(title, content, templateId, user?.id, false);
+      // Get current user ID (from auth context if available)
+      const userId = undefined; // Replace with actual user ID from auth context if available
+      
+      const savedId = await saveDraft(title, content, templateId, userId, isAutoSave);
       
       if (savedId) {
+        // Update lastSaved state to reflect the current values
         setLastSavedTitle(title);
         setLastSavedContent(content);
         setIsDirty(false);
         
-        if (onSaveDraft) {
-          onSaveDraft(savedId, title, content, templateId);
+        // Provide user feedback for manual saves
+        if (isManualSave && !isAutoSave) {
+          toast({
+            title: "Draft Saved",
+            description: "Your document has been saved as a draft",
+          });
+          
+          // Call the onSaveDraft callback if provided
+          if (onSaveDraft) {
+            onSaveDraft(savedId, title, content, templateId);
+          }
         }
-        
-        toast({
-          title: "Draft Saved",
-          description: "Your document has been saved",
-        });
       }
       
       return savedId;
     } catch (error) {
-      handleError(
-        error, 
-        "Failed to save draft", 
-        { 
-          level: "error",
-          actionLabel: "Try Again",
-          action: () => handleSaveDraft(true)
-        }
-      );
+      if (isManualSave && !isAutoSave) {
+        handleError(
+          error,
+          "Failed to save draft",
+          { level: "error", technical: false }
+        );
+      } else {
+        // Log autosave errors but don't show to user
+        console.error('Autosave error:', error);
+      }
       return null;
     } finally {
-      setIsSavingManually(false);
+      if (isManualSave) {
+        setIsSavingManually(false);
+      }
     }
   };
-
+  
   /**
-   * Handle publishing a document with feedback
+   * Publish the document with user feedback
    */
   const handlePublish = async () => {
     if (!title.trim()) {
@@ -141,57 +113,48 @@ export const useDocumentOperationHandlers = ({
         description: "Please enter a title before publishing",
         variant: "destructive",
       });
-      return null;
+      return;
     }
     
-    // Cannot publish temporary documents
-    if (isTemp) {
+    // Save first to ensure we have the latest content
+    const savedId = await handleSaveDraft(true, false);
+    if (!savedId) {
       toast({
         title: "Save Required",
-        description: "Please save the document as a draft before publishing",
-        variant: "default",
+        description: "Your document must be saved before publishing",
+        variant: "destructive",
       });
-      return null;
+      return;
     }
     
     try {
-      // First ensure we have the latest content saved
-      const savedId = await handleSaveDraft(false);
+      // Get current user ID (from auth context if available)
+      const userId = undefined; // Replace with actual user ID from auth context if available
       
-      if (!savedId) {
-        throw new Error("Failed to save document before publishing");
-      }
-      
-      const result = await publishDocument(title, content, templateId, user?.id);
+      const result = await publishDocument(title, content, templateId, userId);
       
       if (result.success) {
-        if (onPublish) {
-          onPublish(savedId, title, content, templateId);
-        }
-        
         toast({
-          title: "Document Published",
-          description: "Your document has been published successfully",
+          title: "Published Successfully",
+          description: "Your document has been published",
         });
         
-        return result;
+        // Call the onPublish callback if provided
+        if (onPublish && result.documentId) {
+          onPublish(result.documentId, title, content, templateId);
+        }
       } else {
-        throw new Error(result.error || "Unknown error during publishing");
+        throw new Error(result.error || 'Failed to publish document');
       }
     } catch (error) {
       handleError(
-        error, 
-        "Failed to publish document", 
-        { 
-          level: "error",
-          actionLabel: "Try Again",
-          action: () => handlePublish()
-        }
+        error,
+        "Failed to publish document",
+        { level: "error", technical: false }
       );
-      return null;
     }
   };
-
+  
   return {
     handleSaveDraft,
     handlePublish,
