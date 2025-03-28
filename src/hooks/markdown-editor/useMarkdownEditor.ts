@@ -142,13 +142,30 @@ export const useMarkdownEditor = ({
   // Handle save draft wrapper
   const handleSaveDraft = async (isAutoSave = false) => {
     if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "You must be logged in to save drafts",
-        variant: "destructive",
-      });
+      if (!isAutoSave) {
+        toast({
+          title: "Authentication Required",
+          description: "You must be logged in to save drafts",
+          variant: "destructive",
+        });
+      }
       return null;
     }
+    
+    // Ensure we always pass a valid user.id
+    if (!user.id) {
+      console.error("User object exists but has no ID property");
+      if (!isAutoSave) {
+        toast({
+          title: "Authentication Error",
+          description: "User ID not available. Please try logging out and back in.",
+          variant: "destructive",
+        });
+      }
+      return null;
+    }
+    
+    console.log("Saving draft with user ID:", user.id);
     
     const result = await saveDraft(title, content, templateId, user.id, isAutoSave);
     if (result) {
@@ -166,6 +183,17 @@ export const useMarkdownEditor = ({
       toast({
         title: "Authentication Required",
         description: "You must be logged in to publish content",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Explicit check for user.id
+    if (!user.id) {
+      console.error("User object exists but has no ID property");
+      toast({
+        title: "Authentication Error",
+        description: "User ID not available. Please try logging out and back in.",
         variant: "destructive",
       });
       return;

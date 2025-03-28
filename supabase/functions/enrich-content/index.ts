@@ -33,10 +33,21 @@ serve(async (req) => {
     // Create a Supabase client with the service role key
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Extract metadata from content (simplified example)
-    // In a real application, you'd use AI/NLP to extract meaningful metadata
+    // Get existing metadata to preserve it
+    const { data: existingData, error: fetchError } = await supabase
+      .from("knowledge_sources")
+      .select("metadata, user_id")
+      .eq("id", documentId)
+      .single();
+
+    if (fetchError) {
+      console.error("Failed to fetch existing data:", fetchError);
+    }
+
+    // Extract content metadata
     const wordCount = content.split(/\s+/).length;
     const readingTime = Math.ceil(wordCount / 200); // Approx. words per minute
+    const userId = existingData?.user_id;
 
     // Generate tags if OpenAI API key is available
     let tags = [];
@@ -83,25 +94,35 @@ serve(async (req) => {
       }
     }
 
+    // Combine with existing metadata
+    const existingMetadata = existingData?.metadata || {};
+    const updatedMetadata = {
+      ...existingMetadata,
+      word_count: wordCount,
+      reading_time_minutes: readingTime,
+      extracted_tags: tags,
+      enriched_at: new Date().toISOString(),
+      user_id: userId
+    };
+
+    console.log("Updating metadata:", updatedMetadata);
+
     // Update the knowledge source with enriched metadata
     const { error: updateError } = await supabase
       .from("knowledge_sources")
       .update({
-        metadata: {
-          word_count: wordCount,
-          reading_time_minutes: readingTime,
-          extracted_tags: tags,
-          enriched_at: new Date().toISOString()
-        }
+        metadata: updatedMetadata
       })
       .eq("id", documentId);
 
     if (updateError) {
+      console.error("Error updating metadata:", updateError);
       throw updateError;
     }
 
     // Save tags to the tags table
     if (tags.length > 0) {
+      console.log(`Saving ${tags.length} tags for document ${documentId}`);
       const tagObjects = tags.map(name => ({
         name,
         content_id: documentId
@@ -120,7 +141,15 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, enriched: { wordCount, readingTime, tags } }),
+      JSON.stringify({ 
+        success: true, 
+        enriched: { 
+          wordCount, 
+          readingTime, 
+          tags,
+          metadata: updatedMetadata
+        } 
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

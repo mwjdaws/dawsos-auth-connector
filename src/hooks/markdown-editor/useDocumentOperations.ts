@@ -60,11 +60,20 @@ export const useDocumentOperations = ({
     
     setIsSaving(true);
     try {
+      // Create basic metadata
+      const metadata = {
+        word_count: content.split(/\s+/).length,
+        last_saved: new Date().toISOString(),
+        author_id: userId,
+        draft_version: documentId ? 'update' : 'new'
+      };
+      
       const knowledgeData = {
         title,
         content,
         template_id: templateId,
         user_id: userId,
+        metadata
       };
 
       console.log("Document data to save:", knowledgeData);
@@ -81,17 +90,25 @@ export const useDocumentOperations = ({
         // Update existing document
         response = await supabase
           .from('knowledge_sources')
-          .update(knowledgeData)
+          .update({
+            ...knowledgeData,
+            updated_at: new Date().toISOString()
+          })
           .eq('id', documentId)
           .select()
           .single();
       } else {
-        console.log("Creating new document");
+        console.log("Creating new document with user_id:", userId);
         
         // Create new document
         response = await supabase
           .from('knowledge_sources')
-          .insert(knowledgeData)
+          .insert({
+            ...knowledgeData,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            created_by: userId
+          })
           .select()
           .single();
       }
@@ -177,12 +194,22 @@ export const useDocumentOperations = ({
       
       console.log("Updating publish status for document ID:", savedId);
       
+      // Create enriched metadata for published version
+      const publishMetadata = {
+        word_count: content.split(/\s+/).length,
+        reading_time_minutes: Math.ceil(content.split(/\s+/).length / 200),
+        published_by: userId,
+        published_date: new Date().toISOString(),
+        version: 1
+      };
+      
       // Update the published status
       const { data, error: publishError } = await supabase
         .from('knowledge_sources')
         .update({
           published: true,
-          published_at: new Date().toISOString()
+          published_at: new Date().toISOString(),
+          metadata: publishMetadata
         })
         .eq('id', savedId)
         .select();

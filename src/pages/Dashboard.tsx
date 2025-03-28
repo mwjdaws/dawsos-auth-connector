@@ -19,9 +19,8 @@ const DashboardPage = () => {
   useEffect(() => {
     // Check if user is authenticated
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.log("No session found, redirecting to auth page");
+      if (!authLoading && !user) {
+        console.log("No authenticated user, redirecting to auth page");
         toast({
           title: "Authentication Required",
           description: "Please log in to access the dashboard.",
@@ -33,35 +32,37 @@ const DashboardPage = () => {
     
     checkAuth();
     
-    // Set up realtime subscription
-    const channel = supabase
-      .channel('public:tags')
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'tags' },
-        (payload) => {
-          console.log('New tag added:', payload.new);
-          toast({
-            title: "New Tag Added",
-            description: `A new tag "${payload.new.name}" was added to the system.`,
-          });
-        }
-      )
-      .on('postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'tags' },
-        (payload) => {
-          console.log('Tag deleted:', payload.old);
-          toast({
-            title: "Tag Removed",
-            description: `A tag was removed from the system.`,
-          });
-        }
-      )
-      .subscribe();
+    // Set up realtime subscription for authenticated users
+    if (user) {
+      const channel = supabase
+        .channel('public:tags')
+        .on('postgres_changes', 
+          { event: 'INSERT', schema: 'public', table: 'tags' },
+          (payload) => {
+            console.log('New tag added:', payload.new);
+            toast({
+              title: "New Tag Added",
+              description: `A new tag "${payload.new.name}" was added to the system.`,
+            });
+          }
+        )
+        .on('postgres_changes',
+          { event: 'DELETE', schema: 'public', table: 'tags' },
+          (payload) => {
+            console.log('Tag deleted:', payload.old);
+            toast({
+              title: "Tag Removed",
+              description: `A tag was removed from the system.`,
+            });
+          }
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [navigate]);
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [navigate, user, authLoading]);
 
   const handleTagGenerationComplete = (newContentId: string) => {
     console.log("Tag generation complete, setting new contentId:", newContentId);
@@ -96,15 +97,33 @@ const DashboardPage = () => {
     });
   };
 
+  // Show loading state or redirect if no auth
+  if (authLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <h1 className="text-3xl font-bold mb-6">Loading Dashboard...</h1>
+        <div className="flex justify-center p-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // If no user after loading completes, this serves as a fallback to the useEffect redirect
+  if (!user) {
+    navigate("/auth");
+    return null;
+  }
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <div className="flex items-center gap-2">
           <div className="text-sm text-muted-foreground mr-2">
-            {!authLoading && (
-              user ? 
-              <span>Logged in as: {user.email}</span> : 
+            {user ? (
+              <span>Logged in as: {user.email}</span>
+            ) : (
               <span>Not authenticated (RLS policies may limit data access)</span>
             )}
           </div>
