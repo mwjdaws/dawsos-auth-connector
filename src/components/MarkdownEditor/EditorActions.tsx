@@ -10,6 +10,7 @@ interface EditorActionsProps {
   isPublishing: boolean;
   isLoadingTemplate: boolean;
   isDirty?: boolean;
+  isPublished?: boolean;
 }
 
 const EditorActions: React.FC<EditorActionsProps> = ({
@@ -18,7 +19,8 @@ const EditorActions: React.FC<EditorActionsProps> = ({
   isSaving,
   isPublishing,
   isLoadingTemplate,
-  isDirty = false
+  isDirty = false,
+  isPublished = false
 }) => {
   return (
     <div className="flex justify-end space-x-2">
@@ -38,7 +40,7 @@ const EditorActions: React.FC<EditorActionsProps> = ({
         disabled={isLoadingTemplate || isPublishing}
       >
         <Send size={16} />
-        {isPublishing ? "Publishing..." : "Publish"}
+        {isPublishing ? "Publishing..." : isPublished ? "Update Published" : "Publish"}
       </Button>
     </div>
   );

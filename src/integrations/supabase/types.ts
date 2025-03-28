@@ -51,6 +51,8 @@ export type Database = {
           created_by: string | null
           id: string
           metadata: Json | null
+          published: boolean | null
+          published_at: string | null
           template_id: string | null
           title: string
           updated_at: string | null
@@ -62,6 +64,8 @@ export type Database = {
           created_by?: string | null
           id?: string
           metadata?: Json | null
+          published?: boolean | null
+          published_at?: string | null
           template_id?: string | null
           title: string
           updated_at?: string | null
@@ -73,6 +77,8 @@ export type Database = {
           created_by?: string | null
           id?: string
           metadata?: Json | null
+          published?: boolean | null
+          published_at?: string | null
           template_id?: string | null
           title?: string
           updated_at?: string | null

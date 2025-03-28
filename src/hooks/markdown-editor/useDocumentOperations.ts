@@ -136,14 +136,46 @@ export const useDocumentOperations = ({
       // First save the draft to ensure we have the latest content
       const savedId = await saveDraft(title, content, templateId, userId);
       
-      if (savedId && onPublish) {
-        onPublish(savedId, title, content, templateId);
+      if (savedId) {
+        // Update the published status
+        const { error: publishError } = await supabase
+          .from('knowledge_sources')
+          .update({
+            published: true,
+            published_at: new Date().toISOString()
+          })
+          .eq('id', savedId);
+
+        if (publishError) throw publishError;
+        
+        // Try to trigger AI enrichment via edge function (if available)
+        try {
+          const { error: enrichError } = await supabase.functions.invoke('enrich-content', {
+            body: { 
+              documentId: savedId,
+              title,
+              content
+            }
+          });
+          
+          if (enrichError) {
+            console.warn('AI enrichment function failed or not available:', enrichError);
+            // Continue with publishing even if enrichment fails
+          }
+        } catch (enrichmentError) {
+          // Log but don't fail if enrichment function isn't available
+          console.log('Content enrichment not available:', enrichmentError);
+        }
+        
+        if (onPublish) {
+          onPublish(savedId, title, content, templateId);
+        }
+        
+        toast({
+          title: "Content Published",
+          description: "Your content has been published successfully",
+        });
       }
-      
-      toast({
-        title: "Content Published",
-        description: "Your content has been published successfully",
-      });
     } catch (error) {
       console.error('Error publishing content:', error);
       toast({

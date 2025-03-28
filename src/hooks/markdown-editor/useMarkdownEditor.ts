@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useDocumentOperations } from './useDocumentOperations';
 import { useTemplateHandling } from './useTemplateHandling';
 import { useAutosave } from './useAutosave';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UseMarkdownEditorProps {
   initialTitle?: string;
@@ -28,6 +29,7 @@ export const useMarkdownEditor = ({
   const [isDirty, setIsDirty] = useState(false);
   const [lastSavedTitle, setLastSavedTitle] = useState(initialTitle);
   const [lastSavedContent, setLastSavedContent] = useState(initialContent);
+  const [isPublished, setIsPublished] = useState(false);
   const { user } = useAuth();
   
   // Use our utility hooks
@@ -68,6 +70,27 @@ export const useMarkdownEditor = ({
     }
   }, [title, content, lastSavedTitle, lastSavedContent]);
 
+  // Fetch published status when document loads
+  useEffect(() => {
+    if (documentId) {
+      const fetchPublishStatus = async () => {
+        const { data, error } = await supabase
+          .from('knowledge_sources')
+          .select('published')
+          .eq('id', documentId)
+          .single();
+        
+        if (!error && data) {
+          setIsPublished(!!data.published);
+        }
+      };
+      
+      fetchPublishStatus();
+    } else {
+      setIsPublished(false);
+    }
+  }, [documentId]);
+
   // Handle save draft wrapper
   const handleSaveDraft = async (isAutoSave = false) => {
     const result = await saveDraft(title, content, templateId, user?.id, isAutoSave);
@@ -83,6 +106,7 @@ export const useMarkdownEditor = ({
   // Handle publish wrapper
   const handlePublish = async () => {
     await publishDocument(title, content, templateId, user?.id);
+    setIsPublished(true);
   };
 
   // Set up autosave
@@ -104,6 +128,7 @@ export const useMarkdownEditor = ({
     isSaving,
     isPublishing,
     isDirty,
+    isPublished,
     handleSaveDraft,
     handlePublish,
     handleTemplateChange

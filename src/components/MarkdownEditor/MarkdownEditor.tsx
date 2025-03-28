@@ -37,6 +37,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     isSaving,
     isPublishing,
     isDirty,
+    isPublished,
     handleSaveDraft,
     handlePublish,
     handleTemplateChange
@@ -77,6 +78,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         isPublishing={isPublishing}
         isLoadingTemplate={isLoadingTemplate}
         isDirty={isDirty}
+        isPublished={isPublished}
       />
     </div>
   );
