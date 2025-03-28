@@ -2,7 +2,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
-import { TagInput } from "../TagInput";
+import { TagInput } from "@/components/MarkdownViewer/TagInput";
 
 interface Tag {
   id: string;
