@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client"; 
 import { toast } from "@/hooks/use-toast";
 import { Tag } from "./useMarkdownMetadata";
+import { isValidContentId } from "@/utils/content-validation";
 
 interface UseTagManagementProps {
   contentId: string;
@@ -15,11 +16,24 @@ export const useTagManagement = ({ contentId, editable }: UseTagManagementProps)
   const handleAddTag = async (tags: Tag[], setTagsFn: React.Dispatch<React.SetStateAction<Tag[]>>) => {
     if (!newTag.trim() || !editable) return;
     
+    // Validate content ID before adding tag
+    if (!isValidContentId(contentId)) {
+      console.warn("Cannot add tag to invalid or temporary contentId:", contentId);
+      toast({
+        title: "Invalid Content",
+        description: "Cannot add tags to temporary or invalid content",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       const newTagObj = {
         name: newTag.trim(),
         content_id: contentId
       };
+      
+      console.log("Adding tag:", newTagObj);
       
       const { data, error } = await supabase
         .from("tags")
@@ -36,6 +50,8 @@ export const useTagManagement = ({ contentId, editable }: UseTagManagementProps)
           title: "Success",
           description: "Tag added successfully",
         });
+        
+        console.log("Tag added successfully:", data[0]);
       }
     } catch (error: any) {
       console.error("Error adding tag:", error);
@@ -51,6 +67,8 @@ export const useTagManagement = ({ contentId, editable }: UseTagManagementProps)
     if (!editable) return;
     
     try {
+      console.log("Deleting tag with ID:", tagId);
+      
       const { error } = await supabase
         .from("tags")
         .delete()
@@ -64,6 +82,8 @@ export const useTagManagement = ({ contentId, editable }: UseTagManagementProps)
         title: "Success",
         description: "Tag removed successfully",
       });
+      
+      console.log("Tag deleted successfully");
     } catch (error: any) {
       console.error("Error removing tag:", error);
       toast({

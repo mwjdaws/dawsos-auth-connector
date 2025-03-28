@@ -3,6 +3,7 @@ import { useState, useEffect, useTransition, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { isValidContentId } from "@/utils/content-validation";
 
 interface Tag {
   id: string;
@@ -25,9 +26,11 @@ export const useMetadataPanel = (contentId: string, onMetadataChange?: () => voi
   const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
 
   const fetchMetadata = async () => {
-    if (!contentId || contentId.startsWith('temp-')) {
+    // Validate content ID before fetching metadata
+    if (!isValidContentId(contentId)) {
       console.log("Invalid contentId for fetching metadata:", contentId);
       setIsLoading(false);
+      setError("Invalid content ID");
       return;
     }
     
@@ -119,11 +122,23 @@ export const useMetadataPanel = (contentId: string, onMetadataChange?: () => voi
       return;
     }
 
+    // Validate contentId before adding tag
+    if (!isValidContentId(contentId)) {
+      toast({
+        title: "Invalid Content",
+        description: "Cannot add tags to temporary or invalid content",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const newTagData = {
         name: newTag.trim(),
         content_id: contentId
       };
+      
+      console.log("Adding tag:", newTagData);
       
       const { data, error } = await supabase
         .from("tags")
@@ -139,6 +154,8 @@ export const useMetadataPanel = (contentId: string, onMetadataChange?: () => voi
         title: "Success",
         description: "Tag added successfully",
       });
+      
+      console.log("Tag added successfully:", data![0]);
     } catch (error: any) {
       console.error("Error adding tag:", error);
       toast({
@@ -160,6 +177,8 @@ export const useMetadataPanel = (contentId: string, onMetadataChange?: () => voi
     }
     
     try {
+      console.log("Deleting tag with ID:", tagId);
+      
       const { error } = await supabase
         .from("tags")
         .delete()
@@ -173,6 +192,8 @@ export const useMetadataPanel = (contentId: string, onMetadataChange?: () => voi
         title: "Success",
         description: "Tag deleted successfully",
       });
+      
+      console.log("Tag deleted successfully");
     } catch (error: any) {
       console.error("Error deleting tag:", error);
       toast({

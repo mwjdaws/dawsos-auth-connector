@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TagPill } from "./TagPill";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { isValidContentId } from "@/utils/content-validation";
 
 interface TagType {
   id: string;
@@ -37,13 +38,17 @@ export function GroupedTagList({ contentId, refreshTrigger = 0, onTagClick }: Gr
 
   useEffect(() => {
     const fetchTagsWithTypes = async () => {
-      if (!contentId || contentId.startsWith("temp-")) {
+      // Validate content ID before attempting to fetch tags
+      if (!isValidContentId(contentId)) {
+        console.log("Invalid or temporary contentId, skipping tag fetch:", contentId);
         setIsLoading(false);
         return;
       }
 
       setIsLoading(true);
       try {
+        console.log("Fetching tags for content ID:", contentId);
+        
         // First, fetch all tag types to ensure we have type information even if no tags exist for a type
         const { data: typeData, error: typeError } = await supabase
           .from("tag_types")
@@ -63,6 +68,8 @@ export function GroupedTagList({ contentId, refreshTrigger = 0, onTagClick }: Gr
           .eq("content_id", contentId);
 
         if (tagError) throw tagError;
+
+        console.log(`Fetched ${tagData?.length || 0} tags for content ID: ${contentId}`);
 
         // Group tags by their type
         const grouped: GroupedTagsMap = {};

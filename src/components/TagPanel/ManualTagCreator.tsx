@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { isValidContentId } from "@/utils/content-validation";
 
 interface TagType {
   id: string;
@@ -64,10 +65,20 @@ export function ManualTagCreator({ contentId, onTagCreated, className }: ManualT
   }, []);
 
   const handleCreateTag = async () => {
-    if (!tagName.trim() || !selectedTypeId || !contentId) {
+    if (!tagName.trim() || !selectedTypeId) {
       toast({
         title: "Missing Information",
         description: "Please provide a tag name and select a tag type",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate content ID before creating the tag
+    if (!isValidContentId(contentId)) {
+      toast({
+        title: "Invalid Content ID",
+        description: "Cannot create a tag for an invalid or temporary content ID",
         variant: "destructive",
       });
       return;
@@ -141,7 +152,7 @@ export function ManualTagCreator({ contentId, onTagCreated, className }: ManualT
         
         <Button
           onClick={handleCreateTag}
-          disabled={!tagName.trim() || !selectedTypeId || isLoading}
+          disabled={!tagName.trim() || !selectedTypeId || isLoading || !isValidContentId(contentId)}
           size="sm"
         >
           <PlusCircle className="h-4 w-4 mr-1" />
