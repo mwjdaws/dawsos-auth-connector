@@ -1,12 +1,10 @@
 
-import React, { useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { supabase } from "@/integrations/supabase/client";
-import { handleError } from "@/utils/errors";
-import { TagPill } from "./TagPill";
+import { useState, useEffect } from 'react';
+import { TagPill } from './TagPill';
+import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/integrations/supabase/client';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface TagListProps {
   tags: string[];
@@ -18,147 +16,128 @@ interface TagListProps {
 export function TagList({ 
   tags, 
   isLoading, 
-  knowledgeSourceId,
+  knowledgeSourceId, 
   onTagClick 
 }: TagListProps) {
   const [relatedTags, setRelatedTags] = useState<string[]>([]);
   const [isLoadingRelated, setIsLoadingRelated] = useState(false);
-  const [relatedError, setRelatedError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
+  // Fetch related tags if a knowledge source ID is provided
   useEffect(() => {
-    // Only fetch related tags if we have a valid knowledge source ID and some tags
-    if (knowledgeSourceId && tags.length > 0 && !knowledgeSourceId.startsWith('temp-')) {
-      fetchRelatedTags();
-    } else {
-      // Reset related tags when no valid content ID
-      setRelatedTags([]);
-    }
-  }, [knowledgeSourceId, tags]);
-
-  const fetchRelatedTags = async () => {
     if (!knowledgeSourceId) return;
     
-    setIsLoadingRelated(true);
-    setRelatedError(null);
-    
-    try {
-      console.log(`Fetching related tags for contentId: ${knowledgeSourceId}`);
+    async function fetchRelatedTags() {
+      setIsLoadingRelated(true);
+      setError(null);
       
-      // Attempt to fetch related tags using the edge function
-      const { data, error } = await supabase.functions.invoke('get-related-tags', {
-        body: { knowledgeSourceId }
-      });
-      
-      if (error) {
-        console.error("Failed to fetch related tags:", error);
-        // Set the error but don't throw - we'll handle it gracefully
-        setRelatedError("Could not load related tags");
-      } else if (data && Array.isArray(data.tags)) {
-        // Updated to use 'tags' property from response
-        setRelatedTags(data.tags);
-        console.log("Retrieved related tags:", data.tags);
-      } else {
-        // If we get an unexpected response format
-        console.error("Unexpected response format:", data);
+      try {
+        console.log('TagList: Fetching related tags for', knowledgeSourceId);
+        
+        const { data, error } = await supabase.functions.invoke('get-related-tags', {
+          body: { knowledgeSourceId }
+        });
+        
+        if (error) {
+          console.error('TagList: Error fetching related tags:', error);
+          setError('Failed to load related tags');
+          setRelatedTags([]);
+        } else if (data && Array.isArray(data.tags)) {
+          console.log('TagList: Got related tags:', data.tags);
+          setRelatedTags(data.tags);
+        } else {
+          console.log('TagList: No related tags found or invalid format:', data);
+          setRelatedTags([]);
+        }
+      } catch (err) {
+        console.error('TagList: Exception fetching related tags:', err);
+        setError('An unexpected error occurred');
         setRelatedTags([]);
+      } finally {
+        setIsLoadingRelated(false);
       }
-    } catch (error) {
-      console.error("Error fetching related tags:", error);
-      handleError(
-        error, 
-        "Failed to fetch related tags", 
-        { level: "warning", silent: true }
-      );
-      setRelatedError("Could not load related tags");
-    } finally {
-      setIsLoadingRelated(false);
     }
-  };
+    
+    fetchRelatedTags();
+  }, [knowledgeSourceId]);
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Generated Tags</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            <Skeleton className="h-6 w-16" />
-            <Skeleton className="h-6 w-20" />
-            <Skeleton className="h-6 w-24" />
-            <Skeleton className="h-6 w-12" />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-2">
+        <div className="flex items-center">
+          <Skeleton className="h-4 w-20 mr-2" />
+          <Skeleton className="h-4 w-8" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-6 w-16 rounded-full" />
+          ))}
+        </div>
+      </div>
     );
   }
 
-  const filteredTags = tags.filter(tag => {
-    // Filter out certain tag formats that might come from OpenAI
-    if (!tag || typeof tag !== 'string') return false;
-    if (tag.startsWith('```') || tag.endsWith('```')) return false;
-    if (tag === "error" || tag === "fallback" || tag === "timeout" || tag === "network") return false;
-    if (tag.startsWith('"') && tag.endsWith('"')) return true;
-    return true;
-  }).map(tag => {
-    // Clean up tag strings
-    if (typeof tag === 'string') {
-      // Remove any quotes
-      return tag.replace(/^["']|["']$/g, '').trim();
-    }
-    return tag;
-  });
+  const displayTags = [...tags];
+  const displayRelatedTags = relatedTags.filter(tag => !tags.includes(tag));
+
+  if (displayTags.length === 0 && displayRelatedTags.length === 0 && !isLoadingRelated) {
+    return (
+      <div className="text-center py-4 text-muted-foreground">
+        No tags generated yet. Use the form above to generate tags.
+      </div>
+    );
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-xl">Generated Tags</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {filteredTags.length > 0 ? (
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              {filteredTags.map((tag, index) => (
-                <TagPill 
-                  key={index} 
-                  tag={tag} 
-                  onClick={onTagClick ? () => onTagClick(tag) : undefined} 
-                />
-              ))}
-            </div>
-            
-            {relatedTags.length > 0 && (
-              <div className="mt-4">
-                <h3 className="text-sm font-medium mb-2">Related Tags</h3>
-                <div className="flex flex-wrap gap-2">
-                  {relatedTags.map((tag, index) => (
-                    <Badge key={index} variant="outline" className="cursor-pointer hover:bg-accent">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {isLoadingRelated && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-6 w-20" />
-              </div>
-            )}
-            
-            {relatedError && (
-              <Alert variant="destructive" className="mt-4">
-                <AlertDescription>{relatedError}</AlertDescription>
-              </Alert>
-            )}
+    <div className="space-y-4">
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      {displayTags.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium">Generated Tags</h3>
+          <div className="flex flex-wrap gap-2">
+            {displayTags.map((tag, index) => (
+              <TagPill 
+                key={`${tag}-${index}`} 
+                tag={tag} 
+                onClick={onTagClick} 
+              />
+            ))}
           </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No tags generated yet. Try adding some content and clicking "Generate Tags".
-          </p>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+      
+      {isLoadingRelated && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-muted-foreground">Loading related tags...</h3>
+          <div className="flex flex-wrap gap-2">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-6 w-16 rounded-full" />
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {displayRelatedTags.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium">Related Tags</h3>
+          <div className="flex flex-wrap gap-2">
+            {displayRelatedTags.map((tag, index) => (
+              <TagPill 
+                key={`related-${tag}-${index}`}
+                tag={tag} 
+                onClick={onTagClick}
+                variant="outline"
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

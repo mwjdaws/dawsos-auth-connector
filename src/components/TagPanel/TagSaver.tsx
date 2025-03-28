@@ -1,17 +1,17 @@
 
-import { useState, useCallback } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Loader2, Save, CheckCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { TagSaveButton } from "./TagSaveButton";
-import { handleError } from "@/utils/error-handling";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface TagSaverProps {
   tags: string[];
-  contentId: string | null;
-  saveTags: (text: string, tags: string[], options: any) => Promise<any>;
+  contentId: string;
+  saveTags: (text: string, tags: string[], options: any) => Promise<string | boolean>;
   isProcessing: boolean;
   isRetrying: boolean;
-  onTagsSaved: (savedContentId: string) => void;
+  onTagsSaved: (contentId: string) => void;
 }
 
 export function TagSaver({
@@ -22,97 +22,104 @@ export function TagSaver({
   isRetrying,
   onTagsSaved
 }: TagSaverProps) {
-  const [isSaving, setIsSaving] = useState(false);
-  const { user } = useAuth();
+  const [saveComplete, setSaveComplete] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Optimized tag saving with better error handling
-  const handleSaveTags = useCallback(async () => {
-    if (!user) {
-      handleError(
-        new Error("Authentication required"),
-        "Please log in to save tags",
-        { level: "error" }
-      );
-      return;
-    }
-
+  const handleSave = async () => {
     if (tags.length === 0) {
-      handleError(
-        new Error("No tags to save"),
-        "Please generate some tags before saving",
-        { level: "warning" }
-      );
-      return;
-    }
-
-    // Prevent duplicate save operations
-    if (isSaving || isProcessing) {
       toast({
-        title: "Save in Progress",
-        description: "Please wait for the current save operation to complete",
+        title: "No Tags to Save",
+        description: "Generate tags first before saving",
+        variant: "destructive",
       });
       return;
     }
 
-    setIsSaving(true);
+    console.log("TagSaver: Saving tags:", {
+      tagCount: tags.length,
+      contentId: contentId,
+    });
     
-    // Add a timeout to prevent UI from being stuck in saving state
-    const timeoutId = setTimeout(() => {
-      if (isSaving) {
-        setIsSaving(false);
-        toast({
-          title: "Operation Timeout",
-          description: "The save operation is taking longer than expected. It may still complete in the background.",
-          variant: "default",
-        });
-      }
-    }, 10000);
+    setSaveComplete(false);
+    setSaveError(null);
     
     try {
-      const success = await saveTags("", tags, { 
-        contentId,
-        maxRetries: isRetrying ? 0 : 1
+      const result = await saveTags("", tags, {
+        contentId: contentId,
+        skipGenerateFunction: true
       });
       
-      clearTimeout(timeoutId);
+      console.log("TagSaver: Save result:", result);
       
-      if (success && typeof success === 'string') {
-        console.log("Tags saved successfully with contentId:", success);
-        onTagsSaved(success);
-        
+      if (result && typeof result === 'string') {
+        setSaveComplete(true);
         toast({
-          title: "Success",
+          title: "Tags Saved",
           description: `${tags.length} tags saved successfully`,
-          variant: "default",
         });
-      } else if (!success) {
-        throw new Error("Failed to save tags - operation returned failure status");
+        
+        // Notify parent component
+        onTagsSaved(result);
+      } else {
+        setSaveError("Failed to save tags");
+        toast({
+          title: "Error",
+          description: "Failed to save tags. Please try again.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      clearTimeout(timeoutId);
-      handleError(
-        error, 
-        "Failed to save tags", 
-        {
-          level: "error",
-          actionLabel: "Retry",
-          action: handleSaveTags
-        }
-      );
-    } finally {
-      clearTimeout(timeoutId);
-      setIsSaving(false);
+      console.error("TagSaver: Error saving tags:", error);
+      setSaveError(error instanceof Error ? error.message : "Failed to save tags");
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while saving tags",
+        variant: "destructive",
+      });
     }
-  }, [user, tags, contentId, saveTags, isRetrying, isProcessing, onTagsSaved, isSaving]);
+  };
 
+  const isDisabled = isProcessing || isRetrying || tags.length === 0;
+  
   return (
-    <div className="flex flex-wrap gap-2 mt-4">
-      <TagSaveButton
-        isSaving={isSaving || isProcessing}
-        tags={tags}
-        isUserLoggedIn={!!user}
-        onSaveTags={handleSaveTags}
-      />
+    <div className="space-y-4">
+      {saveError && (
+        <Alert variant="destructive">
+          <AlertDescription>{saveError}</AlertDescription>
+        </Alert>
+      )}
+      
+      <div className="flex justify-between items-center">
+        <div className="text-sm text-muted-foreground">
+          {tags.length === 0 
+            ? "No tags to save" 
+            : `${tags.length} tags ready to save`}
+        </div>
+        
+        <Button
+          onClick={handleSave}
+          disabled={isDisabled}
+          variant={saveComplete ? "outline" : "default"}
+          className="min-w-[100px]"
+        >
+          {isProcessing || isRetrying ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : saveComplete ? (
+            <>
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Saved
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Save Tags
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 }
