@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import DebugPanel from "@/components/DebugPanel";
@@ -8,6 +9,8 @@ import { DashboardAuth } from "@/components/Dashboard/DashboardAuth";
 import { DashboardLoading } from "@/components/Dashboard/DashboardLoading";
 import { ContentManagement } from "@/components/Dashboard/ContentManagement";
 import { DashboardUserInfo } from "@/components/Dashboard/DashboardUserInfo";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("tag-generator");
