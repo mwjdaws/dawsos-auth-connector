@@ -82,9 +82,20 @@ export const useDocumentOperationHandlers = ({
           
           // Call the onSaveDraft callback if provided
           if (onSaveDraft) {
-            onSaveDraft(savedId, title, content, templateId);
+            try {
+              onSaveDraft(savedId, title, content, templateId);
+            } catch (callbackError) {
+              console.error('Error in onSaveDraft callback:', callbackError);
+            }
           }
         }
+      } else if (isManualSave && !isAutoSave) {
+        // Only show error for manual saves that failed
+        toast({
+          title: "Save Failed",
+          description: "There was a problem saving your document",
+          variant: "destructive",
+        });
       }
       
       return savedId;
@@ -122,18 +133,18 @@ export const useDocumentOperationHandlers = ({
       return;
     }
     
-    // Save first to ensure we have the latest content
-    const savedId = await handleSaveDraft(true, false);
-    if (!savedId) {
-      toast({
-        title: "Save Required",
-        description: "Your document must be saved before publishing",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     try {
+      // Save first to ensure we have the latest content
+      const savedId = await handleSaveDraft(true, false);
+      if (!savedId) {
+        toast({
+          title: "Save Required",
+          description: "Your document must be saved before publishing",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // Get current user ID (from auth context if available)
       const userId = undefined; // Replace with actual user ID from auth context if available
       
@@ -147,7 +158,11 @@ export const useDocumentOperationHandlers = ({
         
         // Call the onPublish callback if provided
         if (onPublish && result.documentId) {
-          onPublish(result.documentId, title, content, templateId);
+          try {
+            onPublish(result.documentId, title, content, templateId);
+          } catch (callbackError) {
+            console.error('Error in onPublish callback:', callbackError);
+          }
         }
       } else {
         throw new Error(result.error || 'Failed to publish document');

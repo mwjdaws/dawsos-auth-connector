@@ -79,10 +79,20 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
 
         // Create a version if successful and not an autosave
         if (!error && !isAutoSave && context.createVersion) {
-          await context.createVersion(documentId, content, {
-            reason: 'Manual save',
-            auto_version: false
-          });
+          try {
+            await context.createVersion(documentId, content, {
+              reason: 'Manual save',
+              auto_version: false
+            });
+          } catch (versionError) {
+            // Log version creation error but don't fail the save operation
+            console.error('Error creating version but continuing:', versionError);
+            handleError(
+              versionError,
+              "Warning: Could not create document version",
+              { level: "warning", technical: true, silent: isAutoSave }
+            );
+          }
         }
       } else if (userId) {
         // Only create new document if user is authenticated
@@ -109,7 +119,7 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
         handleError(
           error,
           "Database error while saving draft",
-          { level: "error", technical: true }
+          { level: "error", technical: true, silent: isAutoSave }
         );
         return { 
           success: false, 
@@ -135,7 +145,7 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
       handleError(
         error,
         "Unexpected error while saving draft",
-        { level: "error", technical: true }
+        { level: "error", technical: true, silent: isAutoSave }
       );
       return { 
         success: false, 

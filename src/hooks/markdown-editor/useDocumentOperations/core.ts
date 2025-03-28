@@ -34,11 +34,23 @@ export const useDocumentOperationsCore = ({
       // Get the current user's ID if not provided
       let effectiveUserId = userId;
       if (!effectiveUserId) {
-        const { data: { user } } = await supabase.auth.getUser();
-        effectiveUserId = user?.id;
-        
-        // Log authentication status for debugging
-        console.log('Authentication status:', !!user, 'User ID:', effectiveUserId);
+        try {
+          const { data: { user }, error } = await supabase.auth.getUser();
+          if (error) throw error;
+          effectiveUserId = user?.id;
+          
+          // Log authentication status for debugging
+          console.log('Authentication status:', !!user, 'User ID:', effectiveUserId);
+        } catch (authError) {
+          console.error('Error getting current user:', authError);
+          if (!isAutoSave) {
+            handleError(
+              authError, 
+              "Could not verify authentication status", 
+              { level: "warning", technical: false }
+            );
+          }
+        }
       }
       
       // Proceed with saving the draft
@@ -51,17 +63,39 @@ export const useDocumentOperationsCore = ({
         isAutoSave
       );
       
+      // Handle successful save with callback
       if (result.success && result.documentId && onSaveDraft && !isAutoSave) {
-        onSaveDraft(result.documentId, title, content, templateId);
+        try {
+          onSaveDraft(result.documentId, title, content, templateId);
+        } catch (callbackError) {
+          // Log but don't fail the operation if callback fails
+          console.error('Error in onSaveDraft callback:', callbackError);
+        }
+      }
+      
+      // Handle error case
+      if (!result.success) {
+        console.error('Draft save operation failed:', result.error);
+        if (!isAutoSave) {
+          handleError(
+            result.error, 
+            "An error occurred while saving the draft", 
+            { level: "error", technical: false }
+          );
+        }
+        return null;
       }
       
       return result.documentId;
     } catch (error) {
-      handleError(
-        error, 
-        "An unexpected error occurred while saving the draft", 
-        { level: "error", technical: false }
-      );
+      console.error('Unexpected error in saveDraft:', error);
+      if (!isAutoSave) {
+        handleError(
+          error, 
+          "An unexpected error occurred while saving the draft", 
+          { level: "error", technical: false }
+        );
+      }
       return null;
     }
   };
@@ -85,18 +119,51 @@ export const useDocumentOperationsCore = ({
       // Get the current user's ID if not provided
       let effectiveUserId = userId;
       if (!effectiveUserId) {
-        const { data: { user } } = await supabase.auth.getUser();
-        effectiveUserId = user?.id;
+        try {
+          const { data: { user }, error } = await supabase.auth.getUser();
+          if (error) throw error;
+          effectiveUserId = user?.id;
+          
+          if (!effectiveUserId) {
+            return { 
+              success: false, 
+              error: "Authentication required to publish document" 
+            };
+          }
+        } catch (authError) {
+          console.error('Error getting current user:', authError);
+          handleError(
+            authError, 
+            "Could not verify authentication status", 
+            { level: "error", technical: false }
+          );
+          return { 
+            success: false, 
+            error: "Authentication error" 
+          };
+        }
       }
       
       const result = await publishDocumentOperation(title, content, templateId, effectiveUserId);
       
+      // Handle successful publish with callback
       if (result.success && result.documentId && onPublish) {
-        onPublish(result.documentId, title, content, templateId);
+        try {
+          onPublish(result.documentId, title, content, templateId);
+        } catch (callbackError) {
+          // Log but don't fail the operation if callback fails
+          console.error('Error in onPublish callback:', callbackError);
+        }
+      }
+      
+      // Handle error case without duplicating handleError (publishDocumentOperation already handles errors)
+      if (!result.success) {
+        console.error('Document publish operation failed:', result.error);
       }
       
       return result;
     } catch (error) {
+      console.error('Unexpected error in publishDocument:', error);
       handleError(
         error, 
         "An unexpected error occurred while publishing the document", 
