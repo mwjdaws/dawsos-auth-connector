@@ -1,159 +1,179 @@
 
-import { useState, useCallback } from "react";
-import { MutableRefObject } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
-interface UseTagGenerationProcessProps {
-  maxRetries: number;
-  retryDelay: number;
-  setIsLoading: (loading: boolean) => void;
-  isMounted: MutableRefObject<boolean>;
-}
+/**
+ * Custom hook for handling the tag generation process
+ */
+export function useTagGenerationProcess() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
 
-export function useTagGenerationProcess({
-  maxRetries,
-  retryDelay,
-  setIsLoading,
-  isMounted
-}: UseTagGenerationProcessProps) {
-  const [retryAttempts, setRetryAttempts] = useState(0);
+  /**
+   * Clean and parse tags from potentially JSON formatted responses
+   */
+  const cleanTags = (rawTags: string[]): string[] => {
+    console.log('cleanTags: Raw tags received:', rawTags);
+    
+    if (!Array.isArray(rawTags)) {
+      console.error('cleanTags: Received non-array input:', rawTags);
+      return [];
+    }
+    
+    // Check if the first item indicates a JSON code block
+    if (rawTags[0] && typeof rawTags[0] === 'string' && rawTags[0].includes('```json')) {
+      console.log('cleanTags: Detected JSON code block format, cleaning tags');
+      
+      // Extract actual tags from the code block format
+      const cleanedTags = rawTags
+        .filter(tag => tag && typeof tag === 'string')
+        .map(tag => {
+          // Remove JSON quotes, backticks, and trim
+          return tag
+            .replace(/^```json$/g, '')
+            .replace(/^```$/g, '')
+            .replace(/^["']/g, '')
+            .replace(/["']$/g, '')
+            .trim();
+        })
+        .filter(tag => 
+          tag && 
+          !tag.includes('```') && 
+          tag.length > 1 && 
+          !tag.includes('undefined')
+        );
+      
+      console.log('cleanTags: Cleaned tags:', cleanedTags);
+      return cleanedTags;
+    }
+    
+    // Regular cleaning for normal array responses
+    const cleanedTags = rawTags
+      .filter(tag => tag && typeof tag === 'string')
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 1);
+    
+    console.log('cleanTags: Standard cleaned tags:', cleanedTags);
+    return cleanedTags;
+  };
 
-  const processTagGeneration = useCallback(async (
-    text: string, 
-    contentId: string,
-    retryCount: number
-  ): Promise<string[]> => {
+  /**
+   * Generate tags from content
+   */
+  const generateTags = useCallback(async (content: string): Promise<string[]> => {
+    if (!content.trim()) {
+      console.error('generateTags: Empty content provided');
+      toast({
+        title: "Error",
+        description: "Please provide some content to generate tags",
+        variant: "destructive",
+      });
+      return [];
+    }
+
+    setIsLoading(true);
+    
     try {
-      console.log("useTagGenerationProcess: Calling suggest-tags function with text length:", text.length);
+      console.log('useTagGenerationProcess: Trying generate-tags function first');
       
-      // First try with generate-tags (which uses OpenAI)
-      try {
-        console.log("useTagGenerationProcess: Trying generate-tags function first");
-        const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-tags', {
-          body: { 
-            content: text.substring(0, 8000), // Limit content size to avoid payload issues
-            retryCount,
-            save: false // Don't save tags yet, just generate them
-          }
-        });
-        
-        console.log("useTagGenerationProcess: Response from generate-tags:", aiData);
-        
-        if (!aiError && aiData && Array.isArray(aiData.tags) && aiData.tags.length > 0) {
-          console.log("useTagGenerationProcess: Successfully retrieved tags from generate-tags:", aiData.tags);
-          return cleanTags(aiData.tags);
-        } else {
-          console.error("useTagGenerationProcess: Error or invalid response from generate-tags:", aiError || "No tags returned");
-        }
-      } catch (aiException) {
-        console.error("useTagGenerationProcess: Exception with generate-tags:", aiException);
-      }
-      
-      // Fallback to suggest-tags (simpler algorithm)
-      console.log("useTagGenerationProcess: Falling back to suggest-tags function");
-      const { data, error } = await supabase.functions.invoke('suggest-tags', {
-        body: { 
-          queryText: text.substring(0, 5000), // Limit content size
-          contentId: null // Don't save yet
-        }
+      // First try to use the generate-tags edge function
+      const { data: generateData, error: generateError } = await supabase.functions.invoke('generate-tags', {
+        body: { content: content.trim() }
       });
       
-      if (error) {
-        console.error("useTagGenerationProcess: Error invoking suggest-tags function:", error);
-        return ["error", "failed", "generation", "api-error"];
+      if (generateError) {
+        console.error('useTagGenerationProcess: Error from generate-tags:', generateError);
+        throw new Error(`Error calling generate-tags: ${generateError.message}`);
       }
       
-      console.log("useTagGenerationProcess: suggest-tags response:", data);
-      
-      // Check if tags property exists and is an array
-      if (data && Array.isArray(data.tags)) {
-        console.log("useTagGenerationProcess: Successfully retrieved tags:", data.tags);
-        return cleanTags(data.tags);
-      } else {
-        console.error("useTagGenerationProcess: Unexpected response format from suggest-tags:", data);
-        return ["error", "unexpected", "response", "format"];
-      }
-    } catch (error) {
-      console.error("useTagGenerationProcess: Exception in processTagGeneration:", error);
-      
-      // Retry logic for recoverable errors
-      if (retryAttempts < maxRetries) {
-        setRetryAttempts(prev => prev + 1);
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      if (generateData && generateData.tags) {
+        console.log('useTagGenerationProcess: Response from generate-tags:', generateData);
         
-        // Only retry if the component is still mounted
-        if (isMounted.current) {
-          return processTagGeneration(text, contentId, retryCount + 1);
+        // Process the tags from generate-tags
+        if (Array.isArray(generateData.tags)) {
+          const processedTags = cleanTags(generateData.tags);
+          console.log('useTagGenerationProcess: Successfully retrieved tags from generate-tags:', processedTags);
+          return processedTags;
+        } else {
+          console.warn('useTagGenerationProcess: generate-tags returned non-array tags:', generateData.tags);
         }
       }
       
-      return ["error", "failed", "generation", "exception"];
+      // If we reach here, generate-tags didn't return usable tags, try suggest-tags as fallback
+      console.log('useTagGenerationProcess: Calling suggest-tags function with text length:', content.length);
+      
+      const { data: suggestData, error: suggestError } = await supabase.functions.invoke('suggest-tags', {
+        body: { text: content.trim() }
+      });
+      
+      if (suggestError) {
+        console.error('useTagGenerationProcess: Error from suggest-tags:', suggestError);
+        throw new Error(`Error calling suggest-tags: ${suggestError.message}`);
+      }
+      
+      console.log('useTagGenerationProcess: Raw response from suggest-tags:', suggestData);
+      
+      // Handle different response formats from suggest-tags
+      if (suggestData) {
+        let tagsToProcess: string[] = [];
+        
+        // Handle different response structures
+        if (Array.isArray(suggestData)) {
+          console.log('useTagGenerationProcess: suggest-tags returned direct array');
+          tagsToProcess = suggestData;
+        } else if (suggestData.tags && Array.isArray(suggestData.tags)) {
+          console.log('useTagGenerationProcess: suggest-tags returned object with tags array');
+          tagsToProcess = suggestData.tags;
+        } else if (typeof suggestData === 'string') {
+          // Try to parse possible JSON response
+          try {
+            const parsed = JSON.parse(suggestData);
+            if (parsed.tags && Array.isArray(parsed.tags)) {
+              console.log('useTagGenerationProcess: suggest-tags returned JSON string with tags array');
+              tagsToProcess = parsed.tags;
+            }
+          } catch (e) {
+            console.warn('useTagGenerationProcess: Could not parse suggest-tags string response:', e);
+          }
+        }
+        
+        if (tagsToProcess.length > 0) {
+          const processedTags = cleanTags(tagsToProcess);
+          console.log('useTagGenerationProcess: Successfully retrieved tags from suggest-tags:', processedTags);
+          return processedTags;
+        }
+      }
+      
+      // If we reach here, neither function returned usable tags
+      console.warn('useTagGenerationProcess: No valid tags returned from either function');
+      toast({
+        title: "Warning",
+        description: "No valid tags could be generated. Try with different content.",
+        variant: "destructive",
+      });
+      
+      return ["content", "document", "generic", "fallback"];
+      
+    } catch (error) {
+      console.error('useTagGenerationProcess: Error generating tags:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to generate tags",
+        variant: "destructive",
+      });
+      
+      // Return fallback tags instead of throwing
+      return ["content", "document", "error", "fallback"];
     } finally {
-      if (isMounted.current) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
-  }, [maxRetries, retryDelay, retryAttempts, setIsLoading, isMounted]);
-  
-  // Helper function to clean and validate tags
-  function cleanTags(tags: any[]): string[] {
-    if (!Array.isArray(tags)) {
-      console.error("cleanTags: Tags is not an array:", tags);
-      return ["error", "invalid", "format"];
-    }
-    
-    // If the first tag contains JSON markers like ```json, we need special handling
-    if (tags.length > 0 && typeof tags[0] === 'string' && tags[0].includes('```')) {
-      console.log("cleanTags: Detected JSON code block format, cleaning tags");
-      
-      // Join all parts and try to extract the actual tags
-      const joinedText = tags.join(' ');
-      const matches = joinedText.match(/\[(.*)\]/s);
-      
-      if (matches && matches[1]) {
-        try {
-          // Try to parse the content as JSON
-          const extractedTags = JSON.parse('[' + matches[1] + ']');
-          console.log("cleanTags: Successfully extracted tags from JSON format:", extractedTags);
-          return extractedTags.filter(tag => typeof tag === 'string' && tag.trim().length > 0);
-        } catch (e) {
-          console.error("cleanTags: Failed to parse extracted JSON:", e);
-          
-          // Alternative approach: split by commas and clean up
-          const tagArray = matches[1].split(',')
-            .map(t => t.trim().replace(/^["']|["']$/g, ''))
-            .filter(t => t.length > 0);
-          
-          console.log("cleanTags: Extracted tags by splitting:", tagArray);
-          return tagArray;
-        }
-      }
-      
-      // If we can't extract from JSON format, clean up each tag individually
-      return tags.map(tag => {
-        if (typeof tag === 'string') {
-          return tag.replace(/```json|```/g, '').replace(/^["']|["']$/g, '').trim();
-        }
-        return '';
-      }).filter(tag => tag.length > 0);
-    }
-    
-    // Regular cleaning for standard tag arrays
-    return tags.filter(tag => {
-      // Filter out certain tag formats
-      if (!tag || typeof tag !== 'string') return false;
-      if (tag.startsWith('```') || tag.endsWith('```')) return false;
-      if (tag === "error" || tag === "fallback" || tag === "timeout" || tag === "network") return false;
-      return true;
-    }).map(tag => {
-      // Clean up tag strings
-      if (typeof tag === 'string') {
-        // Remove any quotes
-        return tag.replace(/^["']|["']$/g, '').trim();
-      }
-      return tag;
-    });
-  }
-  
-  return { processTagGeneration, retryAttempts };
+  }, []);
+
+  return {
+    isLoading,
+    tags,
+    setTags,
+    generateTags
+  };
 }

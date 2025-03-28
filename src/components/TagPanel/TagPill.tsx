@@ -1,44 +1,36 @@
 
-import React from "react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface TagPillProps {
   tag: string;
   onClick?: (tag: string) => void;
-  variant?: "primary" | "related" | "suggested" | "secondary";
-  className?: string;
+  variant?: "secondary" | "primary" | "related" | "suggested" | "outline";
 }
 
 export function TagPill({ 
   tag, 
-  onClick = () => {}, 
-  variant = "primary",
-  className = "" 
+  onClick,
+  variant = "secondary" 
 }: TagPillProps) {
-  // Map variants to color classes
-  const variantClasses = {
-    primary: "bg-blue-100 hover:bg-blue-200",
-    related: "bg-green-100 hover:bg-green-200",
-    suggested: "bg-purple-100 hover:bg-purple-200",
-    secondary: "bg-gray-100 hover:bg-gray-200"
+  const handleClick = () => {
+    if (onClick) {
+      onClick(tag);
+    }
   };
 
-  const baseClasses = "px-2 py-1 rounded-xl text-sm cursor-pointer transition-colors";
-  const colorClasses = variantClasses[variant];
-
   return (
-    <span
-      className={`${baseClasses} ${colorClasses} ${className}`}
-      onClick={() => onClick(tag)}
-      role="button"
-      tabIndex={0}
-      aria-label={`Tag: ${tag}. Click to filter or navigate.`}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          onClick(tag);
-        }
-      }}
+    <Badge 
+      variant={variant} 
+      className={cn(
+        "cursor-pointer hover:opacity-80 transition-opacity",
+        variant === "related" && "bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-200",
+        variant === "suggested" && "bg-green-100 text-green-800 hover:bg-green-200 border-green-200",
+        variant === "outline" && "bg-background text-foreground border-muted-foreground/20"
+      )}
+      onClick={handleClick}
     >
       {tag}
-    </span>
+    </Badge>
   );
 }

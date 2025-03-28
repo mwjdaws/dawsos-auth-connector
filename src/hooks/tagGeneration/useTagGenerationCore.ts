@@ -1,152 +1,78 @@
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { toast } from "@/hooks/use-toast";
-import { TagGenerationOptions, TagGenerationAPI } from "./types";
-import { useTagValidator } from "./useTagValidator";
-import { useTagCache } from "./useTagCache";
-import { useTagGenerationProcess } from "./useTagGenerationProcess";
+import { useState, useCallback, useTransition } from 'react';
+import { useTagGenerationProcess } from './useTagGenerationProcess';
+import { supabase } from '@/integrations/supabase/client';
+import { handleError } from '@/utils/error-handling';
 
-/**
- * Core hook for tag generation functionality
- */
-export function useTagGenerationCore(options: TagGenerationOptions = {}): TagGenerationAPI {
-  const { maxRetries = 2, retryDelay = 1500 } = options;
-  
-  const [tags, setTags] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [contentId, setContentId] = useState<string>(`temp-${Date.now()}`);
-  const [retryCount, setRetryCount] = useState(0);
-  
-  const isMounted = useRef(true);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  
-  const { validateInput } = useTagValidator();
-  const { checkCache, updateCache } = useTagCache();
-  const { processTagGeneration } = useTagGenerationProcess({
-    maxRetries,
-    retryDelay,
-    setIsLoading,
-    isMounted
-  });
+export function useTagGenerationCore() {
+  const [contentId, setContentId] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const { isLoading, tags, setTags, generateTags } = useTagGenerationProcess();
 
-  // Reset contentId when component mounts and handle cleanup on unmount
-  useEffect(() => {
-    setContentId(`temp-${Date.now()}`);
-    
-    return () => {
-      isMounted.current = false;
-      // Abort any in-flight requests on unmount
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, []);
-
-  const handleGenerateTags = useCallback(async (text: string): Promise<string | undefined> => {
-    // Don't process empty or whitespace-only text
-    if (!text || !text.trim()) {
-      toast({
-        title: "Empty content",
-        description: "Please provide some content to generate tags.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    try {
-      // Check cache first for the exact same text
-      const cachedResult = checkCache(text);
-      if (cachedResult) {
-        setTags(cachedResult.tags);
-        setContentId(cachedResult.contentId);
-        return cachedResult.contentId;
-      }
-      
-      // Input validation
-      if (!validateInput(text)) return;
-
-      // Reset retry count on new generation request
-      setRetryCount(0);
-      setIsLoading(true);
-      
-      // Create new abort controller for this request
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      abortControllerRef.current = new AbortController();
-      
-      // Generate a new contentId for this content
-      const newContentId = `content-${Date.now()}`;
-      setContentId(newContentId);
-      
-      const generatedTags = await processTagGeneration(text, newContentId, retryCount);
-      
-      if (!isMounted.current) return;
-      
-      setTags(generatedTags);
-      
-      // Store in cache
-      updateCache(text, newContentId, generatedTags);
-      
-      if (generatedTags.includes("fallback") || generatedTags.includes("error")) {
-        // If it's not the max retry count yet, attempt a retry
-        if (retryCount < maxRetries) {
-          toast({
-            title: "Retrying generation",
-            description: "First attempt returned basic tags. Trying again...",
-          });
-          
-          // Wait before retrying
-          setTimeout(() => {
-            if (isMounted.current) {
-              setRetryCount(prev => prev + 1);
-              handleGenerateTags(text);
-            }
-          }, retryDelay);
-          
-          return newContentId;
-        }
-        
-        toast({
-          title: "Limited results",
-          description: "We had trouble generating optimal tags, so we've provided some basic ones.",
-          variant: "default",
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Tags generated successfully",
-        });
-      }
-      
-      return newContentId;
-    } catch (error) {
-      if (!isMounted.current) return;
-      
-      console.error("Error in tag generation:", error);
-      setIsLoading(false);
-      
-      toast({
-        title: "Generation failed",
-        description: "Failed to generate tags. Please try again.",
-        variant: "destructive",
-      });
-      
+  /**
+   * Handle tag generation from content
+   */
+  const handleGenerateTags = useCallback(async (content: string): Promise<string | undefined> => {
+    if (!content.trim()) {
+      console.error('useTagGenerationCore: Empty content');
       return undefined;
     }
-  }, [validateInput, checkCache, updateCache, processTagGeneration, retryCount, maxRetries, retryDelay]);
-  
-  // Memoize returning object to prevent unnecessary re-renders
-  const tagGenerationApi = useMemo(() => ({
-    tags,
-    setTags,
+
+    try {
+      // Generate a temporary or real content ID if needed
+      let newContentId = contentId || `content-${Date.now()}`;
+      console.log('useTagGenerationCore: Using contentId:', newContentId);
+      
+      // First generate tags from the content
+      const generatedTags = await generateTags(content);
+      
+      if (!generatedTags || generatedTags.length === 0) {
+        console.warn('useTagGenerationCore: No tags generated');
+        return undefined;
+      }
+      
+      // Set the tags in the state
+      setTags(generatedTags);
+      
+      // Create a simple content object in Supabase
+      const { data: contentData, error: contentError } = await supabase
+        .from('knowledge_sources')
+        .upsert({
+          id: newContentId,
+          content: content.substring(0, 5000), // Limit content size
+          title: `Generated from content at ${new Date().toLocaleString()}`
+        })
+        .select('id')
+        .single();
+      
+      if (contentError) {
+        console.error('useTagGenerationCore: Error saving content:', contentError);
+        return newContentId; // Return the ID anyway so we can use it for tags
+      }
+      
+      const finalContentId = contentData?.id || newContentId;
+      
+      // Return the content ID for further operations
+      return finalContentId;
+    } catch (error) {
+      console.error('useTagGenerationCore: Error in tag generation process:', error);
+      handleError(
+        error, 
+        'Failed to generate tags',
+        { level: 'error' }
+      );
+      return undefined;
+    }
+  }, [contentId, generateTags, setTags]);
+
+  return {
     isLoading,
+    isPending,
     contentId,
     setContentId,
+    tags,
+    setTags,
     handleGenerateTags,
-    retryCount,
-    resetRetryCount: () => setRetryCount(0)
-  }), [tags, isLoading, contentId, handleGenerateTags, retryCount]);
-  
-  return tagGenerationApi;
+    startTransition
+  };
 }
