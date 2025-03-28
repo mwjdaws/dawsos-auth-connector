@@ -1,46 +1,98 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface TagListProps {
-  tags: string[];
-  isLoading: boolean;
-  expectedTags?: number;
+  tags: string[]; // Direct tags
+  isLoading: boolean; // Loading state for direct tags
+  knowledgeSourceId?: string; // Optional ID for fetching related tags
 }
 
-export function TagList({ tags, isLoading, expectedTags = 5 }: TagListProps) {
-  // Dynamic skeleton count based on expected number of tags
-  const skeletonCount = expectedTags > 0 ? expectedTags : 5;
+export function TagList({ tags, isLoading, knowledgeSourceId }: TagListProps) {
+  const [relatedTags, setRelatedTags] = useState<string[]>([]);
+  const [isRelatedLoading, setIsRelatedLoading] = useState<boolean>(false);
+
+  // Fetch related tags based on ontology relationships
+  useEffect(() => {
+    if (!knowledgeSourceId) return;
+
+    const fetchRelatedTags = async () => {
+      setIsRelatedLoading(true);
+      try {
+        const response = await fetch(`/api/ontology-relationships?knowledgeSourceId=${knowledgeSourceId}`);
+        const data = await response.json();
+        setRelatedTags(data.relatedTags || []);
+      } catch (error) {
+        console.error("Failed to fetch related tags:", error);
+      } finally {
+        setIsRelatedLoading(false);
+      }
+    };
+
+    fetchRelatedTags();
+  }, [knowledgeSourceId]);
+
+  // Render skeleton loader
+  const renderSkeletons = (count: number) => (
+    <div className="flex flex-wrap gap-2">
+      {Array.from({ length: count }).map((_, i) => (
+        <Skeleton key={i} className="h-8 w-20 rounded-xl" />
+      ))}
+    </div>
+  );
 
   if (isLoading) {
     return (
-      <div className="mt-4" aria-live="polite">
+      <div className="mt-4">
         <h3 className="text-sm font-medium mb-2">Generating Tags...</h3>
-        <div className="flex flex-wrap gap-2">
-          {Array.from({ length: skeletonCount }).map((_, i) => (
-            <Skeleton key={i} className="h-8 w-20 rounded-xl" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (tags.length === 0) {
-    return (
-      <div className="mt-4 p-4 border border-dashed border-gray-300 rounded-md text-center" aria-live="polite">
-        <p className="text-sm text-muted-foreground">No tags generated yet</p>
+        {renderSkeletons(5)}
       </div>
     );
   }
 
   return (
-    <div className="mt-4" aria-live="polite">
+    <div className="mt-4">
+      {/* Direct Tags */}
       <h3 className="text-sm font-medium mb-2">Generated Tags:</h3>
-      <div className="flex flex-wrap gap-2">
-        {tags.map((tag) => (
-          <span key={tag} className="px-2 py-1 bg-blue-100 rounded-xl text-sm">{tag}</span>
-        ))}
-      </div>
+      {tags.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {tags.map((tag, index) => (
+            <span
+              key={index}
+              className="px-2 py-1 bg-blue-100 rounded-xl text-sm cursor-pointer hover:bg-blue-200"
+              onClick={() => console.log(`Tag clicked: ${tag}`)} // Example interactivity
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-500">No tags available.</p>
+      )}
+
+      {/* Related Tags */}
+      {knowledgeSourceId && (
+        <>
+          <h3 className="text-sm font-medium mt-4 mb-2">Related Tags:</h3>
+          {isRelatedLoading ? (
+            renderSkeletons(3)
+          ) : relatedTags.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {relatedTags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="px-2 py-1 bg-green-100 rounded-xl text-sm cursor-pointer hover:bg-green-200"
+                  onClick={() => console.log(`Related tag clicked: ${tag}`)} // Example interactivity
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">No related tags found.</p>
+          )}
+        </>
+      )}
     </div>
   );
 }
