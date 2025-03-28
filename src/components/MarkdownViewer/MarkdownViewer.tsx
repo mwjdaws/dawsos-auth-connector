@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { ContentPanel } from "./ContentPanel";
-import { MetadataPanel } from "./MetadataPanel";
+import { MetadataPanel } from "./MetadataPanel/MetadataPanel";
 import { useMarkdownMetadata, useTagManagement, useContentProcessor } from "@/hooks/markdown-viewer";
 
 interface MarkdownViewerProps {
@@ -68,5 +68,3 @@ export function MarkdownViewer({ content, contentId, editable = false, className
     </div>
   );
 }
-
-export default MarkdownViewer;

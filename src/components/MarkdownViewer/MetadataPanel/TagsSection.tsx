@@ -2,7 +2,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
-import { TagInput } from "@/components/MarkdownViewer/TagInput";
+import { TagInput } from "../TagInput";
 
 interface Tag {
   id: string;
@@ -10,7 +10,7 @@ interface Tag {
   content_id: string;
 }
 
-export interface TagsSectionProps {
+interface TagsSectionProps {
   tags: Tag[];
   editable: boolean;
   newTag: string;
@@ -19,14 +19,14 @@ export interface TagsSectionProps {
   onDeleteTag: (tagId: string) => void;
 }
 
-export const TagsSection: React.FC<TagsSectionProps> = ({
+export function TagsSection({
   tags,
   editable,
   newTag,
   setNewTag,
   onAddTag,
   onDeleteTag
-}) => {
+}: TagsSectionProps) {
   return (
     <div>
       <h3 className="text-sm font-medium mb-2">Tags</h3>
@@ -65,4 +65,4 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
       )}
     </div>
   );
-};
+}

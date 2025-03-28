@@ -121,6 +121,82 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   const handleRefresh = () => {
     fetchMetadata();
   };
+  
+  const handleAddTag = async () => {
+    if (!newTag.trim() || !user) {
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to add tags",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    try {
+      const newTagData = {
+        name: newTag.trim(),
+        content_id: contentId
+      };
+      
+      const { data, error } = await supabase
+        .from("tags")
+        .insert(newTagData)
+        .select();
+      
+      if (error) throw error;
+      
+      setTags(prev => [...prev, data![0]]);
+      setNewTag("");
+      
+      toast({
+        title: "Success",
+        description: "Tag added successfully",
+      });
+    } catch (error: any) {
+      console.error("Error adding tag:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add tag",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteTag = async (tagId: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to delete tags",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from("tags")
+        .delete()
+        .eq("id", tagId);
+      
+      if (error) throw error;
+      
+      setTags(tags.filter(tag => tag.id !== tagId));
+      
+      toast({
+        title: "Success",
+        description: "Tag deleted successfully",
+      });
+    } catch (error: any) {
+      console.error("Error deleting tag:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete tag",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Determine card border styling based on review status
   const cardBorderClass = needsExternalReview
@@ -169,11 +245,11 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
             
             <TagsSection 
               tags={tags}
+              editable={!!user}
               newTag={newTag}
               setNewTag={setNewTag}
-              contentId={contentId}
-              setTags={setTags}
-              user={user}
+              onAddTag={handleAddTag}
+              onDeleteTag={handleDeleteTag}
             />
             
             <ContentIdSection contentId={contentId} />
