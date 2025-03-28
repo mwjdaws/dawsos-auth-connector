@@ -35,10 +35,10 @@ export function TemplateSelector({
     content: ''
   });
 
-  const loadTemplates = async (params?: PaginationParams) => {
+  const loadTemplates = async () => {
     try {
       setLoading(true);
-      const response = await fetchKnowledgeTemplates(params);
+      const response = await fetchKnowledgeTemplates();
       
       let filteredTemplates = response.data;
       if (templateFilter === 'global') {
@@ -48,10 +48,11 @@ export function TemplateSelector({
       }
       
       setTemplates(filteredTemplates);
+      // Set pagination manually since the API doesn't return pagination info
       setPagination({
-        page: response.page,
-        pageSize: response.pageSize,
-        totalPages: response.totalPages,
+        page: 1,
+        pageSize: 10,
+        totalPages: Math.ceil(filteredTemplates.length / 10),
         count: filteredTemplates.length
       });
     } catch (error) {
@@ -71,7 +72,10 @@ export function TemplateSelector({
   }, [templateFilter]);
 
   const handlePageChange = (page: number) => {
-    loadTemplates({ page, pageSize: pagination.pageSize });
+    setPagination(prev => ({
+      ...prev,
+      page
+    }));
   };
 
   const handleTemplateChange = async (value: string) => {
@@ -111,7 +115,7 @@ export function TemplateSelector({
 
       if (data && data.length > 0) {
         setTemplateFilter('custom');
-        await loadTemplates({ page: 1 });
+        await loadTemplates();
         setNewTemplate({ name: '', content: '' });
         setDialogOpen(false);
         toast({
@@ -131,6 +135,12 @@ export function TemplateSelector({
     }
   };
 
+  // Get the current page of templates
+  const paginatedTemplates = templates.slice(
+    (pagination.page - 1) * pagination.pageSize,
+    pagination.page * pagination.pageSize
+  );
+
   return (
     <div className={className}>
       <TemplateFilterTabs 
@@ -139,7 +149,7 @@ export function TemplateSelector({
       />
 
       <TemplateDropdown 
-        templates={templates}
+        templates={paginatedTemplates}
         loading={loading}
         onTemplateChange={handleTemplateChange}
       />

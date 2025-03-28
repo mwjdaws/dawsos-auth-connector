@@ -22,16 +22,18 @@ export function TemplatesPanel() {
   const [selectedTemplate, setSelectedTemplate] = useState<KnowledgeTemplate | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const loadTemplates = async (params?: PaginationParams) => {
+  const loadTemplates = async () => {
     try {
       setLoading(true);
-      const response = await fetchKnowledgeTemplates(params);
+      const response = await fetchKnowledgeTemplates();
       setTemplates(response.data);
+      
+      // Set pagination manually since the API doesn't return pagination info
       setPagination({
-        page: response.page,
-        pageSize: response.pageSize,
-        totalPages: response.totalPages,
-        count: response.count
+        page: 1,
+        pageSize: 5,
+        totalPages: Math.ceil(response.data.length / 5),
+        count: response.data.length
       });
     } catch (error) {
       console.error("Failed to load templates:", error);
@@ -46,11 +48,14 @@ export function TemplatesPanel() {
   };
 
   useEffect(() => {
-    loadTemplates({ page: 1, pageSize: pagination.pageSize });
+    loadTemplates();
   }, []);
 
   const handlePageChange = (page: number) => {
-    loadTemplates({ page, pageSize: pagination.pageSize });
+    setPagination(prev => ({
+      ...prev,
+      page
+    }));
   };
 
   const handleTemplateSelect = (template: KnowledgeTemplate) => {
@@ -72,6 +77,12 @@ export function TemplatesPanel() {
     }
   };
 
+  // Get paginated templates
+  const paginatedTemplates = templates.slice(
+    (pagination.page - 1) * pagination.pageSize,
+    pagination.page * pagination.pageSize
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-6 justify-between items-start">
@@ -89,7 +100,7 @@ export function TemplatesPanel() {
       </div>
 
       <TemplateListCard
-        templates={templates}
+        templates={paginatedTemplates}
         loading={loading}
         pagination={pagination}
         searchQuery={searchQuery}
