@@ -12,17 +12,37 @@ The Markdown Editor is a core component of DawsOS that provides a rich editing e
 - **Version History**: Track changes and restore previous versions
 - **Autosave**: Automatically saves drafts periodically to prevent data loss
 - **Fullscreen Mode**: Toggle between standard and fullscreen editing
+- **Split Editor**: Side-by-side editing and preview in standard mode
+- **Tabbed Interface**: Switch between edit and preview tabs in fullscreen mode
 
 ## Component Architecture
 
-The Markdown Editor is composed of several modular components:
+The Markdown Editor follows a modular component architecture:
 
-1. **MarkdownEditor**: The main container component
+1. **MarkdownEditor**: The main container component that orchestrates all functionality
 2. **EditorHeader**: Contains title input and template selection
-3. **MarkdownContent**: The editable markdown input area
-4. **MarkdownPreview**: Renders the markdown as formatted HTML
-5. **EditorActions**: Buttons for saving drafts and publishing
-6. **VersionHistoryModal**: UI for browsing and restoring versions
+3. **EditorToolbar**: Contains UI controls for fullscreen and version history
+4. **SplitEditor**: Side-by-side editing and preview for regular mode
+5. **FullscreenEditor**: Tabbed interface for editing in fullscreen mode
+6. **MarkdownContent**: The editable markdown input area
+7. **MarkdownPreview**: Renders the markdown as formatted HTML
+8. **EditorActions**: Buttons for saving drafts and publishing
+9. **VersionHistoryModal**: UI for browsing and restoring versions
+
+## Hook Architecture
+
+The editor uses a composable hook system for state management and operations:
+
+1. **useMarkdownEditor**: The main orchestration hook that combines all other hooks
+2. **useContentState**: Manages the document content state (title, content, etc.)
+3. **useContentLoader**: Handles loading existing content from the database
+4. **useDocumentOperations**: Coordinates save and publish operations
+5. **useDraftOperations**: Handles saving drafts to the database
+6. **usePublishOperations**: Manages document publishing
+7. **useTemplateHandling**: Controls template selection and application
+8. **useDocumentVersioning**: Manages version creation and restoration
+9. **useAutosave**: Provides automatic periodic saving
+10. **useDocumentOperationHandlers**: Wraps operations with UI feedback
 
 ## Integration Points
 
@@ -53,12 +73,34 @@ This allows users to view previous versions of a document and restore them if ne
 
 ### State Management
 
-The editor's state is managed through the `useMarkdownEditor` hook, which provides:
+The editor's state is managed through the modular hook system, with `useMarkdownEditor` as the orchestration point:
 
-- Content state (title, content, templateId)
-- Loading and saving states
-- Functions for saving drafts and publishing
-- Template handling logic
+```typescript
+const {
+  title,
+  setTitle,
+  content,
+  setContent,
+  templateId,
+  isLoadingTemplate,
+  isSaving,
+  isPublishing,
+  isDirty,
+  isPublished,
+  isLoading,
+  handleSaveDraft,
+  handlePublish,
+  handleTemplateChange
+} = useMarkdownEditor({
+  initialTitle,
+  initialContent,
+  initialTemplateId,
+  documentId,
+  sourceId,
+  onSaveDraft,
+  onPublish
+});
+```
 
 ## Usage
 
@@ -90,77 +132,80 @@ To load and edit existing content, provide the `sourceId`:
 />
 ```
 
-### Fullscreen Mode
+### UI Modes
 
-The editor supports toggling between regular and fullscreen modes:
+The editor supports two primary UI modes:
+
+#### Split Editor Mode (Default)
+Side-by-side editing and preview for regular usage.
 
 ```typescript
-const [isFullscreen, setIsFullscreen] = useState(false);
-
-const toggleFullscreen = () => {
-  setIsFullscreen(!isFullscreen);
-};
-
-// In render:
-<Button onClick={toggleFullscreen}>
-  {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-</Button>
+<SplitEditor 
+  content={content} 
+  setContent={setContent} 
+/>
 ```
 
-## Hooks
-
-### useMarkdownEditor
-
-This is the primary hook that powers the editor functionality:
+#### Fullscreen Mode
+Tabbed interface that switches between edit and preview.
 
 ```typescript
-const {
-  title,
-  setTitle,
-  content,
-  setContent,
-  templateId,
-  isLoadingTemplate,
+<FullscreenEditor
+  activeTab={activeTab}
+  setActiveTab={setActiveTab}
+  content={content}
+  setContent={setContent}
+/>
+```
+
+## Editor States
+
+The editor manages several states to provide feedback to the user:
+
+- **isDirty**: Document has unsaved changes
+- **isLoading**: Content is being loaded from the database
+- **isSaving**: Draft is currently being saved
+- **isPublishing**: Document is being published
+- **isLoadingTemplate**: A template is being applied
+- **isPublished**: Document has been published
+
+```typescript
+// In render:
+<EditorActions 
+  onSaveDraft={handleSaveDraft}
+  onPublish={handlePublish}
+  isSaving={isSaving}
+  isPublishing={isPublishing}
+  isLoadingTemplate={isLoadingTemplate}
+  isDirty={isDirty}
+  isPublished={isPublished}
+/>
+```
+
+## Implementation Notes
+
+### Autosave
+
+The editor automatically saves drafts when content changes:
+
+```typescript
+useAutosave({
+  isDirty,
   isSaving,
   isPublishing,
-  isDirty,
-  isPublished,
-  isLoading,
-  handleSaveDraft,
-  handlePublish,
-  handleTemplateChange
-} = useMarkdownEditor({
-  initialTitle,
-  initialContent,
-  initialTemplateId,
-  documentId,
-  sourceId,
-  onSaveDraft,
-  onPublish
+  documentId: documentId || sourceId,
+  onSave: () => handleSaveDraft(true)
 });
 ```
 
-### useDocumentVersioning
+### Version Creation
 
-Handles version creation, loading, and restoration:
+The system automatically creates versions when saving:
 
 ```typescript
-const {
-  createVersion,
-  loadVersion,
-  restoreVersion
-} = useDocumentVersioning();
+// Before updating the document, create a version of the current content
+await createVersion(documentId, isAutoSave);
 ```
-
-## Styling
-
-The Markdown Editor uses a combination of Tailwind CSS classes and Shadcn UI components for a clean, responsive interface:
-
-- Grid layout for side-by-side editing and preview
-- Responsive design that adapts to different screen sizes
-- Tabs for switching between edit and preview modes in fullscreen
-
-## Implementation Notes
 
 ### Loading States
 
@@ -179,21 +224,6 @@ if (isLoading) {
     </div>
   );
 }
-```
-
-### Dirty State Tracking
-
-The editor tracks whether the content has been modified since the last save:
-
-```typescript
-// Track changes to mark document as dirty when content changes
-useEffect(() => {
-  if (title !== lastSavedTitle || content !== lastSavedContent) {
-    setIsDirty(true);
-  } else {
-    setIsDirty(false);
-  }
-}, [title, content, lastSavedTitle, lastSavedContent]);
 ```
 
 ## Future Enhancements
