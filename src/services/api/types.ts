@@ -22,6 +22,12 @@ export interface KnowledgeSource {
   created_at?: string;
   updated_at?: string;
   template_id?: string;
+  external_source_url?: string;
+  external_source_checked_at?: string;
+  external_content_hash?: string;
+  needs_external_review?: boolean;
+  published?: boolean;
+  published_at?: string;
 }
 
 export interface KnowledgeSourceVersion {

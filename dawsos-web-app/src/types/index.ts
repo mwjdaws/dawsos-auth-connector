@@ -1,3 +1,4 @@
+
 // filepath: /dawsos-web-app/dawsos-web-app/src/types/index.ts
 export interface KnowledgeSource {
     id: string;
@@ -5,6 +6,10 @@ export interface KnowledgeSource {
     content: string;
     createdAt: string;
     updatedAt: string;
+    externalSourceUrl?: string;
+    externalSourceCheckedAt?: string;
+    externalContentHash?: string;
+    needsExternalReview?: boolean;
 }
 
 export interface Template {

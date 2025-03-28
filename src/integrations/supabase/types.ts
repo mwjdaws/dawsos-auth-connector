@@ -49,8 +49,12 @@ export type Database = {
           content: string
           created_at: string | null
           created_by: string | null
+          external_content_hash: string | null
+          external_source_checked_at: string | null
+          external_source_url: string | null
           id: string
           metadata: Json | null
+          needs_external_review: boolean | null
           published: boolean | null
           published_at: string | null
           template_id: string | null
@@ -62,8 +66,12 @@ export type Database = {
           content: string
           created_at?: string | null
           created_by?: string | null
+          external_content_hash?: string | null
+          external_source_checked_at?: string | null
+          external_source_url?: string | null
           id?: string
           metadata?: Json | null
+          needs_external_review?: boolean | null
           published?: boolean | null
           published_at?: string | null
           template_id?: string | null
@@ -75,8 +83,12 @@ export type Database = {
           content?: string
           created_at?: string | null
           created_by?: string | null
+          external_content_hash?: string | null
+          external_source_checked_at?: string | null
+          external_source_url?: string | null
           id?: string
           metadata?: Json | null
+          needs_external_review?: boolean | null
           published?: boolean | null
           published_at?: string | null
           template_id?: string | null

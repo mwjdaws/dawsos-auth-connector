@@ -123,3 +123,76 @@ export const deleteKnowledgeSource = async (id: string) => {
     throw error;
   }
 };
+
+// New functions for external source operations
+
+export const checkExternalSource = async (id: string) => {
+  try {
+    // First, get the knowledge source with the external URL
+    const { data: source, error: fetchError } = await supabase
+      .from('knowledge_sources')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (fetchError) throw new ApiError(fetchError.message, parseSupabaseErrorCode(fetchError));
+    
+    if (!source || !source.external_source_url) {
+      throw new Error("No external source URL found for this knowledge source");
+    }
+    
+    // Update the checked_at timestamp
+    const { data, error } = await supabase
+      .from('knowledge_sources')
+      .update({
+        external_source_checked_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select();
+    
+    if (error) throw new ApiError(error.message, parseSupabaseErrorCode(error));
+    return data;
+  } catch (error) {
+    handleError(error, `Failed to check external source for knowledge source with ID: ${id}`);
+    throw error;
+  }
+};
+
+export const markExternalReviewNeeded = async (id: string, needsReview: boolean = true) => {
+  try {
+    const { data, error } = await supabase
+      .from('knowledge_sources')
+      .update({
+        needs_external_review: needsReview
+      })
+      .eq('id', id)
+      .select();
+    
+    if (error) throw new ApiError(error.message, parseSupabaseErrorCode(error));
+    return data;
+  } catch (error) {
+    handleError(error, `Failed to update external review flag for knowledge source with ID: ${id}`);
+    throw error;
+  }
+};
+
+export const updateExternalSource = async (id: string, externalSourceUrl: string, contentHash?: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('knowledge_sources')
+      .update({
+        external_source_url: externalSourceUrl,
+        external_content_hash: contentHash,
+        external_source_checked_at: new Date().toISOString(),
+        needs_external_review: false
+      })
+      .eq('id', id)
+      .select();
+    
+    if (error) throw new ApiError(error.message, parseSupabaseErrorCode(error));
+    return data;
+  } catch (error) {
+    handleError(error, `Failed to update external source for knowledge source with ID: ${id}`);
+    throw error;
+  }
+};
