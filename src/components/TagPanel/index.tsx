@@ -26,17 +26,32 @@ export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
   
   // Handle tag generation from content
   const handleGenerateTags = async (text: string) => {
-    // This is a simple implementation - the actual TagGenerator component
-    // will handle the processing, this just receives the results
     if (text && text.trim()) {
       setIsGeneratingTags(true);
       try {
-        // Generate tags based on the text
-        // For now, just set some placeholder tags
-        setGeneratedTags(["tag1", "tag2", "tag3"]);
+        // For future implementation: Replace with actual tag generation logic
+        // Example using the useTagGeneration hook (uncomment when implemented)
+        // const { generateTags } = useTagGeneration();
+        // const tags = await generateTags(text);
+        // setGeneratedTags(tags);
+        
+        // For now, use placeholder tags with more realistic content
+        setTimeout(() => {
+          setGeneratedTags([
+            "knowledge", 
+            "management", 
+            "documentation", 
+            "metadata", 
+            "tagging",
+            "ontology"
+          ]);
+        }, 1000);
+        
         setContent(text);
       } finally {
-        setIsGeneratingTags(false);
+        setTimeout(() => {
+          setIsGeneratingTags(false);
+        }, 1000);
       }
     }
   };
@@ -52,7 +67,7 @@ export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
         <TagList 
           tags={generatedTags}
           isLoading={isGeneratingTags}
-          knowledgeSourceId={contentId.startsWith("temp-") ? undefined : contentId}
+          knowledgeSourceId={contentId}
         />
         
         <TagSaver

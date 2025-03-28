@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/hooks/use-toast";
 
 interface TagListProps {
   tags: string[]; // Direct tags
@@ -14,16 +15,28 @@ export function TagList({ tags, isLoading, knowledgeSourceId }: TagListProps) {
 
   // Fetch related tags based on ontology relationships
   useEffect(() => {
-    if (!knowledgeSourceId) return;
+    if (!knowledgeSourceId || knowledgeSourceId.startsWith("temp-")) return;
 
     const fetchRelatedTags = async () => {
       setIsRelatedLoading(true);
       try {
         const response = await fetch(`/api/ontology-relationships?knowledgeSourceId=${knowledgeSourceId}`);
+        
+        if (!response.ok) {
+          throw new Error(`API returned status: ${response.status}`);
+        }
+        
         const data = await response.json();
         setRelatedTags(data.relatedTags || []);
+        
+        console.log(`Related tags fetched for source ID ${knowledgeSourceId}:`, data.relatedTags);
       } catch (error) {
         console.error("Failed to fetch related tags:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch related tags. Please try again later.",
+          variant: "destructive",
+        });
       } finally {
         setIsRelatedLoading(false);
       }
@@ -60,7 +73,7 @@ export function TagList({ tags, isLoading, knowledgeSourceId }: TagListProps) {
             <span
               key={index}
               className="px-2 py-1 bg-blue-100 rounded-xl text-sm cursor-pointer hover:bg-blue-200"
-              onClick={() => console.log(`Tag clicked: ${tag}`)} // Example interactivity
+              onClick={() => console.log(`Tag clicked: ${tag}`)}
             >
               {tag}
             </span>
@@ -71,7 +84,7 @@ export function TagList({ tags, isLoading, knowledgeSourceId }: TagListProps) {
       )}
 
       {/* Related Tags */}
-      {knowledgeSourceId && (
+      {knowledgeSourceId && !knowledgeSourceId.startsWith("temp-") && (
         <>
           <h3 className="text-sm font-medium mt-4 mb-2">Related Tags:</h3>
           {isRelatedLoading ? (
@@ -82,7 +95,7 @@ export function TagList({ tags, isLoading, knowledgeSourceId }: TagListProps) {
                 <span
                   key={index}
                   className="px-2 py-1 bg-green-100 rounded-xl text-sm cursor-pointer hover:bg-green-200"
-                  onClick={() => console.log(`Related tag clicked: ${tag}`)} // Example interactivity
+                  onClick={() => console.log(`Related tag clicked: ${tag}`)}
                 >
                   {tag}
                 </span>
