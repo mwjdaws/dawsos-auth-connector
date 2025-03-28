@@ -9,6 +9,9 @@ interface MarkdownPreviewProps {
 }
 
 const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, className }) => {
+  // Add console log to check content being rendered
+  console.log("Rendering preview with content length:", content?.length || 0);
+  
   return (
     <div className="flex flex-col">
       <label className="block text-sm font-medium mb-1">

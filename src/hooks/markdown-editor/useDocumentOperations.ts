@@ -42,9 +42,11 @@ export const useDocumentOperations = ({
           variant: "destructive",
         });
       }
-      return;
+      return null;
     }
 
+    console.log("Saving document with title:", title, "and user ID:", userId);
+    
     setIsSaving(true);
     try {
       const knowledgeData = {
@@ -54,10 +56,14 @@ export const useDocumentOperations = ({
         user_id: userId,
       };
 
+      console.log("Document data to save:", knowledgeData);
+      
       let savedDocumentId = documentId;
       let response;
 
       if (documentId) {
+        console.log("Updating existing document ID:", documentId);
+        
         // Before updating the document, create a version of the current content
         await createVersion(documentId, isAutoSave);
 
@@ -69,6 +75,8 @@ export const useDocumentOperations = ({
           .select()
           .single();
       } else {
+        console.log("Creating new document");
+        
         // Create new document
         response = await supabase
           .from('knowledge_sources')
@@ -78,10 +86,13 @@ export const useDocumentOperations = ({
       }
 
       if (response.error) {
+        console.error("Database error during save:", response.error);
         throw response.error;
       }
 
+      console.log("Save operation response:", response);
       savedDocumentId = response.data.id;
+      console.log("Document saved with ID:", savedDocumentId);
 
       if (onSaveDraft) {
         onSaveDraft(savedDocumentId, title, content, templateId);
@@ -104,6 +115,7 @@ export const useDocumentOperations = ({
           variant: "destructive",
         });
       }
+      return null;
     } finally {
       setIsSaving(false);
     }
@@ -128,61 +140,74 @@ export const useDocumentOperations = ({
         description: "Please enter a title before publishing",
         variant: "destructive",
       });
-      return;
+      return { success: false, error: "Title is required" };
     }
 
+    console.log("Publishing document with title:", title, "and user ID:", userId);
+    
     setIsPublishing(true);
     try {
       // First save the draft to ensure we have the latest content
       const savedId = await saveDraft(title, content, templateId, userId);
       
-      if (savedId) {
-        // Update the published status
-        const { error: publishError } = await supabase
-          .from('knowledge_sources')
-          .update({
-            published: true,
-            published_at: new Date().toISOString()
-          })
-          .eq('id', savedId);
-
-        if (publishError) throw publishError;
-        
-        // Try to trigger AI enrichment via edge function (if available)
-        try {
-          const { error: enrichError } = await supabase.functions.invoke('enrich-content', {
-            body: { 
-              documentId: savedId,
-              title,
-              content
-            }
-          });
-          
-          if (enrichError) {
-            console.warn('AI enrichment function failed or not available:', enrichError);
-            // Continue with publishing even if enrichment fails
-          }
-        } catch (enrichmentError) {
-          // Log but don't fail if enrichment function isn't available
-          console.log('Content enrichment not available:', enrichmentError);
-        }
-        
-        if (onPublish) {
-          onPublish(savedId, title, content, templateId);
-        }
-        
-        toast({
-          title: "Content Published",
-          description: "Your content has been published successfully",
-        });
+      if (!savedId) {
+        console.error("Failed to save draft before publishing");
+        return { success: false, error: "Failed to save draft before publishing" };
       }
+      
+      console.log("Updating publish status for document ID:", savedId);
+      
+      // Update the published status
+      const { data, error: publishError } = await supabase
+        .from('knowledge_sources')
+        .update({
+          published: true,
+          published_at: new Date().toISOString()
+        })
+        .eq('id', savedId)
+        .select();
+
+      if (publishError) {
+        console.error("Error updating publish status:", publishError);
+        throw publishError;
+      }
+      
+      console.log("Publish status updated successfully:", data);
+      
+      // Try to trigger AI enrichment via edge function (if available)
+      try {
+        console.log("Attempting to invoke AI enrichment for document ID:", savedId);
+        
+        const { error: enrichError } = await supabase.functions.invoke('enrich-content', {
+          body: { 
+            documentId: savedId,
+            title,
+            content
+          }
+        });
+        
+        if (enrichError) {
+          console.warn('AI enrichment function failed or not available:', enrichError);
+          // Continue with publishing even if enrichment fails
+        } else {
+          console.log("AI enrichment function invoked successfully");
+        }
+      } catch (enrichmentError) {
+        // Log but don't fail if enrichment function isn't available
+        console.log('Content enrichment not available or failed:', enrichmentError);
+      }
+      
+      if (onPublish) {
+        onPublish(savedId, title, content, templateId);
+      }
+      
+      return { success: true, documentId: savedId };
     } catch (error) {
       console.error('Error publishing content:', error);
-      toast({
-        title: "Error Publishing",
-        description: "There was an error publishing your content. Please try again.",
-        variant: "destructive",
-      });
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : "Unknown error during publishing" 
+      };
     } finally {
       setIsPublishing(false);
     }

@@ -151,10 +151,66 @@ export const useMarkdownEditor = ({
     return result;
   };
 
-  // Handle publish wrapper
+  // Handle publish wrapper with improved error handling and console logs
   const handlePublish = async () => {
-    await publishDocument(title, content, templateId, user?.id);
-    setIsPublished(true);
+    if (!title.trim()) {
+      toast({
+        title: "Title Required",
+        description: "Please enter a title before publishing",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      console.log("Publishing document with user ID:", user?.id);
+      
+      // First save the draft to ensure we have the latest content
+      const savedId = await handleSaveDraft(false);
+      console.log("Draft saved with ID:", savedId);
+      
+      if (!savedId) {
+        console.error("Failed to save draft before publishing");
+        toast({
+          title: "Error Publishing",
+          description: "Could not save document before publishing. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Now publish the document
+      console.log("Attempting to publish document ID:", savedId);
+      const publishResult = await publishDocument(title, content, templateId, user?.id);
+      
+      if (publishResult && publishResult.success) {
+        console.log("Document successfully published with ID:", savedId);
+        setIsPublished(true);
+        
+        if (onPublish) {
+          onPublish(savedId, title, content, templateId);
+        }
+        
+        toast({
+          title: "Content Published",
+          description: "Your content has been published successfully",
+        });
+      } else {
+        console.error("Publish operation failed:", publishResult?.error || "Unknown error");
+        toast({
+          title: "Error Publishing",
+          description: publishResult?.error || "There was an error publishing your content. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error in publish workflow:', error);
+      toast({
+        title: "Error Publishing",
+        description: error instanceof Error ? error.message : "There was an error publishing your content. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Set up autosave
