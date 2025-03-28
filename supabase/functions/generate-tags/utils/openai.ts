@@ -43,7 +43,7 @@ export async function generateTagsWithOpenAI(content: string): Promise<TagsResul
           messages: [
             {
               role: "system",
-              content: "You are a tag generation assistant. Extract 5-10 relevant tags from the provided content. Return ONLY a JSON array of string tags, nothing else."
+              content: "You are a tag generation assistant. Extract 5-10 relevant tags from the provided content. Return ONLY a JSON array of string tags, nothing else. Do not include any markdown formatting, backticks, or explanations."
             },
             {
               role: "user",
@@ -89,8 +89,8 @@ export async function generateTagsWithOpenAI(content: string): Promise<TagsResul
       console.log("Raw OpenAI response:", tagsContent);
       
       // Process and return the tags
-      const parsedTags = parseTagsFromResponse(tagsContent);
-      console.log("Final parsed tags:", parsedTags);
+      const parsedTags = sanitizeTagsResponse(tagsContent);
+      console.log("Final sanitized tags:", parsedTags);
       
       return { tags: parsedTags };
     } catch (error) {
@@ -120,60 +120,142 @@ export async function generateTagsWithOpenAI(content: string): Promise<TagsResul
   };
 }
 
-function parseTagsFromResponse(tagsContent: string): string[] {
-  let tags: string[] = [];
-  try {
-    // Try to parse if response is a JSON array
-    if (tagsContent.trim().startsWith("[") && tagsContent.trim().endsWith("]")) {
-      tags = JSON.parse(tagsContent);
-    } else if (tagsContent.trim().startsWith("{") && tagsContent.trim().endsWith("}")) {
-      // Try to parse if response is a JSON object with a tags property
-      const parsedObject = JSON.parse(tagsContent);
-      if (Array.isArray(parsedObject.tags)) {
-        tags = parsedObject.tags;
-      } else {
-        // Try to extract tags from object values
-        tags = Object.values(parsedObject).filter(value => typeof value === 'string');
-      }
-    } else {
-      // Otherwise, split by commas, newlines, or bullets
-      tags = tagsContent
-        .split(/[\n,•\-]+/)
-        .map(tag => tag.trim())
-        .filter(tag => tag && !tag.startsWith("[") && !tag.endsWith("]") && tag.length > 1);
-    }
-    
-    // Deduplicate tags (case-insensitive)
-    const uniqueTags: string[] = [];
-    const seenTags = new Set<string>();
-    
-    for (const tag of tags) {
-      const lowerTag = tag.toLowerCase();
-      if (!seenTags.has(lowerTag)) {
-        seenTags.add(lowerTag);
-        uniqueTags.push(tag);
-      }
-    }
-    
-    tags = uniqueTags;
-    
-  } catch (parseError) {
-    console.error("Error parsing tags:", parseError);
-    // Fallback: split by commas or newlines
-    tags = tagsContent
-      .split(/[\n,]+/)
-      .map(tag => tag.trim())
-      .filter(tag => tag && tag.length > 1);
-  }
-
-  // If tags array is still empty, return a default set
-  if (tags.length === 0) {
-    console.warn("Failed to parse tags, using default tags");
+/**
+ * Sanitizes and cleans the tags response from OpenAI
+ * Handles various response formats and removes markdown artifacts
+ */
+function sanitizeTagsResponse(rawResponse: string): string[] {
+  if (!rawResponse || typeof rawResponse !== 'string') {
+    console.error("Invalid response format, received:", rawResponse);
     return getFallbackTags();
   }
 
+  // Log the original response for debugging
+  console.log("Sanitizing raw response:", rawResponse);
+  
+  // Step 1: Remove markdown code block syntax
+  let cleanedResponse = rawResponse
+    .replace(/```json/g, '')
+    .replace(/```/g, '')
+    .trim();
+  
+  console.log("After removing markdown:", cleanedResponse);
+  
+  try {
+    // Step 2: Try to parse as JSON if it looks like JSON
+    if (
+      (cleanedResponse.startsWith('[') && cleanedResponse.endsWith(']')) || 
+      (cleanedResponse.startsWith('{') && cleanedResponse.endsWith('}'))
+    ) {
+      const parsedJson = JSON.parse(cleanedResponse);
+      
+      // Handle array format
+      if (Array.isArray(parsedJson)) {
+        console.log("Parsed JSON array successfully");
+        return cleanTagArray(parsedJson);
+      }
+      
+      // Handle object format with a tags property
+      if (parsedJson && typeof parsedJson === 'object' && parsedJson.tags && Array.isArray(parsedJson.tags)) {
+        console.log("Parsed JSON object with tags property");
+        return cleanTagArray(parsedJson.tags);
+      }
+      
+      // Handle object format where values are the tags
+      if (parsedJson && typeof parsedJson === 'object') {
+        console.log("Parsed JSON object, extracting values");
+        const tagValues = Object.values(parsedJson)
+          .filter(val => typeof val === 'string')
+          .map(val => String(val));
+        return cleanTagArray(tagValues);
+      }
+    }
+  } catch (parseError) {
+    console.error("JSON parsing failed:", parseError);
+    // Continue to alternative parsing methods
+  }
+  
+  // Step 3: Try to parse as a line-by-line list
+  console.log("Trying line-by-line parsing");
+  const lineBasedTags = cleanedResponse
+    .split(/[\n,]+/)
+    .map(line => {
+      // Remove list markers, quotes and trim
+      return line
+        .replace(/^[-*•]/, '')
+        .replace(/["'`]/g, '')
+        .trim();
+    })
+    .filter(tag => tag && tag.length > 1);
+
+  if (lineBasedTags.length > 0) {
+    console.log("Line-based parsing successful");
+    return cleanTagArray(lineBasedTags);
+  }
+  
+  // Step 4: Last resort - split by spaces and hope for the best
+  console.log("Using last resort space-based parsing");
+  const wordBasedTags = cleanedResponse
+    .split(/\s+/)
+    .map(word => word.trim())
+    .filter(word => word.length > 2 && !word.includes('[') && !word.includes(']'));
+  
+  if (wordBasedTags.length > 0) {
+    return cleanTagArray(wordBasedTags);
+  }
+  
+  console.warn("All parsing methods failed, returning fallback tags");
+  return getFallbackTags();
+}
+
+/**
+ * Clean and deduplicate a tag array
+ */
+function cleanTagArray(tags: any[]): string[] {
+  if (!Array.isArray(tags)) {
+    console.error("Expected array input for cleanTagArray, got:", typeof tags);
+    return getFallbackTags();
+  }
+  
+  // Filter and clean tags
+  const cleanedTags = tags
+    .map(tag => {
+      // Ensure tag is a string
+      const tagStr = String(tag).trim();
+      
+      // Remove quotes, backticks, etc.
+      return tagStr
+        .replace(/^["'`]|["'`]$/g, '')
+        .replace(/\\n/g, '')
+        .trim();
+    })
+    .filter(tag => {
+      // Filter out invalid tags
+      return (
+        tag && 
+        tag.length > 1 && 
+        !tag.includes('```') &&
+        !tag.startsWith('[') &&
+        !tag.endsWith(']') &&
+        tag !== 'undefined' &&
+        tag !== 'null'
+      );
+    });
+  
+  // Deduplicate tags (case-insensitive)
+  const uniqueTags: string[] = [];
+  const seenTags = new Set<string>();
+  
+  for (const tag of cleanedTags) {
+    const lowerTag = tag.toLowerCase();
+    if (!seenTags.has(lowerTag)) {
+      seenTags.add(lowerTag);
+      uniqueTags.push(tag);
+    }
+  }
+  
   // Limit to 10 tags maximum
-  return tags.slice(0, 10);
+  return uniqueTags.slice(0, 10);
 }
 
 export function getFallbackTags(): string[] {
