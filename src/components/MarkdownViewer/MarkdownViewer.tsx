@@ -1,12 +1,10 @@
 
-import React, { useState, useEffect, useTransition } from "react";
+import React, { useState } from "react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { ContentPanel } from "./ContentPanel";
 import { MetadataPanel } from "./MetadataPanel";
-import { processWikilinks } from "./utils/wikilinksProcessor";
+import { useMarkdownMetadata, useTagManagement, useContentProcessor } from "@/hooks/markdown-viewer";
 
 interface MarkdownViewerProps {
   content: string;
@@ -15,169 +13,29 @@ interface MarkdownViewerProps {
   className?: string;
 }
 
-interface Tag {
-  id: string;
-  name: string;
-  content_id: string;
-}
-
-interface OntologyTerm {
-  id: string;
-  term: string;
-  description?: string;
-}
-
 export function MarkdownViewer({ content, contentId, editable = false, className }: MarkdownViewerProps) {
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [ontologyTerms, setOntologyTerms] = useState<OntologyTerm[]>([]);
-  const [domain, setDomain] = useState<string | null>(null);
-  const [externalSourceUrl, setExternalSourceUrl] = useState<string | null>(null);
-  const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
-  const [needsExternalReview, setNeedsExternalReview] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [newTag, setNewTag] = useState("");
-  const [isPending, startTransition] = useTransition();
-  const [processedContent, setProcessedContent] = useState(content);
   const { user } = useAuth();
+  const { metadata, isPending, startTransition } = useMarkdownMetadata(contentId);
+  const { processedContent } = useContentProcessor(content);
+  const { newTag, setNewTag, handleAddTag, handleDeleteTag } = useTagManagement({
+    contentId, 
+    editable
+  });
+  
+  // For local state management of tags
+  const [tags, setTags] = useState(metadata.tags);
+  
+  // Update local tags when metadata tags change
+  React.useEffect(() => {
+    setTags(metadata.tags);
+  }, [metadata.tags]);
 
-  // Process the content for wikilinks when it changes
-  useEffect(() => {
-    startTransition(() => {
-      setProcessedContent(processWikilinks(content));
-    });
-  }, [content]);
-
-  useEffect(() => {
-    let isMounted = true;
-    
-    const fetchMetadata = async () => {
-      if (!contentId) return;
-      
-      setIsLoading(true);
-      try {
-        // Fetch tags for the content
-        const { data: tagData, error: tagError } = await supabase
-          .from("tags")
-          .select("*")
-          .eq("content_id", contentId);
-        
-        if (tagError) throw tagError;
-        
-        if (isMounted) {
-          startTransition(() => {
-            setTags(tagData || []);
-          });
-        }
-
-        // Fetch external source URL and review status
-        const { data: sourceData, error: sourceError } = await supabase
-          .from("knowledge_sources")
-          .select("external_source_url, external_source_checked_at, needs_external_review")
-          .eq("id", contentId)
-          .single();
-          
-        if (sourceError && sourceError.code !== 'PGRST116') {
-          // PGRST116 is "no rows returned" - not an error for us
-          throw sourceError;
-        }
-        
-        if (isMounted && sourceData) {
-          setExternalSourceUrl(sourceData.external_source_url);
-          setLastCheckedAt(sourceData.external_source_checked_at);
-          setNeedsExternalReview(sourceData.needs_external_review || false);
-        }
-
-        // In the future, fetch ontology terms and domain information
-        // For now, we'll use placeholder data
-        if (isMounted) {
-          setOntologyTerms([]);
-          setDomain(null);
-        }
-      } catch (error) {
-        console.error("Error fetching metadata:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load content metadata",
-          variant: "destructive",
-        });
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    };
-
-    if (contentId) {
-      fetchMetadata();
-    }
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [contentId]);
-
-  const handleAddTag = async () => {
-    if (!newTag.trim() || !user) return;
-    
-    try {
-      const newTagObj = {
-        name: newTag.trim(),
-        content_id: contentId
-      };
-      
-      const { data, error } = await supabase
-        .from("tags")
-        .insert(newTagObj)
-        .select();
-      
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        startTransition(() => {
-          setTags([...tags, data[0]]);
-          setNewTag("");
-        });
-        
-        toast({
-          title: "Success",
-          description: "Tag added successfully",
-        });
-      }
-    } catch (error: any) {
-      console.error("Error adding tag:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to add tag",
-        variant: "destructive",
-      });
-    }
+  const onAddTag = async () => {
+    await handleAddTag(tags, setTags);
   };
 
-  const handleDeleteTag = async (tagId: string) => {
-    if (!user) return;
-    
-    try {
-      const { error } = await supabase
-        .from("tags")
-        .delete()
-        .eq("id", tagId);
-      
-      if (error) throw error;
-      
-      startTransition(() => {
-        setTags(tags.filter(tag => tag.id !== tagId));
-      });
-      
-      toast({
-        title: "Success",
-        description: "Tag removed successfully",
-      });
-    } catch (error: any) {
-      console.error("Error removing tag:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to remove tag",
-        variant: "destructive",
-      });
-    }
+  const onDeleteTag = async (tagId: string) => {
+    await handleDeleteTag(tagId, tags, setTags);
   };
 
   return (
@@ -186,24 +44,24 @@ export function MarkdownViewer({ content, contentId, editable = false, className
         <ContentPanel 
           content={content} 
           processedContent={processedContent} 
-          externalSourceUrl={externalSourceUrl}
+          externalSourceUrl={metadata.externalSourceUrl}
         />
       </div>
 
       <div className="w-full lg:w-1/3 lg:max-w-xs">
         <MetadataPanel
           tags={tags}
-          ontologyTerms={ontologyTerms}
-          domain={domain}
-          externalSourceUrl={externalSourceUrl}
-          lastCheckedAt={lastCheckedAt}
-          needsExternalReview={needsExternalReview}
-          isLoading={isLoading}
+          ontologyTerms={metadata.ontologyTerms}
+          domain={metadata.domain}
+          externalSourceUrl={metadata.externalSourceUrl}
+          lastCheckedAt={metadata.lastCheckedAt}
+          needsExternalReview={metadata.needsExternalReview}
+          isLoading={metadata.isLoading}
           newTag={newTag}
           setNewTag={setNewTag}
           editable={editable}
-          onAddTag={handleAddTag}
-          onDeleteTag={handleDeleteTag}
+          onAddTag={onAddTag}
+          onDeleteTag={onDeleteTag}
           isPending={isPending}
         />
       </div>
