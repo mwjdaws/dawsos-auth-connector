@@ -7,7 +7,8 @@ import {
   MarkdownViewerTab, 
   MarkdownEditorTab, 
   MetadataTab, 
-  TemplatesTab 
+  TemplatesTab,
+  ComplianceTab
 } from "./TabContents";
 import { useDashboardTabs } from "@/hooks/dashboard/useDashboardTabs";
 
@@ -42,6 +43,7 @@ export function DashboardTabs({
           <TabsTrigger value="markdown-editor">Markdown Editor</TabsTrigger>
           <TabsTrigger value="metadata">Metadata</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
+          <TabsTrigger value="compliance">Compliance</TabsTrigger>
         </TabsList>
         
         <TabContent value="tag-generator" activeTab={activeTab}>
@@ -66,6 +68,10 @@ export function DashboardTabs({
         
         <TabContent value="templates" activeTab={activeTab}>
           <TemplatesTab />
+        </TabContent>
+        
+        <TabContent value="compliance" activeTab={activeTab}>
+          <ComplianceTab />
         </TabContent>
       </Tabs>
       {isPending && <LoadingIndicator />}

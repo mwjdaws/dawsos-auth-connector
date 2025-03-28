@@ -1,6 +1,7 @@
 
-export * from './TagGeneratorTab';
-export * from './MarkdownViewerTab';
-export * from './MarkdownEditorTab';
-export * from './MetadataTab';
-export * from './TemplatesTab';
+export { TagGeneratorTab } from './TagGeneratorTab';
+export { MarkdownViewerTab } from './MarkdownViewerTab';
+export { MarkdownEditorTab } from './MarkdownEditorTab';
+export { MetadataTab } from './MetadataTab';
+export { TemplatesTab } from './TemplatesTab';
+export { ComplianceTab } from './ComplianceTab';

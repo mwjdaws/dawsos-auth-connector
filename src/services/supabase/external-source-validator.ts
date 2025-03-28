@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
+import { handleError } from '@/utils/errors';
 
 /**
  * Triggers validation of an external source for a knowledge source
@@ -30,6 +31,7 @@ export async function validateExternalSource(sourceId: string) {
       description: `Failed to validate external source: ${error.message}`,
       variant: 'destructive'
     });
+    handleError(error, "Failed to validate external source.");
     throw error;
   }
 }
@@ -68,6 +70,46 @@ export async function markForExternalReview(sourceId: string) {
       description: `Failed to mark for external review: ${error.message}`,
       variant: 'destructive'
     });
+    handleError(error, "Failed to mark content for external review.");
+    return false;
+  }
+}
+
+/**
+ * Clears the external review flag for a knowledge source
+ * @param sourceId - UUID of the knowledge source to update
+ * @returns Promise resolving to success status
+ */
+export async function clearExternalReviewFlag(sourceId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('knowledge_sources')
+      .update({
+        needs_external_review: false
+      })
+      .eq('id', sourceId)
+      .select('id, title')
+      .single();
+    
+    if (error) {
+      console.error('Error clearing review flag:', error);
+      throw new Error(`Database error: ${error.message}`);
+    }
+    
+    toast({
+      title: 'Success',
+      description: `Document "${data.title}" has been cleared from external review.`
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to clear review flag:', error);
+    toast({
+      title: 'Error',
+      description: `Failed to clear review flag: ${error.message}`,
+      variant: 'destructive'
+    });
+    handleError(error, "Failed to clear external review flag.");
     return false;
   }
 }
