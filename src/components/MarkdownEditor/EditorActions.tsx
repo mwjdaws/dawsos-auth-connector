@@ -9,6 +9,7 @@ interface EditorActionsProps {
   isSaving: boolean;
   isPublishing: boolean;
   isLoadingTemplate: boolean;
+  isDirty?: boolean;
 }
 
 const EditorActions: React.FC<EditorActionsProps> = ({
@@ -16,7 +17,8 @@ const EditorActions: React.FC<EditorActionsProps> = ({
   onPublish,
   isSaving,
   isPublishing,
-  isLoadingTemplate
+  isLoadingTemplate,
+  isDirty = false
 }) => {
   return (
     <div className="flex justify-end space-x-2">
@@ -28,6 +30,7 @@ const EditorActions: React.FC<EditorActionsProps> = ({
       >
         <Save size={16} />
         {isSaving ? "Saving..." : "Save Draft"}
+        {isDirty && !isSaving && <span className="ml-1 h-2 w-2 rounded-full bg-yellow-400" title="Unsaved changes" />}
       </Button>
       <Button
         onClick={onPublish}

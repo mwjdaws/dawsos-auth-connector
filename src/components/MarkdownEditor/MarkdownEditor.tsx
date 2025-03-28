@@ -2,7 +2,7 @@
 import React from 'react';
 import { Separator } from '@/components/ui/separator';
 import { useTemplates } from '@/hooks/useTemplates';
-import { useMarkdownEditor } from './useMarkdownEditor';
+import { useMarkdownEditor } from '@/hooks/useMarkdownEditor';
 import EditorHeader from './EditorHeader';
 import MarkdownContent from './MarkdownContent';
 import MarkdownPreview from './MarkdownPreview';
@@ -36,6 +36,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     isLoadingTemplate,
     isSaving,
     isPublishing,
+    isDirty,
     handleSaveDraft,
     handlePublish,
     handleTemplateChange
@@ -70,11 +71,12 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
       <Separator className="my-6" />
 
       <EditorActions 
-        onSaveDraft={handleSaveDraft}
+        onSaveDraft={() => handleSaveDraft(false)}
         onPublish={handlePublish}
         isSaving={isSaving}
         isPublishing={isPublishing}
         isLoadingTemplate={isLoadingTemplate}
+        isDirty={isDirty}
       />
     </div>
   );
