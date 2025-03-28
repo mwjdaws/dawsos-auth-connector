@@ -39,9 +39,31 @@ export const createKnowledgeSourceVersion = async (
   version: Omit<KnowledgeSourceVersion, 'id' | 'created_at'>
 ) => {
   try {
+    // First, get the latest version number for this source
+    const { data: versions, error: versionError } = await supabase
+      .from('knowledge_source_versions')
+      .select('version_number')
+      .eq('source_id', version.source_id)
+      .order('version_number', { ascending: false })
+      .limit(1);
+    
+    if (versionError) throw new ApiError(versionError.message, parseSupabaseErrorCode(versionError));
+    
+    // Determine the next version number
+    let nextVersionNumber = 1;
+    if (versions && versions.length > 0) {
+      nextVersionNumber = versions[0].version_number + 1;
+    }
+    
+    // Create the new version with the correct version number
+    const versionToCreate = {
+      ...version,
+      version_number: nextVersionNumber
+    };
+    
     const { data, error } = await supabase
       .from('knowledge_source_versions')
-      .insert([version])
+      .insert([versionToCreate])
       .select();
     
     if (error) throw new ApiError(error.message, parseSupabaseErrorCode(error));
