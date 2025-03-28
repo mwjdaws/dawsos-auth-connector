@@ -3,14 +3,14 @@ import React from "react";
 
 interface TagPillProps {
   tag: string;
-  onClick: (tag: string) => void;
-  variant?: "primary" | "related" | "suggested";
+  onClick?: (tag: string) => void;
+  variant?: "primary" | "related" | "suggested" | "secondary";
   className?: string;
 }
 
 export function TagPill({ 
   tag, 
-  onClick, 
+  onClick = () => {}, 
   variant = "primary",
   className = "" 
 }: TagPillProps) {
@@ -18,7 +18,8 @@ export function TagPill({
   const variantClasses = {
     primary: "bg-blue-100 hover:bg-blue-200",
     related: "bg-green-100 hover:bg-green-200",
-    suggested: "bg-purple-100 hover:bg-purple-200"
+    suggested: "bg-purple-100 hover:bg-purple-200",
+    secondary: "bg-gray-100 hover:bg-gray-200"
   };
 
   const baseClasses = "px-2 py-1 rounded-xl text-sm cursor-pointer transition-colors";
