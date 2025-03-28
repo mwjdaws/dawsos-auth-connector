@@ -1,0 +1,2 @@
+
+export { DashboardTabs } from './DashboardTabs';

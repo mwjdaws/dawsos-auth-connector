@@ -1,7 +1,6 @@
 
-import { useState } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { DashboardTabs } from "@/components/Dashboard/DashboardTabs";
+import { DashboardTabs } from "@/components/Dashboard/Tabs";
 import { 
   useTagGenerationHandler, 
   useMetadataHandler, 
