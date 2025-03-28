@@ -4,57 +4,49 @@ import { toast } from '@/hooks/use-toast';
 
 /**
  * Hook to automatically save content at specified intervals
- * @param isDirtyOrConfig Whether the content has unsaved changes or full config object
+ * @param isDirty Whether the content has unsaved changes
  * @param interval Interval in milliseconds between save attempts
  * @param onSave Function to call to save the content
  */
 export const useAutosave = (
-  isDirtyOrConfig: boolean | { 
-    isDirty: boolean;
-    interval?: number; 
-    onSave: () => void;
-    [key: string]: any; // Allow any other properties
-  },
-  interval: number = 15000, // Default to 15 seconds
-  onSave?: () => void
+  isDirty: boolean,
+  interval: number = 30000, // Default to 30 seconds
+  onSave: () => Promise<any>
 ) => {
-  // Handle both calling styles (object or individual params)
-  let effectiveIsDirty: boolean;
-  let effectiveInterval: number = interval;
-  let effectiveOnSave: (() => void) | undefined = onSave;
-  
-  // If first argument is an object, extract properties from it
-  if (typeof isDirtyOrConfig === 'object') {
-    effectiveIsDirty = isDirtyOrConfig.isDirty;
-    effectiveInterval = isDirtyOrConfig.interval || 15000;
-    effectiveOnSave = isDirtyOrConfig.onSave;
-  } else {
-    effectiveIsDirty = isDirtyOrConfig;
-  }
-  
-  // State for tracking autosave status
+  // Track autosave state
   const [isAutosaving, setIsAutosaving] = useState(false);
   const [lastAutosaveAttempt, setLastAutosaveAttempt] = useState<Date | null>(null);
   const [consecutiveFailures, setConsecutiveFailures] = useState(0);
   
-  // Track if component is mounted to prevent state updates after unmount
+  // Refs for tracking mount state and preventing race conditions
   const isMounted = useRef(true);
-  
-  // Track the timeout ID for cleanup
+  const isAutosaveInProgress = useRef(false);
   const timeoutRef = useRef<number | null>(null);
 
-  // Helper to perform the autosave
+  // Clear any existing timeout to prevent multiple timers
+  const clearExistingTimeout = () => {
+    if (timeoutRef.current !== null) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  };
+
+  // Perform the actual autosave operation
   const performAutosave = async () => {
-    if (!effectiveIsDirty || isAutosaving || !isMounted.current || !effectiveOnSave) {
+    // Skip if not dirty, already in progress, or component unmounted
+    if (!isDirty || isAutosaveInProgress.current || !isMounted.current) {
       return;
     }
+
+    // Set lock to prevent concurrent saves
+    isAutosaveInProgress.current = true;
     
     try {
       setIsAutosaving(true);
       setLastAutosaveAttempt(new Date());
       console.log('Auto-saving document...');
       
-      await effectiveOnSave();
+      await onSave();
       
       // Reset failure count on success
       if (consecutiveFailures > 0) {
@@ -73,47 +65,45 @@ export const useAutosave = (
         });
       }
     } finally {
+      // Always release the lock and update state if component is still mounted
+      isAutosaveInProgress.current = false;
+      
       if (isMounted.current) {
         setIsAutosaving(false);
       }
     }
   };
 
-  // Autosave effect with exponential backoff for failures
+  // Schedule autosave with the specified interval
   useEffect(() => {
-    const scheduleNextAutosave = () => {
+    // Clear any existing timeout first
+    clearExistingTimeout();
+    
+    // Only schedule if the document is dirty and component is mounted
+    if (isDirty && isMounted.current) {
       // Calculate delay with exponential backoff for failures
-      const baseDelay = effectiveInterval;
       const backoffFactor = Math.min(Math.pow(1.5, consecutiveFailures), 4); // Cap at 4x delay
-      const actualDelay = baseDelay * backoffFactor;
+      const actualDelay = interval * backoffFactor;
       
-      if (timeoutRef.current) {
-        window.clearTimeout(timeoutRef.current);
-      }
-      
-      timeoutRef.current = window.setTimeout(() => {
-        performAutosave().finally(() => {
-          if (isMounted.current) {
-            scheduleNextAutosave();
-          }
-        });
-      }, actualDelay);
+      // Schedule the next autosave
+      timeoutRef.current = window.setTimeout(performAutosave, actualDelay);
+    }
+    
+    // Cleanup function to run when component unmounts or dependencies change
+    return () => {
+      clearExistingTimeout();
     };
-    
-    // Start the autosave cycle
-    scheduleNextAutosave();
-    
-    // Cleanup on unmount
+  }, [isDirty, interval, consecutiveFailures, isAutosaving]);
+
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
       isMounted.current = false;
-      if (timeoutRef.current) {
-        window.clearTimeout(timeoutRef.current);
-      }
+      clearExistingTimeout();
     };
-  }, [effectiveIsDirty, effectiveOnSave, effectiveInterval, consecutiveFailures]);
+  }, []);
 
   return {
-    isMounted,
     isAutosaving,
     lastAutosaveAttempt,
     consecutiveFailures

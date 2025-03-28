@@ -102,10 +102,10 @@ export const useMarkdownEditor = ({
   const effectiveDocumentId = documentId || sourceId;
   const isTemp = effectiveDocumentId ? effectiveDocumentId.startsWith('temp-') : false;
   
-  // Fixed: Call useAutosave with the correct individual parameters, not an object
+  // Use autosave with correct params and proper Promise handling
   useAutosave(
-    isDirty,
-    30000, // 30 seconds interval to reduce save frequency
+    isDirty && !isTemp, 
+    30000, // 30 seconds interval
     () => handleSaveDraft(false, true) // isManualSave=false, isAutoSave=true
   );
 
