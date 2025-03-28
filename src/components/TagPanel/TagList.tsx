@@ -49,9 +49,12 @@ export function TagList({
         // Set the error but don't throw - we'll handle it gracefully
         setRelatedError("Could not load related tags");
       } else if (data && Array.isArray(data.tags)) {
+        // Updated to use 'tags' property from response
         setRelatedTags(data.tags);
+        console.log("Retrieved related tags:", data.tags);
       } else {
         // If we get an unexpected response format
+        console.error("Unexpected response format:", data);
         setRelatedTags([]);
       }
     } catch (error) {

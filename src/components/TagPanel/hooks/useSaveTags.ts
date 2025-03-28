@@ -44,7 +44,7 @@ export function useSaveTags() {
       maxRetries = 1 
     } = options;
 
-    // Validate input tags
+    // Validate input tags before proceeding
     if (!validateTags(tags)) {
       handleError(
         new Error("Invalid tags format"),
@@ -60,6 +60,27 @@ export function useSaveTags() {
         title: "Operation in Progress",
         description: "Please wait for the current operation to complete",
       });
+      return false;
+    }
+
+    // Filter out any tags that have invalid formats
+    const filteredTags = tags.filter(tag => {
+      const cleanTag = tag.trim();
+      if (!cleanTag || 
+          cleanTag.startsWith('```') || 
+          cleanTag.startsWith('"') || 
+          cleanTag.endsWith('"')) {
+        return false;
+      }
+      return true;
+    });
+    
+    if (filteredTags.length === 0) {
+      handleError(
+        new Error("No valid tags to save"),
+        "All tags were filtered out due to invalid format. Please regenerate tags.",
+        { level: "warning" }
+      );
       return false;
     }
 
@@ -93,11 +114,11 @@ export function useSaveTags() {
           if (!savedTags.includes("error") && !savedTags.includes("fallback")) {
             toast({
               title: "Success",
-              description: `${tags.length} tags saved successfully via edge function`,
+              description: `${filteredTags.length} tags saved successfully via edge function`,
             });
             
             // Store result in cache
-            updateCache(tags, options, validContentId);
+            updateCache(filteredTags, options, validContentId);
             
             setIsProcessing(false);
             return validContentId;
@@ -110,7 +131,7 @@ export function useSaveTags() {
       
       // If the edge function approach failed or we don't have text, fallback to direct DB insertion
       // Prepare tags with a batch approach to optimize insert performance
-      const tagObjects = tags.map(tag => ({
+      const tagObjects = filteredTags.map(tag => ({
         name: tag.trim(),
         content_id: validContentId
       }));
@@ -130,7 +151,7 @@ export function useSaveTags() {
       });
       
       // Store result in cache
-      updateCache(tags, options, validContentId);
+      updateCache(filteredTags, options, validContentId);
       
       setIsProcessing(false);
       return validContentId;
@@ -169,6 +190,8 @@ export function useSaveTags() {
         errorMessage = error.message;
       }
       
+      console.error("Save tags error:", error, "Message:", errorMessage);
+      
       handleError(
         error,
         errorMessage,
@@ -178,7 +201,7 @@ export function useSaveTags() {
           action: shouldRetry ? async () => {
             setIsRetrying(true);
             try {
-              await saveTags(text, tags, { 
+              await saveTags(text, filteredTags, { 
                 ...options, 
                 maxRetries: 0 // Prevent infinite retries
               });

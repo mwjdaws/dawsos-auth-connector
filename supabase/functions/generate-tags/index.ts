@@ -15,6 +15,7 @@ interface RequestBody {
   content: string;
   save?: boolean;
   contentId?: string;
+  retryCount?: number;
 }
 
 serve(async (req) => {
@@ -47,7 +48,7 @@ serve(async (req) => {
       );
     }
 
-    const { content, save = false, contentId } = requestBody;
+    const { content, save = false, contentId, retryCount = 0 } = requestBody;
 
     // Validate content length
     if (typeof content !== "string" || content.trim().length < 5) {
@@ -69,13 +70,21 @@ serve(async (req) => {
       );
     }
 
+    console.log(`Generating tags for content: ${content.substring(0, 150)}...`);
+    console.log(`Attempt ${retryCount + 1} of 3`);
+
     // Generate tags using OpenAI with error handling
     const { tags, error: generationError } = await withErrorHandling(
       () => generateTagsWithOpenAI(content)
     );
     
+    // Log the raw and parsed tags for debugging
+    if (tags) {
+      console.log(`Final parsed tags: ${JSON.stringify(tags, null, 2)}`);
+    }
+    
     // Save tags to database if requested
-    if (save && contentId) {
+    if (save && contentId && tags && tags.length > 0) {
       const { success, message, error: saveError } = await withErrorHandling(
         () => saveTagsToDatabase(tags, contentId)
       );

@@ -1,5 +1,5 @@
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
 import { TagGenerator } from "./TagGenerator";
 import { TagList } from "./TagList";
 import { TagSaver } from "./TagSaver";
@@ -41,22 +41,39 @@ export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
   const [activeTab, setActiveTab] = useState<"automatic" | "manual">("automatic");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
-  // Handle tag generation from content - renamed to processTagGeneration
+  // Debug logging for component state
+  useEffect(() => {
+    console.log("[TagPanel] Current state:", {
+      contentId,
+      tagContentId,
+      tags: tags.length > 0 ? `${tags.length} tags` : "no tags",
+      isLoading,
+      isPending,
+      isProcessing,
+      isRetrying
+    });
+  }, [contentId, tagContentId, tags, isLoading, isPending, isProcessing, isRetrying]);
+  
+  // Handle tag generation from content
   const processTagGeneration = (text: string) => {
     if (text && text.trim()) {
       setContent(text);
+      console.log("[TagPanel] Generating tags for text:", text.substring(0, 50) + "...");
       
-      // Fixed: Use startTransition properly without async/await
+      // Fixed: Use startTransition properly
       startTransition(() => {
         // Call the tag generation function from the hook
         handleGenerateTags(text)
           .then(newContentId => {
             if (newContentId) {
+              console.log("[TagPanel] Generation complete, new contentId:", newContentId);
               setContentId(newContentId);
+            } else {
+              console.error("[TagPanel] No contentId returned from tag generation");
             }
           })
           .catch(err => {
-            console.error("Error generating tags:", err);
+            console.error("[TagPanel] Error generating tags:", err);
             toast({
               title: "Error",
               description: "Failed to generate tags. Please try again.",
@@ -64,6 +81,28 @@ export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
             });
           });
       });
+    } else {
+      console.warn("[TagPanel] Attempted to generate tags with empty text");
+    }
+  };
+  
+  // Handle save tags with improved logging
+  const handleSaveTags = async () => {
+    console.log("[TagPanel] Saving tags:", {
+      tagCount: tags.length,
+      contentId: tagContentId || contentId,
+      isProcessing
+    });
+    
+    const result = await saveTags("", tags, {
+      contentId: tagContentId || contentId
+    });
+    
+    console.log("[TagPanel] Save result:", result);
+    
+    if (result && typeof result === 'string') {
+      console.log("[TagPanel] Tags saved, calling onTagsSaved with:", result);
+      onTagsSaved(result);
     }
   };
   
