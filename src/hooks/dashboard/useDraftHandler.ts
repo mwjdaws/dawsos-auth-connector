@@ -1,8 +1,7 @@
-
 import { useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { handleError } from "@/utils/error-handling";
+import { handleError } from "@/utils/errors";
 
 type UseDraftHandlerProps = {
   user: any;

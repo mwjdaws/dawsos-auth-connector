@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { handleError, ApiError } from '@/utils/error-handling';
+import { handleError, ApiError } from '@/utils/errors';
 
 // Export common utilities
 export { supabase, handleError, ApiError };
