@@ -61,6 +61,8 @@ export const useDocumentVersioning = () => {
     }
     
     try {
+      console.log('Creating version for document:', documentId);
+      
       // First, get the latest version number for this source
       const { data: versions, error: versionError } = await supabase
         .from('knowledge_source_versions')
@@ -84,6 +86,8 @@ export const useDocumentVersioning = () => {
         content,
         metadata
       };
+      
+      console.log('Creating new version:', nextVersionNumber, 'for document:', documentId);
       
       const { data, error } = await supabase
         .from('knowledge_source_versions')

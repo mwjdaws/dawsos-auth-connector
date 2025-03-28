@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { handleError } from '@/utils/error-handling';
+import { RefreshCw } from 'lucide-react';
 
 interface VersionHistoryModalProps {
   documentId: string;
@@ -27,19 +28,27 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
   const { versions, isLoading, fetchVersions, restoreVersion } = useDocumentVersioning();
 
+  // Load versions when the modal opens or document ID changes
   useEffect(() => {
     if (isOpen && documentId) {
-      try {
-        fetchVersions(documentId);
-      } catch (error) {
-        handleError(
-          error,
-          "Failed to load version history",
-          { level: "error" }
-        );
-      }
+      loadVersions();
     }
   }, [isOpen, documentId]);
+
+  const loadVersions = async () => {
+    if (!documentId) return;
+    
+    try {
+      console.log('Loading versions for document:', documentId);
+      await fetchVersions(documentId);
+    } catch (error) {
+      handleError(
+        error,
+        "Failed to load version history",
+        { level: "error" }
+      );
+    }
+  };
 
   const handleRestoreClick = (versionId: string) => {
     setSelectedVersionId(versionId);
@@ -71,7 +80,23 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Version History</DialogTitle>
+            <DialogDescription>
+              View and restore previous versions of this document
+            </DialogDescription>
           </DialogHeader>
+          
+          <div className="flex justify-end mb-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={loadVersions}
+              disabled={isLoading}
+              className="flex items-center gap-1"
+            >
+              <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
+              Refresh
+            </Button>
+          </div>
           
           {isLoading ? (
             <div className="space-y-4">
@@ -81,7 +106,8 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
             </div>
           ) : versions.length === 0 ? (
             <div className="py-8 text-center text-gray-500">
-              No version history available for this document
+              <p className="mb-2">No version history available for this document</p>
+              <p className="text-sm">Save changes to create new versions</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -106,6 +132,9 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
                         )}
                         {version.metadata.auto_version && (
                           <Badge variant="secondary" className="ml-2">Auto-saved</Badge>
+                        )}
+                        {version.metadata.published && (
+                          <Badge variant="secondary" className="ml-2">Published</Badge>
                         )}
                       </div>
                     )}

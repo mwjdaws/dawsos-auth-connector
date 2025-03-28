@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { handleError } from '@/utils/error-handling';
 import { validateDocumentTitle } from '@/utils/validation';
+import { useDocumentVersioning } from './useDocumentVersioning';
 
 interface UseDocumentOperationHandlersProps {
   title: string;
@@ -34,6 +35,7 @@ export const useDocumentOperationHandlers = ({
   onPublish
 }: UseDocumentOperationHandlersProps) => {
   const [isSavingManually, setIsSavingManually] = useState(false);
+  const { createVersion } = useDocumentVersioning();
   
   /**
    * Save the document as a draft with user feedback
@@ -72,6 +74,19 @@ export const useDocumentOperationHandlers = ({
         setLastSavedTitle(title);
         setLastSavedContent(content);
         setIsDirty(false);
+        
+        // Create a version for manual saves only
+        if (isManualSave && !isAutoSave && savedId) {
+          try {
+            console.log('Creating version after manual save for document:', savedId);
+            await createVersion(savedId, content, {
+              reason: 'Manual save',
+              auto_version: false
+            });
+          } catch (versionError) {
+            console.error('Error creating version after save:', versionError);
+          }
+        }
         
         // Provide user feedback for manual saves
         if (isManualSave && !isAutoSave) {
@@ -151,6 +166,19 @@ export const useDocumentOperationHandlers = ({
       const result = await publishDocument(title, content, templateId, userId);
       
       if (result.success) {
+        // Create a version for the published document
+        if (result.documentId) {
+          try {
+            console.log('Creating version after publish for document:', result.documentId);
+            await createVersion(result.documentId, content, {
+              reason: 'Published document',
+              published: true
+            });
+          } catch (versionError) {
+            console.error('Error creating version after publish:', versionError);
+          }
+        }
+        
         toast({
           title: "Published Successfully",
           description: "Your document has been published",
