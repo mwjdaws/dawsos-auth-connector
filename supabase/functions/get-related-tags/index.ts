@@ -78,6 +78,7 @@ serve(async (req: Request) => {
     }
     
     // Format the response - transform data to expected format
+    // Ensure we're extracting the tag names and creating the expected structure
     const relatedTags = data ? data.map(item => item.related_tag) : [];
     console.log(`Found ${relatedTags.length} related tags`);
     
