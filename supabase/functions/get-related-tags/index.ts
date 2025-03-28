@@ -73,7 +73,7 @@ serve(async (req: Request) => {
       );
     }
     
-    // Format the response
+    // Format the response - transform data to expected format
     const relatedTags = data ? data.map(item => item.related_tag) : [];
     console.log(`Found ${relatedTags.length} related tags`);
     
