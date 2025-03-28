@@ -328,3 +328,9 @@ entrypoint = "./functions/cron-tag-summary/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/cron-tag-summary/*.html" ]
+
+[functions.get-related-tags]
+enabled = true
+verify_jwt = true
+import_map = "./functions/get-related-tags/deno.json"
+entrypoint = "./functions/get-related-tags/index.ts"
