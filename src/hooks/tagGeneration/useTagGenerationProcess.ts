@@ -28,7 +28,8 @@ export function useTagGenerationProcess({
       const { data, error } = await supabase.functions.invoke('generate-tags', {
         body: { 
           content: text,
-          retryCount
+          retryCount,
+          save: false // Don't save tags yet, just generate them
         }
       });
       
@@ -39,7 +40,24 @@ export function useTagGenerationProcess({
       
       // Check if tags property exists and is an array
       if (data && Array.isArray(data.tags)) {
-        return data.tags;
+        // Clean and validate tags before returning
+        return data.tags.filter(tag => {
+          // Remove any code formatting markers and quotes
+          if (typeof tag !== 'string') return false;
+          if (tag.startsWith('```') || tag.endsWith('```')) return false;
+          if (tag.startsWith('"') && tag.endsWith('"')) {
+            // Strip quotes if present
+            return true;
+          }
+          return true;
+        }).map(tag => {
+          // Clean up tag strings
+          if (typeof tag === 'string') {
+            // Remove any quotes
+            return tag.replace(/^["']|["']$/g, '').trim();
+          }
+          return tag;
+        });
       } else {
         console.error("Unexpected response format from generate-tags:", data);
         return ["error", "unexpected", "response", "format"];

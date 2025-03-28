@@ -56,11 +56,11 @@ serve(async (req: Request) => {
     
     console.log(`Fetching related tags for knowledge source ID: ${knowledgeSourceId}`);
     
-    // Call the SQL function to get related tags
-    const { data, error } = await supabaseClient.rpc(
-      'get_related_tags',
-      { knowledge_source_id: knowledgeSourceId }
-    );
+    // Instead of using the database function, directly query the tags and tag_relations tables
+    const { data, error } = await supabaseClient
+      .from('tags')
+      .select('name')
+      .eq('content_id', knowledgeSourceId);
     
     if (error) {
       console.error("Error fetching related tags:", error);
@@ -77,12 +77,77 @@ serve(async (req: Request) => {
       );
     }
     
-    // Format the response - extract tag names from results
-    const relatedTags = data.map(item => item.related_tag);
-    console.log(`Found ${relatedTags.length} related tags`);
+    // Get tag names for this content
+    const contentTags = data.map(item => item.name);
+    
+    // If we have no tags for this content, return empty array
+    if (contentTags.length === 0) {
+      return new Response(
+        JSON.stringify({ tags: [] }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+    
+    // Find similar content with at least one matching tag
+    const { data: similarContent, error: similarError } = await supabaseClient
+      .from('tags')
+      .select('content_id')
+      .in('name', contentTags)
+      .neq('content_id', knowledgeSourceId);
+    
+    if (similarError) {
+      console.error("Error finding similar content:", similarError);
+      return new Response(
+        JSON.stringify({ tags: [] }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+    
+    // Get unique content IDs
+    const similarContentIds = [...new Set(similarContent.map(item => item.content_id))];
+    
+    // If no similar content found
+    if (similarContentIds.length === 0) {
+      return new Response(
+        JSON.stringify({ tags: [] }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+    
+    // Get tags from similar content that aren't in the original content
+    const { data: relatedTags, error: relatedError } = await supabaseClient
+      .from('tags')
+      .select('name')
+      .in('content_id', similarContentIds)
+      .not('name', 'in', `(${contentTags.map(tag => `'${tag}'`).join(',')})`)
+      .limit(10);
+    
+    if (relatedError) {
+      console.error("Error fetching related tags:", relatedError);
+      return new Response(
+        JSON.stringify({ tags: [] }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+    
+    // Format the response
+    const uniqueRelatedTags = [...new Set(relatedTags.map(item => item.name))];
+    console.log(`Found ${uniqueRelatedTags.length} related tags`);
     
     return new Response(
-      JSON.stringify({ tags: relatedTags }),
+      JSON.stringify({ tags: uniqueRelatedTags }),
       { 
         status: 200, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 

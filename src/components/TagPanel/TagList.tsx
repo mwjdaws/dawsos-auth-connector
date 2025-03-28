@@ -39,6 +39,8 @@ export function TagList({
     setRelatedError(null);
     
     try {
+      console.log(`Fetching related tags for contentId: ${knowledgeSourceId}`);
+      
       // Attempt to fetch related tags using the edge function
       const { data, error } = await supabase.functions.invoke('get-related-tags', {
         body: { knowledgeSourceId }
@@ -90,10 +92,17 @@ export function TagList({
 
   const filteredTags = tags.filter(tag => {
     // Filter out certain tag formats that might come from OpenAI
-    if (tag.startsWith('```') || tag.startsWith('"') || tag.endsWith('"')) {
-      return false;
-    }
+    if (!tag || typeof tag !== 'string') return false;
+    if (tag.startsWith('```') || tag.endsWith('```')) return false;
+    if (tag.startsWith('"') && tag.endsWith('"')) return true;
     return true;
+  }).map(tag => {
+    // Clean up tag strings
+    if (typeof tag === 'string') {
+      // Remove any quotes
+      return tag.replace(/^["']|["']$/g, '').trim();
+    }
+    return tag;
   });
 
   return (
