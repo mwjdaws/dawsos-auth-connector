@@ -14,7 +14,7 @@ import {
   fetchLatestAuditLogs, 
   ExternalLinkAudit 
 } from "@/services/supabase/audit-logs";
-import { AuditLogModal } from "../AuditLogModal";
+import { AuditLogModal } from "./AuditLogModal";
 import { ReviewItemsTable } from "./ReviewItemsTable";
 import { EmptyState, LoadingState, ErrorState } from "./EmptyState";
 
