@@ -52,7 +52,7 @@ export const generateTags = async (
             contentId,
             retryCount  // Send retry count to help the edge function adapt
           }
-          // Removed the 'signal' property which was causing the error
+          // Signal property is intentionally omitted to avoid errors
         });
 
         if (error) {

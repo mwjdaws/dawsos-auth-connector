@@ -82,12 +82,9 @@ export function useSaveTags() {
       // Generate a valid content ID if not already present
       const validContentId = initialContentId || `content-${Date.now()}`;
       
-      console.log(`Attempting to save tags with content_id: ${validContentId}`);
-      
       // Use the edge function if text is provided and not explicitly skipped
       if (text && text.trim() && !skipGenerateFunction) {
         try {
-          console.log("Attempting to save tags via edge function");
           const savedTags = await generateTags(text, true, validContentId);
           
           // Clear timeout since request completed
@@ -105,11 +102,9 @@ export function useSaveTags() {
             setIsProcessing(false);
             return validContentId;
           }
-          
-          console.log("Edge function approach returned error flags, falling back");
         } catch (edgeFunctionError) {
           console.error("Edge function error:", edgeFunctionError);
-          console.log("Edge function approach failed, falling back to direct DB insertion");
+          // Continue to fallback method instead of returning
         }
       }
       
@@ -119,8 +114,6 @@ export function useSaveTags() {
         name: tag.trim(),
         content_id: validContentId
       }));
-
-      console.log("Directly inserting tags:", tagObjects);
       
       const result = await processBatch(tagObjects);
       
@@ -130,8 +123,6 @@ export function useSaveTags() {
       if (!result.success) {
         throw new Error(`Failed to insert all tag batches: ${result.error || "Unknown error"}`);
       }
-      
-      console.log(`Tags inserted successfully: ${result.count} tags`);
       
       toast({
         title: "Success",
@@ -147,8 +138,6 @@ export function useSaveTags() {
       // Clear timeout if there was an error
       clearTimeout(timeoutId);
       setIsProcessing(false);
-      
-      console.error("Error saving tags:", error);
       
       // Check if it was intentionally aborted
       if (error.name === "AbortError") {
