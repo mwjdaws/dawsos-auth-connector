@@ -9,6 +9,44 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      external_link_audits: {
+        Row: {
+          checked_at: string
+          content_hash: string | null
+          id: string
+          knowledge_source_id: string
+          notes: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          checked_at?: string
+          content_hash?: string | null
+          id?: string
+          knowledge_source_id: string
+          notes?: string | null
+          status: string
+          user_id?: string | null
+        }
+        Update: {
+          checked_at?: string
+          content_hash?: string | null
+          id?: string
+          knowledge_source_id?: string
+          notes?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_link_audits_knowledge_source_id_fkey"
+            columns: ["knowledge_source_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_source_versions: {
         Row: {
           content: string

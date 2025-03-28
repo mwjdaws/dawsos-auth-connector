@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { handleError } from '@/utils/errors';
+import { createAuditLog } from './audit-logs';
 
 /**
  * Triggers validation of an external source for a knowledge source
@@ -16,11 +17,35 @@ export async function validateExternalSource(sourceId: string) {
     
     if (error) {
       console.error('External source validation error:', error);
+      // Record error in audit log
+      await createAuditLog(
+        sourceId,
+        'error',
+        `Function error: ${error.message}`,
+        null
+      );
       throw new Error(`Function error: ${error.message}`);
     }
     
     // Log the result to the console for debugging
     console.log(`External source check for ${sourceId}:`, data);
+    
+    // Create an audit log entry based on the result
+    if (data.success) {
+      await createAuditLog(
+        sourceId,
+        data.needsReview ? 'changed' : 'unchanged',
+        data.message,
+        data.auditRecord?.newContentHash || null
+      );
+    } else {
+      await createAuditLog(
+        sourceId,
+        'error',
+        data.message,
+        null
+      );
+    }
     
     // Return the validation result
     return data;
@@ -56,6 +81,14 @@ export async function markForExternalReview(sourceId: string) {
       console.error('Error marking for review:', error);
       throw new Error(`Database error: ${error.message}`);
     }
+    
+    // Create an audit log entry
+    await createAuditLog(
+      sourceId,
+      'changed',
+      'Manually marked for review',
+      null
+    );
     
     toast({
       title: 'Success',
@@ -95,6 +128,14 @@ export async function clearExternalReviewFlag(sourceId: string) {
       console.error('Error clearing review flag:', error);
       throw new Error(`Database error: ${error.message}`);
     }
+    
+    // Create an audit log entry
+    await createAuditLog(
+      sourceId,
+      'success',
+      'Manually cleared review flag',
+      null
+    );
     
     toast({
       title: 'Success',

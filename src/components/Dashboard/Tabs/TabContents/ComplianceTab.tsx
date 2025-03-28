@@ -17,11 +17,20 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from "@/components/ui/tooltip";
-import { ExternalLink, Calendar, CheckCircle, AlertTriangle, RefreshCw } from "lucide-react";
+import { ExternalLink, Calendar, CheckCircle, AlertTriangle, RefreshCw, History, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "@/components/ui/use-toast";
 import { handleError } from "@/utils/errors";
-import { validateExternalSource, markForExternalReview, clearExternalReviewFlag } from "@/services/supabase/external-source-validator";
+import { 
+  validateExternalSource, 
+  markForExternalReview, 
+  clearExternalReviewFlag 
+} from "@/services/supabase/external-source-validator";
+import { 
+  fetchLatestAuditLogs, 
+  ExternalLinkAudit 
+} from "@/services/supabase/audit-logs";
+import { AuditLogModal } from "./AuditLogModal";
 
 interface ExternalReviewItem {
   id: string;
@@ -36,6 +45,9 @@ export function ComplianceTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<Record<string, boolean>>({});
+  const [latestAudits, setLatestAudits] = useState<Record<string, ExternalLinkAudit>>({});
+  const [selectedItem, setSelectedItem] = useState<{id: string, title: string} | null>(null);
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   
   // Fetch items that need external review
   const fetchReviewItems = async () => {
@@ -51,6 +63,14 @@ export function ComplianceTab() {
       if (error) throw error;
       
       setReviewItems(data || []);
+
+      // Fetch latest audit logs for these items
+      if (data && data.length > 0) {
+        const itemIds = data.map(item => item.id);
+        const auditData = await fetchLatestAuditLogs(itemIds);
+        setLatestAudits(auditData);
+      }
+      
       setError(null);
     } catch (err) {
       console.error("Error fetching review items:", err);
@@ -114,10 +134,58 @@ export function ComplianceTab() {
     }
   };
   
+  // Open the audit log modal
+  const openAuditHistory = (id: string, title: string) => {
+    setSelectedItem({ id, title });
+    setIsAuditModalOpen(true);
+  };
+  
   // Format date for display
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Never";
     return format(new Date(dateString), "MMM d, yyyy h:mm a");
+  };
+
+  // Render status badge based on audit status
+  const renderAuditStatusBadge = (audit: ExternalLinkAudit | undefined) => {
+    if (!audit) return null;
+    
+    switch (audit.status) {
+      case 'success':
+        return (
+          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+            <CheckCircle className="h-4 w-4 mr-1" />
+            Success
+          </Badge>
+        );
+      case 'error':
+        return (
+          <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
+            <AlertTriangle className="h-4 w-4 mr-1" />
+            Error
+          </Badge>
+        );
+      case 'changed':
+        return (
+          <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
+            <AlertTriangle className="h-4 w-4 mr-1" />
+            Changed
+          </Badge>
+        );
+      case 'unchanged':
+        return (
+          <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+            <CheckCircle className="h-4 w-4 mr-1" />
+            Unchanged
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline">
+            Unknown
+          </Badge>
+        );
+    }
   };
   
   // Render the external review items table
@@ -169,13 +237,19 @@ export function ComplianceTab() {
                 <TableHead>External Source</TableHead>
                 <TableHead>Last Checked</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Last Audit</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {reviewItems.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.title}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center">
+                      <FileText className="h-4 w-4 mr-2 text-gray-500" />
+                      {item.title}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     {item.external_source_url ? (
                       <TooltipProvider>
@@ -218,7 +292,19 @@ export function ComplianceTab() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <div className="flex space-x-2">
+                    {latestAudits[item.id] ? (
+                      <div className="flex flex-col">
+                        {renderAuditStatusBadge(latestAudits[item.id])}
+                        <span className="text-xs text-gray-500 mt-1">
+                          {formatDate(latestAudits[item.id].checked_at)}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-500">No audit logs</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -241,6 +327,15 @@ export function ComplianceTab() {
                           )}
                         </Button>
                       )}
+                      
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openAuditHistory(item.id, item.title)}
+                      >
+                        <History className="h-4 w-4 mr-1" />
+                        View History
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -248,6 +343,15 @@ export function ComplianceTab() {
             </TableBody>
           </Table>
         </div>
+      )}
+      
+      {selectedItem && (
+        <AuditLogModal 
+          isOpen={isAuditModalOpen}
+          onClose={() => setIsAuditModalOpen(false)}
+          sourceId={selectedItem.id}
+          sourceName={selectedItem.title}
+        />
       )}
     </div>
   );
