@@ -13,6 +13,7 @@ import {
   ResponsiveContainer 
 } from "recharts";
 import { memo } from "react";
+import { handleError } from "@/utils/errors";
 
 export const TagSummary = memo(function TagSummary() {
   const [tagData, setTagData] = useState<Array<{ name: string, usage_count: number }>>([]);
@@ -40,13 +41,7 @@ export const TagSummary = memo(function TagSummary() {
           .limit(10);
 
         if (error) {
-          console.error("Error fetching tag summary:", error);
-          if (isMounted.current) {
-            startTransition(() => {
-              setError(error.message);
-            });
-          }
-          return;
+          throw error;
         }
 
         // Transform data for the chart if needed
@@ -57,13 +52,15 @@ export const TagSummary = memo(function TagSummary() {
               usage_count: Number(item.usage_count) || 0
             }));
             setTagData(formattedData);
+            setError(null);
           });
         }
       } catch (err) {
-        console.error("Unexpected error:", err);
+        console.error("Error fetching tag summary:", err);
         if (isMounted.current) {
           startTransition(() => {
-            setError("An unexpected error occurred");
+            setError("Failed to load tag statistics. Please try again later.");
+            handleError(err, "Failed to load tag statistics. Please try again later.");
           });
         }
       } finally {
@@ -96,7 +93,7 @@ export const TagSummary = memo(function TagSummary() {
     if (tagData.length === 0) {
       return (
         <div className="p-4 text-center text-muted-foreground">
-          No tag usage data available yet.
+          No tag usage data available yet. Try adding some tags to content.
         </div>
       );
     }

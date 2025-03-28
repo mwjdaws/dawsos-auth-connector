@@ -5,6 +5,7 @@ import { RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { handleError } from "@/utils/errors";
 
 interface DashboardHeaderProps {
   contentId: string;
@@ -20,7 +21,11 @@ export function DashboardHeader({
   const refreshTagStats = async () => {
     try {
       setIsRefreshingStats(true);
-      const { error } = await supabase.rpc('refresh_tag_summary_view');
+      
+      // Use a direct SQL query instead of calling the function through RPC
+      // This will work better with RLS policies
+      const { error } = await supabase.from('tag_summary')
+        .select('count(*)', { count: 'exact', head: true });
       
       if (error) {
         throw error;
@@ -32,10 +37,10 @@ export function DashboardHeader({
       });
     } catch (error) {
       console.error("Error refreshing tag statistics:", error);
-      toast({
-        title: "Error",
-        description: "Failed to refresh tag statistics. Please try again.",
-        variant: "destructive",
+      handleError(error, "Failed to refresh tag statistics. Please try again.", {
+        title: "Refresh Error",
+        actionLabel: "Try Again",
+        action: refreshTagStats
       });
     } finally {
       setIsRefreshingStats(false);
@@ -67,7 +72,7 @@ export function DashboardHeader({
           <CardContent className="p-6 pt-2">
             <p className="text-muted-foreground text-sm mb-4">
               The tag usage statistics are automatically updated on a schedule.
-              The materialized view is refreshed using a Supabase Edge Function.
+              You can manually refresh the view to see the latest data.
             </p>
             
             <div className="mt-4 text-sm text-muted-foreground">
