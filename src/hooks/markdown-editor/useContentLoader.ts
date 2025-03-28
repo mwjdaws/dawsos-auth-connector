@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/error-handling';
 
@@ -16,9 +16,6 @@ interface UseContentLoaderProps {
   setIsDirty: (isDirty: boolean) => void;
 }
 
-/**
- * Hook to load content from a knowledge source
- */
 export const useContentLoader = ({
   sourceId,
   setTitle,
@@ -32,56 +29,68 @@ export const useContentLoader = ({
   setIsDirty
 }: UseContentLoaderProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
-    
-    const loadContent = async () => {
-      if (!sourceId) return;
-      
-      setIsLoading(true);
-      
-      try {
-        const { data, error } = await supabase
-          .from('knowledge_sources')
-          .select('*')
-          .eq('id', sourceId)
-          .single();
-        
-        if (error) throw error;
-        
-        if (isMounted && data) {
-          setTitle(data.title || '');
-          setContent(data.content || '');
-          setTemplateId(data.template_id);
-          setExternalSourceUrl(data.external_source_url || '');
-          setLastSavedTitle(data.title || '');
-          setLastSavedContent(data.content || '');
-          setLastSavedExternalSourceUrl(data.external_source_url || '');
-          setIsPublished(!!data.published);
-          setIsDirty(false);
-        }
-      } catch (error) {
-        handleError(
-          error, 
-          "Failed to load content", 
-          { level: "error", silent: false }
-        );
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-    
-    if (sourceId) {
+    // Only load content if we have a valid sourceId that doesn't start with temp-
+    if (sourceId && !sourceId.startsWith('temp-')) {
       loadContent();
     }
-    
-    return () => {
-      isMounted = false;
-    };
   }, [sourceId]);
-  
-  return { isLoading };
+
+  const loadContent = async () => {
+    if (!sourceId || sourceId.startsWith('temp-')) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      console.log('Loading content for document:', sourceId);
+      
+      const { data, error } = await supabase
+        .from('knowledge_sources')
+        .select('*')
+        .eq('id', sourceId)
+        .single();
+      
+      if (error) throw error;
+      
+      if (data) {
+        // Update all state values with loaded content
+        setTitle(data.title || '');
+        setContent(data.content || '');
+        setTemplateId(data.template_id);
+        setExternalSourceUrl(data.external_source_url || '');
+        
+        // Also update the lastSaved values to match
+        setLastSavedTitle(data.title || '');
+        setLastSavedContent(data.content || '');
+        setLastSavedExternalSourceUrl(data.external_source_url || '');
+        
+        // Set published status
+        setIsPublished(!!data.is_published);
+        
+        // Reset dirty state since we just loaded
+        setIsDirty(false);
+        
+        console.log('Content loaded successfully');
+      }
+    } catch (loadError) {
+      console.error('Error loading content:', loadError);
+      setError(loadError instanceof Error ? loadError : new Error('Failed to load content'));
+      handleError(
+        loadError,
+        "Failed to load document content",
+        { level: "error" }
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return {
+    isLoading,
+    error,
+    loadContent
+  };
 };

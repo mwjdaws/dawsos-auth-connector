@@ -116,7 +116,7 @@ export const useMarkdownEditor = ({
   useAutosave(
     isDirty && !isTemp, 
     30000, // 30 seconds interval
-    () => handleSaveDraft(false, true) // isManualSave=false, isAutoSave=true
+    () => handleSaveDraft({ isManualSave: false, isAutoSave: true }) // isManualSave=false, isAutoSave=true
   );
 
   // Initialize content when props change

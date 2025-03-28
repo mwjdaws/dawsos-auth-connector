@@ -6,3 +6,5 @@ export { useContentLoader } from './useContentLoader';
 export { useContentState } from './useContentState';
 export { useDocumentOperationHandlers } from './useDocumentOperationHandlers';
 export * from './types';
+export * from './handlers/useSaveDraftHandler';
+export * from './handlers/usePublishHandler';

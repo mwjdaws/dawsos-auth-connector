@@ -18,12 +18,13 @@ export const useDocumentOperations = (props: DocumentOperationsProps) => {
     title: string,
     content: string,
     templateId: string | null,
+    externalSourceUrl: string,
     userId: string | undefined,
     isAutoSave = false
   ) => {
     setIsSaving(true);
     try {
-      return await saveDraft(title, content, templateId, userId, isAutoSave);
+      return await saveDraft(title, content, templateId, externalSourceUrl, userId, isAutoSave);
     } finally {
       setIsSaving(false);
     }
@@ -36,11 +37,12 @@ export const useDocumentOperations = (props: DocumentOperationsProps) => {
     title: string,
     content: string,
     templateId: string | null,
+    externalSourceUrl: string,
     userId: string | undefined
   ) => {
     setIsPublishing(true);
     try {
-      return await publishDocument(title, content, templateId, userId);
+      return await publishDocument(title, content, templateId, externalSourceUrl, userId);
     } finally {
       setIsPublishing(false);
     }

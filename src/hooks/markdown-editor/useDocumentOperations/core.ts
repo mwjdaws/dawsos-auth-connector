@@ -27,6 +27,7 @@ export const useDocumentOperationsCore = ({
     title: string,
     content: string,
     templateId: string | null,
+    externalSourceUrl: string,
     userId: string | undefined,
     isAutoSave = false
   ): Promise<string | null> => {
@@ -58,6 +59,7 @@ export const useDocumentOperationsCore = ({
         title, 
         content, 
         templateId, 
+        externalSourceUrl, 
         effectiveUserId, 
         documentId, 
         isAutoSave
@@ -66,7 +68,7 @@ export const useDocumentOperationsCore = ({
       // Handle successful save with callback
       if (result.success && result.documentId && onSaveDraft && !isAutoSave) {
         try {
-          onSaveDraft(result.documentId, title, content, templateId);
+          onSaveDraft(result.documentId, title, content, templateId, externalSourceUrl);
         } catch (callbackError) {
           // Log but don't fail the operation if callback fails
           console.error('Error in onSaveDraft callback:', callbackError);
@@ -102,8 +104,8 @@ export const useDocumentOperationsCore = ({
   
   // Use the publish operations with the saveDraft function
   const { publishDocument: publishDocumentOperation } = usePublishOperations({ 
-    saveDraft: (title, content, templateId, userId, isAutoSave) => 
-      saveDraft(title, content, templateId, userId, isAutoSave) 
+    saveDraft: (title, content, templateId, externalSourceUrl, userId, isAutoSave) => 
+      saveDraft(title, content, templateId, externalSourceUrl, userId, isAutoSave) 
   });
   
   /**
@@ -113,6 +115,7 @@ export const useDocumentOperationsCore = ({
     title: string,
     content: string,
     templateId: string | null,
+    externalSourceUrl: string,
     userId: string | undefined
   ): Promise<DocumentOperationResult> => {
     try {
@@ -127,6 +130,7 @@ export const useDocumentOperationsCore = ({
           if (!effectiveUserId) {
             return { 
               success: false, 
+              documentId: null,
               error: "Authentication required to publish document" 
             };
           }
@@ -139,17 +143,18 @@ export const useDocumentOperationsCore = ({
           );
           return { 
             success: false, 
+            documentId: null,
             error: "Authentication error" 
           };
         }
       }
       
-      const result = await publishDocumentOperation(title, content, templateId, effectiveUserId);
+      const result = await publishDocumentOperation(title, content, templateId, externalSourceUrl, effectiveUserId);
       
       // Handle successful publish with callback
       if (result.success && result.documentId && onPublish) {
         try {
-          onPublish(result.documentId, title, content, templateId);
+          onPublish(result.documentId, title, content, templateId, externalSourceUrl);
         } catch (callbackError) {
           // Log but don't fail the operation if callback fails
           console.error('Error in onPublish callback:', callbackError);
@@ -169,7 +174,7 @@ export const useDocumentOperationsCore = ({
         "An unexpected error occurred while publishing the document", 
         { level: "error", technical: false }
       );
-      return { success: false, error };
+      return { success: false, documentId: null, error };
     }
   };
 
