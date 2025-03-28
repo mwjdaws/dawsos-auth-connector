@@ -400,6 +400,14 @@ export type Database = {
       }
     }
     Functions: {
+      get_related_tags: {
+        Args: {
+          knowledge_source_id: string
+        }
+        Returns: {
+          related_tag: string
+        }[]
+      }
       refresh_tag_summary_view: {
         Args: Record<PropertyKey, never>
         Returns: undefined
