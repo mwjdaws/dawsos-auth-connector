@@ -7,6 +7,8 @@ import { useSaveTags } from "./hooks/useSaveTags";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { TagPanelErrorFallback } from "./TagPanelErrorFallback";
 import { useTagGeneration } from "@/hooks/tagGeneration";
+import { useNavigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
 
 interface TagPanelProps {
   contentId: string;
@@ -14,6 +16,7 @@ interface TagPanelProps {
 }
 
 export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
+  const navigate = useNavigate();
   const {
     saveTags,
     isProcessing,
@@ -58,8 +61,11 @@ export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
   
   // Handle tag click for filtering or navigation
   const handleTagClick = (tag: string) => {
-    console.log(`Tag clicked: ${tag} - Ready for filtering or navigation implementation`);
-    // Future implementation: Add filtering or navigation logic here
+    toast({
+      title: "Navigating to tag",
+      description: `Searching for content with tag: ${tag}`
+    });
+    navigate(`/search?tag=${encodeURIComponent(tag)}`);
   };
   
   return (
