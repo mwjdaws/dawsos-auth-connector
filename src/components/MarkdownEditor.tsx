@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,22 +11,33 @@ import { Save, Send } from 'lucide-react';
 interface MarkdownEditorProps {
   initialTitle?: string;
   initialContent?: string;
-  onSaveDraft?: (title: string, content: string) => void;
-  onPublish?: (title: string, content: string) => void;
+  initialTemplateId?: string | null;
+  onSaveDraft?: (title: string, content: string, templateId: string | null) => void;
+  onPublish?: (title: string, content: string, templateId: string | null) => void;
 }
 
 const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   initialTitle = '',
   initialContent = '',
+  initialTemplateId = null,
   onSaveDraft,
   onPublish,
 }) => {
+  // State management
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
+  const [templateId, setTemplateId] = useState<string | null>(initialTemplateId);
+  
+  // Update state if props change (e.g., when loading a saved draft)
+  useEffect(() => {
+    setTitle(initialTitle);
+    setContent(initialContent);
+    setTemplateId(initialTemplateId);
+  }, [initialTitle, initialContent, initialTemplateId]);
 
   const handleSaveDraft = () => {
     if (onSaveDraft) {
-      onSaveDraft(title, content);
+      onSaveDraft(title, content, templateId);
     }
     toast({
       title: "Draft Saved",
@@ -36,7 +47,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
   const handlePublish = () => {
     if (onPublish) {
-      onPublish(title, content);
+      onPublish(title, content, templateId);
     }
     toast({
       title: "Content Published",

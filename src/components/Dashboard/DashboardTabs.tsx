@@ -1,4 +1,3 @@
-
 import { ReactNode, useTransition, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -99,11 +98,12 @@ console.log(greeting);
               <MarkdownEditor 
                 initialTitle="Draft Document"
                 initialContent={sampleMarkdown}
-                onSaveDraft={(title, content) => {
-                  console.log("Saving draft:", { title, content });
+                initialTemplateId={null}
+                onSaveDraft={(title, content, templateId) => {
+                  console.log("Saving draft:", { title, content, templateId });
                 }}
-                onPublish={(title, content) => {
-                  console.log("Publishing:", { title, content });
+                onPublish={(title, content, templateId) => {
+                  console.log("Publishing:", { title, content, templateId });
                 }}
               />
             </Suspense>
