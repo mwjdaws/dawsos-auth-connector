@@ -27,29 +27,29 @@ export function TagCards() {
         
         console.log("TagCards: Fetching recent tag groups...");
         
-        // Get recently tagged content IDs
-        const { data: recentTagsData, error: recentTagsError } = await supabase
+        // Direct query to get distinct content IDs with tags
+        const { data: contentIdsData, error: contentIdsError } = await supabase
           .from("tags")
-          .select("content_id, created_at")
+          .select("content_id")
           .not("content_id", "is", null)
-          .order("created_at", { ascending: false })
+          .order("id", { ascending: false }) // Using ID instead of created_at
           .limit(20); // Fetch more to account for duplicates
         
-        if (recentTagsError) {
-          console.error("TagCards: Error fetching recent tags:", recentTagsError);
-          throw recentTagsError;
+        if (contentIdsError) {
+          console.error("TagCards: Error fetching content IDs:", contentIdsError);
+          throw contentIdsError;
         }
         
-        if (!recentTagsData || recentTagsData.length === 0) {
+        if (!contentIdsData || contentIdsData.length === 0) {
           console.log("TagCards: No recent tags found");
           setTagGroups([]);
           setIsLoading(false);
           return;
         }
         
-        // Extract unique content IDs (newest first)
+        // Extract unique content IDs (newest first based on the order above)
         const uniqueContentIds: string[] = [];
-        recentTagsData.forEach(item => {
+        contentIdsData.forEach(item => {
           if (item.content_id && !uniqueContentIds.includes(item.content_id)) {
             uniqueContentIds.push(item.content_id);
           }
@@ -84,9 +84,26 @@ export function TagCards() {
 
         setTagGroups(tagGroupsData);
         console.log("TagCards: Loaded tag groups:", tagGroupsData);
+        
+        // Show a success toast if this was a manual refresh
+        if (refreshKey > 0) {
+          toast({
+            title: "Tags Refreshed",
+            description: `Loaded ${tagGroupsData.length} tag groups`
+          });
+        }
       } catch (err) {
         console.error("TagCards: Error in fetchTags:", err);
         setError("Failed to load tags. Please try again later.");
+        
+        // Show error toast if this was a manual refresh
+        if (refreshKey > 0) {
+          toast({
+            title: "Refresh Failed",
+            description: "Could not refresh tags. Please try again.",
+            variant: "destructive"
+          });
+        }
       } finally {
         setIsLoading(false);
       }
