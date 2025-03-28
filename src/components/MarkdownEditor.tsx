@@ -24,6 +24,7 @@ interface MarkdownEditorProps {
   initialContent?: string;
   initialTemplateId?: string | null;
   documentId?: string;
+  sourceId?: string; // Add sourceId prop for loading existing content
   onSaveDraft?: (id: string, title: string, content: string, templateId: string | null) => void;
   onPublish?: (id: string, title: string, content: string, templateId: string | null) => void;
 }
