@@ -1,3 +1,4 @@
+
 import { ReactNode, useTransition, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -5,6 +6,7 @@ import { TagPanel } from "@/components";
 import { MarkdownPanel, MetadataPanel, MarkdownEditor } from "@/components";
 import { TagCards } from "@/components/TagPanel/TagCards";
 import TemplatesPanel from "@/components/TemplatesPanel";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DashboardTabsProps {
   activeTab: string;
@@ -12,6 +14,8 @@ interface DashboardTabsProps {
   onTabChange: (value: string) => void;
   onTagGenerationComplete: (newContentId: string) => void;
   onMetadataChange: () => void;
+  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null) => void;
+  onPublish?: (id: string, title: string, content: string, templateId: string | null) => void;
 }
 
 export function DashboardTabs({
@@ -19,9 +23,12 @@ export function DashboardTabs({
   contentId,
   onTabChange,
   onTagGenerationComplete,
-  onMetadataChange
+  onMetadataChange,
+  onSaveDraft,
+  onPublish
 }: DashboardTabsProps) {
   const [isPending, startTransition] = useTransition();
+  const { user } = useAuth();
 
   const handleTabChange = (value: string) => {
     startTransition(() => {
@@ -99,12 +106,8 @@ console.log(greeting);
                 initialTitle="Draft Document"
                 initialContent={sampleMarkdown}
                 initialTemplateId={null}
-                onSaveDraft={(title, content, templateId) => {
-                  console.log("Saving draft:", { title, content, templateId });
-                }}
-                onPublish={(title, content, templateId) => {
-                  console.log("Publishing:", { title, content, templateId });
-                }}
+                onSaveDraft={onSaveDraft}
+                onPublish={onPublish}
               />
             </Suspense>
           </div>

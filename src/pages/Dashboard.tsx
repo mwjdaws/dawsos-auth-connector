@@ -21,9 +21,13 @@ const DashboardPage = () => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        console.log("No session found, but continuing as guest for development");
-        // Uncomment the line below to redirect to login in production
-        // navigate("/auth");
+        console.log("No session found, redirecting to auth page");
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to access the dashboard.",
+          variant: "destructive",
+        });
+        navigate("/auth");
       }
     };
     
@@ -76,6 +80,22 @@ const DashboardPage = () => {
     });
   };
 
+  const handleSaveDraft = (id: string, title: string, content: string, templateId: string | null) => {
+    console.log("Draft saved:", { id, title, templateId });
+    toast({
+      title: "Draft Saved",
+      description: `"${title}" has been saved as a draft.`,
+    });
+  };
+
+  const handlePublish = (id: string, title: string, content: string, templateId: string | null) => {
+    console.log("Content published:", { id, title, templateId });
+    toast({
+      title: "Content Published",
+      description: `"${title}" has been published successfully.`,
+    });
+  };
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -115,6 +135,8 @@ const DashboardPage = () => {
         onTabChange={setActiveTab}
         onTagGenerationComplete={handleTagGenerationComplete}
         onMetadataChange={handleMetadataChange}
+        onSaveDraft={handleSaveDraft}
+        onPublish={handlePublish}
       />
     </div>
   );

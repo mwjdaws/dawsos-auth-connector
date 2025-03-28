@@ -45,6 +45,17 @@ export const useDocumentOperations = ({
       return null;
     }
 
+    if (!userId) {
+      if (!isAutoSave) {
+        toast({
+          title: "Authentication Required",
+          description: "You must be logged in to save content",
+          variant: "destructive",
+        });
+      }
+      return null;
+    }
+
     console.log("Saving document with title:", title, "and user ID:", userId);
     
     setIsSaving(true);
@@ -141,6 +152,15 @@ export const useDocumentOperations = ({
         variant: "destructive",
       });
       return { success: false, error: "Title is required" };
+    }
+
+    if (!userId) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to publish content",
+        variant: "destructive",
+      });
+      return { success: false, error: "Authentication required" };
     }
 
     console.log("Publishing document with title:", title, "and user ID:", userId);

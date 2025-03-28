@@ -141,7 +141,16 @@ export const useMarkdownEditor = ({
 
   // Handle save draft wrapper
   const handleSaveDraft = async (isAutoSave = false) => {
-    const result = await saveDraft(title, content, templateId, user?.id, isAutoSave);
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to save drafts",
+        variant: "destructive",
+      });
+      return null;
+    }
+    
+    const result = await saveDraft(title, content, templateId, user.id, isAutoSave);
     if (result) {
       // Update last saved state
       setLastSavedTitle(title);
@@ -153,6 +162,15 @@ export const useMarkdownEditor = ({
 
   // Handle publish wrapper with improved error handling and console logs
   const handlePublish = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to publish content",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!title.trim()) {
       toast({
         title: "Title Required",
@@ -163,7 +181,7 @@ export const useMarkdownEditor = ({
     }
 
     try {
-      console.log("Publishing document with user ID:", user?.id);
+      console.log("Publishing document with user ID:", user.id);
       
       // First save the draft to ensure we have the latest content
       const savedId = await handleSaveDraft(false);
@@ -181,7 +199,7 @@ export const useMarkdownEditor = ({
       
       // Now publish the document
       console.log("Attempting to publish document ID:", savedId);
-      const publishResult = await publishDocument(title, content, templateId, user?.id);
+      const publishResult = await publishDocument(title, content, templateId, user.id);
       
       if (publishResult && publishResult.success) {
         console.log("Document successfully published with ID:", savedId);
