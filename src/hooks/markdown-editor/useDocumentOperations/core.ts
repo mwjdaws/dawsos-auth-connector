@@ -1,28 +1,26 @@
 
 import { useState } from 'react';
-import { useDocumentVersioning } from './useDocumentVersioning';
-import { useDraftOperations } from './useDraftOperations';
-import { usePublishOperations } from './usePublishOperations';
-import { DocumentOperationsProps } from './types';
+import { useDocumentVersioning } from '../useDocumentVersioning';
+import { useDraftOperations } from '../useDraftOperations';
+import { usePublishOperations } from '../usePublishOperations';
 import { handleError } from '@/utils/error-handling';
+import { DocumentOperationsProps, DocumentOperationResult } from '../types';
 
 /**
- * Main hook for document operations including saving and publishing
+ * Core document operations without UI state handling
  */
-export const useDocumentOperations = ({
+export const useDocumentOperationsCore = ({
   documentId,
   onSaveDraft,
   onPublish
 }: DocumentOperationsProps) => {
-  const [isSaving, setIsSaving] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
   const { createVersion } = useDocumentVersioning();
   
   // Use the draft operations
   const { saveDraft: saveDraftOperation } = useDraftOperations({ createVersion });
   
   /**
-   * Save document as a draft with state handling
+   * Save document as a draft with error handling
    */
   const saveDraft = async (
     title: string,
@@ -30,12 +28,18 @@ export const useDocumentOperations = ({
     templateId: string | null,
     userId: string | undefined,
     isAutoSave = false
-  ) => {
-    setIsSaving(true);
+  ): Promise<string | null> => {
     try {
-      const result = await saveDraftOperation(title, content, templateId, userId, documentId, isAutoSave);
+      const result = await saveDraftOperation(
+        title, 
+        content, 
+        templateId, 
+        userId, 
+        documentId, 
+        isAutoSave
+      );
       
-      if (result.success && result.documentId && onSaveDraft) {
+      if (result.success && result.documentId && onSaveDraft && !isAutoSave) {
         onSaveDraft(result.documentId, title, content, templateId);
       }
       
@@ -47,8 +51,6 @@ export const useDocumentOperations = ({
         { level: "error", technical: false }
       );
       return null;
-    } finally {
-      setIsSaving(false);
     }
   };
   
@@ -59,15 +61,14 @@ export const useDocumentOperations = ({
   });
   
   /**
-   * Publish document with state handling
+   * Publish document with error handling
    */
   const publishDocument = async (
     title: string,
     content: string,
     templateId: string | null,
     userId: string | undefined
-  ) => {
-    setIsPublishing(true);
+  ): Promise<DocumentOperationResult> => {
     try {
       const result = await publishDocumentOperation(title, content, templateId, userId);
       
@@ -83,14 +84,10 @@ export const useDocumentOperations = ({
         { level: "error", technical: false }
       );
       return { success: false, error };
-    } finally {
-      setIsPublishing(false);
     }
   };
 
   return {
-    isSaving,
-    isPublishing,
     saveDraft,
     publishDocument
   };

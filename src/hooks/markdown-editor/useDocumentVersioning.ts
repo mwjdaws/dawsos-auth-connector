@@ -61,8 +61,26 @@ export const useDocumentVersioning = () => {
     }
     
     try {
+      // First, get the latest version number for this source
+      const { data: versions, error: versionError } = await supabase
+        .from('knowledge_source_versions')
+        .select('version_number')
+        .eq('source_id', documentId)
+        .order('version_number', { ascending: false })
+        .limit(1);
+      
+      if (versionError) throw versionError;
+      
+      // Determine the next version number
+      let nextVersionNumber = 1;
+      if (versions && versions.length > 0) {
+        nextVersionNumber = versions[0].version_number + 1;
+      }
+      
+      // Create new version with explicit version number
       const newVersion = {
         source_id: documentId,
+        version_number: nextVersionNumber,
         content,
         metadata
       };
@@ -92,6 +110,7 @@ export const useDocumentVersioning = () => {
   const restoreVersion = async (versionId: string) => {
     setIsLoading(true);
     try {
+      // Call the restore_knowledge_source_version function
       const { data, error } = await supabase.rpc('restore_knowledge_source_version', {
         version_id: versionId
       });

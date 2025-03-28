@@ -13,9 +13,13 @@ export interface SaveDraftResult {
   error?: Error | string | null;
 }
 
-export interface PublishResult {
+export interface DocumentOperationResult {
   success: boolean;
   documentId?: string;
+  error?: any;
+}
+
+export interface PublishResult extends DocumentOperationResult {
   error?: string | null;
 }
 
@@ -28,7 +32,7 @@ export interface PublishOperationsContext {
     title: string,
     content: string,
     templateId: string | null,
-    userId: string,
+    userId: string | undefined,
     isAutoSave?: boolean
   ) => Promise<string | null>;
 }

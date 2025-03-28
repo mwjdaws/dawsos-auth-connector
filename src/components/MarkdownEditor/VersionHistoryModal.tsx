@@ -1,16 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { History, Eye, RotateCcw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from '@/hooks/use-toast';
-import { fetchKnowledgeSourceVersions, restoreKnowledgeSourceVersion } from '@/services/api/knowledgeSourceVersions';
-import { KnowledgeSourceVersion } from '@/services/api/types';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useDocumentVersioning } from '@/hooks/markdown-editor/useDocumentVersioning';
+import { format } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { handleError } from '@/utils/error-handling';
 
 interface VersionHistoryModalProps {
   documentId: string;
@@ -19,176 +17,133 @@ interface VersionHistoryModalProps {
   onVersionRestore: () => void;
 }
 
-export function VersionHistoryModal({ 
-  documentId, 
-  isOpen, 
+export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
+  documentId,
+  isOpen,
   onClose,
   onVersionRestore
-}: VersionHistoryModalProps) {
-  const [versions, setVersions] = useState<KnowledgeSourceVersion[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isRestoring, setIsRestoring] = useState(false);
-  const { createVersion } = useDocumentVersioning();
+}) => {
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
+  const { versions, isLoading, fetchVersions, restoreVersion } = useDocumentVersioning();
 
   useEffect(() => {
     if (isOpen && documentId) {
-      loadVersions();
+      try {
+        fetchVersions(documentId);
+      } catch (error) {
+        handleError(
+          error,
+          "Failed to load version history",
+          { level: "error" }
+        );
+      }
     }
   }, [isOpen, documentId]);
 
-  const loadVersions = async () => {
-    if (!documentId) return;
-    
-    setIsLoading(true);
-    try {
-      const versionData = await fetchKnowledgeSourceVersions(documentId);
-      setVersions(versionData || []);
-    } catch (error) {
-      console.error('Failed to load versions:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load document versions',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const handleRestoreClick = (versionId: string) => {
+    setSelectedVersionId(versionId);
+    setIsConfirmDialogOpen(true);
   };
 
-  const handleViewVersion = (version: KnowledgeSourceVersion) => {
-    // For now just show the content in a new tab/window
-    const newWindow = window.open();
-    if (newWindow) {
-      newWindow.document.write(`
-        <html>
-          <head>
-            <title>Version ${version.version_number} - ${new Date(version.created_at || '').toLocaleString()}</title>
-            <style>
-              body { font-family: system-ui, sans-serif; padding: 20px; line-height: 1.6; max-width: 800px; margin: 0 auto; }
-              pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
-            </style>
-          </head>
-          <body>
-            <h1>Version ${version.version_number}</h1>
-            <p><strong>Created:</strong> ${new Date(version.created_at || '').toLocaleString()}</p>
-            <hr/>
-            <pre>${version.content}</pre>
-          </body>
-        </html>
-      `);
-    }
-  };
-
-  const handleRestoreVersion = async (versionId: string) => {
-    if (!documentId) return;
+  const handleConfirmRestore = async () => {
+    if (!selectedVersionId) return;
     
-    setIsRestoring(true);
     try {
-      // First create a version of the current content
-      await createVersion(documentId);
-      
-      // Then restore the selected version
-      await restoreKnowledgeSourceVersion(versionId);
-      
-      toast({
-        title: 'Success',
-        description: 'Document version restored successfully',
-      });
-      
-      onVersionRestore();
-      onClose();
+      const success = await restoreVersion(selectedVersionId);
+      if (success) {
+        onVersionRestore();
+        setIsConfirmDialogOpen(false);
+        onClose();
+      }
     } catch (error) {
-      console.error('Failed to restore version:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to restore document version',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsRestoring(false);
+      handleError(
+        error,
+        "Failed to restore version",
+        { level: "error" }
+      );
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[800px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <History className="h-5 w-5" />
-            Document Version History
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="py-4">
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Version History</DialogTitle>
+          </DialogHeader>
+          
           {isLoading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
+            <div className="space-y-4">
+              <Skeleton className="h-36 w-full" />
+              <Skeleton className="h-36 w-full" />
+              <Skeleton className="h-36 w-full" />
             </div>
           ) : versions.length === 0 ? (
-            <div className="text-center p-4 text-muted-foreground">
+            <div className="py-8 text-center text-gray-500">
               No version history available for this document
             </div>
           ) : (
-            <ScrollArea className="h-[400px]">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Version</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {versions.map((version) => {
-                    // Extract metadata for display
-                    const metadata = version.metadata as Record<string, any> || {};
-                    const source = metadata.saved_from === 'auto_save' ? 'Auto Save' : 'Manual Save';
-                    
-                    return (
-                      <TableRow key={version.id}>
-                        <TableCell className="font-medium">
-                          Version {version.version_number}
-                        </TableCell>
-                        <TableCell>
-                          {version.created_at ? format(new Date(version.created_at), 'MMM d, yyyy h:mm a') : 'Unknown'}
-                        </TableCell>
-                        <TableCell>{source}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewVersion(version)}
-                              className="flex items-center gap-1"
-                            >
-                              <Eye className="h-4 w-4" />
-                              <span className="hidden sm:inline">View</span>
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRestoreVersion(version.id)}
-                              disabled={isRestoring}
-                              className="flex items-center gap-1"
-                            >
-                              <RotateCcw className="h-4 w-4" />
-                              <span className="hidden sm:inline">Restore</span>
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </ScrollArea>
+            <div className="space-y-4">
+              {versions.map((version) => (
+                <Card key={version.id} className="overflow-hidden">
+                  <CardContent className="pt-6">
+                    <div className="flex justify-between items-start mb-2">
+                      <Badge variant="outline">
+                        Version {version.version_number}
+                      </Badge>
+                      <span className="text-sm text-gray-500">
+                        {format(new Date(version.created_at), 'MMM d, yyyy h:mm a')}
+                      </span>
+                    </div>
+                    <div className="mt-2 text-sm max-h-24 overflow-y-auto border p-2 bg-gray-50 rounded">
+                      <pre className="whitespace-pre-wrap">{version.content.substring(0, 200)}...</pre>
+                    </div>
+                    {version.metadata && (
+                      <div className="mt-2 text-xs text-gray-500">
+                        {version.metadata.reason && (
+                          <span>Reason: {version.metadata.reason}</span>
+                        )}
+                        {version.metadata.auto_version && (
+                          <Badge variant="secondary" className="ml-2">Auto-saved</Badge>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                  <CardFooter className="bg-gray-50 py-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleRestoreClick(version.id)}
+                    >
+                      Restore This Version
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore Version</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to restore this version? This will replace the current content with the selected version.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button variant="outline" onClick={() => setIsConfirmDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmRestore}>
+              Restore Version
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
-}
+};

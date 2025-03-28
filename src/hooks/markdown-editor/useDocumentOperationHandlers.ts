@@ -149,7 +149,7 @@ export const useDocumentOperationHandlers = ({
       toast({
         title: "Save Required",
         description: "Please save the document as a draft before publishing",
-        variant: "warning",
+        variant: "default",
       });
       return null;
     }
