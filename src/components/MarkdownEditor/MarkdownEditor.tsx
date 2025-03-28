@@ -2,7 +2,7 @@
 import React from 'react';
 import { Separator } from '@/components/ui/separator';
 import { useTemplates } from '@/hooks/useTemplates';
-import { useMarkdownEditor } from '@/hooks/useMarkdownEditor';
+import { useMarkdownEditor } from '@/hooks/markdown-editor';
 import EditorHeader from './EditorHeader';
 import MarkdownContent from './MarkdownContent';
 import MarkdownPreview from './MarkdownPreview';
