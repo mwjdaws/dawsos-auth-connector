@@ -76,7 +76,10 @@ console.log(greeting);
           <div className="bg-card border rounded-lg p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Tag Generator</h2>
             <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
-              <TagPanel onTagsGenerated={onTagGenerationComplete} />
+              <TagPanel 
+                contentId={contentId} 
+                onTagsSaved={onTagGenerationComplete} 
+              />
             </Suspense>
             
             <h2 className="text-xl font-semibold mb-4 mt-8">Recent Tags</h2>
