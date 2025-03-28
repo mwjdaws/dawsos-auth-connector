@@ -9,6 +9,10 @@ import { TagPanelErrorFallback } from "./TagPanelErrorFallback";
 import { useTagGeneration } from "@/hooks/tagGeneration";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ManualTagCreator } from "./ManualTagCreator";
+import { GroupedTagList } from "./GroupedTagList";
 
 interface TagPanelProps {
   contentId: string;
@@ -34,6 +38,8 @@ export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
   
   const [content, setContent] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [activeTab, setActiveTab] = useState<"automatic" | "manual">("automatic");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   // Handle tag generation from content - renamed to processTagGeneration
   const processTagGeneration = (text: string) => {
@@ -69,30 +75,66 @@ export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
     });
     navigate(`/search?tag=${encodeURIComponent(tag)}`);
   };
+
+  // Trigger a refresh of the grouped tag list
+  const handleTagCreated = () => {
+    setRefreshTrigger(prev => prev + 1);
+    toast({
+      title: "Success",
+      description: "Tag created and added to the content",
+    });
+  };
   
   return (
     <ErrorBoundary fallback={<TagPanelErrorFallback />}>
       <div className="space-y-6 w-full">
-        <TagGenerator 
-          isLoading={isLoading || isPending}
-          onGenerateTags={processTagGeneration}
-        />
-        
-        <TagList 
-          tags={tags}
-          isLoading={isLoading || isPending}
-          knowledgeSourceId={tagContentId || contentId}
-          onTagClick={handleTagClick}
-        />
-        
-        <TagSaver
-          tags={tags}
-          contentId={tagContentId || contentId}
-          saveTags={saveTags}
-          isProcessing={isProcessing}
-          isRetrying={isRetrying}
-          onTagsSaved={onTagsSaved}
-        />
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "automatic" | "manual")} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="automatic">Automatic Tags</TabsTrigger>
+            <TabsTrigger value="manual">Manual Tags</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="automatic" className="space-y-6 pt-4">
+            <TagGenerator 
+              isLoading={isLoading || isPending}
+              onGenerateTags={processTagGeneration}
+            />
+            
+            <TagList 
+              tags={tags}
+              isLoading={isLoading || isPending}
+              knowledgeSourceId={tagContentId || contentId}
+              onTagClick={handleTagClick}
+            />
+            
+            <TagSaver
+              tags={tags}
+              contentId={tagContentId || contentId}
+              saveTags={saveTags}
+              isProcessing={isProcessing}
+              isRetrying={isRetrying}
+              onTagsSaved={onTagsSaved}
+            />
+          </TabsContent>
+          
+          <TabsContent value="manual" className="space-y-6 pt-4">
+            <ManualTagCreator 
+              contentId={contentId} 
+              onTagCreated={handleTagCreated} 
+            />
+            
+            <Separator className="my-4" />
+            
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium">Tags for this Content</h3>
+              <GroupedTagList 
+                contentId={contentId}
+                refreshTrigger={refreshTrigger}
+                onTagClick={handleTagClick}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </ErrorBoundary>
   );

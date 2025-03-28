@@ -12,7 +12,7 @@ interface TagGeneratorTabProps {
 export function TagGeneratorTab({ contentId, onTagsSaved }: TagGeneratorTabProps) {
   return (
     <>
-      <h2 className="text-xl font-semibold mb-4">Tag Generator</h2>
+      <h2 className="text-xl font-semibold mb-4">Tag Management</h2>
       <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
         <TagPanel 
           contentId={contentId} 
