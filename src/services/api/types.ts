@@ -40,6 +40,7 @@ export interface KnowledgeTemplate {
   metadata?: Json;
   structure?: Json;
   is_global?: boolean;
+  user_id?: string;
   created_at?: string;
   updated_at?: string;
 }
