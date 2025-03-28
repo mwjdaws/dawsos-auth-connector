@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { generateTags } from "@/utils/supabase-functions";
+import { generateTags } from "@/services/supabase/tag-generation";
 
 const TagGenerator = () => {
   const [content, setContent] = useState("");
