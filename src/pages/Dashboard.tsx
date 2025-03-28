@@ -6,12 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import DebugPanel from "@/components/DebugPanel";
+import { useAuth } from "@/hooks/useAuth";
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("tag-generator");
   const [contentId, setContentId] = useState(`temp-${Date.now()}`);
   const [isRefreshingStats, setIsRefreshingStats] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -78,12 +80,21 @@ const DashboardPage = () => {
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <button 
-          onClick={() => setShowDebug(!showDebug)}
-          className="text-sm text-muted-foreground hover:text-primary transition-colors"
-        >
-          {showDebug ? "Hide Debug Panel" : "Show Debug Panel"}
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="text-sm text-muted-foreground mr-2">
+            {!authLoading && (
+              user ? 
+              <span>Logged in as: {user.email}</span> : 
+              <span>Not authenticated (RLS policies may limit data access)</span>
+            )}
+          </div>
+          <button 
+            onClick={() => setShowDebug(!showDebug)}
+            className="text-sm text-muted-foreground hover:text-primary transition-colors"
+          >
+            {showDebug ? "Hide Debug Panel" : "Show Debug Panel"}
+          </button>
+        </div>
       </div>
       
       {showDebug && (
