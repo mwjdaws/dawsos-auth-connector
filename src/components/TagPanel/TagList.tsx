@@ -120,7 +120,7 @@ export function TagList({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 italic">No related tags found for this content.</p>
+            <p className="text-sm text-gray-500 italic">No related tags found for this content. Try adding tag relationships or ontology terms.</p>
           )}
         </>
       )}
