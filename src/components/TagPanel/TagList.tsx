@@ -1,8 +1,8 @@
-
 import React, { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { handleError } from "@/utils/error-handling";
+import { TagPill } from "./TagPill";
 
 interface TagListProps {
   tags: string[]; // Direct tags
@@ -66,11 +66,6 @@ export function TagList({
     </div>
   );
 
-  // Click handler for tags with interactivity
-  const handleTagClick = (tag: string) => {
-    onTagClick(tag);
-  };
-
   if (isLoading) {
     return (
       <div className="mt-4">
@@ -87,16 +82,12 @@ export function TagList({
       {tags.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {tags.map((tag, index) => (
-            <span
+            <TagPill
               key={index}
-              className="px-2 py-1 bg-blue-100 rounded-xl text-sm cursor-pointer hover:bg-blue-200 transition-colors"
-              onClick={() => handleTagClick(tag)}
-              role="button"
-              tabIndex={0}
-              aria-label={`Tag: ${tag}. Click to filter or navigate.`}
-            >
-              {tag}
-            </span>
+              tag={tag}
+              onClick={onTagClick}
+              variant="primary"
+            />
           ))}
         </div>
       ) : (
@@ -112,16 +103,12 @@ export function TagList({
           ) : relatedTags.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {relatedTags.map((tag, index) => (
-                <span
+                <TagPill
                   key={index}
-                  className="px-2 py-1 bg-green-100 rounded-xl text-sm cursor-pointer hover:bg-green-200 transition-colors"
-                  onClick={() => handleTagClick(tag)}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Related tag: ${tag}. Click to filter or navigate.`}
-                >
-                  {tag}
-                </span>
+                  tag={tag}
+                  onClick={onTagClick}
+                  variant="related"
+                />
               ))}
             </div>
           ) : (
