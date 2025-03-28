@@ -27,6 +27,25 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
     }
 
     try {
+      // Skip operations for temp documents if no user is authenticated
+      if (documentId?.startsWith('temp-') && !userId) {
+        console.log('Skipping database operation for temp document without authentication');
+        return { 
+          success: true, 
+          documentId: documentId
+        };
+      }
+      
+      // Log the operation details for debugging
+      console.log('Saving draft:', { 
+        title, 
+        content: content.substring(0, 50) + '...', 
+        templateId, 
+        userId, 
+        documentId, 
+        isAutoSave 
+      });
+
       const knowledgeData = {
         title,
         content,
@@ -39,6 +58,7 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
 
       // If we have a valid UUID documentId, update the existing document
       if (documentId && !documentId.startsWith('temp-')) {
+        console.log('Updating existing document:', documentId);
         const response = await supabase
           .from('knowledge_sources')
           .update({ 
@@ -59,8 +79,9 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
             auto_version: false
           });
         }
-      } else {
-        // Create new document
+      } else if (userId) {
+        // Only create new document if user is authenticated
+        console.log('Creating new document for user:', userId);
         const response = await supabase
           .from('knowledge_sources')
           .insert([knowledgeData])
@@ -69,9 +90,17 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
         
         data = response.data;
         error = response.error;
+      } else {
+        console.log('No user ID available for creating document');
+        return { 
+          success: false, 
+          documentId: null,
+          error: 'Authentication required to save document'
+        };
       }
 
       if (error) {
+        console.error('Database error while saving draft:', error);
         handleError(
           error,
           "Database error while saving draft",
@@ -84,7 +113,7 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
         };
       }
 
-      if (!data) {
+      if (!data && !documentId?.startsWith('temp-')) {
         return { 
           success: false, 
           documentId: null,
@@ -94,9 +123,10 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
       
       return { 
         success: true, 
-        documentId: data.id
+        documentId: data?.id || documentId
       };
     } catch (error) {
+      console.error('Unexpected error while saving draft:', error);
       handleError(
         error,
         "Unexpected error while saving draft",

@@ -5,6 +5,7 @@ import { useDraftOperations } from '../useDraftOperations';
 import { usePublishOperations } from '../usePublishOperations';
 import { handleError } from '@/utils/error-handling';
 import { DocumentOperationsProps, DocumentOperationResult } from '../types';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Core document operations without UI state handling
@@ -30,11 +31,22 @@ export const useDocumentOperationsCore = ({
     isAutoSave = false
   ): Promise<string | null> => {
     try {
+      // Get the current user's ID if not provided
+      let effectiveUserId = userId;
+      if (!effectiveUserId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        effectiveUserId = user?.id;
+        
+        // Log authentication status for debugging
+        console.log('Authentication status:', !!user, 'User ID:', effectiveUserId);
+      }
+      
+      // Proceed with saving the draft
       const result = await saveDraftOperation(
         title, 
         content, 
         templateId, 
-        userId, 
+        effectiveUserId, 
         documentId, 
         isAutoSave
       );
@@ -70,7 +82,14 @@ export const useDocumentOperationsCore = ({
     userId: string | undefined
   ): Promise<DocumentOperationResult> => {
     try {
-      const result = await publishDocumentOperation(title, content, templateId, userId);
+      // Get the current user's ID if not provided
+      let effectiveUserId = userId;
+      if (!effectiveUserId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        effectiveUserId = user?.id;
+      }
+      
+      const result = await publishDocumentOperation(title, content, templateId, effectiveUserId);
       
       if (result.success && result.documentId && onPublish) {
         onPublish(result.documentId, title, content, templateId);

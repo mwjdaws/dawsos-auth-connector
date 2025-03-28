@@ -107,8 +107,8 @@ export const useMarkdownEditor = ({
     isSaving,
     isPublishing,
     documentId: effectiveDocumentId,
-    onSave: () => handleSaveDraft(false, true), // Fixed: Added the missing arguments (isManualSave, isAutoSave)
-    interval: 30000, // Increased to 30 seconds to reduce save frequency
+    onSave: () => handleSaveDraft(false, true), // Fixed: Added the correct parameters (isManualSave, isAutoSave)
+    interval: 30000, // 30 seconds to reduce save frequency
     enabled: !isTemp && (!!documentId || !!sourceId) // Only enable when we have a valid document
   });
 
