@@ -42,13 +42,27 @@ serve(async (req) => {
 
     if (fetchError) {
       console.error("Failed to fetch existing data:", fetchError);
+      return new Response(
+        JSON.stringify({ error: "Failed to fetch existing document data", details: fetchError }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!existingData) {
+      console.error("No existing document found with ID:", documentId);
+      return new Response(
+        JSON.stringify({ error: `No document found with ID: ${documentId}` }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Extract content metadata
     const wordCount = content.split(/\s+/).length;
     const readingTime = Math.ceil(wordCount / 200); // Approx. words per minute
     const userId = existingData?.user_id;
-    const isPublished = existingData?.published || false;
+    
+    // IMPORTANT: Explicitly handle the published status
+    const isPublished = existingData.published === true;
     const publishedAt = existingData?.published_at;
 
     // Generate tags if OpenAI API key is available
@@ -93,6 +107,7 @@ serve(async (req) => {
         }
       } catch (aiError) {
         console.error("Error generating tags with AI:", aiError);
+        // Continue with the process even if tag generation fails
       }
     }
 
@@ -104,45 +119,84 @@ serve(async (req) => {
       reading_time_minutes: readingTime,
       extracted_tags: tags,
       enriched_at: new Date().toISOString(),
-      user_id: userId
+      user_id: userId // Ensure user_id is preserved in metadata
     };
 
     console.log("Updating metadata:", updatedMetadata);
-    console.log("Preserving published status:", isPublished);
+    console.log("Published status:", isPublished);
+    console.log("Published at:", publishedAt);
 
     // Update the knowledge source with enriched metadata
-    // IMPORTANT: Preserve the published status
-    const { error: updateError } = await supabase
+    // IMPORTANT: Explicitly set the published status based on the existing value
+    const { data: updateData, error: updateError } = await supabase
       .from("knowledge_sources")
       .update({
         metadata: updatedMetadata,
-        published: isPublished, // Ensure we keep the published status
+        published: isPublished, // Explicitly set this to maintain state
         published_at: publishedAt // Preserve the original published timestamp
       })
-      .eq("id", documentId);
+      .eq("id", documentId)
+      .select();
 
     if (updateError) {
       console.error("Error updating metadata:", updateError);
-      throw updateError;
+      return new Response(
+        JSON.stringify({ error: "Failed to update document metadata", details: updateError }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Double-check that the published status was correctly maintained
+    const { data: verifyData, error: verifyError } = await supabase
+      .from("knowledge_sources")
+      .select("published, published_at")
+      .eq("id", documentId)
+      .single();
+      
+    if (verifyError) {
+      console.warn("Error verifying update:", verifyError);
+    } else if (verifyData && verifyData.published !== isPublished) {
+      console.warn("Published status mismatch detected, fixing...");
+      
+      const { error: fixError } = await supabase
+        .from("knowledge_sources")
+        .update({
+          published: isPublished,
+          published_at: publishedAt
+        })
+        .eq("id", documentId);
+        
+      if (fixError) {
+        console.error("Failed to fix published status:", fixError);
+      } else {
+        console.log("Successfully fixed published status");
+      }
     }
 
     // Save tags to the tags table
     if (tags.length > 0) {
       console.log(`Saving ${tags.length} tags for document ${documentId}`);
-      const tagObjects = tags.map(name => ({
-        name,
-        content_id: documentId
-      }));
+      
+      try {
+        const tagObjects = tags.map(name => ({
+          name,
+          content_id: documentId
+        }));
 
-      const { error: tagError } = await supabase
-        .from("tags")
-        .upsert(tagObjects, { 
-          onConflict: 'name,content_id',
-          ignoreDuplicates: true
-        });
+        const { error: tagError } = await supabase
+          .from("tags")
+          .upsert(tagObjects, { 
+            onConflict: 'name,content_id',
+            ignoreDuplicates: true
+          });
 
-      if (tagError) {
-        console.warn("Error adding tags:", tagError);
+        if (tagError) {
+          console.warn("Error adding tags:", tagError);
+          // Continue execution even if tag addition fails
+        }
+      } catch (tagSaveError) {
+        console.error("Error in tag save process:", tagSaveError);
+        // Continue execution even if tag addition fails
       }
     }
 
@@ -162,7 +216,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in content enrichment:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || "Unknown error in content enrichment" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

@@ -3,10 +3,12 @@ import { useState, useEffect } from "react";
 import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { DashboardTabs } from "@/components/Dashboard/DashboardTabs";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DebugPanel from "@/components/DebugPanel";
 import { useAuth } from "@/hooks/useAuth";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { handleError } from "@/utils/error-handling";
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("tag-generator");
@@ -56,7 +58,11 @@ const DashboardPage = () => {
             });
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          if (status !== 'SUBSCRIBED') {
+            console.error('Failed to subscribe to channel:', status);
+          }
+        });
 
       return () => {
         supabase.removeChannel(channel);
@@ -65,6 +71,16 @@ const DashboardPage = () => {
   }, [navigate, user, authLoading]);
 
   const handleTagGenerationComplete = (newContentId: string) => {
+    if (!newContentId) {
+      console.error("Tag generation complete called with invalid contentId");
+      toast({
+        title: "Error",
+        description: "Failed to generate tags. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     console.log("Tag generation complete, setting new contentId:", newContentId);
     setContentId(newContentId);
     
@@ -82,6 +98,15 @@ const DashboardPage = () => {
   };
 
   const handleSaveDraft = async (id: string, title: string, content: string, templateId: string | null) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to save drafts",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     console.log("Draft saved:", { id, title, templateId });
     toast({
       title: "Draft Saved",
@@ -96,12 +121,28 @@ const DashboardPage = () => {
         .eq('id', id)
         .single();
         
-      if (error) throw error;
+      if (error) {
+        console.error("Error checking saved draft:", error);
+        handleError(error, "Error verifying saved draft");
+        return;
+      }
       
       if (data) {
         console.log("Saved draft data:", data);
         if (data.user_id !== user?.id) {
           console.warn("Draft saved with incorrect user ID:", data.user_id, "expected:", user?.id);
+          
+          // Try to fix the user_id
+          const { error: updateError } = await supabase
+            .from('knowledge_sources')
+            .update({ user_id: user.id })
+            .eq('id', id);
+            
+          if (updateError) {
+            console.error("Failed to update user ID:", updateError);
+          } else {
+            console.log("Fixed user ID for draft:", id);
+          }
         }
       }
     } catch (error) {
@@ -110,6 +151,15 @@ const DashboardPage = () => {
   };
 
   const handlePublish = async (id: string, title: string, content: string, templateId: string | null) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to publish content",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     console.log("Content published:", { id, title, templateId });
     
     // Verify that the content was published correctly
@@ -120,10 +170,15 @@ const DashboardPage = () => {
         .eq('id', id)
         .single();
         
-      if (error) throw error;
+      if (error) {
+        console.error("Error verifying published status:", error);
+        handleError(error, "Error verifying published status");
+        return;
+      }
       
       if (data) {
         console.log("Published content data:", data);
+        
         if (!data.published) {
           console.warn("Content not marked as published in database");
           
@@ -138,6 +193,7 @@ const DashboardPage = () => {
             
           if (updateError) {
             console.error("Failed to update published status:", updateError);
+            handleError(updateError, "Failed to update published status");
           } else {
             console.log("Fixed published status for content:", id);
           }
@@ -145,6 +201,18 @@ const DashboardPage = () => {
         
         if (data.user_id !== user?.id) {
           console.warn("Content published with incorrect user ID:", data.user_id, "expected:", user?.id);
+          
+          // Try to fix the user_id
+          const { error: updateError } = await supabase
+            .from('knowledge_sources')
+            .update({ user_id: user.id })
+            .eq('id', id);
+            
+          if (updateError) {
+            console.error("Failed to update user ID:", updateError);
+          } else {
+            console.log("Fixed user ID for published content:", id);
+          }
         }
       }
       
@@ -155,10 +223,13 @@ const DashboardPage = () => {
     } catch (error) {
       console.error("Error checking published content:", error);
       
-      toast({
-        title: "Content Published",
-        description: `"${title}" has been published, but there was an error verifying the published status.`,
-      });
+      handleError(
+        error,
+        "There was an error verifying the published status. The content may still be published.",
+        { 
+          level: "warning"
+        }
+      );
     }
   };
 
@@ -207,21 +278,23 @@ const DashboardPage = () => {
         </div>
       )}
       
-      <DashboardHeader 
-        contentId={contentId}
-        isRefreshingStats={isRefreshingStats}
-        setIsRefreshingStats={setIsRefreshingStats}
-      />
-      
-      <DashboardTabs 
-        activeTab={activeTab}
-        contentId={contentId}
-        onTabChange={setActiveTab}
-        onTagGenerationComplete={handleTagGenerationComplete}
-        onMetadataChange={handleMetadataChange}
-        onSaveDraft={handleSaveDraft}
-        onPublish={handlePublish}
-      />
+      <ErrorBoundary>
+        <DashboardHeader 
+          contentId={contentId}
+          isRefreshingStats={isRefreshingStats}
+          setIsRefreshingStats={setIsRefreshingStats}
+        />
+        
+        <DashboardTabs 
+          activeTab={activeTab}
+          contentId={contentId}
+          onTabChange={setActiveTab}
+          onTagGenerationComplete={handleTagGenerationComplete}
+          onMetadataChange={handleMetadataChange}
+          onSaveDraft={handleSaveDraft}
+          onPublish={handlePublish}
+        />
+      </ErrorBoundary>
     </div>
   );
 };

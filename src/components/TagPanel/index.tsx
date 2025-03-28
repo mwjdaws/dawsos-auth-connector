@@ -1,92 +1,48 @@
 
-import { useState, useEffect, useTransition, useRef, useCallback } from "react";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { memo } from "react";
-import { TagList } from "./TagList";
+import React from "react";
+import { TagGenerator } from "./TagGenerator";
 import { TagContentGenerator } from "./TagContentGenerator";
 import { TagSaver } from "./TagSaver";
-import { TagPanelErrorFallback } from "./TagPanelErrorFallback";
-import { useTagGeneration } from "@/hooks/tagGeneration";
 import { useSaveTags } from "./hooks/useSaveTags";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { TagPanelErrorFallback } from "./TagPanelErrorFallback";
 
 interface TagPanelProps {
-  onTagsGenerated?: (contentId: string) => void;
-  expectedTags?: number;
+  contentId: string;
+  onTagsSaved: (contentId: string) => void;
 }
 
-export const TagPanel = memo(function TagPanel({ 
-  onTagsGenerated, 
-  expectedTags = 8
-}: TagPanelProps) {
-  const [lastSavedContentId, setLastSavedContentId] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const isMounted = useRef(true);
+export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
+  const {
+    saveTags,
+    isProcessing,
+    isRetrying
+  } = useSaveTags();
   
-  const { 
-    tags, 
-    setTags,
-    isLoading, 
-    contentId,
-    handleGenerateTags 
-  } = useTagGeneration({
-    maxRetries: 2,
-    retryDelay: 2000
-  });
-
-  const { saveTags, isRetrying, isProcessing } = useSaveTags();
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  // Prevent duplicate notifications when contentId doesn't change
-  useEffect(() => {
-    if (contentId && lastSavedContentId === contentId) {
-      return;
-    }
-    
-    if (lastSavedContentId && onTagsGenerated) {
-      console.log("TagPanel: Notifying parent of contentId change:", lastSavedContentId);
-      onTagsGenerated(lastSavedContentId);
-    }
-  }, [lastSavedContentId, contentId, onTagsGenerated]);
-
-  // Handle successful tag saving
-  const handleTagsSaved = useCallback((savedContentId: string) => {
-    setLastSavedContentId(savedContentId);
-  }, []);
-
+  const [generatedTags, setGeneratedTags] = React.useState<string[]>([]);
+  const [content, setContent] = React.useState("");
+  
   return (
     <ErrorBoundary fallback={<TagPanelErrorFallback />}>
-      <div className="space-y-4">
-        <TagContentGenerator
-          isLoading={isLoading}
-          contentId={contentId}
-          handleGenerateTags={handleGenerateTags}
-          setLastSavedContentId={setLastSavedContentId}
-          isPending={isPending}
+      <div className="space-y-6 w-full">
+        <TagContentGenerator 
+          onContentChange={setContent} 
         />
         
+        <TagGenerator 
+          content={content}
+          onTagsGenerated={setGeneratedTags}
+        />
+
         <TagSaver
-          tags={tags}
+          tags={generatedTags}
           contentId={contentId}
           saveTags={saveTags}
           isProcessing={isProcessing}
           isRetrying={isRetrying}
-          onTagsSaved={handleTagsSaved}
-        />
-        
-        <TagList 
-          tags={tags} 
-          isLoading={isLoading} 
-          expectedTags={expectedTags} 
+          onTagsSaved={onTagsSaved}
         />
       </div>
     </ErrorBoundary>
   );
-});
-
-export default TagPanel;
+}
