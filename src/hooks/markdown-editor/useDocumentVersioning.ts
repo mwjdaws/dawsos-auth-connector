@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchKnowledgeSourceVersions } from '@/services/api/knowledgeSourceVersions';
 import { handleError } from '@/utils/error-handling';
+import { Json } from '@/integrations/supabase/types';
 
 interface DocumentVersion {
   id: string;
@@ -49,15 +50,16 @@ export const useDocumentVersioning = () => {
 
   /**
    * Create a new version of a document
+   * Returns void to match the expected type signature
    */
   const createVersion = async (
     documentId: string,
     content: string,
     metadata: Record<string, any> = {}
-  ) => {
+  ): Promise<void> => {
     // Skip version creation for temporary IDs
     if (!documentId || documentId.startsWith('temp-')) {
-      return null;
+      return;
     }
     
     try {
@@ -89,22 +91,17 @@ export const useDocumentVersioning = () => {
       
       console.log('Creating new version:', nextVersionNumber, 'for document:', documentId);
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('knowledge_source_versions')
-        .insert(newVersion)
-        .select()
-        .single();
+        .insert(newVersion);
       
       if (error) throw error;
       
       // Refresh the versions list
       await fetchVersions(documentId);
-      
-      return data;
     } catch (error) {
       console.error('Failed to create version:', error);
       // Silent failure for versioning - it shouldn't block the main operation
-      return null;
     }
   };
 

@@ -25,7 +25,7 @@ export interface PublishResult {
 }
 
 export interface DraftOperationsContext {
-  createVersion?: (documentId: string, content: string, metadata?: Json) => Promise<any>;
+  createVersion?: (documentId: string, content: string, metadata?: Json) => Promise<void>;
 }
 
 export interface DocumentOperationsProps {
