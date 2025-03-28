@@ -278,22 +278,64 @@ const DashboardPage = () => {
         </div>
       )}
       
-      <ErrorBoundary>
+      <ErrorBoundary 
+        fallback={
+          <div className="p-6 border border-red-300 bg-red-50 rounded-md">
+            <h2 className="text-lg font-semibold text-red-800 mb-2">Dashboard Error</h2>
+            <p className="mb-4 text-red-700">There was an error loading the dashboard components.</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-md"
+            >
+              Reload Page
+            </button>
+          </div>
+        }
+      >
         <DashboardHeader 
           contentId={contentId}
           isRefreshingStats={isRefreshingStats}
           setIsRefreshingStats={setIsRefreshingStats}
         />
         
-        <DashboardTabs 
-          activeTab={activeTab}
-          contentId={contentId}
-          onTabChange={setActiveTab}
-          onTagGenerationComplete={handleTagGenerationComplete}
-          onMetadataChange={handleMetadataChange}
-          onSaveDraft={handleSaveDraft}
-          onPublish={handlePublish}
-        />
+        <ErrorBoundary
+          fallback={
+            <div className="p-6 border border-amber-300 bg-amber-50 rounded-md">
+              <h2 className="text-lg font-semibold text-amber-800 mb-2">Tab Content Error</h2>
+              <p className="mb-4 text-amber-700">There was an error loading this tab's content. Other tabs may still work.</p>
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setActiveTab("tag-generator")}
+                  className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-md"
+                >
+                  Try Tag Generator
+                </button>
+                <button 
+                  onClick={() => setActiveTab("metadata")}
+                  className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-md"
+                >
+                  Try Metadata
+                </button>
+                <button 
+                  onClick={() => setActiveTab("editor")}
+                  className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-md"
+                >
+                  Try Editor
+                </button>
+              </div>
+            </div>
+          }
+        >
+          <DashboardTabs 
+            activeTab={activeTab}
+            contentId={contentId}
+            onTabChange={setActiveTab}
+            onTagGenerationComplete={handleTagGenerationComplete}
+            onMetadataChange={handleMetadataChange}
+            onSaveDraft={handleSaveDraft}
+            onPublish={handlePublish}
+          />
+        </ErrorBoundary>
       </ErrorBoundary>
     </div>
   );

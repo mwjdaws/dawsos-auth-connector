@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { generateTags } from "@/utils/supabase-functions";
@@ -12,6 +12,7 @@ import { useTagCache } from "./useTagCache";
 export function useSaveTags() {
   const [isRetrying, setIsRetrying] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
   
   const { validateTags } = useTagValidator();
   const { processBatch } = useBatchProcessor();
@@ -19,10 +20,10 @@ export function useSaveTags() {
   
   // Cleanup function to cancel any in-flight requests when component unmounts
   useEffect(() => {
-    const abortController = new AbortController();
-    
     return () => {
-      abortController.abort();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
   }, []);
 
@@ -45,14 +46,37 @@ export function useSaveTags() {
 
     // Validate input tags
     if (!validateTags(tags)) {
+      handleError(
+        new Error("Invalid tags format"),
+        "The tags format is invalid. Please try regenerating the tags.",
+        { level: "warning" }
+      );
+      return false;
+    }
+
+    // Prevent concurrent operations
+    if (isProcessing) {
+      toast({
+        title: "Operation in Progress",
+        description: "Please wait for the current operation to complete",
+      });
       return false;
     }
 
     setIsProcessing(true);
     
-    // Create an AbortController to handle timeouts and cancellations
-    const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), 30000); // 30 second timeout
+    // Create a new AbortController for this operation
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    
+    // Create a timeout that will automatically abort the operation after 30 seconds
+    const timeoutId = setTimeout(() => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    }, 30000);
     
     try {
       // Generate a valid content ID if not already present
@@ -104,7 +128,7 @@ export function useSaveTags() {
       clearTimeout(timeoutId);
       
       if (!result.success) {
-        throw new Error("Failed to insert all tag batches");
+        throw new Error(`Failed to insert all tag batches: ${result.error || "Unknown error"}`);
       }
       
       console.log(`Tags inserted successfully: ${result.count} tags`);
@@ -126,6 +150,16 @@ export function useSaveTags() {
       
       console.error("Error saving tags:", error);
       
+      // Check if it was intentionally aborted
+      if (error.name === "AbortError") {
+        handleError(
+          error,
+          "Operation timed out. Please try again.",
+          { level: "error" }
+        );
+        return false;
+      }
+      
       // Provide more specific error messages based on error type
       let errorMessage = "Failed to save tags. Please try again.";
       let shouldRetry = maxRetries > 0 && !isRetrying;
@@ -146,15 +180,11 @@ export function useSaveTags() {
         errorMessage = error.message;
       }
       
-      // Enhanced error handling with abort status detection
-      if (error.name === "AbortError") {
-        errorMessage = "Operation timed out. Please try again.";
-      }
-      
       handleError(
         error,
         errorMessage,
         { 
+          level: "error",
           actionLabel: shouldRetry ? "Retry" : undefined,
           action: shouldRetry ? async () => {
             setIsRetrying(true);
@@ -172,7 +202,17 @@ export function useSaveTags() {
       
       return false;
     }
-  }, [validateTags, isRetrying, processBatch, checkCache, updateCache]);
+  }, [validateTags, isRetrying, processBatch, checkCache, updateCache, isProcessing]);
 
-  return { saveTags, isRetrying, isProcessing };
+  return { 
+    saveTags, 
+    isRetrying, 
+    isProcessing,
+    cancelOperation: () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        setIsProcessing(false);
+      }
+    }
+  };
 }

@@ -1,22 +1,17 @@
 
-import { useTransition } from 'react';
-import { useDocumentOperations } from './useDocumentOperations';
-import { useTemplateHandling } from './useTemplateHandling';
-import { useAutosave } from './useAutosave';
+import { useEffect } from 'react';
 import { useContentState } from './useContentState';
 import { useContentLoader } from './useContentLoader';
+import { useDocumentOperations } from './useDocumentOperations';
 import { useDocumentOperationHandlers } from './useDocumentOperationHandlers';
+import { useTemplateHandling } from './useTemplateHandling';
+import { useAutosave } from './useAutosave';
+import { MarkdownEditorProps } from './types';
+import { handleError } from '@/utils/error-handling';
 
-interface UseMarkdownEditorProps {
-  initialTitle?: string;
-  initialContent?: string;
-  initialTemplateId?: string | null;
-  documentId?: string;
-  sourceId?: string; // For loading existing content
-  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null) => void;
-  onPublish?: (id: string, title: string, content: string, templateId: string | null) => void;
-}
-
+/**
+ * Main orchestration hook for the markdown editor
+ */
 export const useMarkdownEditor = ({
   initialTitle = '',
   initialContent = '',
@@ -25,10 +20,7 @@ export const useMarkdownEditor = ({
   sourceId,
   onSaveDraft,
   onPublish
-}: UseMarkdownEditorProps) => {
-  // Use transition for UI updates
-  const [isPending, startTransition] = useTransition();
-  
+}: MarkdownEditorProps) => {
   // Content state management
   const {
     title,
@@ -39,21 +31,19 @@ export const useMarkdownEditor = ({
     setTemplateId,
     isDirty,
     setIsDirty,
+    isPublished,
+    setIsPublished,
     lastSavedTitle,
     setLastSavedTitle,
     lastSavedContent,
-    setLastSavedContent,
-    isPublished,
-    setIsPublished
+    setLastSavedContent
   } = useContentState({
     initialTitle,
     initialContent,
-    initialTemplateId,
-    sourceId,
-    documentId
+    initialTemplateId
   });
 
-  // Content loading
+  // Load existing content
   const { isLoading } = useContentLoader({
     sourceId,
     setTitle,
@@ -65,12 +55,6 @@ export const useMarkdownEditor = ({
     setIsDirty
   });
 
-  // Template handling
-  const {
-    isLoadingTemplate,
-    handleTemplateChange
-  } = useTemplateHandling(setTitle, setContent, setIsDirty);
-
   // Document operations
   const {
     isSaving,
@@ -78,12 +62,12 @@ export const useMarkdownEditor = ({
     saveDraft,
     publishDocument
   } = useDocumentOperations({
-    documentId: documentId || sourceId, // Use sourceId if documentId is not provided
+    documentId,
     onSaveDraft,
     onPublish
   });
 
-  // Document operation handlers
+  // Operation handlers (with UI feedback)
   const {
     handleSaveDraft,
     handlePublish
@@ -102,27 +86,59 @@ export const useMarkdownEditor = ({
     onPublish
   });
 
-  // Set up autosave
+  // Template handling
+  const {
+    isLoadingTemplate,
+    handleTemplateChange
+  } = useTemplateHandling({
+    setTitle,
+    setContent,
+    setTemplateId,
+    setIsDirty
+  });
+
+  // Configure autosave
   useAutosave({
     isDirty,
     isSaving,
     isPublishing,
-    documentId: documentId || sourceId, // Use sourceId if documentId is not provided
-    onSave: () => handleSaveDraft(true)
+    documentId: documentId || sourceId,
+    onSave: () => handleSaveDraft(true),
+    interval: 30000, // Increased to 30 seconds to reduce save frequency
+    enabled: !!documentId || !!sourceId // Only enable when we have a valid document
   });
 
+  // Initialize content when props change
+  useEffect(() => {
+    try {
+      setTitle(initialTitle);
+      setContent(initialContent);
+      setTemplateId(initialTemplateId);
+      setLastSavedTitle(initialTitle);
+      setLastSavedContent(initialContent);
+      setIsDirty(false);
+    } catch (error) {
+      handleError(error, "Error initializing editor content");
+    }
+  }, [initialTitle, initialContent, initialTemplateId]);
+
   return {
+    // Content state
     title,
     setTitle,
     content,
     setContent,
     templateId,
+    
+    // Operation states
     isLoadingTemplate,
     isSaving,
     isPublishing,
     isDirty,
     isPublished,
     isLoading,
+    
+    // Operations
     handleSaveDraft,
     handlePublish,
     handleTemplateChange

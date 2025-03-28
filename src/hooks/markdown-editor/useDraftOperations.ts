@@ -28,22 +28,22 @@ export const useDraftOperations = ({ createVersion }: DraftOperationsContext) =>
   ): Promise<SaveDraftResult> => {
     if (!title.trim()) {
       if (!isAutoSave) {
-        toast({
-          title: "Title Required",
-          description: "Please enter a title before saving",
-          variant: "destructive",
-        });
+        handleError(
+          new Error("Title is required"),
+          "Please enter a title before saving",
+          { level: "warning" }
+        );
       }
       return { success: false, documentId: null, error: "Title is required" };
     }
 
     if (!userId) {
       if (!isAutoSave) {
-        toast({
-          title: "Authentication Required",
-          description: "You must be logged in to save content",
-          variant: "destructive",
-        });
+        handleError(
+          new Error("Authentication required"),
+          "You must be logged in to save content",
+          { level: "error" }
+        );
       }
       return { success: false, documentId: null, error: "Authentication required" };
     }
@@ -76,8 +76,13 @@ export const useDraftOperations = ({ createVersion }: DraftOperationsContext) =>
       if (documentId) {
         console.log("Updating existing document ID:", documentId);
         
-        // Before updating the document, create a version of the current content
-        await createVersion(documentId, isAutoSave);
+        try {
+          // Before updating the document, create a version of the current content
+          await createVersion(documentId, isAutoSave);
+        } catch (versionError) {
+          // Don't let version creation failure stop the save process
+          console.error("Failed to create version before saving:", versionError);
+        }
 
         // Get existing publish status to preserve it
         const { data: existingData, error: fetchError } = await supabase
@@ -132,30 +137,35 @@ export const useDraftOperations = ({ createVersion }: DraftOperationsContext) =>
       console.log("Document saved with ID:", savedDocumentId);
 
       // Verify saved data
-      const { data: verifyData, error: verifyError } = await supabase
-        .from('knowledge_sources')
-        .select('user_id, published')
-        .eq('id', savedDocumentId)
-        .single();
+      try {
+        const { data: verifyData, error: verifyError } = await supabase
+          .from('knowledge_sources')
+          .select('user_id, published')
+          .eq('id', savedDocumentId)
+          .single();
 
-      if (verifyError) {
-        console.warn("Error verifying saved data:", verifyError);
-      } else {
-        console.log("Saved draft data:", verifyData);
-        
-        // Ensure user_id is set correctly
-        if (!verifyData.user_id) {
-          const { error: fixError } = await supabase
-            .from('knowledge_sources')
-            .update({ user_id: userId })
-            .eq('id', savedDocumentId);
-            
-          if (fixError) {
-            console.error("Failed to fix missing user_id:", fixError);
-          } else {
-            console.log("Fixed missing user_id for document:", savedDocumentId);
+        if (verifyError) {
+          console.warn("Error verifying saved data:", verifyError);
+        } else {
+          console.log("Saved draft data:", verifyData);
+          
+          // Ensure user_id is set correctly
+          if (!verifyData.user_id) {
+            const { error: fixError } = await supabase
+              .from('knowledge_sources')
+              .update({ user_id: userId })
+              .eq('id', savedDocumentId);
+              
+            if (fixError) {
+              console.error("Failed to fix missing user_id:", fixError);
+            } else {
+              console.log("Fixed missing user_id for document:", savedDocumentId);
+            }
           }
         }
+      } catch (verifyError) {
+        // Don't let verification failure stop the save process
+        console.error("Error during save verification:", verifyError);
       }
 
       if (!isAutoSave) {
@@ -168,6 +178,7 @@ export const useDraftOperations = ({ createVersion }: DraftOperationsContext) =>
       return { success: true, documentId: savedDocumentId };
     } catch (error) {
       console.error('Error saving draft:', error);
+      
       if (!isAutoSave) {
         handleError(
           error,
@@ -179,6 +190,7 @@ export const useDraftOperations = ({ createVersion }: DraftOperationsContext) =>
           }
         );
       }
+      
       return { success: false, documentId: null, error };
     }
   };

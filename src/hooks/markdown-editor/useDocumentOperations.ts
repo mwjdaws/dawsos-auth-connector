@@ -4,6 +4,7 @@ import { useDocumentVersioning } from './useDocumentVersioning';
 import { useDraftOperations } from './useDraftOperations';
 import { usePublishOperations } from './usePublishOperations';
 import { DocumentOperationsProps } from './types';
+import { handleError } from '@/utils/error-handling';
 
 /**
  * Main hook for document operations including saving and publishing
@@ -39,6 +40,13 @@ export const useDocumentOperations = ({
       }
       
       return result.documentId;
+    } catch (error) {
+      handleError(
+        error, 
+        "An unexpected error occurred while saving the draft", 
+        { level: "error", technical: false }
+      );
+      return null;
     } finally {
       setIsSaving(false);
     }
@@ -68,6 +76,13 @@ export const useDocumentOperations = ({
       }
       
       return result;
+    } catch (error) {
+      handleError(
+        error, 
+        "An unexpected error occurred while publishing the document", 
+        { level: "error", technical: false }
+      );
+      return { success: false, error };
     } finally {
       setIsPublishing(false);
     }

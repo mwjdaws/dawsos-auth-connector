@@ -28,20 +28,20 @@ export function TagSaver({
   // Optimized tag saving with better error handling
   const handleSaveTags = useCallback(async () => {
     if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to save tags",
-        variant: "destructive",
-      });
+      handleError(
+        new Error("Authentication required"),
+        "Please log in to save tags",
+        { level: "error" }
+      );
       return;
     }
 
     if (tags.length === 0) {
-      toast({
-        title: "No Tags",
-        description: "Please generate some tags before saving",
-        variant: "destructive",
-      });
+      handleError(
+        new Error("No tags to save"),
+        "Please generate some tags before saving",
+        { level: "warning" }
+      );
       return;
     }
 
@@ -55,19 +55,20 @@ export function TagSaver({
     }
 
     setIsSaving(true);
+    
+    // Add a timeout to prevent UI from being stuck in saving state
+    const timeoutId = setTimeout(() => {
+      if (isSaving) {
+        setIsSaving(false);
+        toast({
+          title: "Operation Timeout",
+          description: "The save operation is taking longer than expected. It may still complete in the background.",
+          variant: "default",
+        });
+      }
+    }, 10000);
+    
     try {
-      // Add a timeout to prevent UI from being stuck in saving state
-      const timeoutId = setTimeout(() => {
-        if (isSaving) {
-          setIsSaving(false);
-          toast({
-            title: "Operation Timeout",
-            description: "The save operation is taking longer than expected. It may still complete in the background.",
-            variant: "default",
-          });
-        }
-      }, 10000);
-      
       const success = await saveTags("", tags, { 
         contentId,
         maxRetries: isRetrying ? 0 : 1
@@ -84,10 +85,22 @@ export function TagSaver({
           description: `${tags.length} tags saved successfully`,
           variant: "default",
         });
+      } else if (!success) {
+        throw new Error("Failed to save tags - operation returned failure status");
       }
     } catch (error) {
-      handleError(error, "Failed to save tags");
+      clearTimeout(timeoutId);
+      handleError(
+        error, 
+        "Failed to save tags", 
+        {
+          level: "error",
+          actionLabel: "Retry",
+          action: handleSaveTags
+        }
+      );
     } finally {
+      clearTimeout(timeoutId);
       setIsSaving(false);
     }
   }, [user, tags, contentId, saveTags, isRetrying, isProcessing, onTagsSaved, isSaving]);
