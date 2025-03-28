@@ -29,6 +29,9 @@ export function TagList({
     // Only fetch related tags if we have a valid knowledge source ID and some tags
     if (knowledgeSourceId && tags.length > 0 && !knowledgeSourceId.startsWith('temp-')) {
       fetchRelatedTags();
+    } else {
+      // Reset related tags when no valid content ID
+      setRelatedTags([]);
     }
   }, [knowledgeSourceId, tags]);
 
@@ -94,6 +97,7 @@ export function TagList({
     // Filter out certain tag formats that might come from OpenAI
     if (!tag || typeof tag !== 'string') return false;
     if (tag.startsWith('```') || tag.endsWith('```')) return false;
+    if (tag === "error" || tag === "fallback" || tag === "timeout" || tag === "network") return false;
     if (tag.startsWith('"') && tag.endsWith('"')) return true;
     return true;
   }).map(tag => {

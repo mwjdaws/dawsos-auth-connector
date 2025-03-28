@@ -1,8 +1,4 @@
 
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
-
 import "https://deno.land/x/xhr@0.3.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.1";
@@ -13,8 +9,11 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log("suggest-tags function called");
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log("Handling OPTIONS request");
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -22,16 +21,31 @@ serve(async (req) => {
     // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    
+    console.log("Creating Supabase client with URL:", supabaseUrl ? "URL provided" : "URL missing");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Extract request data
-    const { queryText, contentId } = await req.json();
+    let requestData;
+    try {
+      requestData = await req.json();
+      console.log("Request data received:", JSON.stringify(requestData));
+    } catch (parseError) {
+      console.error("Error parsing request data:", parseError);
+      throw new Error("Failed to parse request data: " + parseError.message);
+    }
+    
+    const { queryText, contentId } = requestData;
 
     if (!queryText) {
+      console.error("Query text is missing");
       throw new Error('Query text is required');
     }
 
+    console.log(`Processing suggest-tags for text: "${queryText.substring(0, 50)}..." and contentId: ${contentId || 'none'}`);
+
     // Fetch popular tags from the database
+    console.log("Fetching popular tags from database");
     const { data: popularTags, error: tagsError } = await supabase
       .from('tags')
       .select('name, count(*)')
@@ -39,8 +53,11 @@ serve(async (req) => {
       .limit(20);
 
     if (tagsError) {
+      console.error("Error fetching popular tags:", tagsError);
       throw tagsError;
     }
+
+    console.log(`Found ${popularTags?.length || 0} popular tags`);
 
     // Simple algorithm to suggest tags based on query text and popular tags
     const words = queryText.toLowerCase().split(/\W+/).filter(w => w.length > 3);
@@ -62,9 +79,11 @@ serve(async (req) => {
 
     // Convert set to array and limit to 10 tags
     const suggestedTagsArray = Array.from(suggestedTags).slice(0, 10);
+    console.log("Suggested tags:", suggestedTagsArray);
 
     // If contentId is provided, save these tags to the database
     if (contentId) {
+      console.log(`Saving ${suggestedTagsArray.length} tags for contentId: ${contentId}`);
       const tagsToInsert = suggestedTagsArray.map(tag => ({
         name: tag,
         content_id: contentId
@@ -76,6 +95,8 @@ serve(async (req) => {
 
       if (insertError) {
         console.error('Error inserting tags:', insertError);
+      } else {
+        console.log("Tags inserted successfully");
       }
     }
 

@@ -15,6 +15,8 @@ serve(async (req: Request) => {
   }
   
   try {
+    console.log("get-related-tags function called");
+    
     // Create Supabase client with Deno runtime
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -31,18 +33,25 @@ serve(async (req: Request) => {
     
     // Check if we're getting params from the request body
     if (req.body) {
-      const body = await req.json();
-      knowledgeSourceId = body.knowledgeSourceId;
+      try {
+        const body = await req.json();
+        knowledgeSourceId = body.knowledgeSourceId;
+        console.log("Received request body:", JSON.stringify(body));
+      } catch (parseError) {
+        console.error("Error parsing request body:", parseError);
+      }
     }
     
     // If not in body, try URL params
     if (!knowledgeSourceId) {
       const url = new URL(req.url);
       knowledgeSourceId = url.searchParams.get("knowledgeSourceId");
+      console.log("Extracted from URL params:", knowledgeSourceId);
     }
     
     // Validate input
     if (!knowledgeSourceId) {
+      console.error("Missing required parameter: knowledgeSourceId");
       return new Response(
         JSON.stringify({ 
           error: "Missing required parameter: knowledgeSourceId" 
@@ -56,7 +65,6 @@ serve(async (req: Request) => {
     
     console.log(`Fetching related tags for knowledge source ID: ${knowledgeSourceId}`);
     
-    // We need to handle both UUID and string format content IDs
     // First, get the tags for this content
     const { data, error } = await supabaseClient
       .from('tags')
@@ -69,7 +77,8 @@ serve(async (req: Request) => {
         JSON.stringify({ 
           error: "Failed to fetch tags",
           details: error.message,
-          code: error.code || "UNKNOWN_ERROR"
+          code: error.code || "UNKNOWN_ERROR",
+          tags: [] // Always include empty tags array in error responses
         }),
         { 
           status: 500, 
@@ -80,9 +89,11 @@ serve(async (req: Request) => {
     
     // Get tag names for this content
     const contentTags = data.map(item => item.name);
+    console.log("Content tags found:", contentTags);
     
     // If we have no tags for this content, return empty array
     if (contentTags.length === 0) {
+      console.log("No tags found for this content, returning empty array");
       return new Response(
         JSON.stringify({ tags: [] }),
         { 
@@ -112,9 +123,11 @@ serve(async (req: Request) => {
     
     // Get unique content IDs
     const similarContentIds = [...new Set(similarContent.map(item => item.content_id))];
+    console.log("Similar content IDs found:", similarContentIds);
     
     // If no similar content found
     if (similarContentIds.length === 0) {
+      console.log("No similar content found, returning empty array");
       return new Response(
         JSON.stringify({ tags: [] }),
         { 
@@ -145,7 +158,7 @@ serve(async (req: Request) => {
     
     // Format the response
     const uniqueRelatedTags = [...new Set(relatedTags.map(item => item.name))];
-    console.log(`Found ${uniqueRelatedTags.length} related tags`);
+    console.log(`Found ${uniqueRelatedTags.length} related tags:`, uniqueRelatedTags);
     
     return new Response(
       JSON.stringify({ tags: uniqueRelatedTags }),
@@ -155,13 +168,14 @@ serve(async (req: Request) => {
       }
     );
   } catch (error) {
-    console.error("Unhandled error:", error.message);
+    console.error("Unhandled error:", error.message, error.stack);
     
     return new Response(
       JSON.stringify({ 
         error: "Internal server error", 
         details: error.message,
-        stack: error.stack
+        stack: error.stack,
+        tags: [] // Always include empty tags array in error responses
       }),
       { 
         status: 500, 
