@@ -3,12 +3,20 @@ import { useState } from 'react';
 import { fetchKnowledgeTemplateById } from '@/services/api/templates/knowledgeTemplateFetchers';
 import { toast } from '@/hooks/use-toast';
 
-export const useTemplateHandling = (
-  setTitle: (title: string) => void,
-  setContent: (content: string) => void,
-  setIsDirty: (isDirty: boolean) => void
-) => {
-  const [templateId, setTemplateId] = useState<string | null>(null);
+interface UseTemplateHandlingProps {
+  setTitle: (title: string) => void;
+  setContent: (content: string) => void;
+  setTemplateId?: (id: string | null) => void;
+  setIsDirty: (isDirty: boolean) => void;
+}
+
+export const useTemplateHandling = ({
+  setTitle,
+  setContent,
+  setTemplateId,
+  setIsDirty
+}: UseTemplateHandlingProps) => {
+  const [templateId, setLocalTemplateId] = useState<string | null>(null);
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
 
   /**
@@ -17,14 +25,21 @@ export const useTemplateHandling = (
    */
   const handleTemplateChange = async (value: string) => {
     if (value === 'none') {
-      setTemplateId(null);
+      if (setTemplateId) {
+        setTemplateId(null);
+      }
+      setLocalTemplateId(null);
       return;
     }
 
     setIsLoadingTemplate(true);
     try {
       const template = await fetchKnowledgeTemplateById(value);
-      setTemplateId(template.id);
+      
+      if (setTemplateId) {
+        setTemplateId(template.id);
+      }
+      setLocalTemplateId(template.id);
       setTitle(template.name);
       setContent(template.content);
       
@@ -48,8 +63,8 @@ export const useTemplateHandling = (
   };
 
   return {
-    templateId,
-    setTemplateId,
+    templateId: templateId,
+    setTemplateId: setLocalTemplateId,
     isLoadingTemplate,
     handleTemplateChange
   };
