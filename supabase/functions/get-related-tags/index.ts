@@ -26,9 +26,20 @@ serve(async (req: Request) => {
       }
     );
     
-    // Parse request URL to get query parameters
-    const url = new URL(req.url);
-    const knowledgeSourceId = url.searchParams.get("knowledgeSourceId");
+    // Parse request body to get knowledgeSourceId
+    let knowledgeSourceId: string | null = null;
+    
+    // Check if we're getting params from the request body
+    if (req.body) {
+      const body = await req.json();
+      knowledgeSourceId = body.knowledgeSourceId;
+    }
+    
+    // If not in body, try URL params
+    if (!knowledgeSourceId) {
+      const url = new URL(req.url);
+      knowledgeSourceId = url.searchParams.get("knowledgeSourceId");
+    }
     
     // Validate input
     if (!knowledgeSourceId) {

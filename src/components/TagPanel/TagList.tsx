@@ -35,9 +35,9 @@ export function TagList({
     const fetchRelatedTags = async () => {
       setIsRelatedLoading(true);
       try {
-        // Use the Supabase edge function to get related tags
+        // Fixed: Using the correct params structure for invoking the function
         const { data, error } = await supabase.functions.invoke('get-related-tags', {
-          query: { knowledgeSourceId }
+          body: { knowledgeSourceId }
         });
         
         if (error) {
