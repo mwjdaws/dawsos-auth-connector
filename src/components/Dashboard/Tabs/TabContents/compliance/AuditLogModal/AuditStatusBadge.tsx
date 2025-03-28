@@ -2,8 +2,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, AlertTriangle, X } from "lucide-react";
-
-export type AuditStatus = 'success' | 'error' | 'unchanged' | 'changed';
+import { AuditStatus } from "@/services/supabase/audit-logs";
 
 interface AuditStatusBadgeProps {
   status: AuditStatus;
@@ -40,9 +39,10 @@ export function AuditStatusBadge({ status }: AuditStatusBadgeProps) {
         </Badge>
       );
     default:
+      // This case shouldn't happen due to TypeScript's exhaustive checking
       return (
         <Badge variant="outline">
-          {status}
+          Unknown
         </Badge>
       );
   }

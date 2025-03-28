@@ -16,6 +16,29 @@ export interface ExternalLinkAudit {
 }
 
 /**
+ * Validates that a string is a valid AuditStatus
+ */
+function isValidAuditStatus(status: string): status is AuditStatus {
+  return ['success', 'error', 'unchanged', 'changed'].includes(status);
+}
+
+/**
+ * Transforms raw database record to typed ExternalLinkAudit
+ */
+function transformAuditRecord(record: any): ExternalLinkAudit {
+  const status = record.status;
+  
+  if (!isValidAuditStatus(status)) {
+    console.warn(`Invalid audit status received: ${status}, defaulting to 'error'`);
+  }
+  
+  return {
+    ...record,
+    status: isValidAuditStatus(status) ? status : 'error'
+  };
+}
+
+/**
  * Fetches audit logs for a specific knowledge source
  */
 export async function fetchAuditLogs(knowledgeSourceId: string): Promise<ExternalLinkAudit[]> {
@@ -30,7 +53,8 @@ export async function fetchAuditLogs(knowledgeSourceId: string): Promise<Externa
       throw error;
     }
     
-    return data as ExternalLinkAudit[] || [];
+    // Transform raw data to properly typed records
+    return (data || []).map(transformAuditRecord);
   } catch (error) {
     console.error('Failed to fetch audit logs:', error);
     handleError(error, "Failed to fetch audit logs");
@@ -60,7 +84,10 @@ export async function fetchLatestAuditLogs(knowledgeSourceIds: string[]): Promis
     
     // Group by knowledge_source_id and take the latest entry
     const latestAudits: Record<string, ExternalLinkAudit> = {};
-    (data as ExternalLinkAudit[])?.forEach(audit => {
+    
+    // Apply transformation to each record before storing
+    (data || []).forEach(record => {
+      const audit = transformAuditRecord(record);
       if (!latestAudits[audit.knowledge_source_id] || 
           new Date(audit.checked_at) > new Date(latestAudits[audit.knowledge_source_id].checked_at)) {
         latestAudits[audit.knowledge_source_id] = audit;
@@ -100,7 +127,8 @@ export async function createAuditLog(
       throw error;
     }
     
-    return data as ExternalLinkAudit;
+    // Ensure returned data is properly typed
+    return transformAuditRecord(data);
   } catch (error) {
     console.error('Failed to create audit log:', error);
     toast({
