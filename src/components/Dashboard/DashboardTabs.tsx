@@ -109,6 +109,7 @@ console.log(greeting);
                 initialTitle="Draft Document"
                 initialContent={sampleMarkdown}
                 initialTemplateId={null}
+                sourceId={contentId !== `temp-${Date.now()}` ? contentId : undefined}
                 onSaveDraft={onSaveDraft}
                 onPublish={onPublish}
               />

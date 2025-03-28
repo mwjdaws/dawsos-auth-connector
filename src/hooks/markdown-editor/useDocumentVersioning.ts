@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { createKnowledgeSourceVersion } from '@/services/api/knowledgeSourceVersions';
+import { createKnowledgeSourceVersion, restoreKnowledgeSourceVersion } from '@/services/api/knowledgeSourceVersions';
 import { toast } from '@/hooks/use-toast';
 
 interface DocumentData {
@@ -92,8 +92,55 @@ export const useDocumentVersioning = () => {
     }
   };
 
+  /**
+   * Restores a specific version of a document
+   * @param versionId The version ID to restore
+   */
+  const restoreVersion = async (versionId: string) => {
+    try {
+      // First create a new version of the current state as a backup
+      const { data: versionData, error: versionError } = await supabase
+        .from('knowledge_source_versions')
+        .select('source_id')
+        .eq('id', versionId)
+        .single();
+        
+      if (versionError) {
+        throw new Error(`Failed to get version info: ${versionError.message}`);
+      }
+      
+      // Create a backup of the current state
+      const backupCreated = await createVersion(versionData.source_id, false, {
+        restore_operation: `backup_before_restoring_${versionId}`
+      });
+      
+      if (!backupCreated) {
+        console.warn('Could not create backup before restoring version');
+      }
+      
+      // Now restore the version
+      await restoreKnowledgeSourceVersion(versionId);
+      
+      toast({
+        title: "Version Restored",
+        description: "The selected version has been restored successfully",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error restoring version:', error);
+      toast({
+        title: "Error Restoring Version",
+        description: "Failed to restore the selected version",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   return {
     createVersion,
-    loadVersion
+    loadVersion,
+    restoreVersion
   };
 };
