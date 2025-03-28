@@ -5,12 +5,14 @@ import { useDocumentOperations } from './useDocumentOperations';
 import { useTemplateHandling } from './useTemplateHandling';
 import { useAutosave } from './useAutosave';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 interface UseMarkdownEditorProps {
   initialTitle?: string;
   initialContent?: string;
   initialTemplateId?: string | null;
   documentId?: string;
+  sourceId?: string; // New prop for loading existing content
   onSaveDraft?: (id: string, title: string, content: string, templateId: string | null) => void;
   onPublish?: (id: string, title: string, content: string, templateId: string | null) => void;
 }
@@ -20,6 +22,7 @@ export const useMarkdownEditor = ({
   initialContent = '',
   initialTemplateId = null,
   documentId,
+  sourceId, // Accept sourceId parameter
   onSaveDraft,
   onPublish
 }: UseMarkdownEditorProps) => {
@@ -30,6 +33,7 @@ export const useMarkdownEditor = ({
   const [lastSavedTitle, setLastSavedTitle] = useState(initialTitle);
   const [lastSavedContent, setLastSavedContent] = useState(initialContent);
   const [isPublished, setIsPublished] = useState(false);
+  const [isLoading, setIsLoading] = useState(!!sourceId); // Set loading state if we need to fetch content
   const { user } = useAuth();
   
   // Use our utility hooks
@@ -46,20 +50,63 @@ export const useMarkdownEditor = ({
     saveDraft,
     publishDocument
   } = useDocumentOperations({
-    documentId,
+    documentId: documentId || sourceId, // Use sourceId as documentId if provided
     onSaveDraft,
     onPublish
   });
 
+  // Load existing content if sourceId is provided
+  useEffect(() => {
+    const fetchExistingContent = async () => {
+      if (sourceId) {
+        try {
+          setIsLoading(true);
+          const { data, error } = await supabase
+            .from('knowledge_sources')
+            .select('title, content, template_id, published')
+            .eq('id', sourceId)
+            .single();
+
+          if (error) {
+            throw error;
+          }
+
+          if (data) {
+            setTitle(data.title);
+            setContent(data.content);
+            setTemplateId(data.template_id);
+            setLastSavedTitle(data.title);
+            setLastSavedContent(data.content);
+            setIsPublished(!!data.published);
+            setIsDirty(false);
+          }
+        } catch (error) {
+          console.error('Error loading existing content:', error);
+          toast({
+            title: "Error Loading Content",
+            description: "There was an error loading the existing content. Please try again.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchExistingContent();
+  }, [sourceId]);
+
   // Update state if props change (e.g., when loading a saved draft)
   useEffect(() => {
-    setTitle(initialTitle);
-    setContent(initialContent);
-    setTemplateId(initialTemplateId);
-    setLastSavedTitle(initialTitle);
-    setLastSavedContent(initialContent);
-    setIsDirty(false);
-  }, [initialTitle, initialContent, initialTemplateId]);
+    if (!sourceId) { // Don't override fetched content with initialValues
+      setTitle(initialTitle);
+      setContent(initialContent);
+      setTemplateId(initialTemplateId);
+      setLastSavedTitle(initialTitle);
+      setLastSavedContent(initialContent);
+      setIsDirty(false);
+    }
+  }, [initialTitle, initialContent, initialTemplateId, sourceId]);
 
   // Track changes to mark document as dirty when content changes
   useEffect(() => {
@@ -72,12 +119,13 @@ export const useMarkdownEditor = ({
 
   // Fetch published status when document loads
   useEffect(() => {
-    if (documentId) {
+    const documentToCheck = documentId || sourceId;
+    if (documentToCheck) {
       const fetchPublishStatus = async () => {
         const { data, error } = await supabase
           .from('knowledge_sources')
           .select('published')
-          .eq('id', documentId)
+          .eq('id', documentToCheck)
           .single();
         
         if (!error && data) {
@@ -89,7 +137,7 @@ export const useMarkdownEditor = ({
     } else {
       setIsPublished(false);
     }
-  }, [documentId]);
+  }, [documentId, sourceId]);
 
   // Handle save draft wrapper
   const handleSaveDraft = async (isAutoSave = false) => {
@@ -114,7 +162,7 @@ export const useMarkdownEditor = ({
     isDirty,
     isSaving,
     isPublishing,
-    documentId,
+    documentId: documentId || sourceId, // Use sourceId if documentId is not provided
     onSave: () => handleSaveDraft(true)
   });
 
@@ -129,6 +177,7 @@ export const useMarkdownEditor = ({
     isPublishing,
     isDirty,
     isPublished,
+    isLoading, // Export loading state
     handleSaveDraft,
     handlePublish,
     handleTemplateChange

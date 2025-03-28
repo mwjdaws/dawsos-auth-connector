@@ -7,12 +7,14 @@ import EditorHeader from './EditorHeader';
 import MarkdownContent from './MarkdownContent';
 import MarkdownPreview from './MarkdownPreview';
 import EditorActions from './EditorActions';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface MarkdownEditorProps {
   initialTitle?: string;
   initialContent?: string;
   initialTemplateId?: string | null;
   documentId?: string;
+  sourceId?: string; // New prop for loading existing content
   onSaveDraft?: (id: string, title: string, content: string, templateId: string | null) => void;
   onPublish?: (id: string, title: string, content: string, templateId: string | null) => void;
 }
@@ -22,6 +24,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   initialContent = '',
   initialTemplateId = null,
   documentId,
+  sourceId, // Accept the sourceId prop
   onSaveDraft,
   onPublish,
 }) => {
@@ -38,6 +41,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     isPublishing,
     isDirty,
     isPublished,
+    isLoading, // Loading state for content
     handleSaveDraft,
     handlePublish,
     handleTemplateChange
@@ -46,9 +50,24 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     initialContent,
     initialTemplateId,
     documentId,
+    sourceId, // Pass sourceId to the hook
     onSaveDraft,
     onPublish
   });
+
+  // Show loading state while fetching content
+  if (isLoading) {
+    return (
+      <div className="w-full space-y-4">
+        <Skeleton className="h-10 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Skeleton className="h-[500px] w-full" />
+          <Skeleton className="h-[500px] w-full" />
+        </div>
+        <Skeleton className="h-10 w-48 ml-auto" />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
