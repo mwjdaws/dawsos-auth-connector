@@ -9,20 +9,22 @@ interface TagListProps {
   isLoading: boolean; // Loading state for direct tags
   knowledgeSourceId?: string; // Optional ID for fetching related tags
   onTagClick?: (tag: string) => void; // Callback for tag clicks
+  skeletonCount?: number; // Optional prop to control the number of skeletons
 }
 
 export function TagList({ 
   tags, 
   isLoading, 
   knowledgeSourceId,
-  onTagClick = (tag) => console.log(`Tag clicked: ${tag}`)
+  onTagClick = (tag) => console.log(`Tag clicked: ${tag}`),
+  skeletonCount
 }: TagListProps) {
   const [relatedTags, setRelatedTags] = useState<string[]>([]);
   const [isRelatedLoading, setIsRelatedLoading] = useState<boolean>(false);
   
   // Calculate expected tag count based on content length or complexity
   // This is a placeholder implementation - in a real app, this could be based on content analysis
-  const expectedTagCount = tags.length > 0 ? tags.length : Math.floor(Math.random() * 4) + 3;
+  const expectedTagCount = skeletonCount || (tags.length > 0 ? tags.length : Math.floor(Math.random() * 4) + 3);
 
   // Fetch related tags based on ontology relationships
   useEffect(() => {
