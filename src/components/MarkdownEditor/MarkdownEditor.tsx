@@ -10,7 +10,8 @@ import EditorActions from './EditorActions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Maximize2, Minimize2 } from 'lucide-react';
+import { History, Maximize2, Minimize2 } from 'lucide-react';
+import { VersionHistoryModal } from './VersionHistoryModal';
 
 interface MarkdownEditorProps {
   initialTitle?: string;
@@ -34,6 +35,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   const { templates, isLoading: isLoadingTemplates } = useTemplates();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   
   const {
     title,
@@ -68,6 +70,15 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }
   };
 
+  // The document ID to use for version history (use sourceId if documentId is not provided)
+  const effectiveDocumentId = documentId || sourceId;
+
+  // Handle when a version is restored
+  const handleVersionRestore = () => {
+    // Reload the content to reflect the restored version
+    window.location.reload();
+  };
+
   // Show loading state while fetching content
   if (isLoading) {
     return (
@@ -93,16 +104,30 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           isLoadingTemplates={isLoadingTemplates}
           onTemplateChange={handleTemplateChange}
         />
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-1"
-          onClick={toggleFullscreen}
-          title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-        >
-          {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-          <span className="hidden sm:inline">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          {effectiveDocumentId && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1"
+              onClick={() => setIsHistoryOpen(true)}
+              title="View version history"
+            >
+              <History size={16} />
+              <span className="hidden sm:inline">History</span>
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={toggleFullscreen}
+            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          >
+            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            <span className="hidden sm:inline">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
+          </Button>
+        </div>
       </div>
 
       {isFullscreen ? (
@@ -146,6 +171,16 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         isDirty={isDirty}
         isPublished={isPublished}
       />
+
+      {/* Version History Modal */}
+      {effectiveDocumentId && (
+        <VersionHistoryModal
+          documentId={effectiveDocumentId}
+          isOpen={isHistoryOpen}
+          onClose={() => setIsHistoryOpen(false)}
+          onVersionRestore={handleVersionRestore}
+        />
+      )}
     </div>
   );
 };
