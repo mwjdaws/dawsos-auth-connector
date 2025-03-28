@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 interface TagGroup {
   content_id: string;
@@ -22,49 +23,69 @@ export function TagCards() {
     async function fetchTags() {
       try {
         setIsLoading(true);
+        setError(null);
         
-        // Get all unique content_ids
-        const { data: contentIds, error: contentIdError } = await supabase
+        console.log("TagCards: Fetching recent tag groups...");
+        
+        // Get recently tagged content IDs
+        const { data: recentTagsData, error: recentTagsError } = await supabase
           .from("tags")
-          .select("content_id")
+          .select("content_id, created_at")
           .not("content_id", "is", null)
-          .order("content_id", { ascending: false })
-          .limit(5);
-
-        if (contentIdError) throw contentIdError;
-
-        if (!contentIds || contentIds.length === 0) {
+          .order("created_at", { ascending: false })
+          .limit(20); // Fetch more to account for duplicates
+        
+        if (recentTagsError) {
+          console.error("TagCards: Error fetching recent tags:", recentTagsError);
+          throw recentTagsError;
+        }
+        
+        if (!recentTagsData || recentTagsData.length === 0) {
+          console.log("TagCards: No recent tags found");
           setTagGroups([]);
+          setIsLoading(false);
           return;
         }
-
-        // Get unique content_ids
-        const uniqueContentIds = [...new Set(contentIds.map(item => item.content_id))];
-
+        
+        // Extract unique content IDs (newest first)
+        const uniqueContentIds: string[] = [];
+        recentTagsData.forEach(item => {
+          if (item.content_id && !uniqueContentIds.includes(item.content_id)) {
+            uniqueContentIds.push(item.content_id);
+          }
+        });
+        
+        // Limit to 5 most recent unique content IDs
+        const recentUniqueContentIds = uniqueContentIds.slice(0, 5);
+        console.log("TagCards: Recent unique content IDs:", recentUniqueContentIds);
+        
         // Fetch all tags for these content_ids
         const tagGroupsData: TagGroup[] = [];
         
-        for (const contentId of uniqueContentIds) {
-          if (!contentId) continue;
-          
+        for (const contentId of recentUniqueContentIds) {
           const { data: tagData, error: tagError } = await supabase
             .from("tags")
             .select("name")
             .eq("content_id", contentId);
             
-          if (tagError) throw tagError;
+          if (tagError) {
+            console.error(`TagCards: Error fetching tags for contentId ${contentId}:`, tagError);
+            continue; // Skip this content ID but continue with others
+          }
           
           if (tagData && tagData.length > 0) {
             tagGroupsData.push({
               content_id: contentId,
               tags: tagData.map(tag => tag.name)
             });
+            console.log(`TagCards: Found ${tagData.length} tags for contentId ${contentId}`);
           }
         }
 
         setTagGroups(tagGroupsData);
+        console.log("TagCards: Loaded tag groups:", tagGroupsData);
       } catch (err) {
-        console.error("Error fetching tags:", err);
+        console.error("TagCards: Error in fetchTags:", err);
         setError("Failed to load tags. Please try again later.");
       } finally {
         setIsLoading(false);
@@ -75,6 +96,11 @@ export function TagCards() {
   }, [refreshKey]);
 
   const handleRefresh = () => {
+    console.log("TagCards: Manual refresh triggered");
+    toast({
+      title: "Refreshing",
+      description: "Updating recent tags..."
+    });
     setRefreshKey(prev => prev + 1);
   };
 
@@ -100,22 +126,50 @@ export function TagCards() {
   }
 
   if (error) {
-    return <div className="mt-6 text-red-500">{error}</div>;
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-end">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh} 
+            className="flex items-center"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Try Again
+          </Button>
+        </div>
+        <Card className="mt-2">
+          <CardContent className="p-6">
+            <div className="text-red-500">{error}</div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (tagGroups.length === 0) {
     return (
-      <Card className="mt-6">
-        <CardContent className="p-6">
-          <div className="flex flex-col items-center space-y-4 py-4">
-            <p className="text-center text-muted-foreground">No tags found. Generate and save some tags to see them here.</p>
-            <Button variant="outline" onClick={handleRefresh} className="flex items-center">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <div className="flex justify-end">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh} 
+            className="flex items-center"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
+        </div>
+        <Card className="mt-2">
+          <CardContent className="p-6">
+            <div className="flex flex-col items-center space-y-4 py-4">
+              <p className="text-center text-muted-foreground">No tags found. Generate and save some tags to see them here.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -134,14 +188,17 @@ export function TagCards() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {tagGroups.map((group, index) => (
-          <Card key={index}>
+          <Card key={`${group.content_id}-${index}`}>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Content ID: {group.content_id}</CardTitle>
+              <CardTitle className="text-sm font-medium truncate">
+                Content ID: {group.content_id.substring(0, 20)}
+                {group.content_id.length > 20 ? '...' : ''}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {group.tags.map((tag, tagIndex) => (
-                  <Badge key={tagIndex} variant="secondary">{tag}</Badge>
+                  <Badge key={`${tag}-${tagIndex}`} variant="secondary">{tag}</Badge>
                 ))}
               </div>
             </CardContent>
