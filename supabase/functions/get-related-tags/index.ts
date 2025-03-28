@@ -56,17 +56,18 @@ serve(async (req: Request) => {
     
     console.log(`Fetching related tags for knowledge source ID: ${knowledgeSourceId}`);
     
-    // Instead of using the database function, directly query the tags and tag_relations tables
+    // We need to handle both UUID and string format content IDs
+    // First, get the tags for this content
     const { data, error } = await supabaseClient
       .from('tags')
       .select('name')
       .eq('content_id', knowledgeSourceId);
     
     if (error) {
-      console.error("Error fetching related tags:", error);
+      console.error("Error fetching tags:", error);
       return new Response(
         JSON.stringify({ 
-          error: "Failed to fetch related tags",
+          error: "Failed to fetch tags",
           details: error.message,
           code: error.code || "UNKNOWN_ERROR"
         }),
