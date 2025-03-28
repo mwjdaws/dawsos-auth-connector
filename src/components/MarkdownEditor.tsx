@@ -16,19 +16,23 @@ import {
 } from '@/components/ui/select';
 import { useTemplates } from '@/hooks/useTemplates';
 import { fetchKnowledgeTemplateById } from '@/services/api/templates/knowledgeTemplateFetchers';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface MarkdownEditorProps {
   initialTitle?: string;
   initialContent?: string;
   initialTemplateId?: string | null;
-  onSaveDraft?: (title: string, content: string, templateId: string | null) => void;
-  onPublish?: (title: string, content: string, templateId: string | null) => void;
+  documentId?: string;
+  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null) => void;
+  onPublish?: (id: string, title: string, content: string, templateId: string | null) => void;
 }
 
 const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   initialTitle = '',
   initialContent = '',
   initialTemplateId = null,
+  documentId,
   onSaveDraft,
   onPublish,
 }) => {
@@ -37,7 +41,10 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   const [content, setContent] = useState(initialContent);
   const [templateId, setTemplateId] = useState<string | null>(initialTemplateId);
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const { templates, isLoading: isLoadingTemplates } = useTemplates();
+  const { user } = useAuth();
   
   // Update state if props change (e.g., when loading a saved draft)
   useEffect(() => {
@@ -46,24 +53,106 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     setTemplateId(initialTemplateId);
   }, [initialTitle, initialContent, initialTemplateId]);
 
-  const handleSaveDraft = () => {
-    if (onSaveDraft) {
-      onSaveDraft(title, content, templateId);
+  const handleSaveDraft = async () => {
+    if (!title.trim()) {
+      toast({
+        title: "Title Required",
+        description: "Please enter a title before saving",
+        variant: "destructive",
+      });
+      return;
     }
-    toast({
-      title: "Draft Saved",
-      description: "Your draft has been saved successfully",
-    });
+
+    setIsSaving(true);
+    try {
+      const knowledgeData = {
+        title,
+        content,
+        template_id: templateId,
+        user_id: user?.id,
+      };
+
+      let savedDocumentId = documentId;
+      let response;
+
+      if (documentId) {
+        // Update existing document
+        response = await supabase
+          .from('knowledge_sources')
+          .update(knowledgeData)
+          .eq('id', documentId)
+          .select()
+          .single();
+      } else {
+        // Create new document
+        response = await supabase
+          .from('knowledge_sources')
+          .insert(knowledgeData)
+          .select()
+          .single();
+      }
+
+      if (response.error) {
+        throw response.error;
+      }
+
+      savedDocumentId = response.data.id;
+
+      if (onSaveDraft) {
+        onSaveDraft(savedDocumentId, title, content, templateId);
+      }
+
+      toast({
+        title: "Draft Saved",
+        description: "Your draft has been saved successfully",
+      });
+
+      return savedDocumentId;
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      toast({
+        title: "Error Saving Draft",
+        description: "There was an error saving your draft. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handlePublish = () => {
-    if (onPublish) {
-      onPublish(title, content, templateId);
+  const handlePublish = async () => {
+    if (!title.trim()) {
+      toast({
+        title: "Title Required",
+        description: "Please enter a title before publishing",
+        variant: "destructive",
+      });
+      return;
     }
-    toast({
-      title: "Content Published",
-      description: "Your content has been published successfully",
-    });
+
+    setIsPublishing(true);
+    try {
+      // First save the draft to ensure we have the latest content
+      const savedId = await handleSaveDraft();
+      
+      if (savedId && onPublish) {
+        onPublish(savedId, title, content, templateId);
+      }
+      
+      toast({
+        title: "Content Published",
+        description: "Your content has been published successfully",
+      });
+    } catch (error) {
+      console.error('Error publishing content:', error);
+      toast({
+        title: "Error Publishing",
+        description: "There was an error publishing your content. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   const handleTemplateChange = async (value: string) => {
@@ -184,18 +273,18 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           variant="outline"
           onClick={handleSaveDraft}
           className="flex items-center gap-2"
-          disabled={isLoadingTemplate}
+          disabled={isLoadingTemplate || isSaving}
         >
           <Save size={16} />
-          Save Draft
+          {isSaving ? "Saving..." : "Save Draft"}
         </Button>
         <Button
           onClick={handlePublish}
           className="flex items-center gap-2"
-          disabled={isLoadingTemplate}
+          disabled={isLoadingTemplate || isPublishing}
         >
           <Send size={16} />
-          Publish
+          {isPublishing ? "Publishing..." : "Publish"}
         </Button>
       </div>
     </div>
