@@ -45,8 +45,10 @@ export function TemplateSelector({
       let filteredTemplates = response.data;
       if (templateFilter === 'global') {
         filteredTemplates = response.data.filter(template => template.is_global);
-      } else if (templateFilter === 'custom') {
-        filteredTemplates = response.data.filter(template => !template.is_global);
+      } else if (templateFilter === 'custom' && user) {
+        filteredTemplates = response.data.filter(template => 
+          !template.is_global && template.user_id === user.id
+        );
       }
       
       setTemplates(filteredTemplates);
@@ -71,7 +73,7 @@ export function TemplateSelector({
 
   useEffect(() => {
     loadTemplates();
-  }, [templateFilter]);
+  }, [templateFilter, user]);
 
   const handlePageChange = (page: number) => {
     setPagination(prev => ({
@@ -121,8 +123,8 @@ export function TemplateSelector({
         content: newTemplate.content,
         metadata: { custom: true },
         structure: structure,
-        is_global: false,
-        user_id: user.id
+        is_global: false, // All user-created templates are private by default
+        user_id: user.id  // Explicitly set the user_id to the current user
       });
 
       if (data && data.length > 0) {

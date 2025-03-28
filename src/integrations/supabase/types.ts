@@ -92,6 +92,13 @@ export type Database = {
             referencedRelation: "knowledge_templates"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "knowledge_sources_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "private_templates_without_user"
+            referencedColumns: ["id"]
+          },
         ]
       }
       knowledge_templates: {
@@ -316,6 +323,24 @@ export type Database = {
       }
     }
     Views: {
+      private_templates_without_user: {
+        Row: {
+          id: string | null
+          is_global: boolean | null
+          name: string | null
+        }
+        Insert: {
+          id?: string | null
+          is_global?: boolean | null
+          name?: string | null
+        }
+        Update: {
+          id?: string | null
+          is_global?: boolean | null
+          name?: string | null
+        }
+        Relationships: []
+      }
       tag_summary: {
         Row: {
           name: string | null

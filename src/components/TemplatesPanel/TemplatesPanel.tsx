@@ -22,20 +22,40 @@ export function TemplatesPanel() {
   });
   const [selectedTemplate, setSelectedTemplate] = useState<KnowledgeTemplate | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState<'all' | 'global' | 'custom'>('all');
   const { user } = useAuth();
 
   const loadTemplates = async () => {
     try {
       setLoading(true);
       const response = await fetchKnowledgeTemplates();
-      setTemplates(response.data);
       
-      // Set pagination manually since the API doesn't return pagination info
+      let filteredTemplates = response.data;
+      if (filterType === 'global') {
+        filteredTemplates = response.data.filter(template => template.is_global);
+      } else if (filterType === 'custom' && user) {
+        filteredTemplates = response.data.filter(template => 
+          !template.is_global && template.user_id === user.id
+        );
+      }
+      
+      // Further filter by search query if provided
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filteredTemplates = filteredTemplates.filter(template => 
+          template.name.toLowerCase().includes(query) || 
+          template.content.toLowerCase().includes(query)
+        );
+      }
+      
+      setTemplates(filteredTemplates);
+      
+      // Set pagination manually
       setPagination({
         page: 1,
         pageSize: 5,
-        totalPages: Math.ceil(response.data.length / 5),
-        count: response.data.length
+        totalPages: Math.ceil(filteredTemplates.length / 5),
+        count: filteredTemplates.length
       });
     } catch (error) {
       console.error("Failed to load templates:", error);
@@ -51,7 +71,7 @@ export function TemplatesPanel() {
 
   useEffect(() => {
     loadTemplates();
-  }, []);
+  }, [filterType, searchQuery, user]);
 
   const handlePageChange = (page: number) => {
     setPagination(prev => ({
@@ -66,6 +86,10 @@ export function TemplatesPanel() {
       title: "Template Selected",
       description: `Selected template: ${template.name}`,
     });
+  };
+
+  const handleFilterChange = (type: 'all' | 'global' | 'custom') => {
+    setFilterType(type);
   };
 
   const handleCreateFromTemplate = () => {
@@ -121,6 +145,8 @@ export function TemplatesPanel() {
         setSearchQuery={setSearchQuery}
         handlePageChange={handlePageChange}
         handleTemplateSelect={handleTemplateSelect}
+        filterType={filterType}
+        onFilterChange={handleFilterChange}
       />
     </div>
   );
@@ -163,3 +189,5 @@ function TemplateSelectorCard({
     </Card>
   );
 }
+
+export default TemplatesPanel;

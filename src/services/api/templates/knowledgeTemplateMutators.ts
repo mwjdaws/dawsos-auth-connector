@@ -20,8 +20,17 @@ export const createKnowledgeTemplate = async (template: Omit<KnowledgeTemplate, 
     validateTemplateContent(template.content);
     validateTemplateMetadata(template.metadata);
     
-    // Get the current user ID
-    const { data: { user } } = await supabase.auth.getUser();
+    // Verify user_id is set for private templates
+    if (template.is_global === false && !template.user_id) {
+      // Get the current user ID if not provided
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user?.id) {
+        throw new ApiError('User ID is required for private templates', 400);
+      }
+      
+      template.user_id = user.id;
+    }
     
     // Create a clean object with only the properties we need
     const templateData = {
@@ -30,7 +39,7 @@ export const createKnowledgeTemplate = async (template: Omit<KnowledgeTemplate, 
       metadata: template.metadata,
       structure: template.structure,
       is_global: template.is_global || false,
-      user_id: user?.id || template.user_id // Use provided user_id as fallback
+      user_id: template.user_id
     };
     
     const { data, error } = await supabase
@@ -64,6 +73,31 @@ export const updateKnowledgeTemplate = async (id: string, updates: Partial<Knowl
     }
     
     validateTemplateMetadata(updates.metadata);
+    
+    // Ensure user_id is maintained for private templates
+    if (updates.is_global === false && !updates.user_id) {
+      // Get the current user ID if not provided
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // First get the current template to check if we're changing from global to private
+      const { data: existingTemplate, error: fetchError } = await supabase
+        .from('knowledge_templates')
+        .select('is_global, user_id')
+        .eq('id', id)
+        .single();
+        
+      if (fetchError) {
+        throw new ApiError(fetchError.message, parseSupabaseErrorCode(fetchError));
+      }
+      
+      // If changing from global to private, ensure user_id is set
+      if (existingTemplate.is_global && !existingTemplate.user_id) {
+        if (!user?.id) {
+          throw new ApiError('User ID is required when changing template from global to private', 400);
+        }
+        updates.user_id = user.id;
+      }
+    }
     
     const { data, error } = await supabase
       .from('knowledge_templates')
