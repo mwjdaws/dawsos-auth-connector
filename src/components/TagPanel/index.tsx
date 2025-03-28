@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useTransition } from "react";
 import { TagGenerator } from "./TagGenerator";
 import { TagList } from "./TagList";
 import { TagSaver } from "./TagSaver";
@@ -23,39 +23,41 @@ export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
     isRetrying
   } = useSaveTags();
   
-  const [generatedTags, setGeneratedTags] = React.useState<string[]>([]);
-  const [content, setContent] = React.useState("");
-  const [isGeneratingTags, setIsGeneratingTags] = React.useState(false);
+  // Use the hook for tag generation
+  const {
+    tags,
+    isLoading,
+    contentId: tagContentId,
+    setContentId,
+    handleGenerateTags
+  } = useTagGeneration();
   
-  // Handle tag generation from content
-  const handleGenerateTags = async (text: string) => {
+  const [content, setContent] = useState("");
+  const [isPending, startTransition] = useTransition();
+  
+  // Handle tag generation from content - renamed to processTagGeneration
+  const processTagGeneration = (text: string) => {
     if (text && text.trim()) {
-      setIsGeneratingTags(true);
-      try {
-        // For future implementation: Replace with actual tag generation logic
-        // Example using the useTagGeneration hook (uncomment when implemented)
-        // const { generateTags } = useTagGeneration();
-        // const tags = await generateTags(text);
-        // setGeneratedTags(tags);
-        
-        // For now, use placeholder tags with more realistic content
-        setTimeout(() => {
-          setGeneratedTags([
-            "knowledge", 
-            "management", 
-            "documentation", 
-            "metadata", 
-            "tagging",
-            "ontology"
-          ]);
-        }, 1000);
-        
-        setContent(text);
-      } finally {
-        setTimeout(() => {
-          setIsGeneratingTags(false);
-        }, 1000);
-      }
+      setContent(text);
+      
+      // Fixed: Use startTransition properly without async/await
+      startTransition(() => {
+        // Call the tag generation function from the hook
+        handleGenerateTags(text)
+          .then(newContentId => {
+            if (newContentId) {
+              setContentId(newContentId);
+            }
+          })
+          .catch(err => {
+            console.error("Error generating tags:", err);
+            toast({
+              title: "Error",
+              description: "Failed to generate tags. Please try again.",
+              variant: "destructive"
+            });
+          });
+      });
     }
   };
   
@@ -72,20 +74,20 @@ export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
     <ErrorBoundary fallback={<TagPanelErrorFallback />}>
       <div className="space-y-6 w-full">
         <TagGenerator 
-          isLoading={isGeneratingTags}
-          onGenerateTags={handleGenerateTags}
+          isLoading={isLoading || isPending}
+          onGenerateTags={processTagGeneration}
         />
         
         <TagList 
-          tags={generatedTags}
-          isLoading={isGeneratingTags}
-          knowledgeSourceId={contentId}
+          tags={tags}
+          isLoading={isLoading || isPending}
+          knowledgeSourceId={tagContentId || contentId}
           onTagClick={handleTagClick}
         />
         
         <TagSaver
-          tags={generatedTags}
-          contentId={contentId}
+          tags={tags}
+          contentId={tagContentId || contentId}
           saveTags={saveTags}
           isProcessing={isProcessing}
           isRetrying={isRetrying}
