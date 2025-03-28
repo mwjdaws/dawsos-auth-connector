@@ -1,6 +1,6 @@
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { MetadataPanel } from "@/components";
+import MetadataPanel from "@/components/MetadataPanel";
 import { Suspense } from "react";
 
 interface MetadataTabProps {
