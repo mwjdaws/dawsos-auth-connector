@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDocumentOperations } from './useDocumentOperations';
 import { useTemplateHandling } from './useTemplateHandling';
@@ -34,6 +34,7 @@ export const useMarkdownEditor = ({
   const [lastSavedContent, setLastSavedContent] = useState(initialContent);
   const [isPublished, setIsPublished] = useState(false);
   const [isLoading, setIsLoading] = useState(!!sourceId); // Set loading state if we need to fetch content
+  const [isPending, startTransition] = useTransition();
   const { user } = useAuth();
   
   // Use our utility hooks
@@ -72,13 +73,15 @@ export const useMarkdownEditor = ({
           }
 
           if (data) {
-            setTitle(data.title);
-            setContent(data.content);
-            setTemplateId(data.template_id);
-            setLastSavedTitle(data.title);
-            setLastSavedContent(data.content);
-            setIsPublished(!!data.published);
-            setIsDirty(false);
+            startTransition(() => {
+              setTitle(data.title);
+              setContent(data.content);
+              setTemplateId(data.template_id);
+              setLastSavedTitle(data.title);
+              setLastSavedContent(data.content);
+              setIsPublished(!!data.published);
+              setIsDirty(false);
+            });
           }
         } catch (error) {
           console.error('Error loading existing content:', error);
@@ -237,10 +240,35 @@ export const useMarkdownEditor = ({
           onPublish(savedId, title, content, templateId);
         }
         
-        toast({
-          title: "Content Published",
-          description: "Your content has been published successfully",
-        });
+        // Check if the document was actually published in the database
+        const { data, error } = await supabase
+          .from('knowledge_sources')
+          .select('published, published_at')
+          .eq('id', savedId)
+          .single();
+          
+        if (error) {
+          console.warn("Error verifying published status:", error);
+        } else if (data && !data.published) {
+          console.warn("Document not marked as published in database after publish operation");
+          
+          // Attempt to fix the published status
+          const { error: updateError } = await supabase
+            .from('knowledge_sources')
+            .update({
+              published: true,
+              published_at: new Date().toISOString(),
+            })
+            .eq('id', savedId);
+            
+          if (updateError) {
+            console.error("Failed to update published status:", updateError);
+          } else {
+            console.log("Fixed published status for document:", savedId);
+          }
+        } else {
+          console.log("Document correctly marked as published in database:", data);
+        }
       } else {
         console.error("Publish operation failed:", publishResult?.error || "Unknown error");
         toast({

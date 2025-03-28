@@ -203,7 +203,7 @@ export const useDocumentOperations = ({
         version: 1
       };
       
-      // Update the published status
+      // Update the published status - EXPLICITLY set published to true
       const { data, error: publishError } = await supabase
         .from('knowledge_sources')
         .update({
@@ -248,9 +248,22 @@ export const useDocumentOperations = ({
         onPublish(savedId, title, content, templateId);
       }
       
+      // Add success toast message
+      toast({
+        title: "Content Published Successfully",
+        description: "Your content has been published and is now publicly available.",
+      });
+      
       return { success: true, documentId: savedId };
     } catch (error) {
       console.error('Error publishing content:', error);
+      
+      toast({
+        title: "Publishing Failed",
+        description: error instanceof Error ? error.message : "An error occurred during publishing",
+        variant: "destructive",
+      });
+      
       return { 
         success: false, 
         error: error instanceof Error ? error.message : "Unknown error during publishing" 

@@ -33,10 +33,10 @@ serve(async (req) => {
     // Create a Supabase client with the service role key
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get existing metadata to preserve it
+    // Get existing metadata and published status to preserve it
     const { data: existingData, error: fetchError } = await supabase
       .from("knowledge_sources")
-      .select("metadata, user_id")
+      .select("metadata, user_id, published, published_at")
       .eq("id", documentId)
       .single();
 
@@ -48,6 +48,8 @@ serve(async (req) => {
     const wordCount = content.split(/\s+/).length;
     const readingTime = Math.ceil(wordCount / 200); // Approx. words per minute
     const userId = existingData?.user_id;
+    const isPublished = existingData?.published || false;
+    const publishedAt = existingData?.published_at;
 
     // Generate tags if OpenAI API key is available
     let tags = [];
@@ -106,12 +108,16 @@ serve(async (req) => {
     };
 
     console.log("Updating metadata:", updatedMetadata);
+    console.log("Preserving published status:", isPublished);
 
     // Update the knowledge source with enriched metadata
+    // IMPORTANT: Preserve the published status
     const { error: updateError } = await supabase
       .from("knowledge_sources")
       .update({
-        metadata: updatedMetadata
+        metadata: updatedMetadata,
+        published: isPublished, // Ensure we keep the published status
+        published_at: publishedAt // Preserve the original published timestamp
       })
       .eq("id", documentId);
 
@@ -147,7 +153,8 @@ serve(async (req) => {
           wordCount, 
           readingTime, 
           tags,
-          metadata: updatedMetadata
+          metadata: updatedMetadata,
+          published: isPublished // Include published status in response
         } 
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

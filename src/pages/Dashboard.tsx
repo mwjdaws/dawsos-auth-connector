@@ -81,20 +81,85 @@ const DashboardPage = () => {
     });
   };
 
-  const handleSaveDraft = (id: string, title: string, content: string, templateId: string | null) => {
+  const handleSaveDraft = async (id: string, title: string, content: string, templateId: string | null) => {
     console.log("Draft saved:", { id, title, templateId });
     toast({
       title: "Draft Saved",
       description: `"${title}" has been saved as a draft.`,
     });
+    
+    // Verify that the draft was saved with the current user's ID
+    try {
+      const { data, error } = await supabase
+        .from('knowledge_sources')
+        .select('user_id, published')
+        .eq('id', id)
+        .single();
+        
+      if (error) throw error;
+      
+      if (data) {
+        console.log("Saved draft data:", data);
+        if (data.user_id !== user?.id) {
+          console.warn("Draft saved with incorrect user ID:", data.user_id, "expected:", user?.id);
+        }
+      }
+    } catch (error) {
+      console.error("Error checking saved draft:", error);
+    }
   };
 
-  const handlePublish = (id: string, title: string, content: string, templateId: string | null) => {
+  const handlePublish = async (id: string, title: string, content: string, templateId: string | null) => {
     console.log("Content published:", { id, title, templateId });
-    toast({
-      title: "Content Published",
-      description: `"${title}" has been published successfully.`,
-    });
+    
+    // Verify that the content was published correctly
+    try {
+      const { data, error } = await supabase
+        .from('knowledge_sources')
+        .select('published, published_at, user_id')
+        .eq('id', id)
+        .single();
+        
+      if (error) throw error;
+      
+      if (data) {
+        console.log("Published content data:", data);
+        if (!data.published) {
+          console.warn("Content not marked as published in database");
+          
+          // Attempt to fix the published status if it wasn't set
+          const { error: updateError } = await supabase
+            .from('knowledge_sources')
+            .update({
+              published: true,
+              published_at: new Date().toISOString(),
+            })
+            .eq('id', id);
+            
+          if (updateError) {
+            console.error("Failed to update published status:", updateError);
+          } else {
+            console.log("Fixed published status for content:", id);
+          }
+        }
+        
+        if (data.user_id !== user?.id) {
+          console.warn("Content published with incorrect user ID:", data.user_id, "expected:", user?.id);
+        }
+      }
+      
+      toast({
+        title: "Content Published",
+        description: `"${title}" has been published successfully.`,
+      });
+    } catch (error) {
+      console.error("Error checking published content:", error);
+      
+      toast({
+        title: "Content Published",
+        description: `"${title}" has been published, but there was an error verifying the published status.`,
+      });
+    }
   };
 
   // Show loading state or redirect if no auth
