@@ -65,7 +65,11 @@ serve(async (req: Request) => {
     if (error) {
       console.error("Error fetching related tags:", error);
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ 
+          error: "Failed to fetch related tags",
+          details: error.message,
+          code: error.code || "UNKNOWN_ERROR"
+        }),
         { 
           status: 500, 
           headers: { ...corsHeaders, "Content-Type": "application/json" } 
@@ -88,7 +92,11 @@ serve(async (req: Request) => {
     console.error("Unhandled error:", error.message);
     
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ 
+        error: "Internal server error", 
+        details: error.message,
+        stack: error.stack
+      }),
       { 
         status: 500, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
