@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/error-handling';
+import { Json } from '@/integrations/supabase/types';
 
 interface UseContentLoaderProps {
   sourceId?: string;
@@ -17,7 +18,7 @@ interface UseContentLoaderProps {
 }
 
 /**
- * Hook to load content from a knowledge source
+ * Hook for loading existing content into the editor
  */
 export const useContentLoader = ({
   sourceId,
@@ -32,17 +33,14 @@ export const useContentLoader = ({
   setIsDirty
 }: UseContentLoaderProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Load content from database when sourceId is provided
+
   useEffect(() => {
-    let isMounted = true;
-    
+    // Skip for temporary IDs or when no sourceId is provided
+    if (!sourceId || sourceId.startsWith('temp-')) {
+      return;
+    }
+
     const loadContent = async () => {
-      // Skip loading for temp documents or when no sourceId is provided
-      if (!sourceId || sourceId.startsWith('temp-')) {
-        return;
-      }
-      
       setIsLoading(true);
       try {
         const { data, error } = await supabase
@@ -50,49 +48,37 @@ export const useContentLoader = ({
           .select('*')
           .eq('id', sourceId)
           .single();
-          
+
         if (error) throw error;
-        
-        if (data && isMounted) {
+
+        if (data) {
           setTitle(data.title || '');
           setContent(data.content || '');
-          setTemplateId(data.template_id);
+          setTemplateId(data.template_id || null);
           setExternalSourceUrl(data.external_source_url || '');
-          
-          // Set last saved state to match loaded content
           setLastSavedTitle(data.title || '');
           setLastSavedContent(data.content || '');
           setLastSavedExternalSourceUrl(data.external_source_url || '');
-          
-          // Set published state
-          setIsPublished(data.published || false);
-          
-          // Content is clean after loading
+          setIsPublished(data.published || false); // Changed from is_published to published
           setIsDirty(false);
+
+          console.log('Loaded content for source:', sourceId);
         }
       } catch (error) {
         console.error('Error loading content:', error);
         handleError(
           error,
-          "Failed to load document content",
-          { level: "error", technical: true }
+          "Failed to load content",
+          { level: "error" }
         );
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
-    
+
     loadContent();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [sourceId, setTitle, setContent, setTemplateId, setExternalSourceUrl, 
-      setLastSavedTitle, setLastSavedContent, setLastSavedExternalSourceUrl, 
-      setIsPublished, setIsDirty]);
-  
+  }, [sourceId]);
+
   return {
     isLoading
   };

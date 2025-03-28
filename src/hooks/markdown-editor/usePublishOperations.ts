@@ -1,13 +1,17 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/error-handling';
-import { validateDocumentTitle } from '@/utils/validation';
 import { PublishOperationsContext, PublishResult } from './types';
+import { usePublishValidation } from './publish-operations/usePublishValidation';
+import { usePublishDatabase } from './publish-operations/usePublishDatabase';
 
 /**
  * Hook for document publishing operations
  */
 export const usePublishOperations = (context: PublishOperationsContext) => {
+  const { validateForPublish } = usePublishValidation();
+  const { updatePublishStatus, triggerContentEnrichment } = usePublishDatabase();
+  
   /**
    * Publish a document
    */
@@ -18,8 +22,8 @@ export const usePublishOperations = (context: PublishOperationsContext) => {
     externalSourceUrl: string,
     userId: string | undefined
   ): Promise<PublishResult> => {
-    // Always validate title for publishing
-    const validation = validateDocumentTitle(title);
+    // Validate before publishing
+    const validation = validateForPublish(title);
     if (!validation.isValid) {
       return { 
         success: false, 
@@ -40,7 +44,7 @@ export const usePublishOperations = (context: PublishOperationsContext) => {
         };
       }
       
-      // Now update the document to mark it as published
+      // Verify user authentication
       if (!userId) {
         return { 
           success: false, 
@@ -51,37 +55,15 @@ export const usePublishOperations = (context: PublishOperationsContext) => {
       
       // Update the document's published status
       console.log('Publishing document:', savedId);
-      const { error: updateError } = await supabase
-        .from('knowledge_sources')
-        .update({ 
-          is_published: true,
-          published_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', savedId);
+      const publishResult = await updatePublishStatus(savedId);
       
-      if (updateError) {
-        console.error('Error updating document publish status:', updateError);
-        handleError(
-          updateError,
-          "Failed to update document publish status",
-          { level: "error", technical: true }
-        );
-        return { 
-          success: false, 
-          documentId: null,
-          error: updateError
-        };
+      if (!publishResult.success) {
+        return publishResult;
       }
       
-      // Optionally trigger content enrichment if available
+      // Optionally trigger content enrichment (non-blocking)
       try {
-        // This is where we would call a content enrichment service
-        // For now, let's just log that we would do this
-        console.log('Content would be enriched here for document:', savedId);
-        
-        // If we had a function like this:
-        // await enrichContent(savedId, content);
+        await triggerContentEnrichment(savedId, content);
       } catch (enrichError) {
         // Log but don't fail the publish operation
         console.error('Error enriching content (non-critical):', enrichError);

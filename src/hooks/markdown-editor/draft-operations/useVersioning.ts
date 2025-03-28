@@ -1,41 +1,35 @@
 
-import { handleError } from '@/utils/error-handling';
 import { DraftOperationsContext } from '../types';
 
 /**
- * Hook for version creation after draft operations
+ * Hook for version management in draft operations
  */
 export const useVersioning = (context: DraftOperationsContext) => {
   /**
-   * Create a version after successfully saving a draft
+   * Create a version after saving a draft
    */
   const createVersionAfterSave = async (
-    documentId: string, 
+    documentId: string,
     content: string,
-    isAutoSave: boolean
-  ) => {
-    if (!context.createVersion) {
-      return;
-    }
-    
+    isAutoSave = false
+  ): Promise<void> => {
     try {
-      if (!isAutoSave) {
-        await context.createVersion(documentId, content, {
-          reason: 'Manual save',
-          auto_version: false
-        });
+      // Skip version creation for auto-save to reduce database load
+      if (isAutoSave || !context.createVersion) {
+        return;
       }
-    } catch (versionError) {
-      // Log version creation error but don't fail the save operation
-      console.error('Error creating version but continuing:', versionError);
-      handleError(
-        versionError,
-        "Warning: Could not create document version",
-        { level: "warning", technical: true, silent: isAutoSave }
-      );
+      
+      console.log('Creating version after save for document:', documentId);
+      await context.createVersion(documentId, content, {
+        reason: 'Manual save',
+        auto_save: isAutoSave
+      });
+    } catch (error) {
+      console.error('Error creating version after save:', error);
+      // Silent failure for versioning - it shouldn't block the save operation
     }
   };
-  
+
   return {
     createVersionAfterSave
   };
