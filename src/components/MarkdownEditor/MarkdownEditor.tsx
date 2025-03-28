@@ -4,21 +4,19 @@ import { Separator } from '@/components/ui/separator';
 import { useTemplates } from '@/hooks/useTemplates';
 import { useMarkdownEditor } from '@/hooks/markdown-editor';
 import EditorHeader from './EditorHeader';
-import MarkdownContent from './MarkdownContent';
-import MarkdownPreview from './MarkdownPreview';
 import EditorActions from './EditorActions';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { History, Maximize2, Minimize2 } from 'lucide-react';
 import { VersionHistoryModal } from './VersionHistoryModal';
+import SplitEditor from './SplitEditor';
+import FullscreenEditor from './FullscreenEditor';
+import EditorToolbar from './EditorToolbar';
 
 interface MarkdownEditorProps {
   initialTitle?: string;
   initialContent?: string;
   initialTemplateId?: string | null;
   documentId?: string;
-  sourceId?: string; // Add sourceId prop for loading existing content
+  sourceId?: string;
   onSaveDraft?: (id: string, title: string, content: string, templateId: string | null) => void;
   onPublish?: (id: string, title: string, content: string, templateId: string | null) => void;
 }
@@ -28,7 +26,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   initialContent = '',
   initialTemplateId = null,
   documentId,
-  sourceId, // Accept the sourceId prop
+  sourceId,
   onSaveDraft,
   onPublish,
 }) => {
@@ -48,7 +46,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     isPublishing,
     isDirty,
     isPublished,
-    isLoading, // Loading state for content
+    isLoading,
     handleSaveDraft,
     handlePublish,
     handleTemplateChange
@@ -57,7 +55,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     initialContent,
     initialTemplateId,
     documentId,
-    sourceId, // Pass sourceId to the hook
+    sourceId,
     onSaveDraft,
     onPublish
   });
@@ -104,60 +102,26 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           isLoadingTemplates={isLoadingTemplates}
           onTemplateChange={handleTemplateChange}
         />
-        <div className="flex items-center gap-2">
-          {effectiveDocumentId && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1"
-              onClick={() => setIsHistoryOpen(true)}
-              title="View version history"
-            >
-              <History size={16} />
-              <span className="hidden sm:inline">History</span>
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-1"
-            onClick={toggleFullscreen}
-            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-          >
-            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-            <span className="hidden sm:inline">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
-          </Button>
-        </div>
+        <EditorToolbar
+          isFullscreen={isFullscreen}
+          toggleFullscreen={toggleFullscreen}
+          documentId={effectiveDocumentId}
+          onHistoryClick={() => setIsHistoryOpen(true)}
+        />
       </div>
 
       {isFullscreen ? (
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'edit' | 'preview')} className="w-full">
-          <TabsList className="mb-2">
-            <TabsTrigger value="edit">Edit</TabsTrigger>
-            <TabsTrigger value="preview">Preview</TabsTrigger>
-          </TabsList>
-          <TabsContent value="edit" className="w-full">
-            <MarkdownContent 
-              content={content} 
-              onChange={setContent}
-              className="min-h-[600px]"
-            />
-          </TabsContent>
-          <TabsContent value="preview" className="w-full">
-            <MarkdownPreview 
-              content={content}
-              className="min-h-[600px]"
-            />
-          </TabsContent>
-        </Tabs>
+        <FullscreenEditor
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          content={content}
+          setContent={setContent}
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <MarkdownContent 
-            content={content} 
-            onChange={setContent} 
-          />
-          <MarkdownPreview content={content} />
-        </div>
+        <SplitEditor 
+          content={content} 
+          setContent={setContent} 
+        />
       )}
 
       <Separator className="my-6" />

@@ -5,6 +5,9 @@ import MarkdownPreview from './MarkdownPreview';
 import EditorHeader from './EditorHeader';
 import EditorActions from './EditorActions';
 import { VersionHistoryModal } from './VersionHistoryModal';
+import SplitEditor from './SplitEditor';
+import FullscreenEditor from './FullscreenEditor';
+import EditorToolbar from './EditorToolbar';
 
 export {
   MarkdownEditor,
@@ -12,7 +15,10 @@ export {
   MarkdownPreview,
   EditorHeader,
   EditorActions,
-  VersionHistoryModal
+  VersionHistoryModal,
+  SplitEditor,
+  FullscreenEditor,
+  EditorToolbar
 };
 
 export default MarkdownEditor;
