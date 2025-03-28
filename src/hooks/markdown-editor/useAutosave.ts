@@ -4,15 +4,35 @@ import { toast } from '@/hooks/use-toast';
 
 /**
  * Hook to automatically save content at specified intervals
- * @param isDirty Whether the content has unsaved changes
+ * @param isDirtyOrConfig Whether the content has unsaved changes or full config object
  * @param interval Interval in milliseconds between save attempts
  * @param onSave Function to call to save the content
  */
 export const useAutosave = (
-  isDirty: boolean,
+  isDirtyOrConfig: boolean | { 
+    isDirty: boolean;
+    interval?: number; 
+    onSave: () => void;
+    [key: string]: any; // Allow any other properties
+  },
   interval: number = 15000, // Default to 15 seconds
-  onSave: () => void
+  onSave?: () => void
 ) => {
+  // Handle both calling styles (object or individual params)
+  let effectiveIsDirty: boolean;
+  let effectiveInterval: number = interval;
+  let effectiveOnSave: (() => void) | undefined = onSave;
+  
+  // If first argument is an object, extract properties from it
+  if (typeof isDirtyOrConfig === 'object') {
+    effectiveIsDirty = isDirtyOrConfig.isDirty;
+    effectiveInterval = isDirtyOrConfig.interval || 15000;
+    effectiveOnSave = isDirtyOrConfig.onSave;
+  } else {
+    effectiveIsDirty = isDirtyOrConfig;
+  }
+  
+  // State for tracking autosave status
   const [isAutosaving, setIsAutosaving] = useState(false);
   const [lastAutosaveAttempt, setLastAutosaveAttempt] = useState<Date | null>(null);
   const [consecutiveFailures, setConsecutiveFailures] = useState(0);
@@ -25,7 +45,7 @@ export const useAutosave = (
 
   // Helper to perform the autosave
   const performAutosave = async () => {
-    if (!isDirty || isAutosaving || !isMounted.current) {
+    if (!effectiveIsDirty || isAutosaving || !isMounted.current || !effectiveOnSave) {
       return;
     }
     
@@ -34,7 +54,7 @@ export const useAutosave = (
       setLastAutosaveAttempt(new Date());
       console.log('Auto-saving document...');
       
-      await onSave();
+      await effectiveOnSave();
       
       // Reset failure count on success
       if (consecutiveFailures > 0) {
@@ -63,7 +83,7 @@ export const useAutosave = (
   useEffect(() => {
     const scheduleNextAutosave = () => {
       // Calculate delay with exponential backoff for failures
-      const baseDelay = interval;
+      const baseDelay = effectiveInterval;
       const backoffFactor = Math.min(Math.pow(1.5, consecutiveFailures), 4); // Cap at 4x delay
       const actualDelay = baseDelay * backoffFactor;
       
@@ -90,7 +110,7 @@ export const useAutosave = (
         window.clearTimeout(timeoutRef.current);
       }
     };
-  }, [isDirty, consecutiveFailures, interval]);
+  }, [effectiveIsDirty, effectiveOnSave, effectiveInterval, consecutiveFailures]);
 
   return {
     isMounted,
