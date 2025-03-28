@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { handleError } from '@/utils/errors';
 
-type AuditStatus = 'success' | 'error' | 'unchanged' | 'changed';
+export type AuditStatus = 'success' | 'error' | 'unchanged' | 'changed';
 
 export interface ExternalLinkAudit {
   id: string;
@@ -30,7 +30,7 @@ export async function fetchAuditLogs(knowledgeSourceId: string): Promise<Externa
       throw error;
     }
     
-    return data || [];
+    return data as ExternalLinkAudit[] || [];
   } catch (error) {
     console.error('Failed to fetch audit logs:', error);
     handleError(error, "Failed to fetch audit logs");
@@ -60,7 +60,7 @@ export async function fetchLatestAuditLogs(knowledgeSourceIds: string[]): Promis
     
     // Group by knowledge_source_id and take the latest entry
     const latestAudits: Record<string, ExternalLinkAudit> = {};
-    data?.forEach(audit => {
+    (data as ExternalLinkAudit[])?.forEach(audit => {
       if (!latestAudits[audit.knowledge_source_id] || 
           new Date(audit.checked_at) > new Date(latestAudits[audit.knowledge_source_id].checked_at)) {
         latestAudits[audit.knowledge_source_id] = audit;
@@ -100,7 +100,7 @@ export async function createAuditLog(
       throw error;
     }
     
-    return data;
+    return data as ExternalLinkAudit;
   } catch (error) {
     console.error('Failed to create audit log:', error);
     toast({
