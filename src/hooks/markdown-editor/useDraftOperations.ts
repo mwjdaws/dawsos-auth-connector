@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { DraftOperationsContext, SaveDraftResult } from './types';
 import { handleError } from '@/utils/error-handling';
+import { validateDocumentTitle } from '@/utils/validation';
 
 /**
  * Hook for draft document operations
@@ -18,12 +19,16 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
     documentId?: string,
     isAutoSave = false
   ): Promise<SaveDraftResult> => {
-    if (!title.trim()) {
-      return { 
-        success: false, 
-        documentId: null,
-        error: 'Title is required' 
-      };
+    // Skip validation for autosave to reduce processing
+    if (!isAutoSave) {
+      const validation = validateDocumentTitle(title);
+      if (!validation.isValid) {
+        return { 
+          success: false, 
+          documentId: null,
+          error: validation.errorMessage 
+        };
+      }
     }
 
     try {

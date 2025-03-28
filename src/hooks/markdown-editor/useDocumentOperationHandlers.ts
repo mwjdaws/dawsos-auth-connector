@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { handleError } from '@/utils/error-handling';
+import { validateDocumentTitle } from '@/utils/validation';
 
 interface UseDocumentOperationHandlersProps {
   title: string;
@@ -40,17 +41,20 @@ export const useDocumentOperationHandlers = ({
    * @param isAutoSave Whether the save was initiated by the autosave feature
    */
   const handleSaveDraft = async (isManualSave = true, isAutoSave = false) => {
-    // Skip UI feedback for autosave
-    if (isManualSave) {
-      if (!title.trim()) {
+    // Skip validation for autosave
+    if (isManualSave && !isAutoSave) {
+      const validation = validateDocumentTitle(title);
+      if (!validation.isValid) {
         toast({
-          title: "Title Required",
-          description: "Please enter a title before saving",
+          title: "Invalid Title",
+          description: validation.errorMessage,
           variant: "destructive",
         });
         return null;
       }
-      
+    }
+    
+    if (isManualSave) {
       setIsSavingManually(true);
     }
     
@@ -107,10 +111,12 @@ export const useDocumentOperationHandlers = ({
    * Publish the document with user feedback
    */
   const handlePublish = async () => {
-    if (!title.trim()) {
+    // Always validate title for publishing
+    const validation = validateDocumentTitle(title);
+    if (!validation.isValid) {
       toast({
-        title: "Title Required",
-        description: "Please enter a title before publishing",
+        title: "Invalid Title",
+        description: validation.errorMessage,
         variant: "destructive",
       });
       return;
