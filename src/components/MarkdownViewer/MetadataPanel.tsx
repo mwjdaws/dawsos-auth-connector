@@ -3,10 +3,11 @@ import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { X, ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
+import { X, ChevronRight, ChevronDown, ExternalLink, AlertTriangle, Clock } from "lucide-react";
 import { TagInput } from "./TagInput";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { format } from "date-fns";
 
 interface Tag {
   id: string;
@@ -25,6 +26,8 @@ interface MetadataPanelProps {
   ontologyTerms: OntologyTerm[];
   domain: string | null;
   externalSourceUrl: string | null;
+  lastCheckedAt?: string | null;
+  needsExternalReview?: boolean;
   isLoading: boolean;
   newTag: string;
   setNewTag: (value: string) => void;
@@ -39,6 +42,8 @@ export function MetadataPanel({
   ontologyTerms,
   domain,
   externalSourceUrl,
+  lastCheckedAt = null,
+  needsExternalReview = false,
   isLoading,
   newTag,
   setNewTag,
@@ -74,14 +79,32 @@ export function MetadataPanel({
     }
   };
 
+  // Format the last checked date
+  const formattedLastChecked = lastCheckedAt 
+    ? format(new Date(lastCheckedAt), 'MMM d, yyyy h:mm a')
+    : null;
+
+  // Determine card border styling based on review status
+  const cardBorderClass = needsExternalReview
+    ? "border-yellow-400 dark:border-yellow-600"
+    : "";
+
   return (
-    <Card className="border rounded-lg shadow-sm">
+    <Card className={`border rounded-lg shadow-sm ${cardBorderClass}`}>
       <div className="p-4 border-b">
         <button
           className="flex w-full items-center justify-between"
           onClick={() => setIsMetadataCollapsed(!isMetadataCollapsed)}
         >
-          <h2 className="text-xl font-semibold">Metadata</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold">Metadata</h2>
+            {needsExternalReview && (
+              <div className="flex items-center text-yellow-600 dark:text-yellow-500">
+                <AlertTriangle className="h-5 w-5 mr-1" />
+                <span className="text-sm font-medium">Needs Review</span>
+              </div>
+            )}
+          </div>
           {isMetadataCollapsed ? (
             <ChevronRight className="h-5 w-5" />
           ) : (
@@ -108,14 +131,23 @@ export function MetadataPanel({
               {externalSourceUrl && (
                 <div>
                   <h3 className="text-sm font-medium mb-2">External Source</h3>
-                  <a
-                    href={externalSourceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm flex items-center gap-1 text-primary hover:text-primary/80 transition-colors"
-                  >
-                    <ExternalLink className="h-4 w-4" /> View Source
-                  </a>
+                  <div className="mb-2">
+                    <a
+                      href={externalSourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm flex items-center gap-1 text-primary hover:text-primary/80 transition-colors"
+                    >
+                      <ExternalLink className="h-4 w-4" /> View Source
+                    </a>
+                  </div>
+                  
+                  {lastCheckedAt && (
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Clock className="h-3 w-3 mr-1" />
+                      <span>Last checked: {formattedLastChecked}</span>
+                    </div>
+                  )}
                 </div>
               )}
               

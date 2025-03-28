@@ -32,6 +32,8 @@ export function MarkdownViewer({ content, contentId, editable = false, className
   const [ontologyTerms, setOntologyTerms] = useState<OntologyTerm[]>([]);
   const [domain, setDomain] = useState<string | null>(null);
   const [externalSourceUrl, setExternalSourceUrl] = useState<string | null>(null);
+  const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
+  const [needsExternalReview, setNeedsExternalReview] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
   const [newTag, setNewTag] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -67,10 +69,10 @@ export function MarkdownViewer({ content, contentId, editable = false, className
           });
         }
 
-        // Fetch external source URL
+        // Fetch external source URL and review status
         const { data: sourceData, error: sourceError } = await supabase
           .from("knowledge_sources")
-          .select("external_source_url")
+          .select("external_source_url, external_source_checked_at, needs_external_review")
           .eq("id", contentId)
           .single();
           
@@ -81,6 +83,8 @@ export function MarkdownViewer({ content, contentId, editable = false, className
         
         if (isMounted && sourceData) {
           setExternalSourceUrl(sourceData.external_source_url);
+          setLastCheckedAt(sourceData.external_source_checked_at);
+          setNeedsExternalReview(sourceData.needs_external_review || false);
         }
 
         // In the future, fetch ontology terms and domain information
@@ -192,6 +196,8 @@ export function MarkdownViewer({ content, contentId, editable = false, className
           ontologyTerms={ontologyTerms}
           domain={domain}
           externalSourceUrl={externalSourceUrl}
+          lastCheckedAt={lastCheckedAt}
+          needsExternalReview={needsExternalReview}
           isLoading={isLoading}
           newTag={newTag}
           setNewTag={setNewTag}

@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RefreshCw, X, Plus } from "lucide-react";
+import { RefreshCw, X, Plus, ExternalLink, AlertTriangle, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
+import { format } from "date-fns";
 
 interface Tag {
   id: string;
@@ -32,6 +33,11 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   const [newTag, setNewTag] = useState("");
   const { user } = useAuth();
   const isMounted = useRef(true);
+  
+  // New state for source metadata
+  const [externalSourceUrl, setExternalSourceUrl] = useState<string | null>(null);
+  const [needsExternalReview, setNeedsExternalReview] = useState<boolean>(false);
+  const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
 
   const fetchMetadata = async () => {
     if (!contentId || contentId.startsWith('temp-')) {
@@ -55,11 +61,30 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
         throw tagError;
       }
       
+      // Fetch source metadata
+      const { data: sourceData, error: sourceError } = await supabase
+        .from("knowledge_sources")
+        .select("external_source_url, needs_external_review, external_source_checked_at")
+        .eq("id", contentId)
+        .single();
+      
+      if (sourceError && sourceError.code !== 'PGRST116') {
+        // PGRST116 is "no rows returned" - not an error for us
+        throw sourceError;
+      }
+      
       console.log("Tags fetched:", tagData);
+      console.log("Source metadata fetched:", sourceData);
       
       if (isMounted.current) {
         startTransition(() => {
           setTags(tagData || []);
+          
+          if (sourceData) {
+            setExternalSourceUrl(sourceData.external_source_url);
+            setNeedsExternalReview(sourceData.needs_external_review || false);
+            setLastCheckedAt(sourceData.external_source_checked_at);
+          }
         });
       }
       
@@ -180,10 +205,28 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     }
   };
 
+  // Get formatted date for last checked
+  const formattedLastChecked = lastCheckedAt 
+    ? format(new Date(lastCheckedAt), 'MMM d, yyyy h:mm a')
+    : null;
+
+  // Determine card border styling based on review status
+  const cardBorderClass = needsExternalReview
+    ? "border-yellow-400 dark:border-yellow-600"
+    : "";
+
   return (
-    <Card>
+    <Card className={`${cardBorderClass}`}>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle>Content Metadata</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle>Content Metadata</CardTitle>
+          {needsExternalReview && (
+            <div className="flex items-center text-yellow-600 dark:text-yellow-500">
+              <AlertTriangle className="h-5 w-5 mr-1" />
+              <span className="text-sm font-medium">Needs Review</span>
+            </div>
+          )}
+        </div>
         <Button 
           variant="outline" 
           size="sm" 
@@ -207,6 +250,32 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
           </div>
         ) : (
           <div className="space-y-4">
+            {externalSourceUrl && (
+              <div>
+                <h3 className="text-sm font-medium mb-2">External Source</h3>
+                <div className="flex items-center gap-2 mb-2">
+                  <a 
+                    href={externalSourceUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm flex items-center gap-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    {externalSourceUrl.length > 40 
+                      ? `${externalSourceUrl.substring(0, 40)}...` 
+                      : externalSourceUrl}
+                  </a>
+                </div>
+                
+                {lastCheckedAt && (
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Clock className="h-3 w-3 mr-1" />
+                    <span>Last checked: {formattedLastChecked}</span>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <div>
               <h3 className="text-sm font-medium mb-2">Tags</h3>
               {user && (
