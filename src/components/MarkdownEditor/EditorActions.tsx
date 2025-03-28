@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Save, Send } from 'lucide-react';
+import { Loader2, Save, Send, ExternalLink } from 'lucide-react';
 
 interface EditorActionsProps {
   onSaveDraft: () => void;
@@ -9,8 +9,9 @@ interface EditorActionsProps {
   isSaving: boolean;
   isPublishing: boolean;
   isLoadingTemplate: boolean;
-  isDirty?: boolean;
-  isPublished?: boolean;
+  isDirty: boolean;
+  isPublished: boolean;
+  hasExternalSource?: boolean;
 }
 
 const EditorActions: React.FC<EditorActionsProps> = ({
@@ -19,29 +20,60 @@ const EditorActions: React.FC<EditorActionsProps> = ({
   isSaving,
   isPublishing,
   isLoadingTemplate,
-  isDirty = false,
-  isPublished = false
+  isDirty,
+  isPublished,
+  hasExternalSource = false
 }) => {
+  const isDisabled = isSaving || isPublishing || isLoadingTemplate;
+  
   return (
-    <div className="flex justify-end space-x-2">
-      <Button
-        variant="outline"
-        onClick={onSaveDraft}
-        className="flex items-center gap-2"
-        disabled={isLoadingTemplate || isSaving}
-      >
-        <Save size={16} />
-        {isSaving ? "Saving..." : "Save Draft"}
-        {isDirty && !isSaving && <span className="ml-1 h-2 w-2 rounded-full bg-yellow-400" title="Unsaved changes" />}
-      </Button>
-      <Button
-        onClick={onPublish}
-        className="flex items-center gap-2"
-        disabled={isLoadingTemplate || isPublishing}
-      >
-        <Send size={16} />
-        {isPublishing ? "Publishing..." : isPublished ? "Update Published" : "Publish"}
-      </Button>
+    <div className="flex items-center justify-between">
+      <div className="text-sm text-muted-foreground">
+        {isDirty && <span>Unsaved changes</span>}
+        {!isDirty && <span>All changes saved</span>}
+        {hasExternalSource && (
+          <span className="ml-2 inline-flex items-center text-xs text-primary">
+            <ExternalLink className="h-3 w-3 mr-1" /> External source linked
+          </span>
+        )}
+      </div>
+      
+      <div className="space-x-2">
+        <Button
+          variant="outline"
+          onClick={onSaveDraft}
+          disabled={isDisabled || (!isDirty && !isLoadingTemplate)}
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Save Draft
+            </>
+          )}
+        </Button>
+        
+        <Button
+          onClick={onPublish}
+          disabled={isDisabled || isPublished}
+        >
+          {isPublishing ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Publishing
+            </>
+          ) : (
+            <>
+              <Send className="mr-2 h-4 w-4" />
+              {isPublished ? 'Published' : 'Publish'}
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 };

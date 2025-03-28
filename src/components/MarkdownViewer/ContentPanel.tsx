@@ -1,66 +1,33 @@
 
 import React from "react";
+import { Card } from "@/components/ui/card";
 import ReactMarkdown from "react-markdown";
-import { Button } from "@/components/ui/button";
-import { Copy } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import { renderWikiLinks } from "./utils/wikilinksProcessor";
+import { ExternalLink } from "lucide-react";
 
 interface ContentPanelProps {
   content: string;
   processedContent: string;
+  externalSourceUrl?: string | null;
 }
 
-export function ContentPanel({ content, processedContent }: ContentPanelProps) {
-  const handleWikiLinkClick = (linkText: string) => {
-    console.log(`Wiki link clicked: ${linkText}`);
-    toast({
-      title: "Wiki Link Clicked",
-      description: `You clicked on the wiki link: ${linkText}`,
-    });
-  };
-
-  const handleCopyMarkdown = () => {
-    navigator.clipboard.writeText(content);
-    toast({
-      title: "Copied",
-      description: "Markdown content copied to clipboard",
-    });
-  };
-
+export function ContentPanel({ content, processedContent, externalSourceUrl }: ContentPanelProps) {
   return (
-    <div className="bg-card border rounded-lg p-6 shadow-sm mb-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Content</h2>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleCopyMarkdown}
-          className="flex items-center gap-1"
-        >
-          <Copy className="h-4 w-4" />
-          Copy
-        </Button>
+    <Card className="p-6 relative">
+      {externalSourceUrl && (
+        <div className="absolute top-3 right-3">
+          <a
+            href={externalSourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs flex items-center gap-1 text-primary hover:text-primary/80 transition-colors"
+          >
+            <ExternalLink className="h-3 w-3" /> External Source
+          </a>
+        </div>
+      )}
+      <div className="prose dark:prose-invert max-w-none">
+        <ReactMarkdown>{processedContent}</ReactMarkdown>
       </div>
-      <div className="prose prose-slate dark:prose-invert max-w-none">
-        <ReactMarkdown
-          components={{
-            p: ({ children }) => {
-              if (typeof children === 'string') {
-                return <p>{renderWikiLinks(children, handleWikiLinkClick)}</p>;
-              }
-              return <p>{children}</p>;
-            },
-            a: ({ node, ...props }) => (
-              <a {...props} className="text-blue-500 hover:underline" />
-            )
-          }}
-        >
-          {processedContent}
-        </ReactMarkdown>
-      </div>
-    </div>
+    </Card>
   );
 }
-
-export default ContentPanel;

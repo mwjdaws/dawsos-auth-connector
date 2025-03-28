@@ -9,27 +9,31 @@ interface UseDocumentOperationHandlersProps {
   title: string;
   content: string;
   templateId: string | null;
+  externalSourceUrl: string;
   documentId?: string;
   sourceId?: string;
-  saveDraft: (title: string, content: string, templateId: string | null, userId: string | undefined, isAutoSave?: boolean) => Promise<string | null>;
-  publishDocument: (title: string, content: string, templateId: string | null, userId: string | undefined) => Promise<any>;
+  saveDraft: (title: string, content: string, templateId: string | null, externalSourceUrl: string, userId: string | undefined, isAutoSave?: boolean) => Promise<string | null>;
+  publishDocument: (title: string, content: string, templateId: string | null, externalSourceUrl: string, userId: string | undefined) => Promise<any>;
   setLastSavedTitle: (title: string) => void;
   setLastSavedContent: (content: string) => void;
+  setLastSavedExternalSourceUrl: (url: string) => void;
   setIsDirty: (isDirty: boolean) => void;
-  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null) => void;
-  onPublish?: (id: string, title: string, content: string, templateId: string | null) => void;
+  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
+  onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
 }
 
 export const useDocumentOperationHandlers = ({
   title,
   content,
   templateId,
+  externalSourceUrl,
   documentId,
   sourceId,
   saveDraft,
   publishDocument,
   setLastSavedTitle,
   setLastSavedContent,
+  setLastSavedExternalSourceUrl,
   setIsDirty,
   onSaveDraft,
   onPublish
@@ -67,12 +71,13 @@ export const useDocumentOperationHandlers = ({
       // Get current user ID (from auth context if available)
       const userId = undefined; // Replace with actual user ID from auth context if available
       
-      const savedId = await saveDraft(title, content, templateId, userId, isAutoSave);
+      const savedId = await saveDraft(title, content, templateId, externalSourceUrl, userId, isAutoSave);
       
       if (savedId) {
         // Update lastSaved state to reflect the current values
         setLastSavedTitle(title);
         setLastSavedContent(content);
+        setLastSavedExternalSourceUrl(externalSourceUrl);
         setIsDirty(false);
         
         // Create a version for manual saves only
@@ -98,7 +103,7 @@ export const useDocumentOperationHandlers = ({
           // Call the onSaveDraft callback if provided
           if (onSaveDraft) {
             try {
-              onSaveDraft(savedId, title, content, templateId);
+              onSaveDraft(savedId, title, content, templateId, externalSourceUrl);
             } catch (callbackError) {
               console.error('Error in onSaveDraft callback:', callbackError);
             }
@@ -163,7 +168,7 @@ export const useDocumentOperationHandlers = ({
       // Get current user ID (from auth context if available)
       const userId = undefined; // Replace with actual user ID from auth context if available
       
-      const result = await publishDocument(title, content, templateId, userId);
+      const result = await publishDocument(title, content, templateId, externalSourceUrl, userId);
       
       if (result.success) {
         // Create a version for the published document
@@ -187,7 +192,7 @@ export const useDocumentOperationHandlers = ({
         // Call the onPublish callback if provided
         if (onPublish && result.documentId) {
           try {
-            onPublish(result.documentId, title, content, templateId);
+            onPublish(result.documentId, title, content, templateId, externalSourceUrl);
           } catch (callbackError) {
             console.error('Error in onPublish callback:', callbackError);
           }

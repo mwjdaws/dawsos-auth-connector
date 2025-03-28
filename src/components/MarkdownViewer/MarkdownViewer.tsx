@@ -31,6 +31,7 @@ export function MarkdownViewer({ content, contentId, editable = false, className
   const [tags, setTags] = useState<Tag[]>([]);
   const [ontologyTerms, setOntologyTerms] = useState<OntologyTerm[]>([]);
   const [domain, setDomain] = useState<string | null>(null);
+  const [externalSourceUrl, setExternalSourceUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [newTag, setNewTag] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -64,6 +65,22 @@ export function MarkdownViewer({ content, contentId, editable = false, className
           startTransition(() => {
             setTags(tagData || []);
           });
+        }
+
+        // Fetch external source URL
+        const { data: sourceData, error: sourceError } = await supabase
+          .from("knowledge_sources")
+          .select("external_source_url")
+          .eq("id", contentId)
+          .single();
+          
+        if (sourceError && sourceError.code !== 'PGRST116') {
+          // PGRST116 is "no rows returned" - not an error for us
+          throw sourceError;
+        }
+        
+        if (isMounted && sourceData) {
+          setExternalSourceUrl(sourceData.external_source_url);
         }
 
         // In the future, fetch ontology terms and domain information
@@ -165,6 +182,7 @@ export function MarkdownViewer({ content, contentId, editable = false, className
         <ContentPanel 
           content={content} 
           processedContent={processedContent} 
+          externalSourceUrl={externalSourceUrl}
         />
       </div>
 
@@ -173,6 +191,7 @@ export function MarkdownViewer({ content, contentId, editable = false, className
           tags={tags}
           ontologyTerms={ontologyTerms}
           domain={domain}
+          externalSourceUrl={externalSourceUrl}
           isLoading={isLoading}
           newTag={newTag}
           setNewTag={setNewTag}

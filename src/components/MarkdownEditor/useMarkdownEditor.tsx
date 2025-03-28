@@ -9,15 +9,17 @@ interface UseMarkdownEditorProps {
   initialTitle?: string;
   initialContent?: string;
   initialTemplateId?: string | null;
+  initialExternalSourceUrl?: string;
   documentId?: string;
-  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null) => void;
-  onPublish?: (id: string, title: string, content: string, templateId: string | null) => void;
+  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
+  onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
 }
 
 export const useMarkdownEditor = ({
   initialTitle = '',
   initialContent = '',
   initialTemplateId = null,
+  initialExternalSourceUrl = '',
   documentId,
   onSaveDraft,
   onPublish
@@ -26,6 +28,7 @@ export const useMarkdownEditor = ({
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
   const [templateId, setTemplateId] = useState<string | null>(initialTemplateId);
+  const [externalSourceUrl, setExternalSourceUrl] = useState(initialExternalSourceUrl);
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -36,7 +39,8 @@ export const useMarkdownEditor = ({
     setTitle(initialTitle);
     setContent(initialContent);
     setTemplateId(initialTemplateId);
-  }, [initialTitle, initialContent, initialTemplateId]);
+    setExternalSourceUrl(initialExternalSourceUrl);
+  }, [initialTitle, initialContent, initialTemplateId, initialExternalSourceUrl]);
 
   const handleSaveDraft = async () => {
     if (!title.trim()) {
@@ -54,6 +58,7 @@ export const useMarkdownEditor = ({
         title,
         content,
         template_id: templateId,
+        external_source_url: externalSourceUrl,
         user_id: user?.id,
       };
 
@@ -84,7 +89,7 @@ export const useMarkdownEditor = ({
       savedDocumentId = response.data.id;
 
       if (onSaveDraft) {
-        onSaveDraft(savedDocumentId, title, content, templateId);
+        onSaveDraft(savedDocumentId, title, content, templateId, externalSourceUrl);
       }
 
       toast({
@@ -121,7 +126,7 @@ export const useMarkdownEditor = ({
       const savedId = await handleSaveDraft();
       
       if (savedId && onPublish) {
-        onPublish(savedId, title, content, templateId);
+        onPublish(savedId, title, content, templateId, externalSourceUrl);
       }
       
       toast({
@@ -175,6 +180,8 @@ export const useMarkdownEditor = ({
     content,
     setContent,
     templateId,
+    externalSourceUrl,
+    setExternalSourceUrl,
     isLoadingTemplate,
     isSaving,
     isPublishing,

@@ -6,6 +6,7 @@ interface UseContentStateProps {
   initialTitle: string;
   initialContent: string;
   initialTemplateId: string | null;
+  initialExternalSourceUrl?: string;
   sourceId?: string;
   documentId?: string;
 }
@@ -17,6 +18,7 @@ export const useContentState = ({
   initialTitle,
   initialContent,
   initialTemplateId,
+  initialExternalSourceUrl = '',
   sourceId,
   documentId
 }: UseContentStateProps) => {
@@ -24,11 +26,13 @@ export const useContentState = ({
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
   const [templateId, setTemplateId] = useState<string | null>(initialTemplateId);
+  const [externalSourceUrl, setExternalSourceUrl] = useState(initialExternalSourceUrl);
   
   // State tracking
   const [isDirty, setIsDirty] = useState(false);
   const [lastSavedTitle, setLastSavedTitle] = useState(initialTitle);
   const [lastSavedContent, setLastSavedContent] = useState(initialContent);
+  const [lastSavedExternalSourceUrl, setLastSavedExternalSourceUrl] = useState(initialExternalSourceUrl);
   const [isPublished, setIsPublished] = useState(false);
 
   // Update state if props change (e.g., when loading a saved draft)
@@ -37,20 +41,24 @@ export const useContentState = ({
       setTitle(initialTitle);
       setContent(initialContent);
       setTemplateId(initialTemplateId);
+      setExternalSourceUrl(initialExternalSourceUrl);
       setLastSavedTitle(initialTitle);
       setLastSavedContent(initialContent);
+      setLastSavedExternalSourceUrl(initialExternalSourceUrl);
       setIsDirty(false);
     }
-  }, [initialTitle, initialContent, initialTemplateId, sourceId]);
+  }, [initialTitle, initialContent, initialTemplateId, initialExternalSourceUrl, sourceId]);
 
   // Track changes to mark document as dirty when content changes
   useEffect(() => {
-    if (title !== lastSavedTitle || content !== lastSavedContent) {
+    if (title !== lastSavedTitle || 
+        content !== lastSavedContent || 
+        externalSourceUrl !== lastSavedExternalSourceUrl) {
       setIsDirty(true);
     } else {
       setIsDirty(false);
     }
-  }, [title, content, lastSavedTitle, lastSavedContent]);
+  }, [title, content, externalSourceUrl, lastSavedTitle, lastSavedContent, lastSavedExternalSourceUrl]);
 
   // Fetch published status when document loads
   useEffect(() => {
@@ -59,12 +67,16 @@ export const useContentState = ({
       const fetchPublishStatus = async () => {
         const { data, error } = await supabase
           .from('knowledge_sources')
-          .select('published')
+          .select('published, external_source_url')
           .eq('id', documentToCheck)
           .single();
         
         if (!error && data) {
           setIsPublished(!!data.published);
+          if (data.external_source_url) {
+            setExternalSourceUrl(data.external_source_url);
+            setLastSavedExternalSourceUrl(data.external_source_url);
+          }
         }
       };
       
@@ -81,12 +93,16 @@ export const useContentState = ({
     setContent,
     templateId,
     setTemplateId,
+    externalSourceUrl,
+    setExternalSourceUrl,
     isDirty,
     setIsDirty,
     lastSavedTitle,
     setLastSavedTitle,
     lastSavedContent,
     setLastSavedContent,
+    lastSavedExternalSourceUrl,
+    setLastSavedExternalSourceUrl,
     isPublished,
     setIsPublished
   };

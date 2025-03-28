@@ -1,3 +1,4 @@
+
 import { Skeleton } from "@/components/ui/skeleton";
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { Suspense } from "react";
@@ -6,8 +7,8 @@ import { useDocumentVersioning } from "@/hooks/markdown-editor/useDocumentVersio
 
 interface MarkdownEditorTabProps {
   contentId: string;
-  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null) => void;
-  onPublish?: (id: string, title: string, content: string, templateId: string | null) => void;
+  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
+  onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
 }
 
 export function MarkdownEditorTab({ 
@@ -42,7 +43,7 @@ console.log(greeting);
   const isNewDocument = !sourceId;
 
   // Create a wrapper for onSaveDraft to properly handle version creation
-  const handleSaveDraft = (id: string, title: string, content: string, templateId: string | null) => {
+  const handleSaveDraft = (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => {
     // Create a version if this is an existing document
     if (id && !id.startsWith('temp-')) {
       createVersion(id, content, { title, action: "save_draft" });
@@ -50,7 +51,7 @@ console.log(greeting);
     
     // Call the original onSaveDraft handler
     if (onSaveDraft) {
-      onSaveDraft(id, title, content, templateId);
+      onSaveDraft(id, title, content, templateId, externalSourceUrl);
     }
   };
 
@@ -62,6 +63,7 @@ console.log(greeting);
           initialTitle={isNewDocument ? "Draft Document" : ""}
           initialContent={isNewDocument ? sampleMarkdown : ""}
           initialTemplateId={null}
+          initialExternalSourceUrl=""
           sourceId={sourceId}
           documentId={contentId !== `temp-${Date.now()}` ? contentId : undefined}
           onSaveDraft={handleSaveDraft}

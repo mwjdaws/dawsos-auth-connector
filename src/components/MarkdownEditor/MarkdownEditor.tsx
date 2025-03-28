@@ -15,16 +15,18 @@ interface MarkdownEditorProps {
   initialTitle?: string;
   initialContent?: string;
   initialTemplateId?: string | null;
+  initialExternalSourceUrl?: string;
   documentId?: string;
   sourceId?: string;
-  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null) => void;
-  onPublish?: (id: string, title: string, content: string, templateId: string | null) => void;
+  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
+  onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
 }
 
 const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   initialTitle = '',
   initialContent = '',
   initialTemplateId = null,
+  initialExternalSourceUrl = '',
   documentId,
   sourceId,
   onSaveDraft,
@@ -41,6 +43,8 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     content,
     setContent,
     templateId,
+    externalSourceUrl,
+    setExternalSourceUrl,
     isLoadingTemplate,
     isSaving,
     isPublishing,
@@ -54,6 +58,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     initialTitle,
     initialContent,
     initialTemplateId,
+    initialExternalSourceUrl,
     documentId,
     sourceId,
     onSaveDraft,
@@ -98,6 +103,8 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           title={title}
           setTitle={setTitle}
           templateId={templateId}
+          externalSourceUrl={externalSourceUrl}
+          setExternalSourceUrl={setExternalSourceUrl}
           templates={templates}
           isLoadingTemplates={isLoadingTemplates}
           onTemplateChange={handleTemplateChange}
@@ -116,11 +123,13 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           setActiveTab={setActiveTab}
           content={content}
           setContent={setContent}
+          externalSourceUrl={externalSourceUrl}
         />
       ) : (
         <SplitEditor 
           content={content} 
-          setContent={setContent} 
+          setContent={setContent}
+          externalSourceUrl={externalSourceUrl}
         />
       )}
 
@@ -134,6 +143,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         isLoadingTemplate={isLoadingTemplate}
         isDirty={isDirty}
         isPublished={isPublished}
+        hasExternalSource={!!externalSourceUrl}
       />
 
       {/* Version History Modal */}

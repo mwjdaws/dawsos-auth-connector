@@ -1,8 +1,9 @@
+
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { X, ChevronRight, ChevronDown } from "lucide-react";
+import { X, ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
 import { TagInput } from "./TagInput";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -23,6 +24,7 @@ interface MetadataPanelProps {
   tags: Tag[];
   ontologyTerms: OntologyTerm[];
   domain: string | null;
+  externalSourceUrl: string | null;
   isLoading: boolean;
   newTag: string;
   setNewTag: (value: string) => void;
@@ -36,6 +38,7 @@ export function MetadataPanel({
   tags,
   ontologyTerms,
   domain,
+  externalSourceUrl,
   isLoading,
   newTag,
   setNewTag,
@@ -102,6 +105,20 @@ export function MetadataPanel({
             </>
           ) : (
             <>
+              {externalSourceUrl && (
+                <div>
+                  <h3 className="text-sm font-medium mb-2">External Source</h3>
+                  <a
+                    href={externalSourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm flex items-center gap-1 text-primary hover:text-primary/80 transition-colors"
+                  >
+                    <ExternalLink className="h-4 w-4" /> View Source
+                  </a>
+                </div>
+              )}
+              
               <div>
                 <h3 className="text-sm font-medium mb-2">Tags</h3>
                 {tags.length > 0 ? (

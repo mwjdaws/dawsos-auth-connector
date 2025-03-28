@@ -14,6 +14,7 @@ The Markdown Editor is a core component of DawsOS that provides a rich editing e
 - **Fullscreen Mode**: Toggle between standard and fullscreen editing
 - **Split Editor**: Side-by-side editing and preview in standard mode
 - **Tabbed Interface**: Switch between edit and preview tabs in fullscreen mode
+- **External Source Links**: Link documents to external source references
 
 ## Component Architecture
 
@@ -22,7 +23,7 @@ The Markdown Editor follows a modular component architecture:
 ### Core Components
 
 1. **MarkdownEditor**: The main container component that orchestrates all functionality
-2. **EditorHeader**: Contains title input and template selection
+2. **EditorHeader**: Contains title input, template selection, and external source URL input
 3. **EditorToolbar**: Contains UI controls for fullscreen and version history
 
 ### Editor Layouts
@@ -70,6 +71,23 @@ Version history is accessed through the History button and handled by the `Versi
 
 This allows users to view previous versions of a document and restore them if needed.
 
+### External Sources
+
+The editor supports linking documents to external references through the external source URL field:
+
+```typescript
+<Input
+  id="externalSource"
+  value={externalSourceUrl}
+  onChange={(e) => setExternalSourceUrl(e.target.value)}
+  placeholder="https://example.com/reference-document"
+  className="w-full"
+  type="url"
+/>
+```
+
+When viewing content, external source links are displayed prominently with clickable links to allow users to reference the original source material.
+
 ## Usage
 
 ### Basic Usage
@@ -79,10 +97,11 @@ This allows users to view previous versions of a document and restore them if ne
   initialTitle="My Document"
   initialContent="# Hello World"
   initialTemplateId={null}
-  onSaveDraft={(id, title, content, templateId) => {
+  initialExternalSourceUrl="https://example.com/reference"
+  onSaveDraft={(id, title, content, templateId, externalSourceUrl) => {
     // Handle draft saving
   }}
-  onPublish={(id, title, content, templateId) => {
+  onPublish={(id, title, content, templateId, externalSourceUrl) => {
     // Handle publishing
   }}
 />
@@ -114,13 +133,11 @@ The editor supports two primary UI modes controlled by the `isFullscreen` state:
 The editor automatically saves drafts when content changes using the `useAutosave` hook:
 
 ```typescript
-useAutosave({
-  isDirty,
-  isSaving,
-  isPublishing,
-  documentId: documentId || sourceId,
-  onSave: () => handleSaveDraft(true)
-});
+useAutosave(
+  isDirty && !isTemp, 
+  30000, // 30 seconds interval
+  () => handleSaveDraft(false, true) // isManualSave=false, isAutoSave=true
+);
 ```
 
 ### Loading States
@@ -147,3 +164,4 @@ Planned improvements to the Markdown Editor include:
 - Image and file uploads
 - Table editor
 - Spell checking and grammar suggestions
+- External content change detection

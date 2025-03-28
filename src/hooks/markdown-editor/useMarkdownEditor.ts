@@ -16,6 +16,7 @@ export const useMarkdownEditor = ({
   initialTitle = '',
   initialContent = '',
   initialTemplateId = null,
+  initialExternalSourceUrl = '',
   documentId,
   sourceId,
   onSaveDraft,
@@ -29,6 +30,8 @@ export const useMarkdownEditor = ({
     setContent,
     templateId,
     setTemplateId,
+    externalSourceUrl,
+    setExternalSourceUrl,
     isDirty,
     setIsDirty,
     isPublished,
@@ -36,11 +39,14 @@ export const useMarkdownEditor = ({
     lastSavedTitle,
     setLastSavedTitle,
     lastSavedContent,
-    setLastSavedContent
+    setLastSavedContent,
+    lastSavedExternalSourceUrl,
+    setLastSavedExternalSourceUrl
   } = useContentState({
     initialTitle,
     initialContent,
-    initialTemplateId
+    initialTemplateId,
+    initialExternalSourceUrl
   });
 
   // Load existing content
@@ -49,8 +55,10 @@ export const useMarkdownEditor = ({
     setTitle,
     setContent,
     setTemplateId,
+    setExternalSourceUrl,
     setLastSavedTitle,
     setLastSavedContent,
+    setLastSavedExternalSourceUrl,
     setIsPublished,
     setIsDirty
   });
@@ -76,12 +84,14 @@ export const useMarkdownEditor = ({
     title,
     content,
     templateId,
+    externalSourceUrl,
     documentId,
     sourceId,
     saveDraft,
     publishDocument,
     setLastSavedTitle,
     setLastSavedContent,
+    setLastSavedExternalSourceUrl,
     setIsDirty,
     onSaveDraft,
     onPublish
@@ -115,8 +125,10 @@ export const useMarkdownEditor = ({
       setTitle(initialTitle);
       setContent(initialContent);
       setTemplateId(initialTemplateId);
+      setExternalSourceUrl(initialExternalSourceUrl);
       setLastSavedTitle(initialTitle);
       setLastSavedContent(initialContent);
+      setLastSavedExternalSourceUrl(initialExternalSourceUrl);
       setIsDirty(false);
     } catch (error) {
       handleError(
@@ -125,7 +137,7 @@ export const useMarkdownEditor = ({
         { level: "error" }
       );
     }
-  }, [initialTitle, initialContent, initialTemplateId]);
+  }, [initialTitle, initialContent, initialTemplateId, initialExternalSourceUrl]);
 
   return {
     // Content state
@@ -134,6 +146,8 @@ export const useMarkdownEditor = ({
     content,
     setContent,
     templateId,
+    externalSourceUrl,
+    setExternalSourceUrl,
     
     // Operation states
     isLoadingTemplate,

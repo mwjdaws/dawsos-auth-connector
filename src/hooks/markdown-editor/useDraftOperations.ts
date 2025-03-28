@@ -15,6 +15,7 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
     title: string,
     content: string,
     templateId: string | null,
+    externalSourceUrl: string,
     userId: string | undefined,
     documentId?: string,
     isAutoSave = false
@@ -45,7 +46,8 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
       console.log('Saving draft:', { 
         title, 
         content: content.substring(0, 50) + '...', 
-        templateId, 
+        templateId,
+        externalSourceUrl,
         userId, 
         documentId, 
         isAutoSave 
@@ -55,6 +57,7 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
         title,
         content,
         template_id: templateId,
+        external_source_url: externalSourceUrl,
         user_id: userId
       };
 
