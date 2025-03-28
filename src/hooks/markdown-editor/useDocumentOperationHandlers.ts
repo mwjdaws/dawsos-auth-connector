@@ -1,9 +1,8 @@
 
 import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/error-handling';
+import { useAuth } from '@/hooks/useAuth';
 
 interface UseDocumentOperationHandlersProps {
   title: string;
@@ -11,8 +10,19 @@ interface UseDocumentOperationHandlersProps {
   templateId: string | null;
   documentId?: string;
   sourceId?: string;
-  saveDraft: (title: string, content: string, templateId: string | null, userId: string, isAutoSave?: boolean) => Promise<string | null>;
-  publishDocument: (title: string, content: string, templateId: string | null, userId: string) => Promise<any>;
+  saveDraft: (
+    title: string,
+    content: string,
+    templateId: string | null,
+    userId: string | undefined,
+    isAutoSave?: boolean
+  ) => Promise<string | null>;
+  publishDocument: (
+    title: string,
+    content: string,
+    templateId: string | null,
+    userId: string | undefined
+  ) => Promise<any>;
   setLastSavedTitle: (title: string) => void;
   setLastSavedContent: (content: string) => void;
   setIsDirty: (isDirty: boolean) => void;
@@ -21,7 +31,7 @@ interface UseDocumentOperationHandlersProps {
 }
 
 /**
- * Hook for handling document save and publish operations
+ * Hook for document operation handlers with UI feedback
  */
 export const useDocumentOperationHandlers = ({
   title,
@@ -38,167 +48,134 @@ export const useDocumentOperationHandlers = ({
   onPublish
 }: UseDocumentOperationHandlersProps) => {
   const { user } = useAuth();
+  const [isSavingManually, setIsSavingManually] = useState(false);
 
-  // Handle save draft wrapper
-  const handleSaveDraft = async (isAutoSave = false) => {
-    if (!user) {
-      if (!isAutoSave) {
+  /**
+   * Handle saving a draft with feedback
+   */
+  const handleSaveDraft = async (showFeedback = true) => {
+    if (!title.trim()) {
+      if (showFeedback) {
         toast({
-          title: "Authentication Required",
-          description: "You must be logged in to save drafts",
+          title: "Title Required",
+          description: "Please enter a title before saving",
           variant: "destructive",
         });
       }
       return null;
     }
-    
-    // Ensure we always pass a valid user.id
-    if (!user.id) {
-      console.error("User object exists but has no ID property");
-      if (!isAutoSave) {
-        handleError(
-          new Error("User ID not available"),
-          "Authentication error. Please try logging out and back in.",
-          { level: "error" }
-        );
+
+    if (!showFeedback) {
+      // For autosave, don't show UI feedback but still save
+      try {
+        const savedId = await saveDraft(title, content, templateId, user?.id, true);
+        
+        if (savedId) {
+          setLastSavedTitle(title);
+          setLastSavedContent(content);
+          setIsDirty(false);
+        }
+        
+        return savedId;
+      } catch (error) {
+        // Silent failure for autosave
+        console.error('Autosave failed:', error);
+        return null;
       }
-      return null;
     }
-    
-    console.log("Saving draft with user ID:", user.id);
-    
+
+    // Manual save with UI feedback
     try {
-      const result = await saveDraft(title, content, templateId, user.id, isAutoSave);
-      if (result) {
-        // Update last saved state
+      setIsSavingManually(true);
+      
+      const savedId = await saveDraft(title, content, templateId, user?.id, false);
+      
+      if (savedId) {
         setLastSavedTitle(title);
         setLastSavedContent(content);
         setIsDirty(false);
+        
+        if (onSaveDraft) {
+          onSaveDraft(savedId, title, content, templateId);
+        }
+        
+        toast({
+          title: "Draft Saved",
+          description: "Your document has been saved",
+        });
       }
-      return result;
+      
+      return savedId;
     } catch (error) {
       handleError(
-        error,
-        isAutoSave ? "Auto-save failed" : "Failed to save draft",
+        error, 
+        "Failed to save draft", 
         { 
           level: "error",
-          actionLabel: isAutoSave ? undefined : "Retry",
-          action: isAutoSave ? undefined : () => handleSaveDraft(false)
+          actionLabel: "Try Again",
+          action: () => handleSaveDraft(true)
         }
       );
       return null;
+    } finally {
+      setIsSavingManually(false);
     }
   };
 
-  // Handle publish wrapper with improved error handling
+  /**
+   * Handle publishing a document with feedback
+   */
   const handlePublish = async () => {
-    if (!user) {
-      handleError(
-        new Error("Not authenticated"),
-        "Authentication Required. You must be logged in to publish content.",
-        { level: "error" }
-      );
-      return;
-    }
-    
-    // Explicit check for user.id
-    if (!user.id) {
-      handleError(
-        new Error("User ID missing"),
-        "Authentication error. Please try logging out and back in.",
-        { level: "error" }
-      );
-      return;
-    }
-    
     if (!title.trim()) {
-      handleError(
-        new Error("Title required"),
-        "Please enter a title before publishing",
-        { level: "warning" }
-      );
-      return;
+      toast({
+        title: "Title Required",
+        description: "Please enter a title before publishing",
+        variant: "destructive",
+      });
+      return null;
     }
-
+    
     try {
-      console.log("Publishing document with user ID:", user.id);
-      
-      // First save the draft to ensure we have the latest content
+      // First ensure we have the latest content saved
       const savedId = await handleSaveDraft(false);
-      console.log("Draft saved with ID:", savedId);
       
       if (!savedId) {
-        throw new Error("Failed to save draft before publishing");
+        throw new Error("Failed to save document before publishing");
       }
       
-      // Now publish the document
-      console.log("Attempting to publish document ID:", savedId);
-      const publishResult = await publishDocument(title, content, templateId, user.id);
+      const result = await publishDocument(title, content, templateId, user?.id);
       
-      if (publishResult && publishResult.success) {
-        console.log("Document successfully published with ID:", savedId);
-        
+      if (result.success) {
         if (onPublish) {
           onPublish(savedId, title, content, templateId);
         }
         
-        // Verify published status with error recovery
-        try {
-          const { data, error } = await supabase
-            .from('knowledge_sources')
-            .select('published, published_at')
-            .eq('id', savedId)
-            .single();
-            
-          if (error) {
-            console.warn("Error verifying published status:", error);
-          } else if (data && !data.published) {
-            console.warn("Document not marked as published in database after publish operation");
-            
-            // Attempt to fix the published status
-            const { error: updateError } = await supabase
-              .from('knowledge_sources')
-              .update({
-                published: true,
-                published_at: new Date().toISOString(),
-              })
-              .eq('id', savedId);
-              
-            if (updateError) {
-              console.error("Failed to update published status:", updateError);
-            } else {
-              console.log("Fixed published status for document:", savedId);
-            }
-          } else {
-            console.log("Document correctly marked as published in database:", data);
-          }
-        } catch (verifyError) {
-          // Silently handle verification errors
-          console.error("Error verifying publish status:", verifyError);
-        }
-        
         toast({
-          title: "Success",
-          description: "Your content has been published successfully",
+          title: "Document Published",
+          description: "Your document has been published successfully",
         });
+        
+        return result;
       } else {
-        throw new Error(publishResult?.error || "Unknown publishing error");
+        throw new Error(result.error || "Unknown error during publishing");
       }
     } catch (error) {
       handleError(
-        error,
-        "There was an error publishing your content. Please try again.",
+        error, 
+        "Failed to publish document", 
         { 
           level: "error",
-          actionLabel: "Retry",
+          actionLabel: "Try Again",
           action: () => handlePublish()
         }
       );
+      return null;
     }
   };
 
   return {
     handleSaveDraft,
-    handlePublish
+    handlePublish,
+    isSavingManually
   };
 };
