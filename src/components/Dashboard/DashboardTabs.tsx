@@ -6,6 +6,8 @@ import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor"; // Upda
 import { TagCards } from "@/components/TagPanel/TagCards";
 import TemplatesPanel from "@/components/TemplatesPanel";
 import { useAuth } from "@/hooks/useAuth";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { TagPanelErrorFallback } from "@/components/TagPanel/TagPanelErrorFallback";
 
 interface DashboardTabsProps {
   activeTab: string;
@@ -75,15 +77,19 @@ console.log(greeting);
           <div className="bg-card border rounded-lg p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Tag Generator</h2>
             <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
-              <TagPanel 
-                contentId={contentId} 
-                onTagsSaved={onTagGenerationComplete} 
-              />
+              <ErrorBoundary fallback={<TagPanelErrorFallback />}>
+                <TagPanel 
+                  contentId={contentId} 
+                  onTagsSaved={onTagGenerationComplete} 
+                />
+              </ErrorBoundary>
             </Suspense>
             
             <h2 className="text-xl font-semibold mb-4 mt-8">Recent Tags</h2>
             <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
-              <TagCards />
+              <ErrorBoundary>
+                <TagCards />
+              </ErrorBoundary>
             </Suspense>
           </div>
         </TabsContent>
@@ -92,10 +98,12 @@ console.log(greeting);
           <div className="bg-card border rounded-lg p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Markdown Viewer</h2>
             <Suspense fallback={<Skeleton className="h-[300px] w-full rounded-lg" />}>
-              <MarkdownPanel 
-                content={sampleMarkdown} 
-                metadata={sampleMetadata} 
-              />
+              <ErrorBoundary>
+                <MarkdownPanel 
+                  content={sampleMarkdown} 
+                  metadata={sampleMetadata} 
+                />
+              </ErrorBoundary>
             </Suspense>
           </div>
         </TabsContent>
@@ -104,14 +112,16 @@ console.log(greeting);
           <div className="bg-card border rounded-lg p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Markdown Editor</h2>
             <Suspense fallback={<Skeleton className="h-[300px] w-full rounded-lg" />}>
-              <MarkdownEditor 
-                initialTitle="Draft Document"
-                initialContent={sampleMarkdown}
-                initialTemplateId={null}
-                sourceId={contentId !== `temp-${Date.now()}` ? contentId : undefined}
-                onSaveDraft={onSaveDraft}
-                onPublish={onPublish}
-              />
+              <ErrorBoundary>
+                <MarkdownEditor 
+                  initialTitle="Draft Document"
+                  initialContent={sampleMarkdown}
+                  initialTemplateId={null}
+                  sourceId={contentId !== `temp-${Date.now()}` ? contentId : undefined}
+                  onSaveDraft={onSaveDraft}
+                  onPublish={onPublish}
+                />
+              </ErrorBoundary>
             </Suspense>
           </div>
         </TabsContent>
@@ -120,10 +130,12 @@ console.log(greeting);
           <div className="bg-card border rounded-lg p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Content Metadata</h2>
             <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
-              <MetadataPanel 
-                contentId={contentId}
-                onMetadataChange={onMetadataChange}
-              />
+              <ErrorBoundary>
+                <MetadataPanel 
+                  contentId={contentId}
+                  onMetadataChange={onMetadataChange}
+                />
+              </ErrorBoundary>
             </Suspense>
           </div>
         </TabsContent>
@@ -132,7 +144,9 @@ console.log(greeting);
           <div className="bg-card border rounded-lg p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Knowledge Templates</h2>
             <Suspense fallback={<Skeleton className="h-[300px] w-full rounded-lg" />}>
-              <TemplatesPanel />
+              <ErrorBoundary>
+                <TemplatesPanel />
+              </ErrorBoundary>
             </Suspense>
           </div>
         </TabsContent>

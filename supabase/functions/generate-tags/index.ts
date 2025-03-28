@@ -15,6 +15,7 @@ interface RequestBody {
   content: string;
   save?: boolean;
   contentId?: string;
+  retryCount?: number;
 }
 
 serve(async (req) => {
@@ -47,7 +48,7 @@ serve(async (req) => {
       );
     }
 
-    const { content, save = false, contentId } = requestBody;
+    const { content, save = false, contentId, retryCount = 0 } = requestBody;
 
     // Validate content length
     if (typeof content !== "string" || content.trim().length < 5) {
@@ -69,36 +70,48 @@ serve(async (req) => {
       );
     }
 
-    // Generate tags using OpenAI with error handling
-    const { tags, error: generationError } = await withErrorHandling(
+    console.log(`Generating tags for content: ${content.substring(0, 30)}...`);
+
+    // Generate tags using OpenAI with error handling and retry mechanism
+    let { tags, error: generationError } = await withErrorHandling(
       () => generateTagsWithOpenAI(content)
     );
     
-    // Save tags to database if requested
-    if (save && contentId) {
-      const { success, message, error: saveError } = await withErrorHandling(
-        () => saveTagsToDatabase(tags, contentId)
+    // If tag generation failed and this isn't a retry, attempt a simpler prompt
+    if ((generationError || !tags || tags.length === 0) && retryCount === 0) {
+      console.log("Initial tag generation failed, attempting with simpler prompt");
+      const simplifiedResult = await withErrorHandling(
+        () => generateTagsWithOpenAI(content, true) // true for simplified prompt
       );
       
-      return new Response(
-        JSON.stringify({ 
-          tags, 
-          success,
-          message,
-          error: generationError || saveError 
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+      if (!simplifiedResult.error && simplifiedResult.tags && simplifiedResult.tags.length > 0) {
+        tags = simplifiedResult.tags;
+        generationError = null;
+      }
+    }
+    
+    // Ensure we always have some tags even if generation fails
+    if (!tags || tags.length === 0) {
+      console.log("Tag generation failed, using fallback tags");
+      tags = ["content", "document", "text", "analysis", "metadata"];
+    }
+    
+    // Save tags to database if requested
+    let saveResult = { success: false, message: "", error: null };
+    if (save && contentId) {
+      console.log(`Saving ${tags.length} tags for contentId: ${contentId}`);
+      saveResult = await withErrorHandling(
+        () => saveTagsToDatabase(tags, contentId)
       );
     }
     
-    // Return just the generated tags if not saving
     return new Response(
       JSON.stringify({ 
-        tags,
-        error: generationError 
+        tags, 
+        success: save ? saveResult.success : true,
+        message: saveResult.message,
+        error: generationError || saveResult.error,
+        fallback: generationError !== null
       }),
       {
         status: 200,
