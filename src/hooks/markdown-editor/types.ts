@@ -32,3 +32,13 @@ export interface PublishOperationsContext {
     isAutoSave?: boolean
   ) => Promise<string | null>;
 }
+
+export interface MarkdownEditorProps {
+  initialTitle?: string;
+  initialContent?: string;
+  initialTemplateId?: string | null;
+  documentId?: string;
+  sourceId?: string;
+  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null) => void;
+  onPublish?: (id: string, title: string, content: string, templateId: string | null) => void;
+}

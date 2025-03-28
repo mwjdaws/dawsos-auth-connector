@@ -103,7 +103,7 @@ export const useMarkdownEditor = ({
     isSaving,
     isPublishing,
     documentId: documentId || sourceId,
-    onSave: () => handleSaveDraft(true),
+    onSave: () => handleSaveDraft(false),
     interval: 30000, // Increased to 30 seconds to reduce save frequency
     enabled: !!documentId || !!sourceId // Only enable when we have a valid document
   });
@@ -118,7 +118,7 @@ export const useMarkdownEditor = ({
       setLastSavedContent(initialContent);
       setIsDirty(false);
     } catch (error) {
-      handleError(error, "Error initializing editor content");
+      handleError(error, "Error initializing editor content", { level: "error" });
     }
   }, [initialTitle, initialContent, initialTemplateId]);
 
