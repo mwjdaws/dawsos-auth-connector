@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TagPanel, MarkdownPanel } from "@/components";
 import MetadataPanel from "@/components/MetadataPanel";
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor"; // Updated import path
+import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { TagCards } from "@/components/TagPanel/TagCards";
 import TemplatesPanel from "@/components/TemplatesPanel";
 import { useAuth } from "@/hooks/useAuth";
