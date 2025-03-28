@@ -2,25 +2,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 
-interface AutosaveProps {
-  isDirty: boolean;
-  isSaving: boolean;
-  isPublishing: boolean;
-  documentId?: string;
-  onSave: () => void;
-  interval?: number; // Allow customization of autosave interval
-  enabled?: boolean; // Allow disabling autosave
-}
-
-export const useAutosave = ({
-  isDirty,
-  isSaving,
-  isPublishing,
-  documentId,
-  onSave,
-  interval = 15000, // Default to 15 seconds
-  enabled = true
-}: AutosaveProps) => {
+/**
+ * Hook to automatically save content at specified intervals
+ * @param isDirty Whether the content has unsaved changes
+ * @param interval Interval in milliseconds between save attempts
+ * @param onSave Function to call to save the content
+ */
+export const useAutosave = (
+  isDirty: boolean,
+  interval: number = 15000, // Default to 15 seconds
+  onSave: () => void
+) => {
   const [isAutosaving, setIsAutosaving] = useState(false);
   const [lastAutosaveAttempt, setLastAutosaveAttempt] = useState<Date | null>(null);
   const [consecutiveFailures, setConsecutiveFailures] = useState(0);
@@ -33,7 +25,7 @@ export const useAutosave = ({
 
   // Helper to perform the autosave
   const performAutosave = async () => {
-    if (!isDirty || isSaving || isPublishing || !documentId || !isMounted.current || !enabled) {
+    if (!isDirty || isAutosaving || !isMounted.current) {
       return;
     }
     
@@ -69,8 +61,6 @@ export const useAutosave = ({
 
   // Autosave effect with exponential backoff for failures
   useEffect(() => {
-    if (!enabled) return;
-    
     const scheduleNextAutosave = () => {
       // Calculate delay with exponential backoff for failures
       const baseDelay = interval;
@@ -100,7 +90,7 @@ export const useAutosave = ({
         window.clearTimeout(timeoutRef.current);
       }
     };
-  }, [isDirty, isSaving, isPublishing, documentId, consecutiveFailures, enabled, interval]);
+  }, [isDirty, consecutiveFailures, interval]);
 
   return {
     isMounted,
