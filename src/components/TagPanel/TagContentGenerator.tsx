@@ -30,6 +30,8 @@ export function TagContentGenerator({
       return;
     }
     
+    console.log("TagContentGenerator: Handling tag generation for content:", text.substring(0, 50) + "...");
+    
     try {
       // Use startTransition to avoid UI freezing during processing
       const newContentId = await handleGenerateTags(text);
@@ -40,6 +42,7 @@ export function TagContentGenerator({
         setLastSavedContentId(newContentId);
       }
     } catch (error) {
+      console.error("TagContentGenerator: Error generating tags:", error);
       handleError(
         error, 
         "Failed to generate tags", 

@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log("suggest-tags function called");
+  console.log("suggest-tags function called with method:", req.method);
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -23,6 +23,8 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     
     console.log("Creating Supabase client with URL:", supabaseUrl ? "URL provided" : "URL missing");
+    console.log("Service role key available:", supabaseServiceKey ? "Yes" : "No");
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Extract request data

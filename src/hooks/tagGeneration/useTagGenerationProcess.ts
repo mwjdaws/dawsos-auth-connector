@@ -24,46 +24,51 @@ export function useTagGenerationProcess({
     retryCount: number
   ): Promise<string[]> => {
     try {
-      // Call the generate-tags edge function
-      const { data, error } = await supabase.functions.invoke('generate-tags', {
+      console.log("useTagGenerationProcess: Calling suggest-tags function with text length:", text.length);
+      
+      // First try with generate-tags (which uses OpenAI)
+      try {
+        const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-tags', {
+          body: { 
+            content: text,
+            retryCount,
+            save: false // Don't save tags yet, just generate them
+          }
+        });
+        
+        if (!aiError && aiData && Array.isArray(aiData.tags) && aiData.tags.length > 0) {
+          console.log("useTagGenerationProcess: Successfully retrieved tags from generate-tags:", aiData.tags);
+          return cleanTags(aiData.tags);
+        }
+      } catch (aiException) {
+        console.error("useTagGenerationProcess: Error with generate-tags, falling back to suggest-tags:", aiException);
+      }
+      
+      // Fallback to suggest-tags (simpler algorithm)
+      const { data, error } = await supabase.functions.invoke('suggest-tags', {
         body: { 
-          content: text,
-          retryCount,
-          save: false // Don't save tags yet, just generate them
+          queryText: text,
+          contentId: null // Don't save yet
         }
       });
       
       if (error) {
-        console.error("Error invoking generate-tags function:", error);
+        console.error("useTagGenerationProcess: Error invoking suggest-tags function:", error);
         return ["error", "failed", "generation", "api-error"];
       }
       
+      console.log("useTagGenerationProcess: suggest-tags response:", data);
+      
       // Check if tags property exists and is an array
       if (data && Array.isArray(data.tags)) {
-        // Clean and validate tags before returning
-        return data.tags.filter(tag => {
-          // Remove any code formatting markers and quotes
-          if (typeof tag !== 'string') return false;
-          if (tag.startsWith('```') || tag.endsWith('```')) return false;
-          if (tag.startsWith('"') && tag.endsWith('"')) {
-            // Strip quotes if present
-            return true;
-          }
-          return true;
-        }).map(tag => {
-          // Clean up tag strings
-          if (typeof tag === 'string') {
-            // Remove any quotes
-            return tag.replace(/^["']|["']$/g, '').trim();
-          }
-          return tag;
-        });
+        console.log("useTagGenerationProcess: Successfully retrieved tags:", data.tags);
+        return cleanTags(data.tags);
       } else {
-        console.error("Unexpected response format from generate-tags:", data);
+        console.error("useTagGenerationProcess: Unexpected response format from suggest-tags:", data);
         return ["error", "unexpected", "response", "format"];
       }
     } catch (error) {
-      console.error("Exception in processTagGeneration:", error);
+      console.error("useTagGenerationProcess: Exception in processTagGeneration:", error);
       
       // Retry logic for recoverable errors
       if (retryAttempts < maxRetries) {
@@ -83,6 +88,24 @@ export function useTagGenerationProcess({
       }
     }
   }, [maxRetries, retryDelay, retryAttempts, setIsLoading, isMounted]);
+  
+  // Helper function to clean and validate tags
+  function cleanTags(tags: any[]): string[] {
+    return tags.filter(tag => {
+      // Filter out certain tag formats
+      if (!tag || typeof tag !== 'string') return false;
+      if (tag.startsWith('```') || tag.endsWith('```')) return false;
+      if (tag === "error" || tag === "fallback" || tag === "timeout" || tag === "network") return false;
+      return true;
+    }).map(tag => {
+      // Clean up tag strings
+      if (typeof tag === 'string') {
+        // Remove any quotes
+        return tag.replace(/^["']|["']$/g, '').trim();
+      }
+      return tag;
+    });
+  }
   
   return { processTagGeneration, retryAttempts };
 }
