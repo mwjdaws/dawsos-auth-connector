@@ -13,8 +13,8 @@ import { Button } from "@/components/ui/button";
 import { ExternalLink, Calendar, CheckCircle, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "@/components/ui/use-toast";
-import { markForExternalReview } from "@/services/supabase/external-source-validator";
 import { handleError } from "@/utils/errors";
+import { validateExternalSource, markForExternalReview, clearExternalReviewFlag } from "@/services/supabase/external-source-validator";
 
 interface ExternalReviewItem {
   id: string;
@@ -60,12 +60,11 @@ export function ComplianceTab() {
   // Handle toggling the review flag
   const toggleReviewFlag = async (id: string, currentValue: boolean) => {
     try {
-      const { error } = await supabase
-        .from('knowledge_sources')
-        .update({ needs_external_review: !currentValue })
-        .eq('id', id);
-      
-      if (error) throw error;
+      if (currentValue) {
+        await clearExternalReviewFlag(id);
+      } else {
+        await markForExternalReview(id);
+      }
       
       // Update the local state to reflect the change
       setReviewItems(prevItems => 
@@ -75,11 +74,6 @@ export function ComplianceTab() {
             : item
         )
       );
-      
-      toast({
-        title: "Review status updated",
-        description: `Item has been ${!currentValue ? "flagged for" : "cleared from"} review.`,
-      });
     } catch (err) {
       console.error("Error updating review flag:", err);
       toast({
@@ -87,7 +81,6 @@ export function ComplianceTab() {
         description: "Failed to update review status. Please try again.",
         variant: "destructive"
       });
-      handleError(err, "Failed to update compliance review flag.");
     }
   };
   
