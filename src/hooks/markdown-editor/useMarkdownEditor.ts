@@ -118,7 +118,11 @@ export const useMarkdownEditor = ({
       setLastSavedContent(initialContent);
       setIsDirty(false);
     } catch (error) {
-      handleError(error, "Error initializing editor content", { level: "error" });
+      handleError(
+        error, 
+        "Error initializing editor content", 
+        { level: "error" }
+      );
     }
   }, [initialTitle, initialContent, initialTemplateId]);
 
