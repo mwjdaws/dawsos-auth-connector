@@ -1,80 +1,61 @@
 
-# MetadataPanel Component System
+# MetadataPanel Component
 
-## Overview
+This is the unified MetadataPanel component for displaying and editing content metadata across the application. It provides a modular, type-safe approach to displaying metadata with consistent styling and behavior.
 
-The MetadataPanel is a unified component for displaying and editing content metadata throughout the application. It offers a modular approach through composable section components.
+## Usage
 
-## Components
+```tsx
+import MetadataPanel from "@/components/MetadataPanel";
 
-### Main Component
+<MetadataPanel 
+  contentId="content-123" 
+  onMetadataChange={() => {}} 
+  isCollapsible={true}
+  showOntologyTerms={true}
+  editable={true}
+/>
+```
 
-- `MetadataPanel`: The primary container component that orchestrates all section components
+## Features
 
-### Section Components
+- Display and edit content metadata (tags, external sources, ontology terms)
+- Collapsible panel with refresh functionality
+- Loading and error states
+- Modular section components that can be used independently
+- Type safety with comprehensive TypeScript interfaces
+- Shared state management via `useMetadataContext` hook
 
-- `HeaderSection`: Panel title and controls including collapse/expand functionality
+## Available Sections
+
+The MetadataPanel is composed of modular sections that can be imported separately if needed:
+
+- `HeaderSection`: Panel title and controls
 - `ExternalSourceSection`: External source URL and last checked date
-- `TagsSection`: Content tags with add/delete capability
+- `TagsSection`: Content tags with add/delete functionality
 - `OntologyTermsSection`: Ontology terms associated with the content
 - `DomainSection`: Content domain information
 - `ContentIdSection`: Display content ID
 - `LoadingState`: Loading skeleton UI
 
-## Hooks
+## Accessing Metadata State
 
-- `useMetadataPanel`: Core hook used by the MetadataPanel component
-- `useMetadataContext`: Exposes metadata state for other components to consume
-- `useTagOperations`: Operations for managing tags
-- `useSourceMetadata`: Operations for managing source metadata
-- `usePanelState`: Manages panel UI state
-
-## Usage
-
-Basic usage:
-
-```tsx
-import MetadataPanel from "@/components/MetadataPanel";
-
-function MyComponent() {
-  return (
-    <MetadataPanel 
-      contentId="content-123"
-      onMetadataChange={() => console.log("Metadata changed")}
-      isCollapsible={true}
-      showOntologyTerms={true}
-      editable={true}
-    />
-  );
-}
-```
-
-Advanced usage with context hook:
+To access metadata state outside the MetadataPanel component, use the `useMetadataContext` hook:
 
 ```tsx
 import { useMetadataContext } from "@/components/MetadataPanel";
 
-function MetadataConsumer({ contentId }) {
+function MyComponent({ contentId }) {
   const metadata = useMetadataContext(contentId);
   
-  return (
-    <div>
-      <h3>Tags: {metadata.tags.length}</h3>
-      <button onClick={metadata.handleAddTag}>Add Tag</button>
-      {metadata.isLoading && <p>Loading...</p>}
-    </div>
-  );
+  // Access metadata state
+  console.log(metadata.tags);
+  
+  // Perform operations
+  metadata.handleAddTag();
+  metadata.handleDeleteTag(tagId);
+  
+  // Refresh metadata
+  metadata.refreshMetadata();
 }
 ```
-
-## Testing
-
-To test the MetadataPanel components:
-
-1. Unit test each section component independently
-2. Test the main MetadataPanel with various prop combinations
-3. Test the metadata hooks with mock data
-
-## Migration Note
-
-This is the unified implementation. Legacy imports from `src/components/MarkdownViewer/MetadataPanel` are deprecated and will be removed in a future version.
