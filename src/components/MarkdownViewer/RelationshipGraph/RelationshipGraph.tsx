@@ -41,8 +41,26 @@ export function RelationshipGraph({
   const [loadingTime, setLoadingTime] = useState(0);
   const [isManualRetry, setIsManualRetry] = useState(false);
   
+  // Log the startingNodeId to help debug
+  useEffect(() => {
+    console.log(`RelationshipGraph initialized with startingNodeId: ${startingNodeId || 'none'}`);
+  }, [startingNodeId]);
+  
   // Fetch graph data and track loading/error states
   const { graphData, loading, error, fetchGraphData } = useGraphData(startingNodeId);
+  
+  // Log every time graphData changes
+  useEffect(() => {
+    if (graphData) {
+      console.log(`Graph data updated: ${graphData.nodes.length} nodes, ${graphData.links.length} links`);
+      if (graphData.nodes.length === 0) {
+        console.log('No nodes found in graph data. This might be a data fetching issue.');
+      } else {
+        console.log('Node types in graph:', graphData.nodes.map(n => n.type).filter((v, i, a) => a.indexOf(v) === i));
+        console.log('First few nodes:', graphData.nodes.slice(0, 3));
+      }
+    }
+  }, [graphData]);
   
   // Loading timer
   useEffect(() => {
@@ -91,11 +109,13 @@ export function RelationshipGraph({
   
   // Show error state if there was a problem fetching data
   if (error) {
+    console.error("Graph error:", error);
     return <GraphError error={error} onRetry={handleRetry} />;
   }
   
   // Show empty state if no data
   if (!graphData || graphData.nodes.length === 0) {
+    console.log("No graph data available. graphData:", graphData);
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
         <p className="text-muted-foreground mb-4">

@@ -14,5 +14,6 @@ export type {
   GraphData,
   GraphNode,
   GraphLink,
-  NodeType
+  RelationshipGraphPanelProps
 } from './types';
+
