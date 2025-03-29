@@ -1,58 +1,68 @@
 
-import { supabase, handleError, ApiError, parseSupabaseErrorCode } from '../base';
+import { supabase } from '@/supabaseClient';
 import { KnowledgeTemplate } from '../types';
 
 /**
- * Validates a UUID format string
+ * Known template categories for better classification of templates
  */
-export const validateUuid = (id: string, entityName = 'ID'): boolean => {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (!id || !uuidRegex.test(id)) {
-    throw new ApiError(`Invalid ${entityName} format: ${id}`, 400);
-  }
-  return true;
+export const TEMPLATE_CATEGORIES = {
+  BUSINESS: 'business',
+  RESEARCH: 'research',
+  TECHNICAL: 'technical',
+  DEBUGGING: 'debugging',
+  COMPLIANCE: 'compliance',
+  AGENT: 'agent',
+  GENERAL: 'general',
+} as const;
+
+/**
+ * Maps template names to their categories for better organization
+ */
+export const TEMPLATE_CATEGORY_MAP: Record<string, string> = {
+  // Business templates
+  'Meeting Notes': TEMPLATE_CATEGORIES.BUSINESS,
+  'Project Plan': TEMPLATE_CATEGORIES.BUSINESS,
+  
+  // Research templates
+  'Research Summary': TEMPLATE_CATEGORIES.RESEARCH,
+  'Experiment Log': TEMPLATE_CATEGORIES.RESEARCH,
+  
+  // Technical templates
+  'Technical Design Document': TEMPLATE_CATEGORIES.TECHNICAL,
+  'API Documentation': TEMPLATE_CATEGORIES.TECHNICAL,
+  
+  // Debug templates
+  'System Debug Note': TEMPLATE_CATEGORIES.DEBUGGING,
+  
+  // Agent templates
+  'Agent Reference Template': TEMPLATE_CATEGORIES.AGENT,
+  
+  // Compliance templates
+  'Governance Tracker': TEMPLATE_CATEGORIES.COMPLIANCE,
+  
+  // General templates
+  'Personal Journal': TEMPLATE_CATEGORIES.GENERAL,
+  'Brainstorming Notes': TEMPLATE_CATEGORIES.GENERAL
 };
 
 /**
- * Validates template content
+ * Get template category from template object or name
  */
-export const validateTemplateContent = (content: string | undefined): boolean => {
-  if (content === undefined || content === '') {
-    throw new ApiError('Template content cannot be empty', 400);
-  }
-  return true;
-};
+export function getTemplateCategory(template: KnowledgeTemplate | string): string {
+  const templateName = typeof template === 'string' ? template : template.name;
+  return TEMPLATE_CATEGORY_MAP[templateName] || TEMPLATE_CATEGORIES.GENERAL;
+}
 
 /**
- * Validates template metadata if provided
+ * Base functions for working with knowledge templates
  */
-export const validateTemplateMetadata = (metadata: any): boolean => {
-  if (metadata && typeof metadata === 'object' && 'structure' in metadata) {
-    if (!metadata.structure) {
-      throw new ApiError('Template structure is required if provided', 400);
-    }
-  }
-  return true;
-};
-
-/**
- * Validates template structure if provided
- */
-export const validateTemplateStructure = (structure: any): boolean => {
-  if (structure && typeof structure === 'object') {
-    if (!structure.sections || !Array.isArray(structure.sections)) {
-      throw new ApiError('Template structure must contain sections array', 400);
-    }
-  }
-  return true;
-};
-
-/**
- * Validates template name
- */
-export const validateTemplateName = (name: string | undefined): boolean => {
-  if (name !== undefined && name.trim() === '') {
-    throw new ApiError('Template name cannot be empty', 400);
-  }
-  return true;
-};
+export async function fetchKnowledgeTemplateBaseById(id: string): Promise<KnowledgeTemplate> {
+  const { data, error } = await supabase
+    .from('knowledge_templates')
+    .select('*')
+    .eq('id', id)
+    .single();
+    
+  if (error) throw error;
+  return data as KnowledgeTemplate;
+}

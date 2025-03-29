@@ -54,6 +54,12 @@ export async function generateTagsWithOpenAI(content: string): Promise<TagsResul
               content: `You are a tag generation assistant that categorizes tags into predefined types. 
               Extract 5-15 relevant tags from the provided content and categorize them by type.
               Available tag types: Topic, System, Debug, Error, Process, Compliance.
+              
+              If you detect content related to:
+              - System debugging or technical issues, prioritize Debug, Error, and System tags
+              - Agent interactions or behaviors, prioritize Process, Topic, and System tags
+              - Compliance or governance, prioritize Compliance, Process, and Topic tags
+              
               Return ONLY a JSON object with a "tags" array for uncategorized tags and properties for each applicable tag type.
               Example format: {"tags": ["general_tag1", "general_tag2"], "Topic": ["topic1", "topic2"], "System": ["system1"]}`
             },

@@ -1,140 +1,115 @@
 
-import { supabase, handleError, ApiError, parseSupabaseErrorCode } from '../base';
+import { supabase } from '@/supabaseClient';
 import { KnowledgeTemplate } from '../types';
-import { 
-  validateUuid, 
-  validateTemplateName, 
-  validateTemplateContent, 
-  validateTemplateMetadata 
-} from './knowledgeTemplateBase';
+import { getTemplateCategory } from './knowledgeTemplateBase';
 
 /**
- * Creates a new knowledge template
+ * Create a new knowledge template
  */
-export const createKnowledgeTemplate = async (template: Omit<KnowledgeTemplate, 'id'>) => {
-  try {
-    if (!template.name || template.name.trim() === '') {
-      throw new ApiError('Template name is required', 400);
-    }
+export async function createKnowledgeTemplate(template: Omit<KnowledgeTemplate, 'id' | 'created_at' | 'updated_at'>) {
+  const { data, error } = await supabase
+    .from('knowledge_templates')
+    .insert([template])
+    .select();
     
-    validateTemplateContent(template.content);
-    validateTemplateMetadata(template.metadata);
-    
-    // Verify user_id is set for private templates
-    if (template.is_global === false && !template.user_id) {
-      // Get the current user ID if not provided
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user?.id) {
-        throw new ApiError('User ID is required for private templates', 400);
-      }
-      
-      template.user_id = user.id;
-    }
-    
-    // Create a clean object with only the properties we need
-    const templateData = {
-      name: template.name,
-      content: template.content,
-      metadata: template.metadata,
-      structure: template.structure,
-      is_global: template.is_global || false,
-      user_id: template.user_id
-    };
-    
-    const { data, error } = await supabase
-      .from('knowledge_templates')
-      .insert([templateData])
-      .select();
-    
-    if (error) throw new ApiError(error.message, parseSupabaseErrorCode(error));
-    return data;
-  } catch (error) {
-    handleError(error, "Failed to create knowledge template");
-    throw error;
-  }
-};
+  if (error) throw error;
+  return data;
+}
 
 /**
- * Updates an existing knowledge template
+ * Update an existing knowledge template
  */
-export const updateKnowledgeTemplate = async (id: string, updates: Partial<KnowledgeTemplate>) => {
-  try {
-    validateUuid(id, 'template ID');
+export async function updateKnowledgeTemplate(id: string, template: Partial<KnowledgeTemplate>) {
+  const { data, error } = await supabase
+    .from('knowledge_templates')
+    .update(template)
+    .eq('id', id)
+    .select();
     
-    if (!updates || Object.keys(updates).length === 0) {
-      throw new ApiError('No updates provided', 400);
-    }
-    
-    validateTemplateName(updates.name);
-    
-    if (updates.content !== undefined) {
-      validateTemplateContent(updates.content);
-    }
-    
-    validateTemplateMetadata(updates.metadata);
-    
-    // Ensure user_id is maintained for private templates
-    if (updates.is_global === false && !updates.user_id) {
-      // Get the current user ID if not provided
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // First get the current template to check if we're changing from global to private
-      const { data: existingTemplate, error: fetchError } = await supabase
-        .from('knowledge_templates')
-        .select('is_global, user_id')
-        .eq('id', id)
-        .single();
-        
-      if (fetchError) {
-        throw new ApiError(fetchError.message, parseSupabaseErrorCode(fetchError));
-      }
-      
-      // If changing from global to private, ensure user_id is set
-      if (existingTemplate.is_global && !existingTemplate.user_id) {
-        if (!user?.id) {
-          throw new ApiError('User ID is required when changing template from global to private', 400);
-        }
-        updates.user_id = user.id;
-      }
-    }
-    
-    const { data, error } = await supabase
-      .from('knowledge_templates')
-      .update(updates)
-      .eq('id', id)
-      .select();
-    
-    if (error) throw new ApiError(error.message, parseSupabaseErrorCode(error));
-    return data;
-  } catch (error) {
-    handleError(error, `Failed to update knowledge template with ID: ${id}`);
-    throw error;
-  }
-};
+  if (error) throw error;
+  return data;
+}
 
 /**
- * Deletes a knowledge template
+ * Delete a knowledge template
  */
-export const deleteKnowledgeTemplate = async (id: string) => {
-  try {
-    validateUuid(id, 'template ID');
+export async function deleteKnowledgeTemplate(id: string) {
+  const { error } = await supabase
+    .from('knowledge_templates')
+    .delete()
+    .eq('id', id);
     
-    const { data, error } = await supabase
-      .from('knowledge_templates')
-      .delete()
-      .eq('id', id)
-      .select();
+  if (error) throw error;
+  return true;
+}
+
+/**
+ * Generate a knowledge template structure from content
+ * This is a helper to convert markdown content to structured sections
+ */
+export function generateStructureFromContent(content: string) {
+  // Split the content by markdown headings (## Title)
+  const sections = content.split(/(?=#{2}\s+)/);
+  
+  // Process each section
+  const structuredSections = sections
+    .filter(section => section.trim())
+    .map(section => {
+      // Extract the title from the heading
+      const titleMatch = section.match(/#{2}\s+(.*?)(?:\n|$)/);
+      const title = titleMatch ? titleMatch[1].trim() : '';
+      
+      // Remove the heading from the content
+      const sectionContent = section.replace(/#{2}\s+(.*?)(?:\n|$)/, '').trim();
+      
+      return {
+        title,
+        content: sectionContent
+      };
+    })
+    .filter(section => section.title); // Only keep sections with titles
+
+  // Return the structured format
+  return {
+    sections: structuredSections
+  };
+}
+
+/**
+ * Duplicate a template (useful for creating variations of system templates)
+ */
+export async function duplicateTemplate(sourceId: string, newName: string, userId: string, makePrivate = true) {
+  // Fetch the source template
+  const { data: sourceTemplate, error: fetchError } = await supabase
+    .from('knowledge_templates')
+    .select('*')
+    .eq('id', sourceId)
+    .single();
     
-    if (error) throw new ApiError(error.message, parseSupabaseErrorCode(error));
-    
-    if (!data || data.length === 0) {
-      throw new ApiError(`Template with ID: ${id} not found or already deleted`, 404);
-    }
-    
-    return data;
-  } catch (error) {
-    handleError(error, `Failed to delete knowledge template with ID: ${id}`);
-    throw error;
+  if (fetchError || !sourceTemplate) {
+    throw fetchError || new Error('Source template not found');
   }
-};
+  
+  // Create a new template based on the source
+  const newTemplate = {
+    name: newName,
+    content: sourceTemplate.content,
+    structure: sourceTemplate.structure,
+    is_global: !makePrivate, // Usually duplicated templates are private
+    user_id: userId,
+    metadata: {
+      ...sourceTemplate.metadata as Record<string, any>,
+      duplicated_from: sourceId,
+      category: getTemplateCategory(sourceTemplate as KnowledgeTemplate)
+    }
+  };
+  
+  // Insert the new template
+  const { data, error } = await supabase
+    .from('knowledge_templates')
+    .insert([newTemplate])
+    .select();
+    
+  if (error) throw error;
+  return data;
+}
