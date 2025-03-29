@@ -17,6 +17,12 @@ export function useNoteLinks() {
     linkType: 'wikilink' | 'manual' | 'AI-suggested'
   ) => {
     try {
+      // Skip if source and target are the same to avoid self-references
+      if (sourceId === targetId) {
+        console.log('Skipping self-reference:', sourceId);
+        return false;
+      }
+
       const { error } = await supabase
         .from('note_links')
         .insert({
@@ -36,10 +42,13 @@ export function useNoteLinks() {
             description: error.message,
             variant: 'destructive'
           });
+        } else {
+          console.log('Link already exists between', sourceId, 'and', targetId);
         }
         return false;
       }
       
+      console.log('Successfully created link between', sourceId, 'and', targetId);
       return true;
     } catch (error) {
       console.error('Unexpected error creating note link:', error);
@@ -90,7 +99,7 @@ export function useNoteLinks() {
       const { data, error } = await supabase
         .from('knowledge_sources')
         .select('id, title')
-        .ilike('title', title)
+        .ilike('title', `%${title}%`)
         .limit(5);
 
       if (error) {

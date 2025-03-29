@@ -35,6 +35,7 @@ export function useWikiLinks(
     setProcessingLinks(true);
     try {
       const links = extractWikilinks(content);
+      console.log('Processing wikilinks:', links);
       
       // For each wikilink, find matching sources or create if needed
       for (const linkText of links) {
@@ -44,13 +45,17 @@ export function useWikiLinks(
           // If exact match found, create a link
           const exactMatch = matches.find(m => m.title.toLowerCase() === linkText.toLowerCase());
           if (exactMatch) {
+            console.log(`Creating link from ${sourceId} to exact match ${exactMatch.id}`);
             await createNoteLink(sourceId, exactMatch.id, 'wikilink');
           } else if (matches[0]) {
             // Otherwise use the closest match
+            console.log(`Creating link from ${sourceId} to closest match ${matches[0].id}`);
             await createNoteLink(sourceId, matches[0].id, 'wikilink');
           }
+        } else {
+          console.log(`No existing source found for wikilink: ${linkText}`);
+          // Future enhancement: Option to create new sources for wikilinks that don't match
         }
-        // Future enhancement: Option to create new sources for wikilinks that don't match
       }
     } catch (error) {
       console.error('Error processing wikilinks:', error);
