@@ -1,5 +1,6 @@
 
 import { vi } from 'vitest';
+import React from 'react';
 
 /**
  * Default mock implementation for useMetadataPanel hook
