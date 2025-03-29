@@ -1,11 +1,11 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useMetadataContext } from '../../hooks/useMetadataContext';
-import { useMetadataPanel } from '../../hooks/useMetadataPanel';
+import { useMetadataContext } from '../../useMetadataContext';
+import { useMetadataPanel } from '../../useMetadataPanel';
 
 // Mock the hooks we're importing
-vi.mock('../../hooks/useMetadataPanel', () => ({
+vi.mock('../../useMetadataPanel', () => ({
   useMetadataPanel: vi.fn()
 }));
 

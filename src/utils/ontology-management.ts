@@ -1,4 +1,3 @@
-
 /**
  * Ontology Management Utilities
  * 
@@ -11,7 +10,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { handleError } from "@/utils/errors";
-import { invokeEdgeFunctionReliably } from "./edge-function-reliability";
 
 /**
  * Interface for ontology domain
@@ -34,12 +32,11 @@ export interface OntologyTerm {
 
 /**
  * Gets all available ontology domains
- * Note: ontology_domains table might not exist, we're mocking it
+ * Extracts unique domains from ontology_terms instead since ontology_domains table doesn't exist
  */
 export async function getAllDomains(): Promise<OntologyDomain[]> {
   try {
-    // Since ontology_domains doesn't exist in the DB schema, 
-    // we're extracting unique domains from ontology_terms instead
+    // Extract unique domains from ontology_terms instead
     const { data, error } = await supabase
       .from("ontology_terms")
       .select("domain")
@@ -299,32 +296,31 @@ export async function getTermRecommendations(
       item => item.ontology_terms as OntologyTerm
     ) || [];
 
-    // Try to get AI recommendations with reliability enhancements
-    const result = await invokeEdgeFunctionReliably(
-      "suggest-ontology-terms",
-      { content, title, sourceId },
-      {
-        timeoutMs: 15000,
-        maxRetries: 2,
-        // Provide local fallback if AI fails
-        fallbackFn: () => ({ 
-          terms: getLocalTermSuggestions(content, existingTermObjects) 
-        }),
-      }
-    );
-    
-    // Use proper type checking to ensure the result contains terms
-    if (result && typeof result === 'object' && 'terms' in result) {
-      const suggestedTerms = result.terms || [];
+    // Try to get AI recommendations
+    try {
+      const response = await supabase.functions.invoke('suggest-ontology-terms', {
+        body: { content, title, sourceId }
+      });
       
-      return suggestedTerms
-        .filter(term => 
-          // Filter out terms that are already applied
-          !existingTermObjects.some(
-            existing => existing.term.toLowerCase() === term.term.toLowerCase()
+      if (response.error) throw response.error;
+      
+      // Safe type checking for response data
+      if (response.data && typeof response.data === 'object' && 'terms' in response.data) {
+        const suggestedTerms = response.data.terms || [];
+        
+        return suggestedTerms
+          .filter((term: OntologyTerm) => 
+            // Filter out terms that are already applied
+            !existingTermObjects.some(
+              existing => existing.term.toLowerCase() === term.term.toLowerCase()
+            )
           )
-        )
-        .slice(0, 15); // Limit number of suggestions
+          .slice(0, 15); // Limit number of suggestions
+      }
+    } catch (error) {
+      console.warn("Edge function failed, using local fallback", error);
+      // Provide local fallback if AI fails
+      return getLocalTermSuggestions(content, existingTermObjects);
     }
     
     return [];

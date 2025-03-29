@@ -1,6 +1,5 @@
 
-import { useCallback, useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useCallback, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { handleError } from "@/utils/errors";
 
@@ -14,7 +13,7 @@ export interface UserPreferences {
 
 /**
  * Custom hook for managing user preferences
- * Note: user_preferences table might not exist; using localStorage as fallback
+ * Uses localStorage since user_preferences table doesn't exist
  */
 export function useUserPreferences(userId?: string) {
   const [preferences, setPreferences] = useState<UserPreferences>({});
@@ -32,7 +31,7 @@ export function useUserPreferences(userId?: string) {
     const loadPreferences = async () => {
       setIsLoading(true);
       try {
-        // Try to load from localStorage as user_preferences table might not exist
+        // Load from localStorage
         const storedPrefs = localStorage.getItem(`user_preferences_${userId}`);
         if (storedPrefs) {
           setPreferences(JSON.parse(storedPrefs));
@@ -48,32 +47,6 @@ export function useUserPreferences(userId?: string) {
           localStorage.setItem(`user_preferences_${userId}`, JSON.stringify(defaults));
         }
         setInitialized(true);
-
-        // Note: Actual implementation if user_preferences table existed:
-        /*
-        const { data, error } = await supabase
-          .from('user_preferences')
-          .select('preferences')
-          .eq('user_id', userId)
-          .single();
-          
-        if (error) {
-          if (error.code === 'PGRST116') {
-            // No preferences found, set defaults
-            const defaults: UserPreferences = {
-              defaultTab: "tag-generator",
-              theme: 'system',
-              notifications: true
-            };
-            setPreferences(defaults);
-            await saveDefaults(userId, defaults);
-          } else {
-            throw error;
-          }
-        } else {
-          setPreferences(data.preferences || {});
-        }
-        */
       } catch (error) {
         console.error("Failed to load preferences:", error);
         // Set defaults as fallback
@@ -100,25 +73,10 @@ export function useUserPreferences(userId?: string) {
         ...newPrefs
       };
 
-      // Save to localStorage as user_preferences table might not exist
+      // Save to localStorage
       localStorage.setItem(`user_preferences_${userId}`, JSON.stringify(updatedPrefs));
       setPreferences(updatedPrefs);
       console.log("Saved preferences to localStorage:", updatedPrefs);
-
-      // Note: Actual implementation if user_preferences table existed:
-      /*
-      const { error } = await supabase
-        .from('user_preferences')
-        .upsert({
-          user_id: userId,
-          preferences: updatedPrefs,
-          updated_at: new Date().toISOString()
-        });
-        
-      if (error) throw error;
-      
-      setPreferences(updatedPrefs);
-      */
     } catch (error) {
       handleError(
         error, 
@@ -143,21 +101,6 @@ export function useUserPreferences(userId?: string) {
       localStorage.setItem(`user_preferences_${userId}`, JSON.stringify(defaults));
       setPreferences(defaults);
       
-      // Note: Actual implementation if user_preferences table existed:
-      /*
-      const { error } = await supabase
-        .from('user_preferences')
-        .upsert({
-          user_id: userId,
-          preferences: defaults,
-          updated_at: new Date().toISOString()
-        });
-        
-      if (error) throw error;
-      
-      setPreferences(defaults);
-      */
-      
       toast({
         title: "Preferences Reset",
         description: "Your preferences have been reset to defaults.",
@@ -181,13 +124,13 @@ export function useUserPreferences(userId?: string) {
 
 /**
  * Log feature usage for analytics
- * Note: feature_usage_logs table might not exist; this function is mocked
+ * Mocked implementation since feature_usage_logs table doesn't exist
  */
-export async function logFeatureUsage(
+export function logFeatureUsage(
   userId: string | undefined,
   feature: string,
   metadata?: Record<string, any>
-): Promise<void> {
+): void {
   if (!userId) return;
   
   try {
@@ -197,22 +140,7 @@ export async function logFeatureUsage(
       metadata,
       timestamp: new Date().toISOString()
     });
-    
-    // If the feature_usage_logs table existed, we would do:
-    /*
-    const { error } = await supabase
-      .from('feature_usage_logs')
-      .insert({
-        user_id: userId,
-        feature,
-        metadata,
-        created_at: new Date().toISOString()
-      });
-      
-    if (error) throw error;
-    */
   } catch (error) {
     console.error("Failed to log feature usage:", error);
-    // Don't throw for logging failures
   }
 }

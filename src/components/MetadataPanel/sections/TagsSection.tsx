@@ -1,79 +1,88 @@
 
-/**
- * TagsSection Component
- * 
- * Displays and manages tags associated with content. Provides functionality to add and remove tags
- * when in editable mode. Shows a list of existing tags or a message when no tags are available.
- * 
- * @example
- * ```tsx
- * <TagsSection
- *   tags={contentTags}
- *   editable={true}
- *   newTag={newTagValue}
- *   setNewTag={setNewTagValue}
- *   onAddTag={handleAddTag}
- *   onDeleteTag={handleDeleteTag}
- * />
- * ```
- * 
- * @remarks
- * - Displays "No tags available" message when tags array is empty
- * - Only shows the tag input field when editable is true
- * - Tags can only be deleted when editable is true
- * - Uses Badge component to visualize tags
- */
-import React from "react";
+import React from 'react';
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
-import { TagInput } from "@/components/MarkdownViewer/TagInput";
-import { TagsSectionProps } from "../types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { X, Plus } from "lucide-react";
+import { Tag } from '../types';
 
-export const TagsSection: React.FC<TagsSectionProps> = ({
+interface TagsSectionProps {
+  tags: string[] | Tag[];
+  editable?: boolean;
+  newTag?: string;
+  setNewTag?: (value: string) => void;
+  onAddTag?: (tag: string) => void;
+  onDeleteTag?: (tag: string) => void;
+}
+
+export function TagsSection({
   tags,
-  editable,
-  newTag,
+  editable = false,
+  newTag = '',
   setNewTag,
   onAddTag,
-  onDeleteTag,
-  className
-}) => {
+  onDeleteTag
+}: TagsSectionProps) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && onAddTag && newTag.trim()) {
+      e.preventDefault();
+      onAddTag(newTag.trim());
+    }
+  };
+  
+  const normalizedTags = tags.map(tag => 
+    typeof tag === 'string' ? { name: tag } : tag
+  );
+
   return (
-    <div className={className}>
-      <h3 className="text-sm font-medium mb-2">Tags</h3>
-      {tags.length > 0 ? (
+    <div className="space-y-2">
+      <h3 className="text-sm font-medium">Tags</h3>
+      
+      {editable && (
+        <div className="flex gap-2 mb-3">
+          <Input
+            placeholder="Add a tag..."
+            value={newTag}
+            onChange={(e) => setNewTag?.(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="flex-1"
+          />
+          <Button 
+            size="sm" 
+            onClick={() => onAddTag?.(newTag)}
+            disabled={!newTag.trim()}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add
+          </Button>
+        </div>
+      )}
+      
+      {normalizedTags.length > 0 ? (
         <div className="flex flex-wrap gap-2">
-          {tags.map((tag) => (
+          {normalizedTags.map((tag) => (
             <Badge 
-              key={tag.id} 
+              key={tag.name}
               variant="secondary"
               className="flex items-center gap-1"
             >
               {tag.name}
               {editable && (
-                <button 
-                  onClick={() => onDeleteTag(tag.id)}
-                  className="text-muted-foreground hover:text-foreground ml-1"
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                  onClick={() => onDeleteTag?.(tag.name)}
                 >
                   <X className="h-3 w-3" />
-                </button>
+                </Button>
               )}
             </Badge>
           ))}
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">No tags available</p>
-      )}
-      
-      {editable && (
-        <div className="mt-2">
-          <TagInput 
-            onAddTag={onAddTag} 
-            newTag={newTag} 
-            setNewTag={setNewTag} 
-          />
-        </div>
+        <p className="text-sm text-muted-foreground">No tags</p>
       )}
     </div>
   );
-};
+}
