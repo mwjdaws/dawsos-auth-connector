@@ -1,7 +1,15 @@
 
-// This file now simply re-exports the useAuth hook from the AuthContext
+// This file wraps the useAuth hook from the AuthContext with proper transition handling
 import { useAuth as useAuthFromContext } from "@/context/AuthContext";
+import { useTransition } from "react";
 
 export function useAuth() {
-  return useAuthFromContext();
+  const [isPending, startTransition] = useTransition();
+  const authContext = useAuthFromContext();
+
+  // Return the original context plus isPending for loading states
+  return {
+    ...authContext,
+    isPending
+  };
 }

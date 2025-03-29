@@ -1,10 +1,22 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
+import { useState, useTransition, Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const HomePage = () => {
+const IndexPage = () => {
   const { user } = useAuth();
+  const [isPending, startTransition] = useTransition();
+  
+  // Handler to wrap navigation in startTransition
+  const handleNavigation = (path: string) => {
+    startTransition(() => {
+      // React Router will handle the actual navigation
+      // This wraps the state updates in startTransition
+      console.log(`Navigating to ${path}...`);
+    });
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
@@ -18,27 +30,37 @@ const HomePage = () => {
           </p>
         </div>
         <div className="flex flex-col space-y-4">
-          {user ? (
-            <div className="space-y-4">
-              <p className="text-center text-muted-foreground">
-                Welcome back, {user.email}
-              </p>
-              <Button asChild>
-                <Link to="/dashboard">Go to Dashboard</Link>
-              </Button>
-            </div>
-          ) : (
-            <>
-              <Button asChild className="w-full">
-                <Link to="/auth">Get Started</Link>
-              </Button>
-              <Button variant="outline" className="w-full">Learn More</Button>
-            </>
-          )}
+          <Suspense fallback={<Skeleton className="h-10 w-full" />}>
+            {isPending ? (
+              <Skeleton className="h-10 w-full" />
+            ) : user ? (
+              <div className="space-y-4">
+                <p className="text-center text-muted-foreground">
+                  Welcome back, {user.email}
+                </p>
+                <Button asChild onClick={() => handleNavigation("/dashboard")}>
+                  <Link to="/dashboard">Go to Dashboard</Link>
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Button asChild onClick={() => handleNavigation("/auth")}>
+                  <Link to="/auth" className="w-full">Get Started</Link>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => handleNavigation("/about")}
+                >
+                  Learn More
+                </Button>
+              </>
+            )}
+          </Suspense>
         </div>
       </div>
     </div>
   );
 };
 
-export default HomePage;
+export default IndexPage;
