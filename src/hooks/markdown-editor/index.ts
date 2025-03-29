@@ -1,4 +1,3 @@
-
 // Re-export hooks and types
 export { useMarkdownEditor } from './useMarkdownEditor';
 export { useAutosave } from './useAutosave';
@@ -13,6 +12,9 @@ export { useNoteLinks } from './useNoteLinks';
 export { useKnowledgeSources } from './useKnowledgeSources';
 export { useDocumentOperations } from './useDocumentOperations';
 export { useDocumentOperationHandlers } from './useDocumentOperationHandlers';
+
+// Re-export versioning hooks for direct access if needed
+export { useVersionFetching, useVersionCreation, useVersionRestoration } from './versioning';
 
 // Re-export types
 export type { DocumentOperationsProps } from './types';

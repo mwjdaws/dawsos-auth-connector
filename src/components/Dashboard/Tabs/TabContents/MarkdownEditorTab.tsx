@@ -18,7 +18,6 @@ export function MarkdownEditorTab({
   const { user } = useAuth();
   const { createVersion } = useDocumentVersioning();
   
-  // Sample data - keeping the same as original
   const sampleMarkdown = `# Sample Markdown
   
 This is an example of markdown content with metadata displayed above.
@@ -37,18 +36,14 @@ console.log(greeting);
 \`\`\`
 `;
 
-  // Use the contentId as sourceId if it's not a temporary ID
   const sourceId = contentId && !contentId.startsWith('temp-') ? contentId : undefined;
   const isNewDocument = !sourceId;
 
-  // Create a wrapper for onSaveDraft to properly handle version creation
   const handleSaveDraft = (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => {
-    // Create a version if this is an existing document
     if (id && !id.startsWith('temp-')) {
       createVersion(id, content, { title, action: "save_draft" });
     }
     
-    // Call the original onSaveDraft handler
     if (onSaveDraft) {
       onSaveDraft(id, title, content, templateId, externalSourceUrl);
     }
