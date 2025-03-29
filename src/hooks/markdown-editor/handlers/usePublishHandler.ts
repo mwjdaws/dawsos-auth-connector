@@ -105,12 +105,21 @@ export const usePublishHandler = ({
           }
         }
       } else {
-        throw new Error(result.error || 'Failed to publish document');
+        // Improved error handling: Convert error object to string if needed
+        const errorMessage = result.error && typeof result.error === 'object' 
+          ? (result.error.message || JSON.stringify(result.error))
+          : result.error || 'Failed to publish document';
+          
+        throw new Error(errorMessage);
       }
     } catch (error) {
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : (typeof error === 'object' ? JSON.stringify(error) : "An unexpected error occurred");
+        
       toast({
         title: "Failed to publish document",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     }

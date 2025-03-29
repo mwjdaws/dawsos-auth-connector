@@ -13,10 +13,11 @@ export const usePublishDatabase = () => {
   const updatePublishStatus = async (documentId: string): Promise<PublishResult> => {
     try {
       // Update the document's published status
+      // Note: Using 'published' instead of 'is_published' to match the actual column name
       const { error: updateError } = await supabase
         .from('knowledge_sources')
         .update({ 
-          is_published: true,
+          published: true,
           published_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
