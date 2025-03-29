@@ -1,6 +1,13 @@
+
 import { Dispatch, SetStateAction } from 'react';
 
 export interface DocumentOperationResult {
+  success: boolean;
+  documentId: string | null;
+  error?: any;
+}
+
+export interface SaveDraftResult {
   success: boolean;
   documentId: string | null;
   error?: any;
@@ -59,4 +66,16 @@ export interface SaveHandlerOptions {
   isManualSave?: boolean;
   isAutoSave?: boolean;
   isPublishing?: boolean;
+}
+
+// Add the missing MarkdownEditorProps type
+export interface MarkdownEditorProps {
+  initialTitle?: string;
+  initialContent?: string;
+  initialTemplateId?: string | null;
+  initialExternalSourceUrl?: string;
+  documentId?: string;
+  sourceId?: string;
+  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
+  onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
 }
