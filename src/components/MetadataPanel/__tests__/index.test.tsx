@@ -1,4 +1,7 @@
 
+import React from 'react';
+import { vi, describe, test, expect } from 'vitest';
+
 /**
  * This is an entry point for MetadataPanel tests.
  * Each test concern has been split into its own file/directory.

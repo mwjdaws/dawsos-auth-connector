@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Code, BookOpen, FileEdit, Layers, ServerCrash, Activity } from 'lucide-react';
+import { Code, BookOpen, FileEdit, Layers, ServerCrash, Activity, AlertCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { invokeEdgeFunctionReliably } from '@/utils/edge-function-reliability';
@@ -155,36 +155,20 @@ export const DebugPanel = () => {
     
     try {
       const { data: schemaData, error: schemaError } = await supabase
-        .rpc('get_tables');
+        .from('knowledge_sources')
+        .select('id')
+        .limit(1);
       
       if (schemaError) {
         throw new Error(`Error fetching schema: ${schemaError.message}`);
       }
       
-      if (!schemaData) {
-        setEdgeFunctionResults(prev => ({ 
-          ...prev, 
-          'table-validation': { 
-            status: 'limited',
-            message: 'Schema validation limited - using predefined table list',
-            knownTables 
-          } 
-        }));
-        return;
-      }
-      
-      const actualTables = schemaData.map((t: any) => t.table_name);
-      const missingTables = knownTables.filter(t => !actualTables.includes(t));
-      const unusedTables = actualTables.filter(t => !knownTables.includes(t) && !t.startsWith('_'));
-      
       setEdgeFunctionResults(prev => ({ 
         ...prev, 
         'table-validation': { 
-          actualTables,
-          knownTables,
-          missingTables,
-          unusedTables,
-          status: missingTables.length === 0 ? 'ok' : 'warning'
+          status: 'limited',
+          message: 'Schema validation limited - using predefined table list',
+          knownTables 
         } 
       }));
     } catch (err) {
@@ -239,7 +223,7 @@ export const DebugPanel = () => {
   const renderStatusBadge = (status: 'ok' | 'error' | 'loading' | undefined) => {
     switch (status) {
       case 'ok':
-        return <Badge variant="success" className="ml-2">OK</Badge>;
+        return <Badge className="ml-2 bg-green-500 hover:bg-green-600">OK</Badge>;
       case 'error':
         return <Badge variant="destructive" className="ml-2">Error</Badge>;
       case 'loading':
@@ -287,9 +271,9 @@ export const DebugPanel = () => {
             <h3 className="text-lg font-medium mb-2 flex items-center">
               Table Reference Validation
               {edgeFunctionResults['table-validation']?.status === 'ok' && 
-                <Badge variant="success" className="ml-2">All Tables Valid</Badge>}
+                <Badge className="ml-2 bg-green-500 hover:bg-green-600">All Tables Valid</Badge>}
               {edgeFunctionResults['table-validation']?.status === 'warning' && 
-                <Badge variant="warning" className="ml-2">Missing Tables</Badge>}
+                <Badge className="ml-2 bg-yellow-500 hover:bg-yellow-600">Missing Tables</Badge>}
               {edgeFunctionResults['table-validation']?.status === 'error' && 
                 <Badge variant="destructive" className="ml-2">Validation Error</Badge>}
             </h3>
