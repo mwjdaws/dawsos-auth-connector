@@ -99,7 +99,6 @@ const EditorActions = ({
                 <Button
                   variant="outline"
                   size="icon"
-                  disabled={isProcessing}
                 >
                   <ExternalLink className="h-4 w-4" />
                 </Button>
