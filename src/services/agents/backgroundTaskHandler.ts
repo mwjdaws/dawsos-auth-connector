@@ -32,7 +32,7 @@ export async function submitBackgroundTask(request: AgentTaskRequest): Promise<A
       metadata: {
         ...request.metadata,
         backgroundTaskId: queueResult.taskId
-      } as unknown as Json
+      } as Json
     });
     
     return {
