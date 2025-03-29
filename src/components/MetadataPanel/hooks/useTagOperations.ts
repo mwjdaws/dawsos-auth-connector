@@ -1,47 +1,30 @@
 
-import { useState, useEffect, useTransition, useRef } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 import { isValidContentId } from "@/utils/content-validation";
 
-interface Tag {
+export interface Tag {
   id: string;
   name: string;
   content_id: string;
 }
 
-export const useMetadataPanel = (
-  contentId: string, 
-  onMetadataChange?: () => void,
-  isCollapsible = false,
-  initialCollapsed = false
-) => {
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const [newTag, setNewTag] = useState("");
-  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
-  const { user } = useAuth();
-  const isMounted = useRef(true);
-  
-  // State for source metadata
-  const [externalSourceUrl, setExternalSourceUrl] = useState<string | null>(null);
-  const [needsExternalReview, setNeedsExternalReview] = useState<boolean>(false);
-  const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
+export interface UseTagOperationsProps {
+  contentId: string;
+  user: any;
+  onMetadataChange?: () => void;
+}
 
-  const fetchMetadata = async () => {
-    // Validate content ID before fetching metadata
+export const useTagOperations = ({ contentId, user, onMetadataChange }: UseTagOperationsProps) => {
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [newTag, setNewTag] = useState("");
+  
+  const fetchTags = async () => {
     if (!isValidContentId(contentId)) {
-      console.log("Invalid contentId for fetching metadata:", contentId);
-      setIsLoading(false);
-      setError("Invalid content ID");
-      return;
+      console.log("Invalid contentId for fetching tags:", contentId);
+      return [];
     }
-    
-    setIsLoading(true);
-    setError(null);
     
     try {
       console.log("Fetching tags for contentId:", contentId);
@@ -51,71 +34,16 @@ export const useMetadataPanel = (
         .select("*")
         .eq("content_id", contentId);
       
-      if (tagError) {
-        throw tagError;
-      }
-      
-      // Fetch source metadata
-      const { data: sourceData, error: sourceError } = await supabase
-        .from("knowledge_sources")
-        .select("external_source_url, needs_external_review, external_source_checked_at")
-        .eq("id", contentId)
-        .single();
-      
-      if (sourceError && sourceError.code !== 'PGRST116') {
-        // PGRST116 is "no rows returned" - not an error for us
-        throw sourceError;
-      }
+      if (tagError) throw tagError;
       
       console.log("Tags fetched:", tagData);
-      console.log("Source metadata fetched:", sourceData);
-      
-      if (isMounted.current) {
-        startTransition(() => {
-          setTags(tagData || []);
-          
-          if (sourceData) {
-            setExternalSourceUrl(sourceData.external_source_url);
-            setNeedsExternalReview(sourceData.needs_external_review || false);
-            setLastCheckedAt(sourceData.external_source_checked_at);
-          }
-        });
-      }
-      
-      if (onMetadataChange) {
-        onMetadataChange();
-      }
+      return tagData || [];
     } catch (err: any) {
-      console.error("Error fetching metadata:", err);
-      if (isMounted.current) {
-        setError(err.message || "Failed to fetch metadata");
-        toast({
-          title: "Error",
-          description: "Failed to load metadata",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      if (isMounted.current) {
-        setIsLoading(false);
-      }
+      console.error("Error fetching tags:", err);
+      throw err;
     }
   };
 
-  // Fetch metadata when contentId changes
-  useEffect(() => {
-    console.log("MetadataPanel: contentId changed to", contentId);
-    fetchMetadata();
-    
-    return () => {
-      isMounted.current = false;
-    };
-  }, [contentId]);
-
-  const handleRefresh = () => {
-    fetchMetadata();
-  };
-  
   const handleAddTag = async () => {
     if (!newTag.trim() || !user) {
       if (!user) {
@@ -161,6 +89,10 @@ export const useMetadataPanel = (
         description: "Tag added successfully",
       });
       
+      if (onMetadataChange) {
+        onMetadataChange();
+      }
+      
       console.log("Tag added successfully:", data![0]);
     } catch (error: any) {
       console.error("Error adding tag:", error);
@@ -199,6 +131,10 @@ export const useMetadataPanel = (
         description: "Tag deleted successfully",
       });
       
+      if (onMetadataChange) {
+        onMetadataChange();
+      }
+      
       console.log("Tag deleted successfully");
     } catch (error: any) {
       console.error("Error deleting tag:", error);
@@ -212,18 +148,10 @@ export const useMetadataPanel = (
 
   return {
     tags,
-    isLoading,
-    error,
-    isPending,
+    setTags,
     newTag,
     setNewTag,
-    user,
-    externalSourceUrl,
-    needsExternalReview,
-    lastCheckedAt,
-    isCollapsed,
-    setIsCollapsed,
-    handleRefresh,
+    fetchTags,
     handleAddTag,
     handleDeleteTag
   };

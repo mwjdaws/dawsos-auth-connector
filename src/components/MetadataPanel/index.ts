@@ -10,4 +10,4 @@ export { ContentIdSection } from './ContentIdSection';
 export { LoadingState } from './LoadingState';
 
 // Export the hook
-export { useMetadataPanel } from './useMetadataPanel';
+export { useMetadataPanel } from './hooks/useMetadataPanel';

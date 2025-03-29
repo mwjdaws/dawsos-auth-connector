@@ -1,7 +1,7 @@
 
 import React, { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { useMetadataPanel } from "./useMetadataPanel";
+import { useMetadataPanel } from "./hooks/useMetadataPanel";
 import { HeaderSection } from "./HeaderSection";
 import { ExternalSourceSection } from "./ExternalSourceSection";
 import { TagsSection } from "./TagsSection";
