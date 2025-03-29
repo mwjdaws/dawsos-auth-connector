@@ -1,16 +1,14 @@
 
 import { ReactNode, useTransition, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LoadingIndicator } from "./LoadingIndicator";
-import { 
-  TagGeneratorTab, 
-  MarkdownViewerTab, 
-  MarkdownEditorTab, 
-  MetadataTab, 
-  TemplatesTab,
-  ComplianceTab
-} from "./TabContents";
-import { useDashboardTabs } from "@/hooks/dashboard/useDashboardTabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TagPanel, MarkdownPanel } from "@/components";
+import MetadataPanel from "@/components/MetadataPanel";
+import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
+import { TagCards } from "@/components/TagPanel/TagCards";
+import TemplatesPanel from "@/components/TemplatesPanel";
+import { RelationshipGraphTab } from "./TabContents";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DashboardTabsProps {
   activeTab: string;
@@ -32,7 +30,38 @@ export function DashboardTabs({
   onPublish
 }: DashboardTabsProps) {
   const [isPending, startTransition] = useTransition();
-  const { handleTabChange } = useDashboardTabs({ onTabChange, startTransition });
+  const { user } = useAuth();
+
+  const handleTabChange = (value: string) => {
+    startTransition(() => {
+      onTabChange(value);
+    });
+  };
+
+  const sampleMarkdown = `# Sample Markdown
+  
+This is an example of markdown content with metadata displayed above.
+
+## Features
+- Renders markdown content
+- Displays metadata like tags and ontology terms
+- Supports additional custom metadata fields
+  
+> This is a blockquote that demonstrates markdown rendering capabilities.
+
+### Code Example
+\`\`\`typescript
+const greeting = "Hello World";
+console.log(greeting);
+\`\`\`
+`;
+
+  const sampleMetadata = {
+    tags: ["markdown", "documentation", "example"],
+    ontology_terms: ["content", "metadata", "rendering"],
+    author: "Lovable AI",
+    created_at: new Date().toLocaleDateString()
+  };
 
   return (
     <>
@@ -43,57 +72,90 @@ export function DashboardTabs({
           <TabsTrigger value="markdown-editor">Markdown Editor</TabsTrigger>
           <TabsTrigger value="metadata">Metadata</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
-          <TabsTrigger value="compliance">Compliance</TabsTrigger>
+          <TabsTrigger value="relationships">Knowledge Graph</TabsTrigger>
         </TabsList>
         
-        <TabContent value="tag-generator" activeTab={activeTab}>
-          <TagGeneratorTab contentId={contentId} onTagsSaved={onTagGenerationComplete} />
-        </TabContent>
+        <TabsContent value="tag-generator" className="mt-4">
+          <div className="bg-card border rounded-lg p-6 shadow-sm">
+            <h2 className="text-xl font-semibold mb-4">Tag Generator</h2>
+            <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
+              <TagPanel 
+                contentId={contentId} 
+                onTagsSaved={onTagGenerationComplete} 
+              />
+            </Suspense>
+            
+            <h2 className="text-xl font-semibold mb-4 mt-8">Recent Tags</h2>
+            <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
+              <TagCards />
+            </Suspense>
+          </div>
+        </TabsContent>
         
-        <TabContent value="markdown-viewer" activeTab={activeTab}>
-          <MarkdownViewerTab />
-        </TabContent>
+        <TabsContent value="markdown-viewer" className="mt-4">
+          <div className="bg-card border rounded-lg p-6 shadow-sm">
+            <h2 className="text-xl font-semibold mb-4">Markdown Viewer</h2>
+            <Suspense fallback={<Skeleton className="h-[300px] w-full rounded-lg" />}>
+              <MarkdownPanel 
+                content={sampleMarkdown} 
+                metadata={sampleMetadata} 
+              />
+            </Suspense>
+          </div>
+        </TabsContent>
 
-        <TabContent value="markdown-editor" activeTab={activeTab}>
-          <MarkdownEditorTab 
-            contentId={contentId} 
-            onSaveDraft={onSaveDraft} 
-            onPublish={onPublish} 
-          />
-        </TabContent>
+        <TabsContent value="markdown-editor" className="mt-4">
+          <div className="bg-card border rounded-lg p-6 shadow-sm">
+            <h2 className="text-xl font-semibold mb-4">Markdown Editor</h2>
+            <Suspense fallback={<Skeleton className="h-[300px] w-full rounded-lg" />}>
+              <MarkdownEditor 
+                initialTitle="Draft Document"
+                initialContent={sampleMarkdown}
+                initialTemplateId={null}
+                sourceId={contentId !== `temp-${Date.now()}` ? contentId : undefined}
+                onSaveDraft={onSaveDraft}
+                onPublish={onPublish}
+              />
+            </Suspense>
+          </div>
+        </TabsContent>
 
-        <TabContent value="metadata" activeTab={activeTab}>
-          <MetadataTab contentId={contentId} onMetadataChange={onMetadataChange} />
-        </TabContent>
+        <TabsContent value="metadata" className="mt-4">
+          <div className="bg-card border rounded-lg p-6 shadow-sm">
+            <h2 className="text-xl font-semibold mb-4">Content Metadata</h2>
+            <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
+              <MetadataPanel 
+                contentId={contentId}
+                onMetadataChange={onMetadataChange}
+              />
+            </Suspense>
+          </div>
+        </TabsContent>
         
-        <TabContent value="templates" activeTab={activeTab}>
-          <TemplatesTab />
-        </TabContent>
-        
-        <TabContent value="compliance" activeTab={activeTab}>
-          <ComplianceTab />
-        </TabContent>
+        <TabsContent value="templates" className="mt-4">
+          <div className="bg-card border rounded-lg p-6 shadow-sm">
+            <h2 className="text-xl font-semibold mb-4">Knowledge Templates</h2>
+            <Suspense fallback={<Skeleton className="h-[300px] w-full rounded-lg" />}>
+              <TemplatesPanel />
+            </Suspense>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="relationships" className="mt-4">
+          <Suspense fallback={<Skeleton className="h-[500px] w-full rounded-lg" />}>
+            <RelationshipGraphTab contentId={contentId} />
+          </Suspense>
+        </TabsContent>
       </Tabs>
       {isPending && <LoadingIndicator />}
     </>
   );
 }
 
-// Helper component for Tab Content with consistent styling
-interface TabContentProps {
-  value: string;
-  activeTab: string;
-  children: ReactNode;
-}
-
-function TabContent({ value, activeTab, children }: TabContentProps) {
+function LoadingIndicator() {
   return (
-    <TabsContent value={value} className="mt-4">
-      <div className="bg-card border rounded-lg p-6 shadow-sm">
-        <Suspense fallback={<div>Loading...</div>}>
-          {children}
-        </Suspense>
-      </div>
-    </TabsContent>
+    <div className="fixed bottom-4 right-4 bg-primary text-white px-4 py-2 rounded-md shadow-lg">
+      Loading...
+    </div>
   );
 }

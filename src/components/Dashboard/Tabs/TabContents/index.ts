@@ -5,3 +5,4 @@ export { MarkdownEditorTab } from './MarkdownEditorTab';
 export { MetadataTab } from './MetadataTab';
 export { TemplatesTab } from './TemplatesTab';
 export { ComplianceTab } from './ComplianceTab';
+export { RelationshipGraphTab } from './RelationshipGraphTab';
