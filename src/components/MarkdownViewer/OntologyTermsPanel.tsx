@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/command";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useOntologyTerms, OntologyTerm, RelatedTerm } from "@/hooks/markdown-editor/useOntologyTerms";
+import { useOntologyTerms, OntologyTerm, RelatedTerm } from "@/hooks/markdown-editor";
 import { Check, Plus, Tag, X } from "lucide-react";
 
 interface OntologyTermsPanelProps {
