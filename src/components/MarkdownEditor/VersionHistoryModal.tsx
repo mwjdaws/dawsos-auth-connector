@@ -1,21 +1,18 @@
 
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import React, { useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Clock, RotateCcw, Loader2 } from 'lucide-react';
 import { useDocumentVersioning } from '@/hooks/markdown-editor/useDocumentVersioning';
 import { format } from 'date-fns';
-import { Skeleton } from '@/components/ui/skeleton';
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { handleError } from '@/utils/error-handling';
-import { RefreshCw } from 'lucide-react';
+import { KnowledgeSourceVersion } from '@/services/api/types';
+import { toast } from '@/hooks/use-toast';
 
 interface VersionHistoryModalProps {
   documentId: string;
   isOpen: boolean;
   onClose: () => void;
-  onVersionRestore: () => void;
+  onVersionRestore?: () => void;
 }
 
 export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
@@ -24,155 +21,115 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
   onClose,
   onVersionRestore
 }) => {
-  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
-  const { versions, isLoading, fetchVersions, restoreVersion } = useDocumentVersioning();
-
-  // Load versions when the modal opens or document ID changes
+  // Use the document versioning hook to access version history and restoration functions
+  const { versions, isLoading, fetchVersions, restoreVersion, isCreatingVersion } = useDocumentVersioning();
+  
+  // Fetch versions when the modal opens
   useEffect(() => {
     if (isOpen && documentId) {
-      loadVersions();
+      fetchVersions(documentId);
     }
   }, [isOpen, documentId]);
-
-  const loadVersions = async () => {
-    if (!documentId) return;
+  
+  // Handle restoring a version
+  const handleRestore = async (versionId: string) => {
+    const success = await restoreVersion(versionId);
     
-    try {
-      console.log('Loading versions for document:', documentId);
-      await fetchVersions(documentId);
-    } catch (error) {
-      handleError(
-        error,
-        "Failed to load version history",
-        { level: "error" }
-      );
-    }
-  };
-
-  const handleRestoreClick = (versionId: string) => {
-    setSelectedVersionId(versionId);
-    setIsConfirmDialogOpen(true);
-  };
-
-  const handleConfirmRestore = async () => {
-    if (!selectedVersionId) return;
-    
-    try {
-      const success = await restoreVersion(selectedVersionId);
-      if (success) {
+    if (success) {
+      toast({
+        title: "Version Restored",
+        description: "Document has been restored to the selected version.",
+      });
+      
+      onClose();
+      
+      // Call the onVersionRestore callback if provided
+      if (onVersionRestore) {
         onVersionRestore();
-        setIsConfirmDialogOpen(false);
-        onClose();
       }
-    } catch (error) {
-      handleError(
-        error,
-        "Failed to restore version",
-        { level: "error" }
-      );
     }
   };
-
+  
+  // Format metadata for display
+  const getVersionDetails = (version: KnowledgeSourceVersion) => {
+    const metadata = version.metadata || {};
+    
+    // Determine the reason for this version
+    let reason = metadata.reason || 'Manual save';
+    if (metadata.published) {
+      reason = 'Published';
+    } else if (metadata.isAutoSave) {
+      reason = 'Auto-saved';
+    }
+    
+    return { reason };
+  };
+  
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'MMM d, yyyy h:mm a');
+    } catch (e) {
+      return dateString;
+    }
+  };
+  
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Version History</DialogTitle>
-            <DialogDescription>
-              View and restore previous versions of this document
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="flex justify-end mb-4">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={loadVersions}
-              disabled={isLoading}
-              className="flex items-center gap-1"
-            >
-              <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
-              Refresh
-            </Button>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center">
+            <Clock className="mr-2 h-5 w-5" />
+            Version History
+          </DialogTitle>
+        </DialogHeader>
+        
+        {isLoading ? (
+          <div className="flex justify-center items-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-2">Loading versions...</p>
           </div>
-          
-          {isLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-36 w-full" />
-              <Skeleton className="h-36 w-full" />
-              <Skeleton className="h-36 w-full" />
-            </div>
-          ) : versions.length === 0 ? (
-            <div className="py-8 text-center text-gray-500">
-              <p className="mb-2">No version history available for this document</p>
-              <p className="text-sm">Save changes to create new versions</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {versions.map((version) => (
-                <Card key={version.id} className="overflow-hidden">
-                  <CardContent className="pt-6">
-                    <div className="flex justify-between items-start mb-2">
-                      <Badge variant="outline">
-                        Version {version.version_number}
-                      </Badge>
-                      <span className="text-sm text-gray-500">
-                        {format(new Date(version.created_at), 'MMM d, yyyy h:mm a')}
-                      </span>
+        ) : versions.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No versions found for this document.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {versions.map((version) => {
+              const { reason } = getVersionDetails(version);
+              
+              return (
+                <div 
+                  key={version.id} 
+                  className="border rounded-md p-4 flex justify-between items-center"
+                >
+                  <div>
+                    <div className="font-medium">
+                      Version {version.version_number} - {reason}
                     </div>
-                    <div className="mt-2 text-sm max-h-24 overflow-y-auto border p-2 bg-gray-50 rounded">
-                      <pre className="whitespace-pre-wrap">{version.content.substring(0, 200)}...</pre>
+                    <div className="text-sm text-muted-foreground">
+                      {formatDate(version.created_at)}
                     </div>
-                    {version.metadata && (
-                      <div className="mt-2 text-xs text-gray-500">
-                        {version.metadata.reason && (
-                          <span>Reason: {version.metadata.reason}</span>
-                        )}
-                        {version.metadata.auto_version && (
-                          <Badge variant="secondary" className="ml-2">Auto-saved</Badge>
-                        )}
-                        {version.metadata.published && (
-                          <Badge variant="secondary" className="ml-2">Published</Badge>
-                        )}
-                      </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleRestore(version.id)}
+                    disabled={isCreatingVersion}
+                  >
+                    {isCreatingVersion ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4 mr-1" />
                     )}
-                  </CardContent>
-                  <CardFooter className="bg-gray-50 py-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleRestoreClick(version.id)}
-                    >
-                      Restore This Version
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Restore Version</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to restore this version? This will replace the current content with the selected version.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <Button variant="outline" onClick={() => setIsConfirmDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleConfirmRestore}>
-              Restore Version
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+                    Restore
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };

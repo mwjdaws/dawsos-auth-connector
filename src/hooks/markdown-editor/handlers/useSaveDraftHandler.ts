@@ -17,7 +17,7 @@ interface UseSaveDraftHandlerProps {
   setLastSavedExternalSourceUrl: (url: string) => void;
   setIsDirty: (isDirty: boolean) => void;
   onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
-  createVersion: (documentId: string, content: string, metadata?: any) => Promise<any>;
+  createVersion: (documentId: string, content: string, metadata?: any, isAutoSave?: boolean) => Promise<void>;
   enrichContentWithOntology?: (sourceId: string, content: string, title: string, options?: any) => Promise<any>;
 }
 
@@ -83,13 +83,14 @@ export const useSaveDraftHandler = ({
         setIsDirty(false);
         
         // Create a version for manual saves only
-        if (isManualSave && !isAutoSave) {
+        // IMPORTANT: Version is created AFTER successful save, ensuring we have a valid savedId
+        if (!isAutoSave) {  // Changed to skip version creation only for autosaves
           await createDocumentVersion(
             savedId, 
             content, 
             {
-              reason: 'Manual save',
-              auto_version: false
+              reason: isManualSave ? 'Manual save' : 'System save',
+              auto_version: !isManualSave
             },
             isAutoSave
           );
@@ -97,7 +98,7 @@ export const useSaveDraftHandler = ({
         
         // Run ontology enrichment after successful save
         // Only for manual saves to avoid excessive processing
-        if (isManualSave) {
+        if (isManualSave && !isAutoSave) {  // Added explicit check for !isAutoSave for clarity
           await enrichDocumentContent(
             savedId,
             content,

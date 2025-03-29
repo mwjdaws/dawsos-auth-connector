@@ -4,9 +4,11 @@ import { toast } from '@/hooks/use-toast';
 
 /**
  * Hook to automatically save content at specified intervals
+ * 
  * @param isDirty Whether the content has unsaved changes
  * @param interval Interval in milliseconds between save attempts
  * @param onSave Function to call to save the content
+ * @returns Object with autosave state information
  */
 export const useAutosave = (
   isDirty: boolean,
@@ -46,6 +48,8 @@ export const useAutosave = (
       setLastAutosaveAttempt(new Date());
       console.log('Auto-saving document...');
       
+      // Important: We pass the isAutoSave flag through the onSave function
+      // The implementation should handle this properly in the save flow
       await onSave();
       
       // Reset failure count on success

@@ -46,6 +46,7 @@ export const usePublishHandler = ({
     
     try {
       // Save first to ensure we have the latest content
+      // Important: We always save before publishing to ensure content consistency
       const savedId = await saveDraft({ isManualSave: true, isAutoSave: false });
       if (!savedId) {
         toast({
@@ -59,23 +60,27 @@ export const usePublishHandler = ({
       // Get current user ID (from auth context if available)
       const userId = undefined; // Replace with actual user ID from auth context if available
       
+      // Call publish operation AFTER saving
       const result = await publishDocument(title, content, templateId, externalSourceUrl, userId);
       
       if (result.success) {
-        // Create a version for the published document
+        // Create a version for the published document with proper metadata
+        // Important: Version is created AFTER successful publish
         if (result.documentId) {
           await createDocumentVersion(
             result.documentId, 
             content, 
             {
               reason: 'Published document',
-              published: true
+              published: true,
+              publishedAt: new Date().toISOString()
             },
-            false
+            false // Never autosave for publishing
           );
         }
         
         // Run ontology enrichment after successful publish
+        // Important: Enrichment happens AFTER version creation
         if (result.documentId) {
           await enrichDocumentContent(
             result.documentId,
