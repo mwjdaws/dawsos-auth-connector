@@ -23,10 +23,13 @@ export const useDocumentOperationHandlers = (props: DocumentOperationHandlerProp
     onPublish
   } = props;
   
+  // Get the document versioning utilities
   const { createVersion } = useDocumentVersioning();
+  
+  // Get the ontology enrichment utilities
   const { enrichContentWithOntology } = useOntologyEnrichment();
   
-  // Use the save draft handler module
+  // Use the save draft handler with lifecycle hooks
   const { 
     handleSaveDraft, 
     isSavingManually 
@@ -44,11 +47,10 @@ export const useDocumentOperationHandlers = (props: DocumentOperationHandlerProp
     setIsDirty,
     onSaveDraft,
     createVersion,
-    // Pass the ontology enrichment function
     enrichContentWithOntology
   });
   
-  // Use the publish handler module
+  // Use the publish handler with lifecycle hooks
   const { 
     handlePublish 
   } = usePublishHandler({
@@ -60,7 +62,6 @@ export const useDocumentOperationHandlers = (props: DocumentOperationHandlerProp
     publishDocument,
     onPublish,
     createVersion,
-    // Pass the ontology enrichment function
     enrichContentWithOntology
   });
   

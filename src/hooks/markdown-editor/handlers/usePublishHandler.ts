@@ -1,7 +1,6 @@
 
 import { toast } from '@/hooks/use-toast';
-import { handleError } from '@/utils/error-handling';
-import { validateDocumentTitle } from '@/utils/validation';
+import { useDocumentLifecycle } from '../useDocumentLifecycle';
 
 interface UsePublishHandlerProps {
   title: string;
@@ -26,18 +25,22 @@ export const usePublishHandler = ({
   createVersion,
   enrichContentWithOntology
 }: UsePublishHandlerProps) => {
+  // Use the document lifecycle hook
+  const { 
+    validateDocument, 
+    createDocumentVersion, 
+    enrichDocumentContent 
+  } = useDocumentLifecycle({
+    createVersion,
+    enrichContentWithOntology
+  });
+  
   /**
    * Publish the document with user feedback
    */
   const handlePublish = async () => {
-    // Always validate title for publishing
-    const validation = validateDocumentTitle(title);
-    if (!validation.isValid) {
-      toast({
-        title: "Invalid Title",
-        description: validation.errorMessage,
-        variant: "destructive",
-      });
+    // Validate the document before publishing
+    if (!validateDocument(title, false)) {
       return;
     }
     
@@ -61,29 +64,26 @@ export const usePublishHandler = ({
       if (result.success) {
         // Create a version for the published document
         if (result.documentId) {
-          try {
-            console.log('Creating version after publish for document:', result.documentId);
-            await createVersion(result.documentId, content, {
+          await createDocumentVersion(
+            result.documentId, 
+            content, 
+            {
               reason: 'Published document',
               published: true
-            });
-          } catch (versionError) {
-            console.error('Error creating version after publish:', versionError);
-          }
+            },
+            false
+          );
         }
         
         // Run ontology enrichment after successful publish
-        if (enrichContentWithOntology && result.documentId) {
-          try {
-            // Process in background, don't wait for result
-            console.log('Running ontology enrichment after publish for document:', result.documentId);
-            enrichContentWithOntology(result.documentId, content, title, {
-              autoLink: true, // Auto-link terms for published content
-              saveMetadata: true // Also store the suggestions in metadata
-            }).catch(err => console.error('Background enrichment error:', err));
-          } catch (enrichError) {
-            console.error('Error starting ontology enrichment:', enrichError);
-          }
+        if (result.documentId) {
+          await enrichDocumentContent(
+            result.documentId,
+            content,
+            title,
+            false,
+            true  // isPublishing = true
+          );
         }
         
         toast({
@@ -103,11 +103,11 @@ export const usePublishHandler = ({
         throw new Error(result.error || 'Failed to publish document');
       }
     } catch (error) {
-      handleError(
-        error,
-        "Failed to publish document",
-        { level: "error", technical: false }
-      );
+      toast({
+        title: "Failed to publish document",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      });
     }
   };
 

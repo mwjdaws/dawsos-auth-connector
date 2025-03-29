@@ -1,9 +1,8 @@
 
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { handleError } from '@/utils/error-handling';
-import { validateDocumentTitle } from '@/utils/validation';
 import { SaveHandlerOptions } from '../types';
+import { useDocumentLifecycle } from '../useDocumentLifecycle';
 
 interface UseSaveDraftHandlerProps {
   title: string;
@@ -40,21 +39,25 @@ export const useSaveDraftHandler = ({
 }: UseSaveDraftHandlerProps) => {
   const [isSavingManually, setIsSavingManually] = useState(false);
   
+  // Use the document lifecycle hook
+  const { 
+    validateDocument, 
+    createDocumentVersion, 
+    enrichDocumentContent 
+  } = useDocumentLifecycle({
+    createVersion,
+    enrichContentWithOntology
+  });
+  
   /**
    * Save the document as a draft with user feedback
    */
   const handleSaveDraft = async (options: SaveHandlerOptions = {}) => {
     const { isManualSave = true, isAutoSave = false } = options;
     
-    // Skip validation for autosave
+    // Skip validation for autosave, validate manually saved documents
     if (isManualSave && !isAutoSave) {
-      const validation = validateDocumentTitle(title);
-      if (!validation.isValid) {
-        toast({
-          title: "Invalid Title",
-          description: validation.errorMessage,
-          variant: "destructive",
-        });
+      if (!validateDocument(title, isAutoSave)) {
         return null;
       }
     }
@@ -80,31 +83,28 @@ export const useSaveDraftHandler = ({
         setIsDirty(false);
         
         // Create a version for manual saves only
-        if (isManualSave && !isAutoSave && savedId) {
-          try {
-            console.log('Creating version after manual save for document:', savedId);
-            await createVersion(savedId, content, {
+        if (isManualSave && !isAutoSave) {
+          await createDocumentVersion(
+            savedId, 
+            content, 
+            {
               reason: 'Manual save',
               auto_version: false
-            });
-          } catch (versionError) {
-            console.error('Error creating version after save:', versionError);
-          }
+            },
+            isAutoSave
+          );
         }
         
         // Run ontology enrichment after successful save
         // Only for manual saves to avoid excessive processing
-        if (isManualSave && enrichContentWithOntology && savedId) {
-          try {
-            // Process in background, don't wait for result
-            console.log('Running ontology enrichment after save for document:', savedId);
-            enrichContentWithOntology(savedId, content, title, {
-              autoLink: false, // Don't auto-link terms for saves
-              saveMetadata: true // Store the suggestions in metadata
-            }).catch(err => console.error('Background enrichment error:', err));
-          } catch (enrichError) {
-            console.error('Error starting ontology enrichment:', enrichError);
-          }
+        if (isManualSave) {
+          await enrichDocumentContent(
+            savedId,
+            content,
+            title,
+            isAutoSave,
+            false
+          );
         }
         
         // Provide user feedback for manual saves
@@ -135,11 +135,12 @@ export const useSaveDraftHandler = ({
       return savedId;
     } catch (error) {
       if (isManualSave && !isAutoSave) {
-        handleError(
-          error,
-          "Failed to save draft",
-          { level: "error", technical: false }
-        );
+        // Use the handleError utility directly for error handling in the catch block
+        toast({
+          title: "Failed to save draft",
+          description: error instanceof Error ? error.message : "An unexpected error occurred",
+          variant: "destructive",
+        });
       } else {
         // Log autosave errors but don't show to user
         console.error('Autosave error:', error);
