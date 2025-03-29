@@ -3,33 +3,57 @@
  * MetadataPanel Component
  * 
  * This is the unified entry point for displaying and editing content metadata.
- * It combines various section components to create a complete metadata panel.
+ * It combines various section components to create a complete metadata panel
+ * with consistent styling and behavior across the application.
  * 
- * Usage:
+ * Features:
+ * - Display and edit content metadata (tags, external sources, ontology terms)
+ * - Collapsible panel with refresh functionality
+ * - Loading and error states
+ * - Type safety with comprehensive TypeScript interfaces
+ * 
+ * @example Basic usage
  * ```tsx
  * <MetadataPanel 
  *   contentId="content-123" 
  *   onMetadataChange={() => {}} 
- *   isCollapsible={true}
- *   showOntologyTerms={true}
- *   editable={true}
  * />
  * ```
  * 
- * Available sections:
- * - HeaderSection: Panel title and controls
- * - ExternalSourceSection: External source URL and last checked date
- * - TagsSection: Content tags with add/delete functionality
- * - OntologyTermsSection: Ontology terms associated with the content
- * - DomainSection: Content domain information
- * - ContentIdSection: Display content ID
- * 
- * Advanced Usage:
- * To access the metadata state outside this component, use the useMetadataContext hook:
+ * @example Advanced usage with options
  * ```tsx
- * const metadata = useMetadataContext(contentId);
- * console.log(metadata.tags);
- * metadata.handleAddTag();
+ * <MetadataPanel 
+ *   contentId="content-123" 
+ *   onMetadataChange={handleMetadataChange} 
+ *   isCollapsible={true}
+ *   initialCollapsed={false}
+ *   showOntologyTerms={true}
+ *   showDomain={true}
+ *   domain="Engineering"
+ *   editable={true}
+ *   className="my-4"
+ * >
+ *   {/* Additional custom content */}
+ *   <CustomSection />
+ * </MetadataPanel>
+ * ```
+ * 
+ * @example Using the metadata context outside the component
+ * ```tsx
+ * import { useMetadataContext } from "@/components/MetadataPanel";
+ * 
+ * function MyComponent({ contentId }) {
+ *   const metadata = useMetadataContext(contentId);
+ *   
+ *   // Access metadata state
+ *   console.log(metadata.tags);
+ *   
+ *   // Perform operations
+ *   metadata.handleAddTag();
+ *   
+ *   // Refresh metadata
+ *   metadata.refreshMetadata();
+ * }
  * ```
  */
 

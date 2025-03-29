@@ -1,4 +1,15 @@
 
+/**
+ * MetadataPanel Types
+ * 
+ * This file contains TypeScript interface definitions for the MetadataPanel component system.
+ * It includes types for:
+ * - Props for all section components
+ * - Main MetadataPanel component props
+ * - Metadata context state and operations
+ * - Data structures for tags and source metadata
+ */
+
 import { ReactNode } from "react";
 
 /**

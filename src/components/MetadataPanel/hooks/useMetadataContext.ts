@@ -1,19 +1,27 @@
 
-import { useMemo } from "react";
-import { useMetadataPanel } from "./useMetadataPanel";
-import { MetadataContextState } from "../types";
-
 /**
- * Hook that exposes metadata panel state for other components to consume
+ * useMetadataContext Hook
  * 
- * This provides a unified API for interacting with metadata state and operations
- * without needing to directly use the useMetadataPanel hook.
+ * Provides access to metadata state and operations from anywhere in the component tree.
+ * Use this hook to access metadata outside of the MetadataPanel component.
  * 
- * @param contentId Content ID to get metadata for
- * @param onMetadataChange Optional callback when metadata changes
- * @param isCollapsible Whether the panel can be collapsed
- * @param initialCollapsed Whether the panel starts collapsed
- * @returns Metadata context state
+ * @example
+ * ```tsx
+ * const metadata = useMetadataContext("content-123");
+ * 
+ * // Access metadata state
+ * console.log(metadata.tags);
+ * 
+ * // Perform operations
+ * metadata.handleAddTag();
+ * metadata.handleDeleteTag(tagId);
+ * 
+ * // Refresh metadata
+ * metadata.refreshMetadata();
+ * ```
+ * 
+ * @param contentId - The ID of the content to get metadata for
+ * @returns Object containing metadata state and operations
  */
 export const useMetadataContext = (
   contentId: string,

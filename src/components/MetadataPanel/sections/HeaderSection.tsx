@@ -1,4 +1,22 @@
 
+/**
+ * HeaderSection Component
+ * 
+ * Renders the header section of the MetadataPanel with title, refresh button, and optional
+ * collapse/expand functionality. Also displays a visual indicator when content needs review.
+ * 
+ * @example
+ * ```tsx
+ * <HeaderSection
+ *   needsExternalReview={true}
+ *   handleRefresh={() => fetchMetadata()}
+ *   isLoading={isLoading}
+ *   isCollapsible={true}
+ *   isCollapsed={isCollapsed}
+ *   setIsCollapsed={setIsCollapsed}
+ * />
+ * ```
+ */
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { CardHeader, CardTitle } from "@/components/ui/card";

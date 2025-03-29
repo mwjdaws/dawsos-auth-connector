@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/hooks/useAuth";
 import { useTagOperations } from "./useTagOperations";
 import { useSourceMetadata } from "./useSourceMetadata";
@@ -6,6 +5,40 @@ import { usePanelState } from "./usePanelState";
 import { useEffect } from "react";
 import { handleError } from "@/utils/errors";
 
+/**
+ * useMetadataPanel Hook
+ * 
+ * Core hook that manages the state and operations for the MetadataPanel component.
+ * Combines multiple specialized hooks for different aspects of metadata management.
+ * 
+ * Features:
+ * - Fetches and manages tag data
+ * - Handles external source metadata
+ * - Manages UI state like loading, errors, and collapse/expand
+ * - Provides operations for adding/removing tags
+ * 
+ * @example
+ * ```tsx
+ * const {
+ *   tags,
+ *   isLoading,
+ *   error,
+ *   newTag,
+ *   setNewTag,
+ *   externalSourceUrl,
+ *   needsExternalReview,
+ *   handleRefresh,
+ *   handleAddTag,
+ *   handleDeleteTag
+ * } = useMetadataPanel("content-123", () => {}, true, false);
+ * ```
+ * 
+ * @param contentId - The ID of the content to fetch metadata for
+ * @param onMetadataChange - Optional callback for when metadata changes
+ * @param isCollapsible - Whether the panel should be collapsible
+ * @param initialCollapsed - Whether the panel should start collapsed
+ * @returns Object containing metadata state and operations
+ */
 export const useMetadataPanel = (
   contentId: string, 
   onMetadataChange?: () => void,

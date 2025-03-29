@@ -1,4 +1,20 @@
 
+/**
+ * DomainSection Component
+ * 
+ * Displays the domain associated with the content.
+ * Renders a badge for the domain or a message when no domain is specified.
+ * 
+ * @example
+ * ```tsx
+ * <DomainSection domain="Engineering" />
+ * ```
+ * 
+ * @example
+ * ```tsx
+ * <DomainSection domain={null} /> // Shows "No domain specified" message
+ * ```
+ */
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { DomainSectionProps } from "../types";

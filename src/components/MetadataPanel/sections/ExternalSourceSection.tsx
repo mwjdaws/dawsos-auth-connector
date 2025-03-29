@@ -1,4 +1,18 @@
 
+/**
+ * ExternalSourceSection Component
+ * 
+ * Displays information about an external source including its URL and when it was last checked.
+ * Returns null if no external source URL is provided.
+ * 
+ * @example
+ * ```tsx
+ * <ExternalSourceSection
+ *   externalSourceUrl="https://example.com/source"
+ *   lastCheckedAt="2023-06-15T12:30:45Z"
+ * />
+ * ```
+ */
 import React from "react";
 import { ExternalLink, Clock } from "lucide-react";
 import { format } from "date-fns";

@@ -1,4 +1,22 @@
 
+/**
+ * TagsSection Component
+ * 
+ * Displays and manages tags associated with content. Provides functionality to add and remove tags
+ * when in editable mode. Displays a message when no tags are available.
+ * 
+ * @example
+ * ```tsx
+ * <TagsSection
+ *   tags={contentTags}
+ *   editable={true}
+ *   newTag={newTagValue}
+ *   setNewTag={setNewTagValue}
+ *   onAddTag={handleAddTag}
+ *   onDeleteTag={handleDeleteTag}
+ * />
+ * ```
+ */
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";

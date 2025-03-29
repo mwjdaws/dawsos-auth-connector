@@ -1,4 +1,20 @@
 
+/**
+ * LoadingState Component
+ * 
+ * Displays a loading state with skeleton UI elements for the metadata panel.
+ * Used when metadata content is being fetched or processed.
+ * 
+ * @example
+ * ```tsx
+ * <LoadingState />
+ * ```
+ * 
+ * @example
+ * ```tsx
+ * <LoadingState className="my-4" />
+ * ```
+ */
 import React from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BaseSectionProps } from "../types";
