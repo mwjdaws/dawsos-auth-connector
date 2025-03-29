@@ -1,4 +1,3 @@
-
 // Re-export hooks and types
 export { useMarkdownEditor } from './useMarkdownEditor';
 export { useAutosave } from './useAutosave';
@@ -22,6 +21,15 @@ export { useOntologyTerms } from './useOntologyTerms';
 export { useTermMutations } from './ontology-terms/useTermMutations';
 export type { OntologyTerm, RelatedTerm } from './ontology-terms/types';
 export { useOntologyEnrichment } from './useOntologyEnrichment';
+
+// Re-export ontology enrichment related hooks and types
+export type { 
+  OntologySuggestion, 
+  RelatedNote, 
+  EnrichmentResult, 
+  EnrichmentOptions,
+  EnrichmentMetadata 
+} from './ontology-enrichment/types';
 
 // Re-export draft operations
 export { useDraftOperations } from './useDraftOperations';
