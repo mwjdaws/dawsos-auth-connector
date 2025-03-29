@@ -11,6 +11,21 @@ import { handleError } from '@/utils/error-handling';
 
 /**
  * Main orchestration hook for the markdown editor
+ * 
+ * This hook composes multiple specialized hooks to provide a complete
+ * editing experience with save, publish, template handling, and autosave
+ * functionality. It serves as the primary interface between the editor UI
+ * and the underlying data management.
+ * 
+ * Features:
+ * - Content state management (title, content, dirty state)
+ * - Content loading from sources
+ * - Document operations (save, publish)
+ * - Template application
+ * - Autosave functionality
+ * 
+ * @param props Configuration options for the markdown editor
+ * @returns Complete state and operations for the markdown editor UI
  */
 export const useMarkdownEditor = ({
   initialTitle = '',

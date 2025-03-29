@@ -5,6 +5,17 @@ import { usePublishHandler } from './handlers/usePublishHandler';
 import { DocumentOperationHandlerProps } from './types';
 import { useOntologyEnrichment } from './useOntologyEnrichment';
 
+/**
+ * Hook that provides handlers for document operations with proper lifecycle management
+ * 
+ * This is a composition hook that combines:
+ * - Save draft functionality with versioning
+ * - Publish functionality with enrichment
+ * - Status tracking for UI feedback
+ * 
+ * @param props All document data and callback functions needed for operations
+ * @returns Object containing handler functions and status indicators
+ */
 export const useDocumentOperationHandlers = (props: DocumentOperationHandlerProps) => {
   const {
     title,

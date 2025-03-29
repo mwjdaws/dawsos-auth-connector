@@ -1,32 +1,38 @@
 
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { handleError } from '@/utils/error-handling';
-import { validateDocumentTitle } from '@/utils/validation';
-import { DocumentLifecycleProps, OperationResult, SaveHandlerOptions } from './types';
+import { DocumentLifecycleProps } from './types';
 
 /**
- * Hook to manage common document lifecycle operations 
- * including validation, versioning, enrichment, and metadata updates
+ * Hook that manages document lifecycle operations like validation,
+ * versioning, and content enrichment.
+ * 
+ * This hook centralizes the document lifecycle logic that was previously
+ * scattered across multiple handlers.
+ * 
+ * @param props Functions for versioning and content enrichment
+ * @returns Object with document lifecycle management functions
  */
-export const useDocumentLifecycle = ({
-  createVersion,
-  enrichContentWithOntology
-}: DocumentLifecycleProps) => {
+export const useDocumentLifecycle = (props: DocumentLifecycleProps) => {
+  const { createVersion, enrichContentWithOntology } = props;
   const [isProcessing, setIsProcessing] = useState(false);
-
+  
   /**
-   * Validate document title
+   * Validates a document before save or publish operations
+   * 
+   * @param title The document title to validate
+   * @param isAutoSave Whether this is an autosave operation (less strict validation)
+   * @returns Boolean indicating if the document is valid
    */
   const validateDocument = (title: string, isAutoSave = false): boolean => {
-    // Skip validation for autosave
+    // Skip title validation for autosave
     if (isAutoSave) return true;
     
-    const validation = validateDocumentTitle(title);
-    if (!validation.isValid) {
+    // Title is required for manual saves and publishing
+    if (!title.trim()) {
       toast({
-        title: "Invalid Title",
-        description: validation.errorMessage,
+        title: "Title Required",
+        description: "Please enter a title for your document",
         variant: "destructive",
       });
       return false;
@@ -34,152 +40,99 @@ export const useDocumentLifecycle = ({
     
     return true;
   };
-
+  
   /**
-   * Create a version for the document
+   * Creates a version of the document content
+   * 
+   * @param documentId The ID of the document
+   * @param content The content to version
+   * @param metadata Optional metadata to store with the version
+   * @param showToast Whether to show a toast notification
+   * @returns Promise that resolves when version is created
    */
   const createDocumentVersion = async (
     documentId: string, 
     content: string, 
-    metadata: Record<string, any> = {},
-    isAutoSave = false
+    metadata?: any,
+    showToast = true
   ): Promise<void> => {
-    if (!documentId || documentId.startsWith('temp-') || !createVersion) {
-      return;
-    }
-    
-    // Skip version creation for auto-save to reduce database load
-    if (isAutoSave) {
-      return;
-    }
+    if (!createVersion || !documentId) return;
     
     try {
-      console.log('Creating version for document:', documentId);
-      await createVersion(documentId, content, {
-        ...metadata,
-        auto_save: isAutoSave
-      });
+      await createVersion(documentId, content, metadata);
+      
+      if (showToast) {
+        toast({
+          title: "Version Created",
+          description: "A new version of your document has been saved",
+        });
+      }
     } catch (error) {
-      console.error('Error creating version:', error);
-      // Silent failure for versioning - it shouldn't block the main operation
+      console.error("Error creating document version:", error);
+      
+      if (showToast) {
+        toast({
+          title: "Version Creation Failed",
+          description: "Failed to create a new version of your document",
+          variant: "destructive",
+        });
+      }
     }
   };
-
+  
   /**
-   * Enrich document content with ontology terms
+   * Enriches document content with ontology terms and relationships
+   * 
+   * @param sourceId The document source ID
+   * @param content The document content
+   * @param title The document title
+   * @param showToast Whether to show toast notifications
+   * @param isPublishing Whether this enrichment is part of a publish operation
+   * @returns Promise that resolves when enrichment is complete
    */
   const enrichDocumentContent = async (
-    documentId: string, 
-    content: string, 
+    sourceId: string,
+    content: string,
     title: string,
-    isAutoSave = false,
+    showToast = true,
     isPublishing = false
   ): Promise<void> => {
-    if (!documentId || documentId.startsWith('temp-') || !enrichContentWithOntology) {
-      return;
-    }
+    if (!enrichContentWithOntology || !sourceId) return;
     
-    // Skip enrichment for auto-save unless configuration specifies otherwise
-    if (isAutoSave && !isPublishing) {
-      return;
-    }
-    
+    setIsProcessing(true);
     try {
-      console.log('Running ontology enrichment for document:', documentId);
+      const options = {
+        isPublishing,
+        autoSave: !isPublishing
+      };
       
-      // Auto-link terms for published content
-      const autoLink = isPublishing;
+      await enrichContentWithOntology(sourceId, content, title, options);
       
-      // Process in background, don't wait for result
-      enrichContentWithOntology(
-        documentId, 
-        content, 
-        title, 
-        {
-          autoLink,
-          saveMetadata: true
-        }
-      ).catch(err => console.error('Background enrichment error:', err));
-    } catch (error) {
-      console.error('Error starting ontology enrichment:', error);
-      // Silent failure for enrichment - it shouldn't block the main operation
-    }
-  };
-
-  /**
-   * Handle operation result with appropriate user feedback
-   */
-  const handleOperationResult = (
-    result: OperationResult,
-    successTitle: string,
-    successMessage: string,
-    failureTitle: string,
-    isAutoSave = false
-  ): OperationResult => {
-    if (result.success && !isAutoSave) {
-      toast({
-        title: successTitle,
-        description: successMessage,
-      });
-    } else if (!result.success && !isAutoSave) {
-      handleError(
-        result.error,
-        failureTitle,
-        { level: "error", technical: false }
-      );
-    }
-    
-    return result;
-  };
-
-  /**
-   * Execute document operation with lifecycle management
-   */
-  const executeDocumentOperation = async <T extends OperationResult>(
-    title: string,
-    content: string,
-    operation: () => Promise<T>,
-    options: SaveHandlerOptions = {}
-  ): Promise<T | { success: false, documentId: null, error: any }> => {
-    const { isManualSave = true, isAutoSave = false, isPublishing = false } = options;
-    
-    // Skip validation for autosave
-    if (!isAutoSave && !validateDocument(title, isAutoSave)) {
-      return { success: false, documentId: null, error: "Validation failed" };
-    }
-    
-    if (isManualSave) {
-      setIsProcessing(true);
-    }
-    
-    try {
-      const result = await operation();
-      return result;
-    } catch (error) {
-      console.error('Operation failed:', error);
-      
-      if (!isAutoSave) {
-        handleError(
-          error,
-          "An error occurred during the operation",
-          { level: "error", technical: false }
-        );
+      if (showToast) {
+        toast({
+          title: "Content Enriched",
+          description: "Your document has been enriched with ontology terms",
+        });
       }
+    } catch (error) {
+      console.error("Error enriching document content:", error);
       
-      return { success: false, documentId: null, error };
+      if (showToast) {
+        toast({
+          title: "Enrichment Failed",
+          description: "Failed to enrich your document with ontology terms",
+          variant: "destructive",
+        });
+      }
     } finally {
-      if (isManualSave) {
-        setIsProcessing(false);
-      }
+      setIsProcessing(false);
     }
   };
-
+  
   return {
-    isProcessing,
     validateDocument,
     createDocumentVersion,
     enrichDocumentContent,
-    handleOperationResult,
-    executeDocumentOperation
+    isProcessing
   };
 };
