@@ -11,7 +11,7 @@
  * - GraphHeader, GraphRenderer, GraphLoading, and GraphError components
  */
 import React, { useCallback, memo, useState, useEffect, useRef, useTransition } from 'react';
-import { useGraphData } from './hooks/useGraphData';
+import { useGraphData } from './hooks/graph-data';
 import { GraphHeader } from './components/GraphHeader';
 import { GraphRenderer } from './components/GraphRenderer';
 import { GraphLoading } from './components/GraphLoading';
@@ -21,6 +21,8 @@ import { GraphZoomControl } from './components/GraphZoomControl';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RelationshipGraphProps, GraphRendererRef } from './types';
 import { toast } from '@/hooks/use-toast';
+import { EmptyGraphState } from './components/EmptyGraphState';
+import { GraphControls } from './components/GraphControls';
 
 // Memoized error fallback component
 const ErrorFallback = memo(({ onRetry }: { onRetry: () => void }) => (
@@ -170,22 +172,7 @@ export function RelationshipGraph({
   // Show empty state if no data
   if (!graphData || graphData.nodes.length === 0) {
     console.log("No graph data available. graphData:", graphData);
-    return (
-      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-        <p className="text-muted-foreground mb-4">
-          No relationship data available for this knowledge source.
-        </p>
-        <p className="text-sm text-muted-foreground mb-6">
-          Try adding some ontology terms or linking to other sources.
-        </p>
-        <button 
-          className="px-3 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          onClick={handleRetry}
-        >
-          Refresh Graph Data
-        </button>
-      </div>
-    );
+    return <EmptyGraphState onRefresh={handleRetry} />;
   }
   
   // Render the graph when data is available, wrapped in an error boundary
@@ -194,20 +181,13 @@ export function RelationshipGraph({
       <div className="border rounded-lg bg-card overflow-hidden flex flex-col">
         <GraphHeader graphData={graphData} />
         
-        <div className="px-3 py-2 border-b flex justify-between items-center flex-wrap gap-2">
-          <GraphSearch 
-            nodes={graphData.nodes}
-            onNodeFound={handleNodeFound}
-          />
-          
-          <GraphZoomControl 
-            zoom={zoomLevel}
-            onZoomChange={handleZoomChange}
-            onReset={handleResetZoom}
-            min={0.5}
-            max={3}
-          />
-        </div>
+        <GraphControls
+          graphData={graphData}
+          onNodeFound={handleNodeFound}
+          zoom={zoomLevel}
+          onZoomChange={handleZoomChange}
+          onResetZoom={handleResetZoom}
+        />
         
         <GraphRenderer 
           ref={graphRendererRef}
