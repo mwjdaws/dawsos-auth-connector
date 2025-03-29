@@ -1,4 +1,3 @@
-
 import { useAgentLogger } from '@/hooks/useAgentLogger';
 import { Json } from '@/integrations/supabase/types';
 import { AgentTaskRequest, AgentTaskResult } from './types';
@@ -85,8 +84,8 @@ export function useAgentOrchestrator() {
   
   return {
     runTask,
-    getBackgroundTaskStatus,
-    getBackgroundTasksForSource,
-    getQueueStatus
+    getBackgroundTaskStatus: agentOrchestrator.getBackgroundTaskStatus.bind(agentOrchestrator),
+    getBackgroundTasksForSource: agentOrchestrator.getBackgroundTasksForSource.bind(agentOrchestrator),
+    getQueueStatus: agentOrchestrator.getQueueStatus.bind(agentOrchestrator)
   };
 }

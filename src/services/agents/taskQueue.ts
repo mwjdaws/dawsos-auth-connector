@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/errors';
-import { AgentType, TaskPriority } from './agentOrchestrator';
+import { AgentType, TaskPriority } from './types';
 
 /**
  * Interface for agent task queue request
