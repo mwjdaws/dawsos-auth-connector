@@ -1,10 +1,8 @@
 
-import { useState, useEffect, useTransition, useRef } from "react";
-import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { isValidContentId } from "@/utils/content-validation";
-import { useTagOperations, Tag } from "./useTagOperations";
+import { useTagOperations } from "./useTagOperations";
 import { useSourceMetadata } from "./useSourceMetadata";
+import { usePanelState } from "./usePanelState";
 
 export const useMetadataPanel = (
   contentId: string, 
@@ -12,12 +10,15 @@ export const useMetadataPanel = (
   isCollapsible = false,
   initialCollapsed = false
 ) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
+  // Use the panel state hook
+  const panelState = usePanelState({ 
+    contentId, 
+    onMetadataChange, 
+    isCollapsible, 
+    initialCollapsed 
+  });
+  
   const { user } = useAuth();
-  const isMounted = useRef(true);
   
   // Use the tag operations hook
   const tagOperations = useTagOperations({ 
@@ -31,15 +32,11 @@ export const useMetadataPanel = (
 
   const fetchMetadata = async () => {
     // Validate content ID before fetching metadata
-    if (!isValidContentId(contentId)) {
-      console.log("Invalid contentId for fetching metadata:", contentId);
-      setIsLoading(false);
-      setError("Invalid content ID");
+    if (!panelState.validateContentId()) {
       return;
     }
     
-    setIsLoading(true);
-    setError(null);
+    panelState.startLoading();
     
     try {
       // Fetch tags
@@ -48,8 +45,8 @@ export const useMetadataPanel = (
       // Fetch source metadata
       const sourceData = await sourceMetadata.fetchSourceMetadata();
       
-      if (isMounted.current) {
-        startTransition(() => {
+      if (panelState.isMounted.current) {
+        panelState.startTransition(() => {
           // Update tags state
           tagOperations.setTags(tagData);
           
@@ -60,23 +57,10 @@ export const useMetadataPanel = (
         });
       }
       
-      if (onMetadataChange) {
-        onMetadataChange();
-      }
+      panelState.finishLoading(true);
     } catch (err: any) {
       console.error("Error fetching metadata:", err);
-      if (isMounted.current) {
-        setError(err.message || "Failed to fetch metadata");
-        toast({
-          title: "Error",
-          description: "Failed to load metadata",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      if (isMounted.current) {
-        setIsLoading(false);
-      }
+      panelState.finishLoading(false, err.message || "Failed to fetch metadata");
     }
   };
 
@@ -84,10 +68,6 @@ export const useMetadataPanel = (
   useEffect(() => {
     console.log("MetadataPanel: contentId changed to", contentId);
     fetchMetadata();
-    
-    return () => {
-      isMounted.current = false;
-    };
   }, [contentId]);
 
   const handleRefresh = () => {
@@ -96,17 +76,17 @@ export const useMetadataPanel = (
 
   return {
     tags: tagOperations.tags,
-    isLoading,
-    error,
-    isPending,
+    isLoading: panelState.isLoading,
+    error: panelState.error,
+    isPending: panelState.isPending,
     newTag: tagOperations.newTag,
     setNewTag: tagOperations.setNewTag,
     user,
     externalSourceUrl: sourceMetadata.externalSourceUrl,
     needsExternalReview: sourceMetadata.needsExternalReview,
     lastCheckedAt: sourceMetadata.lastCheckedAt,
-    isCollapsed,
-    setIsCollapsed,
+    isCollapsed: panelState.isCollapsed,
+    setIsCollapsed: panelState.setIsCollapsed,
     handleRefresh,
     handleAddTag: tagOperations.handleAddTag,
     handleDeleteTag: tagOperations.handleDeleteTag
@@ -115,3 +95,6 @@ export const useMetadataPanel = (
 
 // Export types
 export type { Tag } from "./useTagOperations";
+
+// Add missing import
+import { useEffect } from "react";
