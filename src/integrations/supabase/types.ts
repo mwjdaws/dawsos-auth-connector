@@ -53,6 +53,62 @@ export type Database = {
           },
         ]
       }
+      agent_tasks: {
+        Row: {
+          agent_name: string
+          created_at: string
+          error_message: string | null
+          id: string
+          knowledge_source_id: string | null
+          last_attempt_at: string | null
+          max_retries: number
+          next_attempt_at: string | null
+          payload: Json | null
+          priority: string | null
+          retry_count: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agent_name: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          knowledge_source_id?: string | null
+          last_attempt_at?: string | null
+          max_retries?: number
+          next_attempt_at?: string | null
+          payload?: Json | null
+          priority?: string | null
+          retry_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agent_name?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          knowledge_source_id?: string | null
+          last_attempt_at?: string | null
+          max_retries?: number
+          next_attempt_at?: string | null
+          payload?: Json | null
+          priority?: string | null
+          retry_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_tasks_knowledge_source_id_fkey"
+            columns: ["knowledge_source_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       external_link_audits: {
         Row: {
           checked_at: string
