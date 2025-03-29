@@ -1,4 +1,3 @@
-
 /**
  * GraphRenderer Component
  * 
@@ -18,6 +17,7 @@ import React, { useCallback, useMemo, memo, useRef, useEffect } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { useNavigate } from 'react-router-dom';
 import { GraphData, GraphNode, GraphLink } from '../types';
+import { toast } from '@/hooks/use-toast';
 
 interface GraphRendererProps {
   graphData: GraphData;    // Data structure containing nodes and links

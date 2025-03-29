@@ -6,7 +6,7 @@
  * dashboard tabs interface. It passes the content ID to the graph panel to
  * potentially use as a starting node.
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useTransition } from 'react';
 import { RelationshipGraphPanel } from '@/components/MarkdownViewer/RelationshipGraph';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
@@ -18,6 +18,7 @@ interface RelationshipGraphTabProps {
 }
 
 export function RelationshipGraphTab({ contentId }: RelationshipGraphTabProps) {
+  const [isPending, startTransition] = useTransition();
   const [key, setKey] = useState(Date.now()); // Used to force component remount
   const [hasAttemptedRetry, setHasAttemptedRetry] = useState(false);
   const { data: knowledgeSources, isLoading: isLoadingSources } = useKnowledgeSourcesQuery();
@@ -28,42 +29,49 @@ export function RelationshipGraphTab({ contentId }: RelationshipGraphTabProps) {
   
   // Check if we have a valid contentId or should auto-select one from available sources
   useEffect(() => {
-    // First priority: use the contentId passed as prop if it's valid
-    if (contentId && !contentId.startsWith('temp-')) {
-      setSelectedId(contentId);
-      setEmptyId(false);
-      return;
-    }
-    
-    // Second priority: if we have knowledge sources, use the first one
-    if (knowledgeSources && knowledgeSources.length > 0) {
-      console.log("Auto-selecting first knowledge source:", knowledgeSources[0].id);
-      setSelectedId(knowledgeSources[0].id);
-      setEmptyId(false);
-      return;
-    }
-    
-    // If we have no contentId and no knowledge sources, show empty state
-    setEmptyId(true);
-  }, [contentId, knowledgeSources]);
+    startTransition(() => {
+      // First priority: use the contentId passed as prop if it's valid
+      if (contentId && !contentId.startsWith('temp-')) {
+        setSelectedId(contentId);
+        setEmptyId(false);
+        return;
+      }
+      
+      // Second priority: if we have knowledge sources, use the first one
+      if (knowledgeSources && knowledgeSources.length > 0) {
+        console.log("Auto-selecting first knowledge source:", knowledgeSources[0].id);
+        setSelectedId(knowledgeSources[0].id);
+        setEmptyId(false);
+        return;
+      }
+      
+      // If we have no contentId and no knowledge sources, show empty state
+      setEmptyId(true);
+    });
+  }, [contentId, knowledgeSources, startTransition]);
   
   // Reset retry state when selectedId changes
   useEffect(() => {
-    setHasAttemptedRetry(false);
-  }, [selectedId]);
+    startTransition(() => {
+      setHasAttemptedRetry(false);
+    });
+  }, [selectedId, startTransition]);
   
   // Force refresh of the graph
   const handleRefresh = useCallback(() => {
-    setKey(Date.now());
-    setHasAttemptedRetry(true);
+    startTransition(() => {
+      setKey(Date.now());
+      setHasAttemptedRetry(true);
+    });
+    
     toast({
       title: "Refreshing Graph",
       description: "The knowledge graph is being refreshed...",
     });
-  }, []);
+  }, [startTransition]);
   
-  // Show loading state while fetching knowledge sources
-  if (isLoadingSources) {
+  // Show loading state while fetching knowledge sources or during transitions
+  if (isLoadingSources || isPending) {
     return (
       <div className="bg-card border rounded-lg shadow-sm p-6 flex flex-col items-center justify-center min-h-[400px]">
         <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mb-4"></div>
