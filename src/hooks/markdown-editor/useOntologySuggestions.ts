@@ -130,7 +130,7 @@ export const useOntologySuggestions = () => {
           knowledge_source_id: sourceId,
           ontology_term_id: termId,
           created_by: (await supabase.auth.getUser()).data.user?.id,
-          review_required: false
+          review_required: false // Mark as not requiring review since user explicitly approved it
         });
       
       if (error) {
@@ -206,8 +206,8 @@ export const useOntologySuggestions = () => {
         .map(term => ({
           knowledge_source_id: sourceId,
           ontology_term_id: term.id,
-          created_by: null,
-          review_required: false
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+          review_required: false // Admin-applied terms don't need review
         }));
       
       if (termsToApply.length === 0) {

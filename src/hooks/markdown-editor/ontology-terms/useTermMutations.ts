@@ -20,7 +20,8 @@ export function useTermMutations(sourceId?: string) {
         .insert({
           knowledge_source_id: sourceId,
           ontology_term_id: termId,
-          created_by: (await supabase.auth.getUser()).data.user?.id
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+          review_required: false // User-added terms don't need review
         })
         .select();
         

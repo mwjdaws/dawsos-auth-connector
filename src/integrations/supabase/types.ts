@@ -54,6 +54,7 @@ export type Database = {
           id: string
           knowledge_source_id: string
           ontology_term_id: string
+          review_required: boolean
         }
         Insert: {
           created_at?: string
@@ -61,6 +62,7 @@ export type Database = {
           id?: string
           knowledge_source_id: string
           ontology_term_id: string
+          review_required?: boolean
         }
         Update: {
           created_at?: string
@@ -68,6 +70,7 @@ export type Database = {
           id?: string
           knowledge_source_id?: string
           ontology_term_id?: string
+          review_required?: boolean
         }
         Relationships: [
           {
