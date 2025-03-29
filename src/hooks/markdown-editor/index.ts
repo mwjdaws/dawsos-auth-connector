@@ -8,6 +8,7 @@ export { useDocumentOperationHandlers } from './useDocumentOperationHandlers';
 export { useKnowledgeSources, useKnowledgeSourcesQuery } from './useKnowledgeSources';
 export { useNoteLinks, useSourceLinks } from './useNoteLinks';
 export { useWikiLinks } from './useWikiLinks';
+export { useOntologyTerms } from './useOntologyTerms';
 export * from './types';
 export * from './handlers/useSaveDraftHandler';
 export * from './handlers/usePublishHandler';

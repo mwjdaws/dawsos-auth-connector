@@ -7,6 +7,7 @@ import { OntologyTermsSection } from "./OntologyTermsSection";
 import { ExternalSourceSection } from "./ExternalSourceSection";
 import { TagsSection } from "./TagsSection";
 import { DomainSection } from "./DomainSection";
+import { OntologyTermsPanel } from "@/components/MarkdownViewer/OntologyTermsPanel";
 
 interface Tag {
   id: string;
@@ -34,6 +35,7 @@ interface MetadataPanelProps {
   onAddTag: () => void;
   onDeleteTag: (tagId: string) => void;
   isPending: boolean;
+  sourceId?: string;
 }
 
 export function MetadataPanel({
@@ -49,7 +51,8 @@ export function MetadataPanel({
   editable,
   onAddTag,
   onDeleteTag,
-  isPending
+  isPending,
+  sourceId
 }: MetadataPanelProps) {
   const [isMetadataCollapsed, setIsMetadataCollapsed] = useState(false);
 
@@ -95,7 +98,11 @@ export function MetadataPanel({
                 onDeleteTag={onDeleteTag}
               />
               
-              <OntologyTermsSection ontologyTerms={ontologyTerms} />
+              {/* New OntologyTermsPanel component */}
+              <OntologyTermsPanel 
+                sourceId={sourceId} 
+                editable={editable} 
+              />
               
               <DomainSection domain={domain} />
             </>

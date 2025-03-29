@@ -47,6 +47,45 @@ export type Database = {
           },
         ]
       }
+      knowledge_source_ontology_terms: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          knowledge_source_id: string
+          ontology_term_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          knowledge_source_id: string
+          ontology_term_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          knowledge_source_id?: string
+          ontology_term_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_source_ontology_terms_knowledge_source_id_fkey"
+            columns: ["knowledge_source_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_source_ontology_terms_ontology_term_id_fkey"
+            columns: ["ontology_term_id"]
+            isOneToOne: false
+            referencedRelation: "ontology_terms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_source_versions: {
         Row: {
           content: string
@@ -442,6 +481,18 @@ export type Database = {
       }
     }
     Functions: {
+      get_related_ontology_terms: {
+        Args: {
+          knowledge_source_id: string
+        }
+        Returns: {
+          term_id: string
+          term: string
+          description: string
+          domain: string
+          relation_type: string
+        }[]
+      }
       get_related_tags: {
         Args: {
           knowledge_source_id: string

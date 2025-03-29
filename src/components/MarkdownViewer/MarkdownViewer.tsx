@@ -63,6 +63,7 @@ export function MarkdownViewer({ content, contentId, editable = false, className
           onAddTag={onAddTag}
           onDeleteTag={onDeleteTag}
           isPending={isPending}
+          sourceId={contentId}
         />
       </div>
     </div>
