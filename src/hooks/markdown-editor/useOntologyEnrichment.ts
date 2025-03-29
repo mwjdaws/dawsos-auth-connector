@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/error-handling';
+import { Json } from '@/integrations/supabase/types';
 
 interface OntologySuggestion {
   id: string;
@@ -89,21 +90,45 @@ export const useOntologyEnrichment = () => {
    */
   const saveEnrichmentMetadata = async (sourceId: string, enrichmentResult: EnrichmentResult) => {
     try {
-      // We need to update the metadata field, not create a new agent_metadata field
-      const metadataUpdate = {
-        metadata: {
-          ontology_enrichment: {
-            suggested_terms: enrichmentResult.terms,
-            related_notes: enrichmentResult.notes,
-            enriched_at: new Date().toISOString(),
-            enriched: true
-          }
-        }
+      // First, fetch the current metadata to preserve existing values
+      const { data: currentData, error: fetchError } = await supabase
+        .from('knowledge_sources')
+        .select('metadata')
+        .eq('id', sourceId)
+        .single();
+      
+      if (fetchError) {
+        console.error('Error fetching current metadata:', fetchError);
+        throw fetchError;
+      }
+      
+      // Prepare the enrichment data, ensuring it's serializable
+      const enrichmentData = {
+        suggested_terms: enrichmentResult.terms.map(term => ({
+          id: term.id,
+          term: term.term,
+          description: term.description || null,
+          domain: term.domain || null,
+          score: term.score || null
+        })),
+        related_notes: enrichmentResult.notes.map(note => ({
+          id: note.id,
+          title: note.title,
+          score: note.score || null
+        })),
+        enriched_at: new Date().toISOString(),
+        enriched: true
+      };
+      
+      // Merge with existing metadata or create new metadata object
+      const updatedMetadata = {
+        ...(currentData?.metadata as Record<string, any> || {}),
+        ontology_enrichment: enrichmentData
       };
       
       const { error } = await supabase
         .from('knowledge_sources')
-        .update(metadataUpdate)
+        .update({ metadata: updatedMetadata as Json })
         .eq('id', sourceId);
       
       if (error) {
