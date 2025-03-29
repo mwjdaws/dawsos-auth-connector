@@ -1,3 +1,4 @@
+
 /**
  * Type definitions for the RelationshipGraph components
  */
@@ -47,4 +48,5 @@ export interface RelationshipGraphPanelProps {
 
 export interface GraphRendererRef {
   centerOnNode: (nodeId: string) => void;
+  setZoom: (zoomLevel: number, duration?: number) => void;
 }

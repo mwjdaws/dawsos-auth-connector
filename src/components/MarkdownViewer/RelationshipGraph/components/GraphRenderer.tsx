@@ -1,4 +1,3 @@
-
 /**
  * GraphRenderer Component
  * 
@@ -17,18 +16,19 @@
 import React, { useCallback, useMemo, useImperativeHandle, forwardRef, useEffect, useRef } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { useNavigate } from 'react-router-dom';
-import { GraphData, GraphNode, GraphLink } from '../types';
+import { GraphData, GraphNode, GraphLink, GraphRendererRef } from '../types';
 
 interface GraphRendererProps {
   graphData: GraphData;        // Data structure containing nodes and links
   width: number;               // Width of the graph container
   height: number;              // Height of the graph container
   highlightedNodeId?: string | null; // ID of the node to highlight
+  zoom?: number;               // Current zoom level
 }
 
 // Component with forwardRef to expose methods to parent
-export const GraphRenderer = forwardRef<any, GraphRendererProps>(
-  ({ graphData, width, height, highlightedNodeId }, ref) => {
+export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
+  ({ graphData, width, height, highlightedNodeId, zoom = 1 }, ref) => {
     const navigate = useNavigate();
     const graphRef = useRef<any>(null);
     
@@ -41,8 +41,20 @@ export const GraphRenderer = forwardRef<any, GraphRendererProps>(
           graphRef.current.centerAt(node.x, node.y, 1000);
           graphRef.current.zoom(2.5, 1000);
         }
+      },
+      setZoom: (zoomLevel: number, duration: number = 0) => {
+        if (graphRef.current) {
+          graphRef.current.zoom(zoomLevel, duration);
+        }
       }
     }));
+    
+    // Apply zoom when the zoom prop changes
+    useEffect(() => {
+      if (graphRef.current && zoom) {
+        graphRef.current.zoom(zoom, 300);
+      }
+    }, [zoom]);
     
     // Debug output for graph data
     useEffect(() => {

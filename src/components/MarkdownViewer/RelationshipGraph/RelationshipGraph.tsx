@@ -10,15 +10,16 @@
  * - useGraphData hook for fetching the graph data
  * - GraphHeader, GraphRenderer, GraphLoading, and GraphError components
  */
-import React, { useCallback, memo, useState, useEffect, useRef } from 'react';
+import React, { useCallback, memo, useState, useEffect, useRef, useTransition } from 'react';
 import { useGraphData } from './hooks/useGraphData';
 import { GraphHeader } from './components/GraphHeader';
 import { GraphRenderer } from './components/GraphRenderer';
 import { GraphLoading } from './components/GraphLoading';
 import { GraphError } from './components/GraphError';
 import { GraphSearch } from './components/GraphSearch';
+import { GraphZoomControl } from './components/GraphZoomControl';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { RelationshipGraphProps } from './types';
+import { RelationshipGraphProps, GraphRendererRef } from './types';
 import { toast } from '@/hooks/use-toast';
 
 // Memoized error fallback component
@@ -42,7 +43,9 @@ export function RelationshipGraph({
   const [loadingTime, setLoadingTime] = useState(0);
   const [isManualRetry, setIsManualRetry] = useState(false);
   const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null);
-  const graphRendererRef = useRef<any>(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [isPending, startTransition] = useTransition();
+  const graphRendererRef = useRef<GraphRendererRef>(null);
   
   // Log the startingNodeId to help debug
   useEffect(() => {
@@ -122,6 +125,29 @@ export function RelationshipGraph({
       }
     }
   }, [graphData]);
+
+  // Handle zoom change
+  const handleZoomChange = useCallback((newZoom: number) => {
+    startTransition(() => {
+      setZoomLevel(newZoom);
+      console.log(`Zoom level changed to: ${newZoom}`);
+    });
+  }, []);
+
+  // Reset zoom
+  const handleResetZoom = useCallback(() => {
+    startTransition(() => {
+      setZoomLevel(1);
+      // If we have graph data, zoom to fit
+      if (graphRendererRef.current && graphData && graphData.nodes.length > 0) {
+        setTimeout(() => {
+          if (graphRendererRef.current) {
+            graphRendererRef.current.setZoom(1);
+          }
+        }, 50);
+      }
+    });
+  }, [graphData]);
   
   // Memoized retry handler
   const handleRetry = useCallback(() => {
@@ -168,10 +194,18 @@ export function RelationshipGraph({
       <div className="border rounded-lg bg-card overflow-hidden flex flex-col">
         <GraphHeader graphData={graphData} />
         
-        <div className="px-3 py-2 border-b">
+        <div className="px-3 py-2 border-b flex justify-between items-center flex-wrap gap-2">
           <GraphSearch 
             nodes={graphData.nodes}
             onNodeFound={handleNodeFound}
+          />
+          
+          <GraphZoomControl 
+            zoom={zoomLevel}
+            onZoomChange={handleZoomChange}
+            onReset={handleResetZoom}
+            min={0.5}
+            max={3}
           />
         </div>
         
@@ -181,7 +215,14 @@ export function RelationshipGraph({
           width={width} 
           height={height}
           highlightedNodeId={highlightedNodeId}
+          zoom={zoomLevel}
         />
+        
+        {isPending && (
+          <div className="absolute bottom-4 right-4 bg-primary/70 text-white px-2 py-1 text-xs rounded-md backdrop-blur-sm">
+            Updating view...
+          </div>
+        )}
       </div>
     </ErrorBoundary>
   );
