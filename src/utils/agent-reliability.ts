@@ -122,8 +122,13 @@ export async function executeAgentTask(
       }
     );
     
+    // Check if result has data and confidence properties
+    const confidence = result && typeof result === 'object' && 'data' in result && 
+      typeof result.data === 'object' && result.data && 'confidence' in result.data ? 
+      result.data.confidence : undefined;
+    
     // Log the successful execution
-    await logAgentSuccess(agentName, action, knowledgeSourceId, result?.data?.confidence, metadata);
+    await logAgentSuccess(agentName, action, knowledgeSourceId, confidence, metadata);
     
     return {
       success: true,
@@ -221,7 +226,13 @@ export async function getAgentTaskStatus(taskId: string): Promise<{
       
     if (error) throw error;
     
-    const payload = data.payload && typeof data.payload === 'object' ? data.payload : {};
+    // Safely access payload data with type checking
+    let resultData = undefined;
+    if (data.payload && typeof data.payload === 'object') {
+      if ('result' in data.payload) {
+        resultData = data.payload.result;
+      }
+    }
     
     return {
       status: data.status as AgentTaskStatus,
@@ -229,7 +240,7 @@ export async function getAgentTaskStatus(taskId: string): Promise<{
       lastAttempt: data.last_attempt_at ? new Date(data.last_attempt_at) : undefined,
       nextAttempt: data.next_attempt_at ? new Date(data.next_attempt_at) : undefined,
       error: data.error_message,
-      result: payload.result,
+      result: resultData,
     };
   } catch (error) {
     handleError(

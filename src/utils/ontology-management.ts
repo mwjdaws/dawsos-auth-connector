@@ -1,3 +1,4 @@
+
 /**
  * Ontology Management Utilities
  * 
@@ -312,14 +313,21 @@ export async function getTermRecommendations(
       }
     );
     
-    return (result?.terms || [])
-      .filter(term => 
-        // Filter out terms that are already applied
-        !existingTermObjects.some(
-          existing => existing.term.toLowerCase() === term.term.toLowerCase()
+    // Use proper type checking to ensure the result contains terms
+    if (result && typeof result === 'object' && 'terms' in result) {
+      const suggestedTerms = result.terms || [];
+      
+      return suggestedTerms
+        .filter(term => 
+          // Filter out terms that are already applied
+          !existingTermObjects.some(
+            existing => existing.term.toLowerCase() === term.term.toLowerCase()
+          )
         )
-      )
-      .slice(0, 15); // Limit number of suggestions
+        .slice(0, 15); // Limit number of suggestions
+    }
+    
+    return [];
       
   } catch (error) {
     handleError(
