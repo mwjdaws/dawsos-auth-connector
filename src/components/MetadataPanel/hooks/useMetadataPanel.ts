@@ -29,6 +29,13 @@ export function useMetadataPanel(
 
   const sourceMetadata = useSourceMetadata({ contentId });
   
+  const panelStateProps = {
+    contentId,
+    onMetadataChange,
+    isCollapsible,
+    initialCollapsed
+  };
+  
   const {
     isLoading,
     error,
@@ -41,12 +48,12 @@ export function useMetadataPanel(
     validateContentId,
     startLoading,
     finishLoading
-  } = usePanelState(isCollapsible, initialCollapsed);
+  } = usePanelState(panelStateProps);
 
   // Function to fetch metadata
   const fetchMetadata = async () => {
     // Validate contentId
-    if (!validateContentId(contentId)) return;
+    if (!validateContentId()) return;
     
     // Start loading state
     startLoading();
