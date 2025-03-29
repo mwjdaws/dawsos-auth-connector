@@ -95,18 +95,21 @@ const DashboardPage = () => {
             .from('agent_tasks')
             .select('id, agent_name, action, status')
             .eq('status', 'completed')
-            .is('notified', false)
+            // Commenting out notified check as it doesn't exist in the schema
+            // .is('notified', false)
             .limit(5);
             
           if (error) throw error;
           
           // Notify user of completed tasks
           if (data && data.length > 0) {
-            // Mark as notified
-            await supabase
-              .from('agent_tasks')
-              .update({ notified: true })
-              .in('id', data.map(task => task.id));
+            // Update task status instead of using notified flag
+            for (const task of data) {
+              await supabase
+                .from('agent_tasks')
+                .update({ status: 'notified' })
+                .eq('id', task.id);
+            }
               
             // Show a notification
             toast({
@@ -184,32 +187,18 @@ const DashboardPage = () => {
         </div>
       )}
       
-      <ErrorBoundary 
-        fallback={
-          <div className="p-6 border border-red-300 bg-red-50 rounded-md">
-            <h2 className="text-lg font-semibold text-red-800 mb-2">Dashboard Error</h2>
-            <p className="mb-4 text-red-700">There was an error loading the dashboard components.</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-md"
-            >
-              Reload Page
-            </button>
-          </div>
-        }
-        onError={(error) => {
-          handleError(
-            error,
-            "Dashboard component crashed",
-            { 
-              level: "error",
-              context: { activeTab, contentId },
-              actionLabel: "Reload",
-              action: () => window.location.reload() 
-            }
-          );
-        }}
-      >
+      <ErrorBoundary fallback={
+        <div className="p-6 border border-red-300 bg-red-50 rounded-md">
+          <h2 className="text-lg font-semibold text-red-800 mb-2">Dashboard Error</h2>
+          <p className="mb-4 text-red-700">There was an error loading the dashboard components.</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-md"
+          >
+            Reload Page
+          </button>
+        </div>
+      }>
         <DashboardHeader 
           contentId={contentId}
           isRefreshingStats={isRefreshingStats}

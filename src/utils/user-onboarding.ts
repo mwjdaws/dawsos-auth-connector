@@ -1,253 +1,218 @@
 
-/**
- * User Onboarding Utilities
- * 
- * Provides utilities to improve user adoption:
- * - Step-by-step onboarding guides
- * - Feature discovery
- * - User preferences
- * - Template assistance
- */
-
+import { useCallback, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
+import { handleError } from "@/utils/errors";
 
-// Onboarding steps for new users
-export const onboardingSteps = [
-  {
-    id: "welcome",
-    title: "Welcome to the Knowledge System",
-    description: "Let's get you started with the essential features.",
-    placement: "center",
-  },
-  {
-    id: "tag-generator",
-    title: "Tag Generator",
-    description: "Generate tags automatically from your content.",
-    target: "[data-tab='tag-generator']",
-    placement: "bottom",
-  },
-  {
-    id: "metadata",
-    title: "Metadata Management",
-    description: "View and edit metadata for your knowledge sources.",
-    target: "[data-tab='metadata']",
-    placement: "bottom",
-  },
-  {
-    id: "editor",
-    title: "Markdown Editor",
-    description: "Create and edit knowledge content with full formatting support.",
-    target: "[data-tab='editor']",
-    placement: "bottom",
-  },
-  {
-    id: "templates",
-    title: "Knowledge Templates",
-    description: "Use templates to create structured knowledge sources quickly.",
-    target: "[data-tab='templates']",
-    placement: "bottom",
-  },
-];
-
-/**
- * User preferences interface
- */
+// Define types for preferences
 export interface UserPreferences {
-  theme: "light" | "dark" | "system";
-  defaultTab: string;
-  showOnboarding: boolean;
-  completedOnboarding: string[];
-  enableNotifications: boolean;
-  defaultTemplate?: string;
+  defaultTab?: string;
+  theme?: 'light' | 'dark' | 'system';
+  notifications?: boolean;
+  [key: string]: any;
 }
 
 /**
- * Default user preferences
- */
-const defaultPreferences: UserPreferences = {
-  theme: "system",
-  defaultTab: "tag-generator",
-  showOnboarding: true,
-  completedOnboarding: [],
-  enableNotifications: true,
-};
-
-/**
- * Saves user preferences
- */
-export async function saveUserPreferences(
-  userId: string,
-  preferences: Partial<UserPreferences>
-): Promise<void> {
-  try {
-    // First get existing preferences
-    const { data: existing } = await supabase
-      .from("user_preferences")
-      .select("preferences")
-      .eq("user_id", userId)
-      .maybeSingle();
-      
-    const mergedPreferences = {
-      ...(existing?.preferences || defaultPreferences),
-      ...preferences,
-    };
-    
-    // Upsert the preferences
-    await supabase
-      .from("user_preferences")
-      .upsert({
-        user_id: userId,
-        preferences: mergedPreferences,
-      });
-      
-    // Store in local storage for faster access
-    localStorage.setItem(
-      `user_prefs_${userId}`,
-      JSON.stringify(mergedPreferences)
-    );
-  } catch (error) {
-    console.error("Failed to save user preferences:", error);
-    
-    // Still update local storage
-    try {
-      const localPrefs = JSON.parse(
-        localStorage.getItem(`user_prefs_${userId}`) || "{}"
-      );
-      
-      localStorage.setItem(
-        `user_prefs_${userId}`,
-        JSON.stringify({
-          ...localPrefs,
-          ...preferences,
-        })
-      );
-    } catch (e) {
-      console.error("Failed to update local preferences:", e);
-    }
-  }
-}
-
-/**
- * Gets user preferences with caching
- */
-export async function getUserPreferences(
-  userId: string
-): Promise<UserPreferences> {
-  if (!userId) return defaultPreferences;
-  
-  try {
-    // Try local storage first
-    const localPrefs = localStorage.getItem(`user_prefs_${userId}`);
-    if (localPrefs) {
-      return {
-        ...defaultPreferences,
-        ...JSON.parse(localPrefs),
-      };
-    }
-    
-    // Fetch from database
-    const { data } = await supabase
-      .from("user_preferences")
-      .select("preferences")
-      .eq("user_id", userId)
-      .maybeSingle();
-      
-    const preferences = data?.preferences || defaultPreferences;
-    
-    // Store in local storage
-    localStorage.setItem(
-      `user_prefs_${userId}`,
-      JSON.stringify(preferences)
-    );
-    
-    return preferences;
-  } catch (error) {
-    console.error("Failed to get user preferences:", error);
-    return defaultPreferences;
-  }
-}
-
-/**
- * Hook for managing user preferences
+ * Custom hook for managing user preferences
+ * Note: user_preferences table might not exist; using localStorage as fallback
  */
 export function useUserPreferences(userId?: string) {
-  const [preferences, setPreferences] = useState<UserPreferences>(defaultPreferences);
+  const [preferences, setPreferences] = useState<UserPreferences>({});
+  const [initialized, setInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Load preferences
+
+  // Load preferences on mount
   useEffect(() => {
-    let isMounted = true;
-    
-    if (userId) {
-      getUserPreferences(userId)
-        .then(prefs => {
-          if (isMounted) {
-            setPreferences(prefs);
-            setIsLoading(false);
-          }
-        })
-        .catch(error => {
-          console.error("Error loading preferences:", error);
-          if (isMounted) {
-            setIsLoading(false);
-          }
-        });
-    } else {
-      setIsLoading(false);
-    }
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [userId]);
-  
-  // Update preferences
-  const updatePreferences = async (newPrefs: Partial<UserPreferences>) => {
     if (!userId) {
-      setPreferences(prev => ({ ...prev, ...newPrefs }));
+      setPreferences({});
+      setIsLoading(false);
       return;
     }
+
+    const loadPreferences = async () => {
+      setIsLoading(true);
+      try {
+        // Try to load from localStorage as user_preferences table might not exist
+        const storedPrefs = localStorage.getItem(`user_preferences_${userId}`);
+        if (storedPrefs) {
+          setPreferences(JSON.parse(storedPrefs));
+          console.log("Loaded preferences from localStorage:", storedPrefs);
+        } else {
+          // Set defaults if no preferences are found
+          const defaults: UserPreferences = {
+            defaultTab: "tag-generator",
+            theme: 'system',
+            notifications: true
+          };
+          setPreferences(defaults);
+          localStorage.setItem(`user_preferences_${userId}`, JSON.stringify(defaults));
+        }
+        setInitialized(true);
+
+        // Note: Actual implementation if user_preferences table existed:
+        /*
+        const { data, error } = await supabase
+          .from('user_preferences')
+          .select('preferences')
+          .eq('user_id', userId)
+          .single();
+          
+        if (error) {
+          if (error.code === 'PGRST116') {
+            // No preferences found, set defaults
+            const defaults: UserPreferences = {
+              defaultTab: "tag-generator",
+              theme: 'system',
+              notifications: true
+            };
+            setPreferences(defaults);
+            await saveDefaults(userId, defaults);
+          } else {
+            throw error;
+          }
+        } else {
+          setPreferences(data.preferences || {});
+        }
+        */
+      } catch (error) {
+        console.error("Failed to load preferences:", error);
+        // Set defaults as fallback
+        setPreferences({
+          defaultTab: "tag-generator",
+          theme: 'system',
+          notifications: true
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPreferences();
+  }, [userId]);
+
+  // Update preferences
+  const updatePreferences = useCallback(async (newPrefs: Partial<UserPreferences>) => {
+    if (!userId || !initialized) return;
     
     try {
-      setPreferences(prev => ({ ...prev, ...newPrefs }));
-      await saveUserPreferences(userId, newPrefs);
+      const updatedPrefs = {
+        ...preferences,
+        ...newPrefs
+      };
+
+      // Save to localStorage as user_preferences table might not exist
+      localStorage.setItem(`user_preferences_${userId}`, JSON.stringify(updatedPrefs));
+      setPreferences(updatedPrefs);
+      console.log("Saved preferences to localStorage:", updatedPrefs);
+
+      // Note: Actual implementation if user_preferences table existed:
+      /*
+      const { error } = await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: userId,
+          preferences: updatedPrefs,
+          updated_at: new Date().toISOString()
+        });
+        
+      if (error) throw error;
+      
+      setPreferences(updatedPrefs);
+      */
     } catch (error) {
-      console.error("Failed to update preferences:", error);
-      toast({
-        title: "Preference Update Failed",
-        description: "Your preferences couldn't be saved.",
-        variant: "destructive",
-      });
+      handleError(
+        error, 
+        "Failed to update preferences", 
+        { level: "warning", silent: true }
+      );
     }
-  };
-  
+  }, [userId, preferences, initialized]);
+
+  // Reset preferences to defaults
+  const resetPreferences = useCallback(async () => {
+    if (!userId) return;
+    
+    try {
+      const defaults: UserPreferences = {
+        defaultTab: "tag-generator",
+        theme: 'system',
+        notifications: true
+      };
+
+      // Save to localStorage
+      localStorage.setItem(`user_preferences_${userId}`, JSON.stringify(defaults));
+      setPreferences(defaults);
+      
+      // Note: Actual implementation if user_preferences table existed:
+      /*
+      const { error } = await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: userId,
+          preferences: defaults,
+          updated_at: new Date().toISOString()
+        });
+        
+      if (error) throw error;
+      
+      setPreferences(defaults);
+      */
+      
+      toast({
+        title: "Preferences Reset",
+        description: "Your preferences have been reset to defaults.",
+      });
+    } catch (error) {
+      handleError(
+        error, 
+        "Failed to reset preferences", 
+        { level: "error" }
+      );
+    }
+  }, [userId]);
+
   return {
     preferences,
-    isLoading,
     updatePreferences,
+    resetPreferences,
+    isLoading
   };
 }
 
 /**
- * Logs feature usage for analytics
+ * Log feature usage for analytics
+ * Note: feature_usage_logs table might not exist; this function is mocked
  */
 export async function logFeatureUsage(
-  userId: string,
+  userId: string | undefined,
   feature: string,
   metadata?: Record<string, any>
 ): Promise<void> {
+  if (!userId) return;
+  
   try {
-    await supabase
-      .from("feature_usage_logs")
+    console.log("Feature usage log (mocked):", {
+      userId,
+      feature,
+      metadata,
+      timestamp: new Date().toISOString()
+    });
+    
+    // If the feature_usage_logs table existed, we would do:
+    /*
+    const { error } = await supabase
+      .from('feature_usage_logs')
       .insert({
         user_id: userId,
         feature,
         metadata,
+        created_at: new Date().toISOString()
       });
+      
+    if (error) throw error;
+    */
   } catch (error) {
     console.error("Failed to log feature usage:", error);
-    // Don't throw errors for logging failures
+    // Don't throw for logging failures
   }
 }

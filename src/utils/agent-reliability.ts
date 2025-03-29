@@ -21,7 +21,8 @@ export type AgentTaskStatus =
   | "processing"
   | "completed"
   | "failed"
-  | "retry_scheduled";
+  | "retry_scheduled"
+  | "notified"; // Add notified status
 
 /**
  * Agent task priority
@@ -75,8 +76,7 @@ export async function executeAgentTask(
         .from("agent_tasks")
         .insert({
           agent_name: agentName,
-          action,
-          knowledge_source_id: knowledgeSourceId,
+          // action field might not exist, use payload to store it
           payload: {
             ...metadata,
             action,
@@ -86,6 +86,7 @@ export async function executeAgentTask(
           status: "pending",
           priority,
           max_retries: maxRetries,
+          knowledge_source_id: knowledgeSourceId,
         })
         .select("id")
         .single();
@@ -122,7 +123,7 @@ export async function executeAgentTask(
     );
     
     // Log the successful execution
-    await logAgentSuccess(agentName, action, knowledgeSourceId, result?.confidence, metadata);
+    await logAgentSuccess(agentName, action, knowledgeSourceId, result?.data?.confidence, metadata);
     
     return {
       success: true,
@@ -226,7 +227,7 @@ export async function getAgentTaskStatus(taskId: string): Promise<{
       lastAttempt: data.last_attempt_at ? new Date(data.last_attempt_at) : undefined,
       nextAttempt: data.next_attempt_at ? new Date(data.next_attempt_at) : undefined,
       error: data.error_message,
-      result: data.payload?.result,
+      result: data.payload && typeof data.payload === 'object' ? data.payload.result : undefined,
     };
   } catch (error) {
     handleError(

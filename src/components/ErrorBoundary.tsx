@@ -2,8 +2,8 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface ErrorBoundaryProps {
-  children: ReactNode;
   fallback: ReactNode;
+  children: ReactNode;
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
@@ -29,7 +29,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error('Error caught by ErrorBoundary:', error, errorInfo);
+    
+    // Call the optional onError callback if provided
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
@@ -43,5 +45,3 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return this.props.children;
   }
 }
-
-export default ErrorBoundary;

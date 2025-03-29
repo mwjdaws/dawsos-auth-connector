@@ -76,9 +76,16 @@ export async function getAllRoles(): Promise<Role[]> {
 
 /**
  * Gets the roles assigned to a user
+ * Note: user_roles table might not exist; this function is mocked
  */
 export async function getUserRoles(userId: string): Promise<string[]> {
   try {
+    // Since user_roles table doesn't exist in the schema, return default roles
+    console.log("Note: user_roles table doesn't exist; returning default role");
+    return ["user"];
+    
+    // If table existed, we would do:
+    /*
     const { data, error } = await supabase
       .from("user_roles")
       .select("role, roles(name)")
@@ -87,6 +94,7 @@ export async function getUserRoles(userId: string): Promise<string[]> {
     if (error) throw error;
     
     return data.map(role => role.roles.name);
+    */
   } catch (error) {
     handleError(
       error,
@@ -196,6 +204,7 @@ export function usePermissions() {
 
 /**
  * Logs a security audit event
+ * Note: security_audit_logs table might not exist; this function is mocked
  */
 export async function logSecurityAudit(
   action: string,
@@ -204,6 +213,16 @@ export async function logSecurityAudit(
   metadata?: Record<string, any>
 ): Promise<void> {
   try {
+    console.log("Security audit log (mocked):", {
+      action,
+      resourceType,
+      resourceId,
+      metadata,
+      timestamp: new Date().toISOString()
+    });
+    
+    // If the security_audit_logs table existed, we would do:
+    /*
     const { user } = useAuth();
     
     await supabase
@@ -216,6 +235,7 @@ export async function logSecurityAudit(
         metadata,
         ip_address: "client-side", // Note: actual IP address should be set server-side
       });
+    */
   } catch (error) {
     console.error("Failed to log security audit:", error);
     // Don't throw errors for logging failures

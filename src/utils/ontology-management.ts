@@ -1,4 +1,3 @@
-
 /**
  * Ontology Management Utilities
  * 
@@ -10,17 +9,184 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import { handleError } from "./errors";
-import { invokeEdgeFunctionReliably } from "./edge-function-reliability";
+import { handleError } from "@/utils/errors";
 
 /**
- * Structure of an ontology term
+ * Interface for ontology domain
+ */
+export interface OntologyDomain {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+/**
+ * Interface for ontology term
  */
 export interface OntologyTerm {
   id: string;
   term: string;
-  domain?: string;
   description?: string;
+  domain?: string;
+}
+
+/**
+ * Gets all available ontology domains
+ * Note: ontology_domains table might not exist, we're mocking it
+ */
+export async function getAllDomains(): Promise<OntologyDomain[]> {
+  try {
+    // Since ontology_domains doesn't exist in the DB schema, 
+    // we're extracting unique domains from ontology_terms instead
+    const { data, error } = await supabase
+      .from("ontology_terms")
+      .select("domain")
+      .not('domain', 'is', null);
+      
+    if (error) throw error;
+    
+    // Extract unique domains
+    const uniqueDomains = [...new Set(data.map(item => item.domain))];
+    
+    // Transform to OntologyDomain objects
+    return uniqueDomains
+      .filter(domain => domain) // Remove nulls/undefined
+      .map(domain => ({
+        id: domain,
+        name: domain,
+        description: `Terms related to ${domain}`
+      }));
+  } catch (error) {
+    handleError(
+      error,
+      "Failed to fetch ontology domains",
+      { level: "warning", silent: true }
+    );
+    return [];
+  }
+}
+
+/**
+ * Checks if a term exists in the ontology
+ */
+export async function termExists(term: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from("ontology_terms")
+      .select("id")
+      .ilike("term", term)
+      .maybeSingle();
+      
+    if (error) throw error;
+    
+    return !!data;
+  } catch (error) {
+    handleError(
+      error,
+      "Failed to check if term exists",
+      { level: "warning", silent: true }
+    );
+    return false;
+  }
+}
+
+/**
+ * Creates a new ontology term
+ */
+export async function createTerm(
+  term: string,
+  description?: string,
+  domain?: string
+): Promise<OntologyTerm | null> {
+  try {
+    const { data, error } = await supabase
+      .from("ontology_terms")
+      .insert({
+        term,
+        description,
+        domain
+      })
+      .select()
+      .single();
+      
+    if (error) throw error;
+    
+    return data;
+  } catch (error) {
+    handleError(
+      error,
+      "Failed to create ontology term",
+      { level: "error" }
+    );
+    return null;
+  }
+}
+
+/**
+ * Associates an ontology term with a knowledge source
+ */
+export async function associateTermWithSource(
+  termId: string,
+  sourceId: string,
+  userId?: string
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("knowledge_source_ontology_terms")
+      .insert({
+        ontology_term_id: termId,
+        knowledge_source_id: sourceId,
+        created_by: userId,
+        review_required: false
+      });
+      
+    if (error) throw error;
+    
+    return true;
+  } catch (error) {
+    handleError(
+      error,
+      "Failed to associate term with source",
+      { level: "error" }
+    );
+    return false;
+  }
+}
+
+/**
+ * Gets all terms associated with a knowledge source
+ */
+export async function getSourceTerms(sourceId: string): Promise<OntologyTerm[]> {
+  try {
+    const { data, error } = await supabase
+      .from("knowledge_source_ontology_terms")
+      .select(`
+        ontology_term_id,
+        ontology_terms (
+          id,
+          term,
+          description,
+          domain
+        )
+      `)
+      .eq("knowledge_source_id", sourceId);
+      
+    if (error) throw error;
+    
+    return data.map(item => ({
+      id: item.ontology_terms.id,
+      term: item.ontology_terms.term,
+      description: item.ontology_terms.description,
+      domain: item.ontology_terms.domain
+    }));
+  } catch (error) {
+    handleError(
+      error,
+      "Failed to get source terms",
+      { level: "warning", silent: true }
+    );
+    return [];
+  }
 }
 
 /**
