@@ -5,6 +5,8 @@ export interface OntologySuggestion {
   description?: string;
   domain?: string;
   score?: number;
+  applied?: boolean;
+  rejected?: boolean;
 }
 
 export interface RelatedNote {
@@ -42,4 +44,23 @@ export interface EnrichmentMetadata {
   enriched?: boolean;
   keywords_extracted?: string[];
   analysis_type?: string;
+}
+
+/**
+ * Helper function to get enrichment metadata from a knowledge source's metadata field
+ */
+export const getEnrichmentMetadata = (metadata: any): EnrichmentMetadata | null => {
+  if (!metadata) return null;
+  
+  // If the metadata has enrichment-specific fields, it's likely enrichment data
+  if (
+    metadata.suggested_terms ||
+    metadata.related_notes ||
+    metadata.enriched_at ||
+    metadata.enriched === true
+  ) {
+    return metadata as EnrichmentMetadata;
+  }
+  
+  return null;
 }

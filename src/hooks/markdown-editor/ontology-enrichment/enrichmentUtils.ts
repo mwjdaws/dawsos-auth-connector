@@ -5,7 +5,7 @@ import { Json } from '@/integrations/supabase/types';
 import { EnrichmentResult, EnrichmentMetadata } from './types';
 
 /**
- * Save enrichment results as agent_metadata in the knowledge_sources table
+ * Save enrichment results as metadata in the knowledge_sources table
  */
 export const saveEnrichmentMetadata = async (sourceId: string, enrichmentResult: EnrichmentResult) => {
   try {
@@ -30,8 +30,8 @@ export const saveEnrichmentMetadata = async (sourceId: string, enrichmentResult:
     const { error } = await supabase
       .from('knowledge_sources')
       .update({ 
-        // Cast to Json type to satisfy TypeScript
-        agent_metadata: enrichmentData as Json
+        // Use metadata field which is already defined in the database types
+        metadata: enrichmentData as Json
       })
       .eq('id', sourceId);
     
@@ -40,7 +40,7 @@ export const saveEnrichmentMetadata = async (sourceId: string, enrichmentResult:
       throw error;
     }
     
-    console.log('Saved enrichment metadata to agent_metadata for source:', sourceId);
+    console.log('Saved enrichment metadata for source:', sourceId);
   } catch (error) {
     handleError(
       error, 

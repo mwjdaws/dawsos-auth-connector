@@ -28,7 +28,7 @@ export const useOntologyEnrichment = () => {
         return null;
       }
       
-      // Save the enrichment results in agent_metadata if requested
+      // Save the enrichment results in metadata if requested
       if (options.saveMetadata) {
         await saveEnrichmentMetadata(sourceId, result);
       }
