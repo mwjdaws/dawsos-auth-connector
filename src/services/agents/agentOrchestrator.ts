@@ -207,7 +207,7 @@ export class AgentOrchestrator {
         `${request.action}:queue-failed`,
         error instanceof Error ? error.message : String(error),
         request.knowledgeSourceId,
-        request.metadata as Json
+        request.metadata as unknown as Json
       );
       
       return {
@@ -495,7 +495,7 @@ export function useAgentOrchestrator() {
           request.action,
           error instanceof Error ? error.message : String(error),
           request.knowledgeSourceId,
-          request.metadata,
+          request.metadata as unknown as Json,
           true
         );
       }
