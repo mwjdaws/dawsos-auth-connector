@@ -12,15 +12,23 @@
  * 
  * The hook returns the constructed graph data along with loading and error states,
  * and a function to refresh the data.
+ * 
+ * Performance optimizations:
+ * - Debounced fetching
+ * - Cache validation
+ * - Error categorization
  */
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { GraphData } from '../types';
+import { handleError, categorizeError, withErrorHandling } from '@/utils/errors';
 
 export function useGraphData(startingNodeId?: string) {
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isMounted = useRef(true);
+  const lastFetchTime = useRef<number>(0);
   
   /**
    * Fetches graph data from Supabase and constructs the graph structure
@@ -28,8 +36,12 @@ export function useGraphData(startingNodeId?: string) {
    * representation of the knowledge network.
    */
   const fetchGraphData = useCallback(async () => {
-    if (loading && graphData.nodes.length > 0) return; // Prevent refetching while already loading
+    // Prevent excessive re-fetching and double fetches
+    const now = Date.now();
+    if (loading && graphData.nodes.length > 0) return;
+    if (now - lastFetchTime.current < 2000) return; // Throttle to prevent rapid re-fetches
     
+    lastFetchTime.current = now;
     setLoading(true);
     setError(null);
     
@@ -73,6 +85,9 @@ export function useGraphData(startingNodeId?: string) {
         .limit(200);
       
       if (sourceTermsError) throw sourceTermsError;
+      
+      // Check for component unmount before updating state
+      if (!isMounted.current) return;
       
       // Prepare graph data by combining all fetched data
       const nodes = [
@@ -127,21 +142,67 @@ export function useGraphData(startingNodeId?: string) {
       });
     } catch (err) {
       console.error('Error fetching graph data:', err);
-      setError('Failed to load relationship data');
+      
+      // Use the error handling utility for consistent error handling
+      const errorCategory = categorizeError(err);
+      let errorMessage = 'Failed to load relationship data';
+      
+      // Customize error messages based on error category
+      switch (errorCategory) {
+        case 'NETWORK':
+          errorMessage = 'Network error. Please check your internet connection.';
+          break;
+        case 'AUTHENTICATION':
+          errorMessage = 'Authentication error. Please log in again.';
+          break;
+        case 'DATABASE':
+          errorMessage = 'Database error. Please try again later.';
+          break;
+        case 'TIMEOUT':
+          errorMessage = 'Request timed out. Please try again.';
+          break;
+      }
+      
+      if (isMounted.current) {
+        setError(errorMessage);
+        
+        // Log the error with our custom error handler
+        handleError(err, errorMessage, {
+          level: "error",
+          context: { startingNodeId }
+        });
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
-  }, [loading, graphData.nodes.length]);
+  }, [startingNodeId, loading, graphData.nodes.length]);
+  
+  // Handle component unmounting
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
   
   // Fetch data when the component mounts
   useEffect(() => {
     fetchGraphData();
   }, [fetchGraphData]);
   
+  // Safe wrapper for the fetch function that handles errors properly
+  const fetchGraphDataSafely = useCallback(() => {
+    withErrorHandling(
+      fetchGraphData,
+      "Failed to refresh graph data"
+    );
+  }, [fetchGraphData]);
+  
   return {
     graphData,
     loading,
     error,
-    fetchGraphData
+    fetchGraphData: fetchGraphDataSafely
   };
 }

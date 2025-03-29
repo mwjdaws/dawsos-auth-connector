@@ -8,4 +8,11 @@
 
 export { RelationshipGraph } from './RelationshipGraph';
 export { RelationshipGraphPanel } from './RelationshipGraphPanel';
-export type { RelationshipGraphProps } from './types';
+export { GraphZoomControl } from './components/GraphZoomControl';
+export type { 
+  RelationshipGraphProps,
+  GraphData,
+  GraphNode,
+  GraphLink,
+  NodeType
+} from './types';

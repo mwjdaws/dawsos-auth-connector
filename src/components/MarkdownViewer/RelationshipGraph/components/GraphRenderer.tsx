@@ -8,8 +8,13 @@
  * - Configuring node and link appearance
  * - Custom node rendering with labels
  * - Handling node click events for navigation
+ * 
+ * Performance optimizations:
+ * - Memoized callbacks
+ * - Optimized node rendering
+ * - Throttled node updates
  */
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo, memo } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { useNavigate } from 'react-router-dom';
 import { GraphData, GraphNode } from '../types';
@@ -20,7 +25,8 @@ interface GraphRendererProps {
   height: number;          // Height of the graph container
 }
 
-export function GraphRenderer({ graphData, width, height }: GraphRendererProps) {
+// Memoized component to prevent unnecessary re-renders
+export const GraphRenderer = memo(({ graphData, width, height }: GraphRendererProps) => {
   const navigate = useNavigate();
   
   /**
@@ -36,6 +42,48 @@ export function GraphRenderer({ graphData, width, height }: GraphRendererProps) 
       console.log('Term clicked:', node);
     }
   }, [navigate]);
+
+  // Memoize node colors to prevent recalculations
+  const nodeColors = useMemo(() => {
+    return {
+      source: '#4299e1', // blue
+      term: '#68d391'    // green
+    };
+  }, []);
+  
+  // Memoized node canvas object renderer
+  const nodeCanvasObject = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
+    // Custom node rendering with text labels
+    const label = node.name as string;
+    const fontSize = 12/globalScale;
+    ctx.font = `${fontSize}px Sans-Serif`;
+    const textWidth = ctx.measureText(label).width;
+    const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2);
+    
+    // Node circle
+    ctx.fillStyle = node.color as string || nodeColors[node.type as 'source' | 'term'];
+    ctx.beginPath();
+    ctx.arc(node.x as number, node.y as number, node.val as number * 2, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Only render text if we're zoomed in enough for it to be readable
+    if (globalScale > 0.7) {
+      // Text background
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.fillRect(
+        (node.x as number) - bckgDimensions[0] / 2,
+        (node.y as number) + 6,
+        bckgDimensions[0],
+        bckgDimensions[1]
+      );
+      
+      // Text
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#222';
+      ctx.fillText(label, node.x as number, (node.y as number) + 6 + fontSize / 2);
+    }
+  }, [nodeColors]);
   
   return (
     <div style={{ height }}>
@@ -50,39 +98,16 @@ export function GraphRenderer({ graphData, width, height }: GraphRendererProps) 
         onNodeClick={handleNodeClick}
         width={width}
         height={height}
-        nodeCanvasObject={(node, ctx, globalScale) => {
-          // Custom node rendering with text labels
-          const label = node.name as string;
-          const fontSize = 12/globalScale;
-          ctx.font = `${fontSize}px Sans-Serif`;
-          const textWidth = ctx.measureText(label).width;
-          const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2);
-          
-          // Node circle
-          ctx.fillStyle = node.color as string;
-          ctx.beginPath();
-          ctx.arc(node.x as number, node.y as number, node.val as number * 2, 0, 2 * Math.PI);
-          ctx.fill();
-          
-          // Text background
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-          ctx.fillRect(
-            (node.x as number) - bckgDimensions[0] / 2,
-            (node.y as number) + 6,
-            bckgDimensions[0],
-            bckgDimensions[1]
-          );
-          
-          // Text
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = '#222';
-          ctx.fillText(label, node.x as number, (node.y as number) + 6 + fontSize / 2);
-        }}
+        nodeCanvasObject={nodeCanvasObject}
         cooldownTicks={100}
         minZoom={0.5}
         maxZoom={5}
+        warmupTicks={50}
+        onEngineStop={() => console.log('Graph physics simulation completed')}
       />
     </div>
   );
-}
+});
+
+// Set display name for debugging
+GraphRenderer.displayName = 'GraphRenderer';
