@@ -11,12 +11,18 @@ interface Tag {
   content_id: string;
 }
 
-export const useMetadataPanel = (contentId: string, onMetadataChange?: () => void) => {
+export const useMetadataPanel = (
+  contentId: string, 
+  onMetadataChange?: () => void,
+  isCollapsible = false,
+  initialCollapsed = false
+) => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [newTag, setNewTag] = useState("");
+  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
   const { user } = useAuth();
   const isMounted = useRef(true);
   
@@ -215,6 +221,8 @@ export const useMetadataPanel = (contentId: string, onMetadataChange?: () => voi
     externalSourceUrl,
     needsExternalReview,
     lastCheckedAt,
+    isCollapsed,
+    setIsCollapsed,
     handleRefresh,
     handleAddTag,
     handleDeleteTag

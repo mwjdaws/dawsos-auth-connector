@@ -16,6 +16,7 @@ export function MetadataTab({ contentId, onMetadataChange }: MetadataTabProps) {
         <MetadataPanel 
           contentId={contentId}
           onMetadataChange={onMetadataChange}
+          showOntologyTerms={true}
         />
       </Suspense>
     </>
