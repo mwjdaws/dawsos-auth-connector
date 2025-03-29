@@ -5,8 +5,8 @@ export { default } from './MetadataPanel';
 // Export all sections
 export * from './sections';
 
-// Export the hook
-export { useMetadataPanel } from './hooks/useMetadataPanel';
+// Export the hooks
+export { useMetadataPanel, useMetadataContext } from './hooks';
 
 // Export types
-export type { Tag } from './hooks/useTagOperations';
+export * from './types';

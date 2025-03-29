@@ -23,13 +23,22 @@
  * - OntologyTermsSection: Ontology terms associated with the content
  * - DomainSection: Content domain information
  * - ContentIdSection: Display content ID
+ * 
+ * Advanced Usage:
+ * To access the metadata state outside this component, use the useMetadataContext hook:
+ * ```tsx
+ * const metadata = useMetadataContext(contentId);
+ * console.log(metadata.tags);
+ * metadata.handleAddTag();
+ * ```
  */
 
-import React, { ReactNode } from "react";
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { useMetadataPanel } from "./hooks/useMetadataPanel";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { MetadataPanelProps } from "./types";
+import { useMetadataPanel } from "./hooks/useMetadataPanel";
 
 // Import all sections from the unified sections directory
 import {
@@ -41,19 +50,6 @@ import {
   LoadingState,
   DomainSection
 } from "./sections";
-
-interface MetadataPanelProps {
-  contentId: string;
-  onMetadataChange?: () => void;
-  isCollapsible?: boolean;
-  initialCollapsed?: boolean;
-  showOntologyTerms?: boolean;
-  editable?: boolean;
-  showDomain?: boolean;
-  domain?: string | null;
-  className?: string;
-  children?: ReactNode;
-}
 
 const MetadataPanel: React.FC<MetadataPanelProps> = ({ 
   contentId,

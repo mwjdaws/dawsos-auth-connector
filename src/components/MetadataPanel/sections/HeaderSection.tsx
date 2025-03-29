@@ -3,15 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import { RefreshCw, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
-
-interface HeaderSectionProps {
-  needsExternalReview: boolean;
-  handleRefresh: () => void;
-  isLoading: boolean;
-  isCollapsible?: boolean;
-  isCollapsed?: boolean;
-  setIsCollapsed?: (collapsed: boolean) => void;
-}
+import { HeaderSectionProps } from "../types";
 
 export const HeaderSection: React.FC<HeaderSectionProps> = ({
   needsExternalReview,
@@ -19,10 +11,11 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   isLoading,
   isCollapsible = false,
   isCollapsed = false,
-  setIsCollapsed
+  setIsCollapsed,
+  className
 }) => {
   return (
-    <CardHeader className="flex flex-row items-center justify-between pb-2">
+    <CardHeader className={`flex flex-row items-center justify-between pb-2 ${className || ''}`}>
       <div className="flex items-center gap-2">
         <CardTitle>Content Metadata</CardTitle>
         {needsExternalReview && (

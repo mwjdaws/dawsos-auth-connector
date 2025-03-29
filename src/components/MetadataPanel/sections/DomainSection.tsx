@@ -1,14 +1,14 @@
 
 import React from "react";
 import { Badge } from "@/components/ui/badge";
+import { DomainSectionProps } from "../types";
 
-interface DomainSectionProps {
-  domain: string | null;
-}
-
-export const DomainSection: React.FC<DomainSectionProps> = ({ domain }) => {
+export const DomainSection: React.FC<DomainSectionProps> = ({ 
+  domain,
+  className 
+}) => {
   return (
-    <div>
+    <div className={className}>
       <h3 className="text-sm font-medium mb-2">Domain</h3>
       {domain ? (
         <Badge className="bg-blue-50 text-blue-800 border-blue-200">

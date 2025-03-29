@@ -2,15 +2,12 @@
 import React from "react";
 import { ExternalLink, Clock } from "lucide-react";
 import { format } from "date-fns";
-
-interface ExternalSourceSectionProps {
-  externalSourceUrl: string | null;
-  lastCheckedAt: string | null;
-}
+import { ExternalSourceSectionProps } from "../types";
 
 export const ExternalSourceSection: React.FC<ExternalSourceSectionProps> = ({
   externalSourceUrl,
-  lastCheckedAt
+  lastCheckedAt,
+  className
 }) => {
   if (!externalSourceUrl) return null;
   
@@ -20,7 +17,7 @@ export const ExternalSourceSection: React.FC<ExternalSourceSectionProps> = ({
     : null;
 
   return (
-    <div>
+    <div className={className}>
       <h3 className="text-sm font-medium mb-2">External Source</h3>
       <div className="mb-2">
         <a
