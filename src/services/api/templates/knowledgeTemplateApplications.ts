@@ -1,5 +1,5 @@
 
-import { supabase, handleError, ApiError, parseSupabaseErrorCode } from '../base';
+import { supabase } from '@/supabaseClient';
 import { validateUuid } from './knowledgeTemplateBase';
 import { updateKnowledgeSource, createKnowledgeSource } from '../knowledgeSources';
 
@@ -18,15 +18,11 @@ export const applyTemplateToSource = async (templateId: string, sourceId: string
       .single();
     
     if (templateError) {
-      handleError(templateError, `Error fetching template with ID: ${templateId}`, {
-        technical: true,
-        level: 'error'
-      });
-      throw new ApiError(templateError.message, parseSupabaseErrorCode(templateError));
+      throw new Error(`Error fetching template with ID: ${templateId}. ${templateError.message}`);
     }
     
     if (!templateData) {
-      throw new ApiError(`Template with ID: ${templateId} not found`, 404);
+      throw new Error(`Template with ID: ${templateId} not found`);
     }
     
     return await updateKnowledgeSource(sourceId, {
@@ -34,10 +30,7 @@ export const applyTemplateToSource = async (templateId: string, sourceId: string
       template_id: templateId
     });
   } catch (error) {
-    handleError(error, `Failed to apply template with ID: ${templateId} to source with ID: ${sourceId}`, {
-      technical: true,
-      level: 'error'
-    });
+    console.error(`Failed to apply template with ID: ${templateId} to source with ID: ${sourceId}`, error);
     throw error;
   }
 };
@@ -53,7 +46,7 @@ export const createKnowledgeSourceFromTemplate = async (
     validateUuid(templateId, 'template ID');
     
     if (!sourceData.title || sourceData.title.trim() === '') {
-      throw new ApiError('Source title is required', 400);
+      throw new Error('Source title is required');
     }
     
     const { data: templateData, error: templateError } = await supabase
@@ -63,15 +56,11 @@ export const createKnowledgeSourceFromTemplate = async (
       .single();
     
     if (templateError) {
-      handleError(templateError, `Error fetching template with ID: ${templateId}`, {
-        technical: true,
-        level: 'error'
-      });
-      throw new ApiError(templateError.message, parseSupabaseErrorCode(templateError));
+      throw new Error(`Error fetching template with ID: ${templateId}. ${templateError.message}`);
     }
     
     if (!templateData) {
-      throw new ApiError(`Template with ID: ${templateId} not found`, 404);
+      throw new Error(`Template with ID: ${templateId} not found`);
     }
     
     return await createKnowledgeSource({
@@ -81,10 +70,7 @@ export const createKnowledgeSourceFromTemplate = async (
       user_id: sourceData.user_id
     });
   } catch (error) {
-    handleError(error, `Failed to create knowledge source from template with ID: ${templateId}`, {
-      technical: true,
-      level: 'error'
-    });
+    console.error(`Failed to create knowledge source from template with ID: ${templateId}`, error);
     throw error;
   }
 };
