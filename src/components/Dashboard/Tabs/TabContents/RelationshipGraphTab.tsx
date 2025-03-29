@@ -1,11 +1,4 @@
 
-/**
- * RelationshipGraphTab Component
- * 
- * A container component that renders the RelationshipGraphPanel within the
- * dashboard tabs interface. It passes the content ID to the graph panel to
- * potentially use as a starting node.
- */
 import React, { useState, useEffect, useCallback, useTransition } from 'react';
 import { RelationshipGraphPanel } from '@/components/MarkdownViewer/RelationshipGraph';
 import { Button } from '@/components/ui/button';

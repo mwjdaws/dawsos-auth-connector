@@ -1,22 +1,28 @@
 
-export { useDocumentOperations } from './useDocumentOperations';
-export { useDocumentVersioning } from './useDocumentVersioning';
+// Re-export hooks and types
 export { useMarkdownEditor } from './useMarkdownEditor';
-export { useContentLoader } from './useContentLoader';
+export { useAutosave } from './useAutosave';
+export { useContentProcessor } from './useContentProcessor';
 export { useContentState } from './useContentState';
-export { useDocumentOperationHandlers } from './useDocumentOperationHandlers';
-export { useKnowledgeSources, useKnowledgeSourcesQuery } from './useKnowledgeSources';
-export { useNoteLinks, useSourceLinks } from './useNoteLinks';
-export { useWikiLinks } from './useWikiLinks';
-export { useOntologyTerms } from './useOntologyTerms';
+export { useContentLoader } from './useContentLoader';
+export { useDocumentVersioning } from './useDocumentVersioning';
 export { useOntologySuggestions } from './useOntologySuggestions';
+export { useTemplateHandling } from './useTemplateHandling';
+export { useWikiLinks } from './useWikiLinks';
+export { useNoteLinks } from './useNoteLinks';
+export { useKnowledgeSources } from './useKnowledgeSources';
+export { useDocumentOperations } from './useDocumentOperations';
+export { useDocumentOperationHandlers } from './useDocumentOperationHandlers';
+
+// Re-export types
+export type { DocumentOperationsProps } from './types';
+
+// Re-export ontology terms related hooks and types
+export { useOntologyTerms } from './useOntologyTerms';
 export { useTermMutations } from './ontology-terms/useTermMutations';
 export type { OntologyTerm, RelatedTerm } from './ontology-terms/types';
-export * from './types';
-export * from './handlers/useSaveDraftHandler';
-export * from './handlers/usePublishHandler';
-export * from './draft-operations/useDraftOperations';
-export * from './draft-operations/useValidation';
-export * from './draft-operations/useDatabaseOperations';
-export * from './draft-operations/useVersioning';
-export * from './useContentProcessor';
+export { useOntologyEnrichment } from './useOntologyEnrichment';
+
+// Re-export draft operations
+export { useDraftOperations } from './useDraftOperations';
+export { usePublishOperations } from './usePublishOperations';

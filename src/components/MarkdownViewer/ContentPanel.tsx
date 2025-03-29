@@ -1,5 +1,5 @@
 
-import React, { Suspense } from "react";
+import React, { Suspense, useTransition } from "react";
 import { Card } from "@/components/ui/card";
 import ReactMarkdown from "react-markdown";
 import { ExternalLink } from "lucide-react";
@@ -12,6 +12,8 @@ interface ContentPanelProps {
 }
 
 export function ContentPanel({ content, processedContent, externalSourceUrl }: ContentPanelProps) {
+  const [isPending, startTransition] = useTransition();
+  
   return (
     <Card className="p-6 relative">
       {externalSourceUrl && (
@@ -28,7 +30,11 @@ export function ContentPanel({ content, processedContent, externalSourceUrl }: C
       )}
       <div className="prose dark:prose-invert max-w-none">
         <Suspense fallback={<Skeleton className="h-40 w-full" />}>
-          <ReactMarkdown>{processedContent || ''}</ReactMarkdown>
+          {isPending ? (
+            <Skeleton className="h-40 w-full" />
+          ) : (
+            <ReactMarkdown>{processedContent || ''}</ReactMarkdown>
+          )}
         </Suspense>
       </div>
     </Card>
