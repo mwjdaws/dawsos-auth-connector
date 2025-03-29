@@ -1,32 +1,38 @@
 
 /**
- * Type definitions for the RelationshipGraph component and related utilities
+ * Type definitions for the RelationshipGraph components
  */
 
-// Graph data types
-export interface GraphNode {
-  id: string;
-  name: string;
-  type: 'source' | 'term'; // Source nodes are knowledge sources, term nodes are ontology terms
-  val?: number; // Size of the node
-  color?: string;
-  x?: number;
-  y?: number;
-}
-
-export interface GraphLink {
-  source: string;
-  target: string;
-  type: string;
-  value?: number;
-}
-
+// Main graph data structure
 export interface GraphData {
   nodes: GraphNode[];
   links: GraphLink[];
 }
 
-// Component props
+// Graph node representation
+export interface GraphNode {
+  id: string;
+  name: string;
+  type: 'source' | 'term';
+  val: number;
+  color: string;
+  x?: number;
+  y?: number;
+  vx?: number;
+  vy?: number;
+  index?: number;
+}
+
+// Graph link representation
+export interface GraphLink {
+  id?: string;
+  source: string;
+  target: string;
+  type: string;
+  value: number;
+}
+
+// Props for the RelationshipGraph component
 export interface RelationshipGraphProps {
   startingNodeId?: string;
   width?: number;
@@ -34,6 +40,7 @@ export interface RelationshipGraphProps {
   hasAttemptedRetry?: boolean;
 }
 
+// Props for the RelationshipGraphPanel component
 export interface RelationshipGraphPanelProps {
   sourceId?: string;
   hasAttemptedRetry?: boolean;

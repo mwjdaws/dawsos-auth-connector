@@ -17,7 +17,7 @@
 import React, { useCallback, useMemo, memo, useRef, useEffect } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { useNavigate } from 'react-router-dom';
-import { GraphData, GraphNode } from '../types';
+import { GraphData, GraphNode, GraphLink } from '../types';
 
 interface GraphRendererProps {
   graphData: GraphData;    // Data structure containing nodes and links
@@ -28,11 +28,11 @@ interface GraphRendererProps {
 // Memoized component to prevent unnecessary re-renders
 export const GraphRenderer = memo(({ graphData, width, height }: GraphRendererProps) => {
   const navigate = useNavigate();
-  const graphRef = useRef(null);
+  const graphRef = useRef<any>(null);
   
   // Debug output for graph data
   useEffect(() => {
-    console.log(`Rendering graph with ${graphData.nodes.length} nodes and ${graphData.links.length} links`);
+    console.log(`GraphRenderer: Rendering graph with ${graphData.nodes.length} nodes and ${graphData.links.length} links`);
     
     // Log some sample data for debugging
     if (graphData.nodes.length > 0) {
@@ -53,18 +53,46 @@ export const GraphRenderer = memo(({ graphData, width, height }: GraphRendererPr
     console.log('Node clicked:', node);
     if (node.type === 'source') {
       navigate(`/source/${node.id}`);
-    } else {
+    } else if (node.type === 'term') {
       // Could show term details in a modal/sidebar
       console.log('Term clicked:', node);
+      toast({
+        title: "Term Selected",
+        description: `${node.name}`,
+        variant: "default",
+      });
     }
   }, [navigate]);
 
-  // Memoize node colors to prevent recalculations
-  const nodeColors = useMemo(() => {
+  // Memoize node and link colors to prevent recalculations
+  const colors = useMemo(() => {
     return {
-      source: '#4299e1', // blue
-      term: '#68d391'    // green
+      nodes: {
+        source: '#4299e1', // blue
+        term: '#68d391'    // green
+      },
+      links: {
+        default: '#999',
+        wikilink: '#63b3ed',
+        manual: '#9f7aea',
+        'AI-suggested': '#f6ad55',
+        'has_term': '#cbd5e0',
+        'is_a': '#a0aec0',
+        'part_of': '#e53e3e',
+        'related_to': '#d69e2e'
+      }
     };
+  }, []);
+  
+  // Link color accessor function
+  const getLinkColor = useCallback((link: GraphLink) => {
+    const type = link.type as string;
+    return colors.links[type as keyof typeof colors.links] || colors.links.default;
+  }, [colors.links]);
+  
+  // Link label accessor function
+  const getLinkLabel = useCallback((link: GraphLink) => {
+    return link.type as string;
   }, []);
   
   // Reset graph when data changes
@@ -94,7 +122,7 @@ export const GraphRenderer = memo(({ graphData, width, height }: GraphRendererPr
     const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2);
     
     // Node circle
-    ctx.fillStyle = node.color as string || nodeColors[node.type as 'source' | 'term'];
+    ctx.fillStyle = node.color as string || colors.nodes[node.type as 'source' | 'term'];
     ctx.beginPath();
     ctx.arc(node.x as number, node.y as number, node.val as number * 2, 0, 2 * Math.PI);
     ctx.fill();
@@ -116,7 +144,7 @@ export const GraphRenderer = memo(({ graphData, width, height }: GraphRendererPr
       ctx.fillStyle = '#222';
       ctx.fillText(label, node.x as number, (node.y as number) + 6 + fontSize / 2);
     }
-  }, [nodeColors]);
+  }, [colors.nodes]);
   
   // Handle empty data case - should never happen as this is checked in the parent
   if (!graphData || !graphData.nodes || graphData.nodes.length === 0) {
@@ -136,8 +164,8 @@ export const GraphRenderer = memo(({ graphData, width, height }: GraphRendererPr
         nodeLabel={node => node.name}
         linkDirectionalArrowLength={3.5}
         linkDirectionalArrowRelPos={1}
-        linkLabel={link => link.type as string}
-        linkColor={() => "#999"}
+        linkLabel={getLinkLabel}
+        linkColor={getLinkColor}
         onNodeClick={handleNodeClick}
         width={width}
         height={height}
@@ -149,7 +177,7 @@ export const GraphRenderer = memo(({ graphData, width, height }: GraphRendererPr
         d3AlphaDecay={0.02} // Slower decay for more stable graph
         d3VelocityDecay={0.3} // Increased velocity decay for smoother motion
         onEngineStop={() => console.log('Graph physics simulation completed')}
-        linkWidth={2}
+        linkWidth={link => (link.value as number) * 2}
         nodeRelSize={6}
       />
     </div>

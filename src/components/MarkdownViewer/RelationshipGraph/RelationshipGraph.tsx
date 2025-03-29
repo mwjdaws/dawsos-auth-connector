@@ -56,8 +56,15 @@ export function RelationshipGraph({
       if (graphData.nodes.length === 0) {
         console.log('No nodes found in graph data. This might be a data fetching issue.');
       } else {
-        console.log('Node types in graph:', graphData.nodes.map(n => n.type).filter((v, i, a) => a.indexOf(v) === i));
+        // Log node types distribution for debugging
+        const nodeTypes = graphData.nodes.reduce((acc, node) => {
+          acc[node.type] = (acc[node.type] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        
+        console.log('Node type distribution:', nodeTypes);
         console.log('First few nodes:', graphData.nodes.slice(0, 3));
+        console.log('First few links:', graphData.links.slice(0, 3));
       }
     }
   }, [graphData]);

@@ -58,12 +58,12 @@ export function useGraphData(startingNodeId?: string) {
         .limit(100);
       
       if (sourcesError) throw sourcesError;
-      console.log(`Fetched ${sources?.length || 0} knowledge sources`);
+      console.log(`Fetched ${sources?.length || 0} knowledge sources:`, sources?.map(s => s.title).slice(0, 5));
       
       // Fetch note links
       const { data: links, error: linksError } = await supabase
         .from('note_links')
-        .select('source_id, target_id, link_type')
+        .select('id, source_id, target_id, link_type')
         .limit(200);
       
       if (linksError) throw linksError;
@@ -76,12 +76,12 @@ export function useGraphData(startingNodeId?: string) {
         .limit(100);
       
       if (termsError) throw termsError;
-      console.log(`Fetched ${terms?.length || 0} ontology terms`);
+      console.log(`Fetched ${terms?.length || 0} ontology terms:`, terms?.map(t => t.term).slice(0, 5));
       
       // Fetch ontology relationships
       const { data: termRelationships, error: termRelError } = await supabase
         .from('ontology_relationships')
-        .select('term_id, related_term_id, relation_type')
+        .select('id, term_id, related_term_id, relation_type')
         .limit(200);
       
       if (termRelError) throw termRelError;
@@ -90,7 +90,7 @@ export function useGraphData(startingNodeId?: string) {
       // Fetch knowledge source to ontology term relationships
       const { data: sourceTerms, error: sourceTermsError } = await supabase
         .from('knowledge_source_ontology_terms')
-        .select('knowledge_source_id, ontology_term_id')
+        .select('id, knowledge_source_id, ontology_term_id')
         .limit(200);
       
       if (sourceTermsError) throw sourceTermsError;
@@ -120,7 +120,7 @@ export function useGraphData(startingNodeId?: string) {
       // Prepare graph data by combining all fetched data
       const nodes = [
         // Knowledge source nodes
-        ...sources.map(source => ({
+        ...(sources || []).map(source => ({
           id: source.id,
           name: source.title,
           type: 'source' as const,
@@ -129,7 +129,7 @@ export function useGraphData(startingNodeId?: string) {
         })),
         
         // Ontology term nodes
-        ...terms.map(term => ({
+        ...(terms || []).map(term => ({
           id: term.id,
           name: `${term.domain ? `${term.domain}: ` : ''}${term.term}`,
           type: 'term' as const,
@@ -138,14 +138,20 @@ export function useGraphData(startingNodeId?: string) {
         }))
       ];
       
+      // Log node count by type for debugging
+      const sourceNodes = nodes.filter(n => n.type === 'source').length;
+      const termNodes = nodes.filter(n => n.type === 'term').length;
+      console.log(`Created ${sourceNodes} source nodes and ${termNodes} term nodes`);
+      
       // Filter out links that don't have corresponding nodes
       const nodeIds = new Set(nodes.map(node => node.id));
       
       const validLinks = [
         // Note links
-        ...links.filter(link => 
+        ...(links || []).filter(link => 
           nodeIds.has(link.source_id) && nodeIds.has(link.target_id)
         ).map(link => ({
+          id: link.id,
           source: link.source_id,
           target: link.target_id,
           type: link.link_type,
@@ -153,9 +159,10 @@ export function useGraphData(startingNodeId?: string) {
         })),
         
         // Term relationships
-        ...termRelationships.filter(rel => 
+        ...(termRelationships || []).filter(rel => 
           nodeIds.has(rel.term_id) && nodeIds.has(rel.related_term_id)
         ).map(rel => ({
+          id: rel.id,
           source: rel.term_id,
           target: rel.related_term_id,
           type: rel.relation_type,
@@ -163,9 +170,10 @@ export function useGraphData(startingNodeId?: string) {
         })),
         
         // Source to term relationships
-        ...sourceTerms.filter(st => 
+        ...(sourceTerms || []).filter(st => 
           nodeIds.has(st.knowledge_source_id) && nodeIds.has(st.ontology_term_id)
         ).map(st => ({
+          id: st.id,
           source: st.knowledge_source_id,
           target: st.ontology_term_id,
           type: 'has_term',
@@ -173,13 +181,37 @@ export function useGraphData(startingNodeId?: string) {
         }))
       ];
       
-      console.log(`Built graph with ${nodes.length} nodes and ${validLinks.length} links`);
+      // Log link counts by type for debugging
+      const sourceLinks = validLinks.filter(l => l.type === 'wikilink' || l.type === 'manual' || l.type === 'AI-suggested').length;
+      const termLinks = validLinks.filter(l => l.type !== 'wikilink' && l.type !== 'manual' && l.type !== 'AI-suggested' && l.type !== 'has_term').length;
+      const sourceTermLinks = validLinks.filter(l => l.type === 'has_term').length;
       
-      // Update state with the new graph data
-      setGraphData({ 
+      console.log(`Created ${sourceLinks} source-to-source links, ${termLinks} term-to-term links, and ${sourceTermLinks} source-to-term links`);
+      
+      // Create the final graph data structure
+      const finalGraphData = { 
         nodes,
         links: validLinks
-      });
+      };
+      
+      // Log starting node info if specified
+      if (startingNodeId) {
+        const startingNode = nodes.find(n => n.id === startingNodeId);
+        console.log(`Starting node ${startingNodeId} found:`, startingNode ? 'YES' : 'NO');
+        if (startingNode) {
+          console.log(`Starting node is a ${startingNode.type} named "${startingNode.name}"`);
+          
+          // Count direct connections to starting node
+          const directConnections = validLinks.filter(
+            l => l.source === startingNodeId || l.target === startingNodeId
+          ).length;
+          
+          console.log(`Starting node has ${directConnections} direct connections`);
+        }
+      }
+      
+      // Update state with the new graph data
+      setGraphData(finalGraphData);
     } catch (err) {
       console.error('Error fetching graph data:', err);
       

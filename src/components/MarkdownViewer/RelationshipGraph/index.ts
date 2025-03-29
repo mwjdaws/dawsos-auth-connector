@@ -16,4 +16,3 @@ export type {
   GraphLink,
   RelationshipGraphPanelProps
 } from './types';
-
