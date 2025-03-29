@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 
 /**
  * Interface for the agent action data
@@ -12,7 +13,7 @@ export interface AgentAction {
   confidence?: number;
   success?: boolean;
   error?: string;
-  metadata?: Record<string, any>;
+  metadata?: Json;
   created_at?: string;
 }
 
