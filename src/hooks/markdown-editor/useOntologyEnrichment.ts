@@ -66,7 +66,7 @@ export const useOntologyEnrichment = () => {
       const result = data as EnrichmentResult;
       console.log(`Received ${result.terms.length} term suggestions and ${result.notes.length} note suggestions`);
       
-      // Save the enrichment results in metadata if requested
+      // Save the enrichment results in agent_metadata if requested
       if (options.saveMetadata) {
         await saveEnrichmentMetadata(sourceId, result);
       }
@@ -87,22 +87,10 @@ export const useOntologyEnrichment = () => {
   };
   
   /**
-   * Save enrichment results as metadata in the knowledge_sources table
+   * Save enrichment results as agent_metadata in the knowledge_sources table
    */
   const saveEnrichmentMetadata = async (sourceId: string, enrichmentResult: EnrichmentResult) => {
     try {
-      // First, fetch the current metadata to preserve existing values
-      const { data: currentData, error: fetchError } = await supabase
-        .from('knowledge_sources')
-        .select('metadata')
-        .eq('id', sourceId)
-        .single();
-      
-      if (fetchError) {
-        console.error('Error fetching current metadata:', fetchError);
-        throw fetchError;
-      }
-      
       // Prepare the enrichment data, ensuring it's serializable
       const enrichmentData = {
         suggested_terms: enrichmentResult.terms.map(term => ({
@@ -121,15 +109,9 @@ export const useOntologyEnrichment = () => {
         enriched: true
       };
       
-      // Merge with existing metadata or create new metadata object
-      const updatedMetadata = {
-        ...(currentData?.metadata as Record<string, any> || {}),
-        ontology_enrichment: enrichmentData
-      };
-      
       const { error } = await supabase
         .from('knowledge_sources')
-        .update({ metadata: updatedMetadata as Json })
+        .update({ agent_metadata: enrichmentData as Json })
         .eq('id', sourceId);
       
       if (error) {
@@ -137,7 +119,7 @@ export const useOntologyEnrichment = () => {
         throw error;
       }
       
-      console.log('Saved enrichment metadata for source:', sourceId);
+      console.log('Saved enrichment metadata to agent_metadata for source:', sourceId);
     } catch (error) {
       handleError(
         error, 

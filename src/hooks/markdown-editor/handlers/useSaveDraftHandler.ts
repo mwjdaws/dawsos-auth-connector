@@ -100,7 +100,7 @@ export const useSaveDraftHandler = ({
             console.log('Running ontology enrichment after save for document:', savedId);
             enrichContentWithOntology(savedId, content, title, {
               autoLink: false, // Don't auto-link terms for saves
-              saveMetadata: true // Just store the suggestions in metadata
+              saveMetadata: true // Store the suggestions in metadata
             }).catch(err => console.error('Background enrichment error:', err));
           } catch (enrichError) {
             console.error('Error starting ontology enrichment:', enrichError);

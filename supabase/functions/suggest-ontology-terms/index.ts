@@ -89,6 +89,44 @@ serve(async (req) => {
     const sourceMatches = findRelatedSources(knowledgeSources || [], keywords, content);
     console.log(`Found ${sourceMatches.length} related knowledge sources`);
 
+    // Store the results in agent_metadata
+    if (sourceId && !sourceId.startsWith('temp-')) {
+      try {
+        // Create agent metadata for the analysis
+        const agentMetadata = {
+          analysis_type: "ontology_term_suggestions",
+          analyzed_at: new Date().toISOString(),
+          keywords_extracted: keywords,
+          suggested_terms: termMatches.map(term => ({
+            id: term.id,
+            term: term.term,
+            domain: term.domain,
+            score: term.score
+          })),
+          related_notes: sourceMatches.map(note => ({
+            id: note.id,
+            title: note.title,
+            score: note.score
+          }))
+        };
+        
+        // Update the knowledge source with the agent metadata
+        const { error: updateError } = await supabase
+          .from('knowledge_sources')
+          .update({ agent_metadata: agentMetadata })
+          .eq('id', sourceId);
+          
+        if (updateError) {
+          console.error("Error updating agent_metadata:", updateError);
+        } else {
+          console.log("Successfully stored analysis results in agent_metadata");
+        }
+      } catch (storageError) {
+        console.error("Error storing analysis results:", storageError);
+        // Continue even if storage fails - we'll still return the results
+      }
+    }
+
     // Return the suggestions
     return new Response(
       JSON.stringify({ 
