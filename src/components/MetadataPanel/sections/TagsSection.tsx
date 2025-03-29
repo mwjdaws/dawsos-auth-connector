@@ -1,38 +1,38 @@
 
-import React from 'react';
+import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { X, Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Tag } from '../types';
 
 interface TagsSectionProps {
-  tags: string[] | Tag[];
+  tags: any[];
   editable?: boolean;
   newTag?: string;
   setNewTag?: (value: string) => void;
-  onAddTag?: (tag: string) => void;
-  onDeleteTag?: (tag: string) => void;
+  onAddTag?: () => void;
+  onDeleteTag?: (tagId: string) => void;
 }
 
-export function TagsSection({
+export const TagsSection: React.FC<TagsSectionProps> = ({
   tags,
   editable = false,
   newTag = '',
   setNewTag,
   onAddTag,
   onDeleteTag
-}: TagsSectionProps) {
+}) => {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && onAddTag && newTag.trim()) {
+    if (e.key === 'Enter' && onAddTag && newTag?.trim()) {
       e.preventDefault();
-      onAddTag(newTag.trim());
+      onAddTag();
     }
   };
   
-  const normalizedTags = tags.map(tag => 
-    typeof tag === 'string' ? { name: tag } : tag
-  );
+  const normalizedTags = tags?.map(tag => 
+    typeof tag === 'string' ? { name: tag, id: tag } : tag
+  ) || [];
 
   return (
     <div className="space-y-2">
@@ -49,8 +49,8 @@ export function TagsSection({
           />
           <Button 
             size="sm" 
-            onClick={() => onAddTag?.(newTag)}
-            disabled={!newTag.trim()}
+            onClick={onAddTag}
+            disabled={!newTag?.trim()}
           >
             <Plus className="h-4 w-4 mr-1" />
             Add
@@ -62,7 +62,7 @@ export function TagsSection({
         <div className="flex flex-wrap gap-2">
           {normalizedTags.map((tag) => (
             <Badge 
-              key={tag.name}
+              key={tag.id || tag.name}
               variant="secondary"
               className="flex items-center gap-1"
             >
@@ -70,9 +70,9 @@ export function TagsSection({
               {editable && (
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                   className="h-4 w-4 p-0 hover:bg-transparent"
-                  onClick={() => onDeleteTag?.(tag.name)}
+                  onClick={() => onDeleteTag?.(tag.id || tag.name)}
                 >
                   <X className="h-3 w-3" />
                 </Button>
@@ -85,4 +85,6 @@ export function TagsSection({
       )}
     </div>
   );
-}
+};
+
+export default TagsSection;

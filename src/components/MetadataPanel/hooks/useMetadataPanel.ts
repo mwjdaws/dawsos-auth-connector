@@ -1,226 +1,111 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { OntologyTerm } from '@/hooks/markdown-editor/ontology-terms/types';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTagOperations } from './useTagOperations';
+import { useSourceMetadata } from './useSourceMetadata';
+import { usePanelState } from './usePanelState';
 
-export interface MetadataPanelState {
-  contentId: string;
-  title: string;
-  tags: string[];
-  domains: string[];
-  externalSource?: string;
-  externalSourceUrl?: string;
-  ontologyTerms: OntologyTerm[];
-  loading: boolean;
-  error: Error | null;
-  isLoading: boolean;
-  isPending: boolean;
-  user: any;
-  needsExternalReview: boolean;
-  lastCheckedAt?: string;
-  isCollapsed: boolean;
-  setIsCollapsed: (isCollapsed: boolean) => void;
-  setTags: (tags: string[]) => void;
-  addTag: (tag: string) => void;
-  removeTag: (tag: string) => void;
-  refreshTags: () => void;
-  handleRefresh: () => void;
-  handleAddTag: (tag: string) => void;
-  handleDeleteTag: (tag: string) => void;
-  newTag: string;
-  setNewTag: (tag: string) => void;
-}
-
-/**
- * Hook that manages metadata panel state
- */
 export function useMetadataPanel(
-  contentId?: string, 
-  onMetadataChange?: () => void, 
-  isCollapsible?: boolean, 
-  initialCollapsed?: boolean
-): MetadataPanelState {
-  const [internalContentId, setInternalContentId] = useState(contentId || '');
-  const [title, setTitle] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
-  const [domains, setDomains] = useState<string[]>([]);
-  const [externalSource, setExternalSource] = useState<string | undefined>();
-  const [externalSourceUrl, setExternalSourceUrl] = useState<string | undefined>();
-  const [ontologyTerms, setOntologyTerms] = useState<OntologyTerm[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed || false);
-  const [needsExternalReview, setNeedsExternalReview] = useState(false);
-  const [lastCheckedAt, setLastCheckedAt] = useState<string | undefined>();
-  const [newTag, setNewTag] = useState('');
-  
+  contentId: string,
+  onMetadataChange?: () => void,
+  isCollapsible = false,
+  initialCollapsed = false
+) {
   const { user } = useAuth();
+  const {
+    tags,
+    setTags,
+    newTag,
+    setNewTag,
+    fetchTags,
+    handleAddTag,
+    handleDeleteTag
+  } = useTagOperations(contentId, onMetadataChange);
 
-  // Load content metadata
-  useEffect(() => {
-    if (contentId) {
-      setInternalContentId(contentId);
-    }
-    
-    if (!internalContentId) return;
-    
-    const fetchMetadata = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        const { data, error } = await supabase
-          .from('knowledge_sources')
-          .select('title, metadata, external_source_url, needs_external_review, external_source_checked_at')
-          .eq('id', internalContentId)
-          .maybeSingle();
-          
-        if (error) throw error;
-        
-        if (data) {
-          setTitle(data.title || '');
-          setTags((data.metadata?.tags || []) as string[]);
-          setDomains((data.metadata?.domains || []) as string[]);
-          setExternalSourceUrl(data.external_source_url || undefined);
-          setNeedsExternalReview(data.needs_external_review || false);
-          setLastCheckedAt(data.external_source_checked_at || undefined);
-          
-          // Fetch ontology terms
-          const { data: termsData, error: termsError } = await supabase
-            .from('knowledge_source_ontology_terms')
-            .select(`
-              id,
-              ontology_term_id,
-              ontology_terms:ontology_term_id (
-                id, 
-                term,
-                description,
-                domain
-              )
-            `)
-            .eq('knowledge_source_id', internalContentId);
-            
-          if (termsError) throw termsError;
-          
-          setOntologyTerms(termsData?.map(item => ({
-            associationId: item.id,
-            id: item.ontology_terms.id,
-            term: item.ontology_terms.term,
-            description: item.ontology_terms.description,
-            domain: item.ontology_terms.domain
-          })) || []);
-        }
-      } catch (err) {
-        console.error('Error loading metadata:', err);
-        setError(err instanceof Error ? err : new Error('Failed to load metadata'));
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchMetadata();
-  }, [internalContentId, contentId]);
+  const sourceMetadata = useSourceMetadata(contentId);
+  
+  const {
+    isLoading,
+    error,
+    isPending,
+    startTransition,
+    isCollapsed,
+    setIsCollapsed,
+    toggleCollapsed,
+    isMounted,
+    validateContentId,
+    startLoading,
+    finishLoading
+  } = usePanelState(isCollapsible, initialCollapsed);
 
-  // Function to add a tag
-  const addTag = useCallback((tag: string) => {
-    if (!tags.includes(tag)) {
-      setTags(prevTags => [...prevTags, tag]);
-      saveTags([...tags, tag]);
-    }
-  }, [tags, internalContentId]);
-
-  // Function to remove a tag
-  const removeTag = useCallback((tag: string) => {
-    const newTags = tags.filter(t => t !== tag);
-    setTags(newTags);
-    saveTags(newTags);
-  }, [tags, internalContentId]);
-
-  // Save tags to database
-  const saveTags = async (newTags: string[]) => {
-    if (!internalContentId) return;
+  // Function to fetch metadata
+  const fetchMetadata = async () => {
+    // Validate contentId
+    if (!validateContentId(contentId)) return;
     
-    setIsPending(true);
+    // Start loading state
+    startLoading();
+    
     try {
-      const { error } = await supabase
-        .from('knowledge_sources')
-        .update({
-          metadata: { tags: newTags, domains }
-        })
-        .eq('id', internalContentId);
-        
-      if (error) throw error;
+      // Fetch tags and source metadata concurrently
+      const [tagsResult] = await Promise.all([
+        fetchTags(),
+        sourceMetadata.fetchSourceMetadata()
+      ]);
       
-      if (onMetadataChange) {
-        onMetadataChange();
-      }
+      // Update state in a non-blocking way
+      startTransition(() => {
+        // If the component is still mounted
+        if (isMounted.current) {
+          // Update tags safely if we got a valid response
+          if (Array.isArray(tagsResult)) {
+            setTags(tagsResult);
+          }
+          
+          // Update source metadata state
+          sourceMetadata.updateSourceMetadataState();
+          
+          // Finish loading
+          finishLoading(true);
+          
+          // Notify parent component of metadata change
+          onMetadataChange?.();
+        }
+      });
     } catch (err) {
-      console.error('Error saving tags:', err);
-    } finally {
-      setIsPending(false);
+      console.error('Error fetching metadata:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error fetching metadata';
+      finishLoading(false, errorMessage);
     }
   };
 
-  // Function to refresh metadata
-  const refreshTags = useCallback(() => {
-    if (!internalContentId) return;
-    
-    setLoading(true);
-    
-    // Refresh metadata
-    setTimeout(() => {
-      setLoading(false);
-      if (onMetadataChange) {
-        onMetadataChange();
-      }
-    }, 500);
-  }, [internalContentId, onMetadataChange]);
+  // Handle refresh action
+  const handleRefresh = () => {
+    fetchMetadata();
+  };
 
-  // Handler for refresh button
-  const handleRefresh = useCallback(() => {
-    refreshTags();
-  }, [refreshTags]);
-
-  // Handler for adding a tag
-  const handleAddTag = useCallback((tag: string) => {
-    if (tag.trim()) {
-      addTag(tag.trim());
-      setNewTag('');
+  // Initial fetch when component mounts or contentId changes
+  useEffect(() => {
+    if (contentId) {
+      fetchMetadata();
     }
-  }, [addTag]);
-
-  // Handler for deleting a tag
-  const handleDeleteTag = useCallback((tag: string) => {
-    removeTag(tag);
-  }, [removeTag]);
+  }, [contentId]);
 
   return {
-    contentId: internalContentId,
-    title,
     tags,
-    domains,
-    externalSource,
-    externalSourceUrl,
-    ontologyTerms,
-    loading,
+    isLoading,
     error,
-    isLoading: loading,
     isPending,
+    newTag,
+    setNewTag,
     user,
-    needsExternalReview,
-    lastCheckedAt,
+    externalSourceUrl: sourceMetadata.externalSourceUrl,
+    needsExternalReview: sourceMetadata.needsExternalReview,
+    lastCheckedAt: sourceMetadata.lastCheckedAt,
     isCollapsed,
     setIsCollapsed,
-    setTags,
-    addTag,
-    removeTag,
-    refreshTags,
     handleRefresh,
     handleAddTag,
-    handleDeleteTag,
-    newTag,
-    setNewTag
+    handleDeleteTag
   };
 }

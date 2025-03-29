@@ -142,7 +142,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
           ) : error ? (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>{error.toString()}</AlertDescription>
             </Alert>
           ) : (
             <div className="space-y-4">
