@@ -146,6 +146,7 @@ export const useMarkdownEditor = ({
     content,
     setContent,
     templateId,
+    setTemplateId, // Explicitly expose setTemplateId
     externalSourceUrl,
     setExternalSourceUrl,
     
