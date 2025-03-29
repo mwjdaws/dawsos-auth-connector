@@ -38,17 +38,32 @@ export function RelationshipGraph({
   
   // Memoized retry handler
   const handleRetry = useCallback(() => {
+    console.log("Manual retry requested for graph data");
     fetchGraphData();
   }, [fetchGraphData]);
   
   // Show loading state while fetching data
   if (loading) {
-    return <GraphLoading />;
+    return <GraphLoading onManualRetry={handleRetry} />;
   }
   
   // Show error state if there was a problem fetching data
   if (error) {
     return <GraphError error={error} onRetry={handleRetry} />;
+  }
+  
+  // Show empty state if no data
+  if (!graphData || graphData.nodes.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+        <p className="text-muted-foreground mb-4">
+          No relationship data available for this knowledge source.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Try adding some ontology terms or linking to other sources.
+        </p>
+      </div>
+    );
   }
   
   // Render the graph when data is available, wrapped in an error boundary

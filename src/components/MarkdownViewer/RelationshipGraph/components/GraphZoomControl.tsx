@@ -41,7 +41,7 @@ export const GraphZoomControl = memo(({
     <div className="flex items-center space-x-2 p-2 bg-background/80 backdrop-blur-sm rounded-lg border shadow-sm">
       <Button 
         variant="outline" 
-        size="icon"
+        size="sm"
         onClick={handleZoomOut}
         disabled={zoom <= min}
         title="Zoom out"
@@ -60,7 +60,7 @@ export const GraphZoomControl = memo(({
       
       <Button 
         variant="outline" 
-        size="icon"
+        size="sm"
         onClick={handleZoomIn}
         disabled={zoom >= max}
         title="Zoom in"
@@ -70,7 +70,7 @@ export const GraphZoomControl = memo(({
       
       <Button 
         variant="outline" 
-        size="icon"
+        size="sm"
         onClick={onReset}
         title="Reset zoom"
       >

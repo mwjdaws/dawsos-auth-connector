@@ -120,7 +120,7 @@ export function RelationshipGraphPanel({
             />
             <Button 
               variant="outline" 
-              size="icon" 
+              size="sm" 
               onClick={toggleFullscreen}
               title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
             >
@@ -128,7 +128,7 @@ export function RelationshipGraphPanel({
             </Button>
             <Button 
               variant="outline" 
-              size="icon" 
+              size="sm" 
               onClick={handleRefresh}
               disabled={isRefreshing}
               title="Refresh graph data"

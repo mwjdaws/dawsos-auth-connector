@@ -14,7 +14,7 @@
  * - Optimized node rendering
  * - Throttled node updates
  */
-import React, { useCallback, useMemo, memo } from 'react';
+import React, { useCallback, useMemo, memo, useRef, useEffect } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { useNavigate } from 'react-router-dom';
 import { GraphData, GraphNode } from '../types';
@@ -28,6 +28,7 @@ interface GraphRendererProps {
 // Memoized component to prevent unnecessary re-renders
 export const GraphRenderer = memo(({ graphData, width, height }: GraphRendererProps) => {
   const navigate = useNavigate();
+  const graphRef = useRef(null);
   
   /**
    * Handles node click events
@@ -50,6 +51,19 @@ export const GraphRenderer = memo(({ graphData, width, height }: GraphRendererPr
       term: '#68d391'    // green
     };
   }, []);
+  
+  // Reset graph when data changes
+  useEffect(() => {
+    // Allow the graph to stabilize after data changes
+    const timer = setTimeout(() => {
+      if (graphRef.current) {
+        // @ts-ignore - ForceGraph2D instance has zoomToFit method
+        graphRef.current.zoomToFit(400, 40);
+      }
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [graphData]);
   
   // Memoized node canvas object renderer
   const nodeCanvasObject = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
@@ -85,9 +99,19 @@ export const GraphRenderer = memo(({ graphData, width, height }: GraphRendererPr
     }
   }, [nodeColors]);
   
+  // Handle empty data case
+  if (!graphData || !graphData.nodes || graphData.nodes.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-[300px]">
+        <p className="text-muted-foreground">No graph data available</p>
+      </div>
+    );
+  }
+  
   return (
     <div style={{ height }}>
       <ForceGraph2D
+        ref={graphRef}
         graphData={graphData}
         nodeAutoColorBy="type"
         nodeLabel={node => node.name}
@@ -103,6 +127,8 @@ export const GraphRenderer = memo(({ graphData, width, height }: GraphRendererPr
         minZoom={0.5}
         maxZoom={5}
         warmupTicks={50}
+        d3AlphaDecay={0.02} // Slower decay for more stable graph
+        d3VelocityDecay={0.3} // Increased velocity decay for smoother motion
         onEngineStop={() => console.log('Graph physics simulation completed')}
       />
     </div>

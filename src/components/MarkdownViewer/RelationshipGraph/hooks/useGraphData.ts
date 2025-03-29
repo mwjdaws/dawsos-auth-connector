@@ -22,6 +22,7 @@ import { useCallback, useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { GraphData } from '../types';
 import { handleError, categorizeError, withErrorHandling } from '@/utils/errors';
+import { toast } from '@/hooks/use-toast';
 
 export function useGraphData(startingNodeId?: string) {
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
@@ -29,6 +30,8 @@ export function useGraphData(startingNodeId?: string) {
   const [error, setError] = useState<string | null>(null);
   const isMounted = useRef(true);
   const lastFetchTime = useRef<number>(0);
+  const fetchAttempts = useRef<number>(0);
+  const maxRetries = 3;
   
   /**
    * Fetches graph data from Supabase and constructs the graph structure
@@ -38,7 +41,6 @@ export function useGraphData(startingNodeId?: string) {
   const fetchGraphData = useCallback(async () => {
     // Prevent excessive re-fetching and double fetches
     const now = Date.now();
-    if (loading && graphData.nodes.length > 0) return;
     if (now - lastFetchTime.current < 2000) return; // Throttle to prevent rapid re-fetches
     
     lastFetchTime.current = now;
@@ -46,6 +48,9 @@ export function useGraphData(startingNodeId?: string) {
     setError(null);
     
     try {
+      console.log("Fetching graph data...");
+      fetchAttempts.current += 1;
+      
       // Fetch knowledge sources
       const { data: sources, error: sourcesError } = await supabase
         .from('knowledge_sources')
@@ -53,6 +58,7 @@ export function useGraphData(startingNodeId?: string) {
         .limit(100);
       
       if (sourcesError) throw sourcesError;
+      console.log(`Fetched ${sources?.length || 0} knowledge sources`);
       
       // Fetch note links
       const { data: links, error: linksError } = await supabase
@@ -61,6 +67,7 @@ export function useGraphData(startingNodeId?: string) {
         .limit(200);
       
       if (linksError) throw linksError;
+      console.log(`Fetched ${links?.length || 0} note links`);
       
       // Fetch ontology terms
       const { data: terms, error: termsError } = await supabase
@@ -69,6 +76,7 @@ export function useGraphData(startingNodeId?: string) {
         .limit(100);
       
       if (termsError) throw termsError;
+      console.log(`Fetched ${terms?.length || 0} ontology terms`);
       
       // Fetch ontology relationships
       const { data: termRelationships, error: termRelError } = await supabase
@@ -77,6 +85,7 @@ export function useGraphData(startingNodeId?: string) {
         .limit(200);
       
       if (termRelError) throw termRelError;
+      console.log(`Fetched ${termRelationships?.length || 0} ontology relationships`);
       
       // Fetch knowledge source to ontology term relationships
       const { data: sourceTerms, error: sourceTermsError } = await supabase
@@ -85,9 +94,28 @@ export function useGraphData(startingNodeId?: string) {
         .limit(200);
       
       if (sourceTermsError) throw sourceTermsError;
+      console.log(`Fetched ${sourceTerms?.length || 0} source-term relationships`);
       
       // Check for component unmount before updating state
-      if (!isMounted.current) return;
+      if (!isMounted.current) {
+        console.log("Component unmounted, skipping state update");
+        return;
+      }
+      
+      // Reset fetch attempts on successful fetch
+      fetchAttempts.current = 0;
+      
+      // Check if we have actual data to render
+      if (
+        (!sources || sources.length === 0) && 
+        (!terms || terms.length === 0)
+      ) {
+        console.log("No graph data available to display");
+        setGraphData({ nodes: [], links: [] });
+        setError("No graph data available to display. Try adding some knowledge sources or ontology terms.");
+        setLoading(false);
+        return;
+      }
       
       // Prepare graph data by combining all fetched data
       const nodes = [
@@ -110,9 +138,14 @@ export function useGraphData(startingNodeId?: string) {
         }))
       ];
       
-      const graphLinks = [
+      // Filter out links that don't have corresponding nodes
+      const nodeIds = new Set(nodes.map(node => node.id));
+      
+      const validLinks = [
         // Note links
-        ...links.map(link => ({
+        ...links.filter(link => 
+          nodeIds.has(link.source_id) && nodeIds.has(link.target_id)
+        ).map(link => ({
           source: link.source_id,
           target: link.target_id,
           type: link.link_type,
@@ -120,7 +153,9 @@ export function useGraphData(startingNodeId?: string) {
         })),
         
         // Term relationships
-        ...termRelationships.map(rel => ({
+        ...termRelationships.filter(rel => 
+          nodeIds.has(rel.term_id) && nodeIds.has(rel.related_term_id)
+        ).map(rel => ({
           source: rel.term_id,
           target: rel.related_term_id,
           type: rel.relation_type,
@@ -128,7 +163,9 @@ export function useGraphData(startingNodeId?: string) {
         })),
         
         // Source to term relationships
-        ...sourceTerms.map(st => ({
+        ...sourceTerms.filter(st => 
+          nodeIds.has(st.knowledge_source_id) && nodeIds.has(st.ontology_term_id)
+        ).map(st => ({
           source: st.knowledge_source_id,
           target: st.ontology_term_id,
           type: 'has_term',
@@ -136,9 +173,12 @@ export function useGraphData(startingNodeId?: string) {
         }))
       ];
       
+      console.log(`Built graph with ${nodes.length} nodes and ${validLinks.length} links`);
+      
+      // Update state with the new graph data
       setGraphData({ 
         nodes,
-        links: graphLinks
+        links: validLinks
       });
     } catch (err) {
       console.error('Error fetching graph data:', err);
@@ -166,33 +206,53 @@ export function useGraphData(startingNodeId?: string) {
       if (isMounted.current) {
         setError(errorMessage);
         
-        // Log the error with our custom error handler
-        handleError(err, errorMessage, {
-          level: "error",
-          context: { startingNodeId }
-        });
+        // Retry automatically if below max attempts
+        if (fetchAttempts.current <= maxRetries) {
+          console.log(`Retry attempt ${fetchAttempts.current} of ${maxRetries}`);
+          toast({
+            title: "Loading graph data failed",
+            description: "Retrying automatically...",
+            variant: "destructive",
+          });
+          
+          // Retry with exponential backoff
+          setTimeout(() => {
+            if (isMounted.current) {
+              fetchGraphData();
+            }
+          }, Math.min(1000 * Math.pow(2, fetchAttempts.current - 1), 8000));
+        } else {
+          // Log the error with our custom error handler
+          handleError(err, errorMessage, {
+            level: "error",
+            context: { startingNodeId }
+          });
+        }
       }
     } finally {
       if (isMounted.current) {
         setLoading(false);
       }
     }
-  }, [startingNodeId, loading, graphData.nodes.length]);
+  }, [startingNodeId]);
   
   // Handle component unmounting
   useEffect(() => {
+    isMounted.current = true;
     return () => {
       isMounted.current = false;
     };
   }, []);
   
-  // Fetch data when the component mounts
+  // Fetch data when the component mounts or startingNodeId changes
   useEffect(() => {
+    fetchAttempts.current = 0;
     fetchGraphData();
-  }, [fetchGraphData]);
+  }, [fetchGraphData, startingNodeId]);
   
   // Safe wrapper for the fetch function that handles errors properly
   const fetchGraphDataSafely = useCallback(() => {
+    fetchAttempts.current = 0;
     withErrorHandling(
       fetchGraphData,
       "Failed to refresh graph data"
