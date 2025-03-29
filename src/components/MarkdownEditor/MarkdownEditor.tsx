@@ -156,6 +156,9 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         isDirty={isDirty}
         isPublished={isPublished}
         hasExternalSource={!!externalSourceUrl}
+        title={title}
+        content={content}
+        sourceId={sourceId}
       />
 
       {/* Version History Modal */}

@@ -46,6 +46,7 @@ export interface RelationshipGraphPanelProps {
   hasAttemptedRetry?: boolean;
 }
 
+// Interface for the graph renderer ref object with methods
 export interface GraphRendererRef {
   centerOnNode: (nodeId: string) => void;
   setZoom: (zoomLevel: number, duration?: number) => void;
