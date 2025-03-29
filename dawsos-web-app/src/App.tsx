@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { HomePage } from './pages';
 import { Navbar } from './components';
 
-const App: React.FC = () => {
+const App = () => {
   return (
     <Router>
       <div>
