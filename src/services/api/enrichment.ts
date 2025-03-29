@@ -102,3 +102,27 @@ export const enrichSingleSource = async (sourceId: string, applyOntologyTerms: b
     throw error;
   }
 };
+
+/**
+ * Enriches multiple knowledge sources with ontology suggestions
+ */
+export const enrichMultipleSources = async (sourceIds: string[], applyOntologyTerms: boolean = false) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('batch-ontology-enrichment', {
+      body: { sourceIds, applyOntologyTerms }
+    });
+    
+    if (error) throw new ApiError(error.message, parseSupabaseErrorCode(error));
+    
+    return {
+      success: true,
+      processed: data.processingStats?.totalProcessed || 0,
+      successful: data.processingStats?.successful || 0,
+      failed: data.processingStats?.failed || 0,
+      results: data.results || []
+    };
+  } catch (error) {
+    handleError(error, "Failed to enrich multiple knowledge sources");
+    throw error;
+  }
+};
