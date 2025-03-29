@@ -1,4 +1,8 @@
 
+import { useMetadataPanel } from "./useMetadataPanel";
+import { useMemo } from "react";
+import { MetadataContextState } from "../types";
+
 /**
  * useMetadataContext Hook
  * 
