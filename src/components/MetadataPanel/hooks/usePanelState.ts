@@ -2,6 +2,7 @@
 import { useState, useEffect, useTransition, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 import { isValidContentId } from "@/utils/content-validation";
+import { handleError } from "@/utils/errors";
 
 export interface UsePanelStateProps {
   contentId: string;
@@ -22,8 +23,9 @@ export const usePanelState = ({
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
   const isMounted = useRef(true);
 
-  // Reset the loading state when component unmounts
+  // Reset the component state when unmounting
   useEffect(() => {
+    isMounted.current = true;
     return () => {
       isMounted.current = false;
     };
@@ -50,11 +52,16 @@ export const usePanelState = ({
       
       if (!success && errorMessage) {
         setError(errorMessage);
-        toast({
-          title: "Error",
-          description: "Failed to load metadata",
-          variant: "destructive",
-        });
+        
+        // Use standardized error handling
+        handleError(
+          new Error(errorMessage),
+          "Failed to load metadata",
+          {
+            level: "error",
+            context: { contentId }
+          }
+        );
       }
       
       if (success && onMetadataChange) {

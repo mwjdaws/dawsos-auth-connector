@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { isValidContentId } from "@/utils/content-validation";
+import { handleError } from "@/utils/errors";
 
 export interface Tag {
   id: string;
@@ -40,7 +41,14 @@ export const useTagOperations = ({ contentId, user, onMetadataChange }: UseTagOp
       return tagData || [];
     } catch (err: any) {
       console.error("Error fetching tags:", err);
-      throw err;
+      
+      // Use standardized error handling
+      handleError(err, "Error fetching tags", {
+        context: { contentId },
+        level: "error"
+      });
+      
+      return []; // Return empty array to prevent UI errors
     }
   };
 
@@ -81,21 +89,33 @@ export const useTagOperations = ({ contentId, user, onMetadataChange }: UseTagOp
       
       if (error) throw error;
       
-      setTags(prev => [...prev, data![0]]);
-      setNewTag("");
-      
-      toast({
-        title: "Success",
-        description: "Tag added successfully",
-      });
-      
-      if (onMetadataChange) {
-        onMetadataChange();
+      // Verify we got data back before updating state
+      if (data && data.length > 0) {
+        setTags(prev => [...prev, data[0]]);
+        setNewTag("");
+        
+        toast({
+          title: "Success",
+          description: "Tag added successfully",
+        });
+        
+        if (onMetadataChange) {
+          onMetadataChange();
+        }
+        
+        console.log("Tag added successfully:", data[0]);
+      } else {
+        throw new Error("Failed to create tag: No data returned");
       }
-      
-      console.log("Tag added successfully:", data![0]);
     } catch (error: any) {
       console.error("Error adding tag:", error);
+      
+      // Use standardized error handling
+      handleError(error, "Failed to add tag", {
+        context: { tagName: newTag, contentId },
+        level: "error"
+      });
+      
       toast({
         title: "Error",
         description: error.message || "Failed to add tag",
@@ -124,6 +144,7 @@ export const useTagOperations = ({ contentId, user, onMetadataChange }: UseTagOp
       
       if (error) throw error;
       
+      // Update state after successful deletion
       setTags(tags.filter(tag => tag.id !== tagId));
       
       toast({
@@ -138,6 +159,13 @@ export const useTagOperations = ({ contentId, user, onMetadataChange }: UseTagOp
       console.log("Tag deleted successfully");
     } catch (error: any) {
       console.error("Error deleting tag:", error);
+      
+      // Use standardized error handling
+      handleError(error, "Failed to delete tag", {
+        context: { tagId },
+        level: "error" 
+      });
+      
       toast({
         title: "Error",
         description: error.message || "Failed to delete tag",

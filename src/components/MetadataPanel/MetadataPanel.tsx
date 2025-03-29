@@ -8,6 +8,8 @@ import { TagsSection } from "./TagsSection";
 import { ContentIdSection } from "./ContentIdSection";
 import { LoadingState } from "./LoadingState";
 import { OntologyTermsPanel } from "@/components/MarkdownViewer/OntologyTermsPanel";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface MetadataPanelProps {
   contentId: string;
@@ -56,6 +58,21 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     ? "border-yellow-400 dark:border-yellow-600"
     : "";
 
+  if (!contentId) {
+    return (
+      <Card className={className}>
+        <CardContent className="pt-4">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              No content ID provided. Metadata cannot be loaded.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className={`${cardBorderClass} ${className}`}>
       <HeaderSection 
@@ -72,9 +89,10 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
           {isLoading ? (
             <LoadingState />
           ) : error ? (
-            <div className="text-sm text-destructive">
-              {error}
-            </div>
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           ) : (
             <div className="space-y-4">
               <ExternalSourceSection 

@@ -3,6 +3,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTagOperations } from "./useTagOperations";
 import { useSourceMetadata } from "./useSourceMetadata";
 import { usePanelState } from "./usePanelState";
+import { useEffect } from "react";
+import { handleError } from "@/utils/errors";
 
 export const useMetadataPanel = (
   contentId: string, 
@@ -48,7 +50,7 @@ export const useMetadataPanel = (
       if (panelState.isMounted.current) {
         panelState.startTransition(() => {
           // Update tags state
-          tagOperations.setTags(tagData);
+          tagOperations.setTags(tagData || []);
           
           // Update source metadata state
           if (sourceData) {
@@ -60,6 +62,13 @@ export const useMetadataPanel = (
       panelState.finishLoading(true);
     } catch (err: any) {
       console.error("Error fetching metadata:", err);
+      
+      // Use standardized error handling
+      handleError(err, "Failed to fetch metadata", {
+        context: { contentId },
+        level: "error"
+      });
+      
       panelState.finishLoading(false, err.message || "Failed to fetch metadata");
     }
   };
@@ -67,7 +76,9 @@ export const useMetadataPanel = (
   // Fetch metadata when contentId changes
   useEffect(() => {
     console.log("MetadataPanel: contentId changed to", contentId);
-    fetchMetadata();
+    if (contentId) {
+      fetchMetadata();
+    }
   }, [contentId]);
 
   const handleRefresh = () => {
@@ -95,6 +106,3 @@ export const useMetadataPanel = (
 
 // Export types
 export type { Tag } from "./useTagOperations";
-
-// Add missing import
-import { useEffect } from "react";
