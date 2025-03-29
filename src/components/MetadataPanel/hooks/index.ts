@@ -9,3 +9,4 @@ export { useMetadataContext } from "./useMetadataContext";
 export type { Tag } from "./useTagOperations";
 export type { SourceMetadata } from "./useSourceMetadata";
 export type { UsePanelStateProps } from "./usePanelState";
+export type { MetadataContextState } from "../types";

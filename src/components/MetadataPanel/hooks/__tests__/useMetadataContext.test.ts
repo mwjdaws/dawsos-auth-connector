@@ -1,6 +1,6 @@
 
 import { renderHook } from '@testing-library/react';
-import { vi } from 'vitest';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { useMetadataContext } from '../useMetadataContext';
 import { useMetadataPanel } from '../useMetadataPanel';
 
