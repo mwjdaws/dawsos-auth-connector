@@ -55,7 +55,7 @@ export function useSourceTerms(sourceId?: string) {
       console.log(`Found ${data?.length || 0} ontology terms for source ${sourceId}`);
       
       return data?.map(item => ({
-        associationId: item.id,
+        associationId: item.id, // Changed from association_id to associationId to match our interface
         id: item.ontology_terms.id,
         term: item.ontology_terms.term,
         description: item.ontology_terms.description,

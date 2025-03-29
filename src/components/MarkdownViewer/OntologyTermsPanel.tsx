@@ -56,7 +56,7 @@ export function OntologyTermsPanel({ sourceId, editable = false }: OntologyTerms
         ) : (
           terms.map((term) => (
             <Badge 
-              key={term.association_id} 
+              key={term.associationId} 
               variant="secondary"
               className="flex items-center gap-1"
             >
@@ -64,7 +64,7 @@ export function OntologyTermsPanel({ sourceId, editable = false }: OntologyTerms
               {term.term}
               {editable && (
                 <button
-                  onClick={() => handleRemoveTerm(term.association_id)}
+                  onClick={() => handleRemoveTerm(term.associationId!)}
                   className="ml-1 text-muted-foreground hover:text-foreground"
                   disabled={isRemoving}
                 >
@@ -121,4 +121,3 @@ export function OntologyTermsPanel({ sourceId, editable = false }: OntologyTerms
     </div>
   );
 }
-
