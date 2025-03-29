@@ -1,3 +1,4 @@
+
 /**
  * MetadataPanel Component
  * 
@@ -31,7 +32,6 @@
  *   editable={true}
  *   className="my-4"
  * >
- *   {/* Additional custom content */}
  *   <CustomSection />
  * </MetadataPanel>
  * 
