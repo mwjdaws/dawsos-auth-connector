@@ -6,6 +6,8 @@ export { useContentLoader } from './useContentLoader';
 export { useContentState } from './useContentState';
 export { useDocumentOperationHandlers } from './useDocumentOperationHandlers';
 export { useKnowledgeSources, useKnowledgeSourcesQuery } from './useKnowledgeSources';
+export { useNoteLinks, useSourceLinks } from './useNoteLinks';
+export { useWikiLinks } from './useWikiLinks';
 export * from './types';
 export * from './handlers/useSaveDraftHandler';
 export * from './handlers/usePublishHandler';

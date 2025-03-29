@@ -50,3 +50,13 @@ export interface KnowledgeTemplate {
   created_at?: string;
   updated_at?: string;
 }
+
+export interface NoteLink {
+  id: string;
+  source_id: string;
+  target_id: string;
+  link_type: 'wikilink' | 'manual' | 'AI-suggested';
+  created_by?: string;
+  created_at?: string;
+  knowledge_sources?: KnowledgeSource;
+}
