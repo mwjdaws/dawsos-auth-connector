@@ -65,11 +65,9 @@ export function useWikiLinks(
   const addWikilink = useCallback((linkText: string) => {
     if (!onContentChange) return;
     
-    onContentChange(currentContent => {
-      // Add the wikilink at the cursor position or end of content
-      // This is a simplified implementation
-      return `${currentContent} [[${linkText}]]`;
-    });
+    // Fix: Pass a string instead of a function
+    const newContent = `[[${linkText}]]`;
+    onContentChange(newContent);
   }, [onContentChange]);
 
   return {
