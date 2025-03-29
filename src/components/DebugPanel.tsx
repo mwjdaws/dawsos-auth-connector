@@ -1,12 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Code, BookOpen, FileEdit } from 'lucide-react';
+import { Code, BookOpen, FileEdit, Layers, ServerCrash, Activity } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
+import { invokeEdgeFunctionReliably } from '@/utils/edge-function-reliability';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 
 export const DebugPanel = () => {
   const [documents, setDocuments] = useState<any[]>([]);
@@ -15,6 +17,8 @@ export const DebugPanel = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('sources');
+  const [edgeFunctionStatus, setEdgeFunctionStatus] = useState<Record<string, 'ok' | 'error' | 'loading'>>({});
+  const [edgeFunctionResults, setEdgeFunctionResults] = useState<Record<string, any>>({});
   const { user } = useAuth();
 
   const fetchDocuments = async () => {
@@ -101,6 +105,102 @@ export const DebugPanel = () => {
     }
   };
 
+  const checkEdgeFunction = async (functionName: string, payload: any = {}) => {
+    setEdgeFunctionStatus(prev => ({ ...prev, [functionName]: 'loading' }));
+    try {
+      const result = await invokeEdgeFunctionReliably(
+        functionName,
+        payload,
+        { 
+          timeoutMs: 5000,
+          showErrorToast: false 
+        }
+      );
+      
+      console.log(`Edge function ${functionName} response:`, result);
+      setEdgeFunctionResults(prev => ({ ...prev, [functionName]: result }));
+      setEdgeFunctionStatus(prev => ({ ...prev, [functionName]: 'ok' }));
+      return result;
+    } catch (error) {
+      console.error(`Edge function ${functionName} error:`, error);
+      setEdgeFunctionStatus(prev => ({ ...prev, [functionName]: 'error' }));
+      setEdgeFunctionResults(prev => ({ 
+        ...prev, 
+        [functionName]: { error: error instanceof Error ? error.message : String(error) } 
+      }));
+    }
+  };
+
+  const validateTableReferences = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    const knownTables = [
+      'knowledge_sources',
+      'knowledge_source_versions',
+      'knowledge_templates',
+      'tags',
+      'tag_types',
+      'tag_relations',
+      'agent_tasks',
+      'agent_actions',
+      'note_links',
+      'ontology_terms',
+      'ontology_relationships',
+      'knowledge_source_ontology_terms',
+      'external_link_audits',
+      'permissions',
+      'roles'
+    ];
+    
+    try {
+      const { data: schemaData, error: schemaError } = await supabase
+        .rpc('get_tables');
+      
+      if (schemaError) {
+        throw new Error(`Error fetching schema: ${schemaError.message}`);
+      }
+      
+      if (!schemaData) {
+        setEdgeFunctionResults(prev => ({ 
+          ...prev, 
+          'table-validation': { 
+            status: 'limited',
+            message: 'Schema validation limited - using predefined table list',
+            knownTables 
+          } 
+        }));
+        return;
+      }
+      
+      const actualTables = schemaData.map((t: any) => t.table_name);
+      const missingTables = knownTables.filter(t => !actualTables.includes(t));
+      const unusedTables = actualTables.filter(t => !knownTables.includes(t) && !t.startsWith('_'));
+      
+      setEdgeFunctionResults(prev => ({ 
+        ...prev, 
+        'table-validation': { 
+          actualTables,
+          knownTables,
+          missingTables,
+          unusedTables,
+          status: missingTables.length === 0 ? 'ok' : 'warning'
+        } 
+      }));
+    } catch (err) {
+      console.error("Failed to validate table references:", err);
+      setEdgeFunctionResults(prev => ({ 
+        ...prev, 
+        'table-validation': { 
+          error: err instanceof Error ? err.message : String(err),
+          status: 'error' 
+        } 
+      }));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'sources') {
       fetchDocuments();
@@ -108,6 +208,8 @@ export const DebugPanel = () => {
       fetchTemplates();
     } else if (activeTab === 'versions') {
       fetchVersions();
+    } else if (activeTab === 'diagnostics') {
+      validateTableReferences();
     }
   }, [activeTab]);
 
@@ -118,7 +220,137 @@ export const DebugPanel = () => {
       fetchTemplates();
     } else if (activeTab === 'versions') {
       fetchVersions();
+    } else if (activeTab === 'diagnostics') {
+      validateTableReferences();
+      
+      checkEdgeFunction('get-related-tags', { knowledgeSourceId: documents[0]?.id || 'temp-' + Date.now() });
+      
+      if (documents.length > 0) {
+        const sampleDoc = documents[0];
+        checkEdgeFunction('suggest-ontology-terms', { 
+          sourceId: sampleDoc.id,
+          content: sampleDoc.content,
+          title: sampleDoc.title
+        });
+      }
     }
+  };
+
+  const renderStatusBadge = (status: 'ok' | 'error' | 'loading' | undefined) => {
+    switch (status) {
+      case 'ok':
+        return <Badge variant="success" className="ml-2">OK</Badge>;
+      case 'error':
+        return <Badge variant="destructive" className="ml-2">Error</Badge>;
+      case 'loading':
+        return <Badge variant="outline" className="ml-2">Loading...</Badge>;
+      default:
+        return <Badge variant="outline" className="ml-2">Not Tested</Badge>;
+    }
+  };
+
+  const renderEdgeFunctionResults = () => {
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-col gap-4">
+          <div className="p-4 rounded-md border">
+            <h3 className="text-lg font-medium mb-2 flex items-center">
+              Edge Function Health
+              <span className="ml-2 text-xs text-muted-foreground">(Click Refresh to test)</span>
+            </h3>
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-2 bg-muted rounded-sm">
+                <span>get-related-tags</span>
+                {renderStatusBadge(edgeFunctionStatus['get-related-tags'])}
+              </div>
+              
+              <div className="flex items-center justify-between p-2 bg-muted rounded-sm">
+                <span>suggest-ontology-terms</span>
+                {renderStatusBadge(edgeFunctionStatus['suggest-ontology-terms'])}
+              </div>
+            </div>
+            
+            {(edgeFunctionStatus['get-related-tags'] === 'error' || 
+              edgeFunctionStatus['suggest-ontology-terms'] === 'error') && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Edge Function Error</AlertTitle>
+                <AlertDescription>
+                  One or more edge functions failed to respond. Check console logs for details.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+          
+          <div className="p-4 rounded-md border">
+            <h3 className="text-lg font-medium mb-2 flex items-center">
+              Table Reference Validation
+              {edgeFunctionResults['table-validation']?.status === 'ok' && 
+                <Badge variant="success" className="ml-2">All Tables Valid</Badge>}
+              {edgeFunctionResults['table-validation']?.status === 'warning' && 
+                <Badge variant="warning" className="ml-2">Missing Tables</Badge>}
+              {edgeFunctionResults['table-validation']?.status === 'error' && 
+                <Badge variant="destructive" className="ml-2">Validation Error</Badge>}
+            </h3>
+            
+            {edgeFunctionResults['table-validation'] && !edgeFunctionResults['table-validation'].error && (
+              <div className="space-y-2 mt-2">
+                {edgeFunctionResults['table-validation'].missingTables?.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium text-yellow-600">Missing Tables:</h4>
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      {edgeFunctionResults['table-validation'].missingTables.map((table: string) => (
+                        <span key={table} className="px-2 py-1 bg-yellow-50 text-yellow-700 rounded text-xs">
+                          {table}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {edgeFunctionResults['table-validation'].unusedTables?.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium text-blue-600">Detected Tables (not in reference list):</h4>
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      {edgeFunctionResults['table-validation'].unusedTables.map((table: string) => (
+                        <span key={table} className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">
+                          {table}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {edgeFunctionResults['table-validation']?.error && (
+              <Alert variant="destructive" className="mt-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Validation Error</AlertTitle>
+                <AlertDescription>
+                  {edgeFunctionResults['table-validation'].error}
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        </div>
+
+        <div className="p-4 rounded-md border">
+          <h3 className="text-lg font-medium mb-2">Response Data</h3>
+          <ScrollArea className="h-[250px]">
+            {Object.entries(edgeFunctionResults).map(([key, value]) => (
+              <div key={key} className="mb-4 pb-4 border-b">
+                <h4 className="font-medium">{key}</h4>
+                <pre className="whitespace-pre-wrap mt-2 text-xs p-2 bg-muted rounded-md overflow-auto">
+                  {JSON.stringify(value, null, 2)}
+                </pre>
+              </div>
+            ))}
+          </ScrollArea>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -154,7 +386,7 @@ export const DebugPanel = () => {
         )}
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="sources" className="flex items-center gap-1">
               <FileEdit className="h-4 w-4" />
               Sources
@@ -164,8 +396,12 @@ export const DebugPanel = () => {
               Templates
             </TabsTrigger>
             <TabsTrigger value="versions" className="flex items-center gap-1">
-              <Code className="h-4 w-4" />
+              <Layers className="h-4 w-4" />
               Versions
+            </TabsTrigger>
+            <TabsTrigger value="diagnostics" className="flex items-center gap-1">
+              <Activity className="h-4 w-4" />
+              Diagnostics
             </TabsTrigger>
           </TabsList>
           
@@ -267,6 +503,10 @@ export const DebugPanel = () => {
                 </div>
               )}
             </ScrollArea>
+          </TabsContent>
+          
+          <TabsContent value="diagnostics">
+            {renderEdgeFunctionResults()}
           </TabsContent>
         </Tabs>
       </CardContent>
