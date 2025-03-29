@@ -3,6 +3,7 @@ import { useDocumentVersioning } from './useDocumentVersioning';
 import { useSaveDraftHandler } from './handlers/useSaveDraftHandler';
 import { usePublishHandler } from './handlers/usePublishHandler';
 import { DocumentOperationHandlerProps } from './types';
+import { useOntologyEnrichment } from './useOntologyEnrichment';
 
 export const useDocumentOperationHandlers = (props: DocumentOperationHandlerProps) => {
   const {
@@ -23,6 +24,7 @@ export const useDocumentOperationHandlers = (props: DocumentOperationHandlerProp
   } = props;
   
   const { createVersion } = useDocumentVersioning();
+  const { enrichContentWithOntology } = useOntologyEnrichment();
   
   // Use the save draft handler module
   const { 
@@ -41,7 +43,9 @@ export const useDocumentOperationHandlers = (props: DocumentOperationHandlerProp
     setLastSavedExternalSourceUrl,
     setIsDirty,
     onSaveDraft,
-    createVersion
+    createVersion,
+    // Pass the ontology enrichment function
+    enrichContentWithOntology
   });
   
   // Use the publish handler module
@@ -55,7 +59,9 @@ export const useDocumentOperationHandlers = (props: DocumentOperationHandlerProp
     saveDraft: handleSaveDraft,
     publishDocument,
     onPublish,
-    createVersion
+    createVersion,
+    // Pass the ontology enrichment function
+    enrichContentWithOntology
   });
   
   return {

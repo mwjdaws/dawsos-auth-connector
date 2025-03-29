@@ -12,6 +12,7 @@ interface UsePublishHandlerProps {
   publishDocument: (title: string, content: string, templateId: string | null, externalSourceUrl: string, userId: string | undefined) => Promise<any>;
   onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
   createVersion: (documentId: string, content: string, metadata?: any) => Promise<void>;
+  enrichContentWithOntology?: (sourceId: string, content: string, title: string, options?: any) => Promise<any>;
 }
 
 export const usePublishHandler = ({
@@ -22,7 +23,8 @@ export const usePublishHandler = ({
   saveDraft,
   publishDocument,
   onPublish,
-  createVersion
+  createVersion,
+  enrichContentWithOntology
 }: UsePublishHandlerProps) => {
   /**
    * Publish the document with user feedback
@@ -67,6 +69,20 @@ export const usePublishHandler = ({
             });
           } catch (versionError) {
             console.error('Error creating version after publish:', versionError);
+          }
+        }
+        
+        // Run ontology enrichment after successful publish
+        if (enrichContentWithOntology && result.documentId) {
+          try {
+            // Process in background, don't wait for result
+            console.log('Running ontology enrichment after publish for document:', result.documentId);
+            enrichContentWithOntology(result.documentId, content, title, {
+              autoLink: true, // Auto-link terms for published content
+              saveMetadata: true // Also store the suggestions in metadata
+            }).catch(err => console.error('Background enrichment error:', err));
+          } catch (enrichError) {
+            console.error('Error starting ontology enrichment:', enrichError);
           }
         }
         

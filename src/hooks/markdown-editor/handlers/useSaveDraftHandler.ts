@@ -19,6 +19,7 @@ interface UseSaveDraftHandlerProps {
   setIsDirty: (isDirty: boolean) => void;
   onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
   createVersion: (documentId: string, content: string, metadata?: any) => Promise<any>;
+  enrichContentWithOntology?: (sourceId: string, content: string, title: string, options?: any) => Promise<any>;
 }
 
 export const useSaveDraftHandler = ({
@@ -34,7 +35,8 @@ export const useSaveDraftHandler = ({
   setLastSavedExternalSourceUrl,
   setIsDirty,
   onSaveDraft,
-  createVersion
+  createVersion,
+  enrichContentWithOntology
 }: UseSaveDraftHandlerProps) => {
   const [isSavingManually, setIsSavingManually] = useState(false);
   
@@ -87,6 +89,21 @@ export const useSaveDraftHandler = ({
             });
           } catch (versionError) {
             console.error('Error creating version after save:', versionError);
+          }
+        }
+        
+        // Run ontology enrichment after successful save
+        // Only for manual saves to avoid excessive processing
+        if (isManualSave && enrichContentWithOntology && savedId) {
+          try {
+            // Process in background, don't wait for result
+            console.log('Running ontology enrichment after save for document:', savedId);
+            enrichContentWithOntology(savedId, content, title, {
+              autoLink: false, // Don't auto-link terms for saves
+              saveMetadata: true // Just store the suggestions in metadata
+            }).catch(err => console.error('Background enrichment error:', err));
+          } catch (enrichError) {
+            console.error('Error starting ontology enrichment:', enrichError);
           }
         }
         
