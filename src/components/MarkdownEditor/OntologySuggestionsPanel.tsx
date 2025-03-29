@@ -135,7 +135,7 @@ export function OntologySuggestionsPanel({
                   <div className="flex">
                     <Button
                       variant="ghost"
-                      size="icon"
+                      size="sm"
                       className="h-5 w-5"
                       onClick={() => handleApplyTerm(term.id)}
                     >
@@ -143,7 +143,7 @@ export function OntologySuggestionsPanel({
                     </Button>
                     <Button
                       variant="ghost"
-                      size="icon"
+                      size="sm"
                       className="h-5 w-5"
                       onClick={() => handleRejectTerm(term.id)}
                     >
@@ -185,3 +185,4 @@ export function OntologySuggestionsPanel({
     </Card>
   );
 }
+

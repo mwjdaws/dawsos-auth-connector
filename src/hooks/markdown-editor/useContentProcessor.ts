@@ -16,13 +16,13 @@ export const useContentProcessor = ({
   onContentChange,
   processLinks = true
 }: ContentProcessorProps) => {
-  const [processedContent, setProcessedContent] = useState(content);
+  const [processedContent, setProcessedContent] = useState(content || '');
   const [isPending, startTransition] = useTransition();
   const { processWikilinks: saveWikiLinks, processingLinks } = useWikiLinks(sourceId, onContentChange);
 
   const processContent = useCallback((rawContent: string) => {
     // Process the content to update wikilink formatting
-    return processWikilinks(rawContent);
+    return processWikilinks(rawContent || '');
   }, []);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export const useContentProcessor = ({
     // Process and save wikilinks to the database if enabled
     if (processLinks && sourceId) {
       const debounceTimer = setTimeout(() => {
-        saveWikiLinks(content);
+        saveWikiLinks(content || '');
       }, 2000); // Debounce to avoid too many database operations
       
       return () => clearTimeout(debounceTimer);

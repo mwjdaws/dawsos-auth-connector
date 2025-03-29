@@ -15,7 +15,7 @@ interface OntologyTermsPanelProps {
 export function OntologyTermsPanel({ sourceId, editable = false }: OntologyTermsPanelProps) {
   const [isPending, startTransition] = useTransition();
   const [newTerm, setNewTerm] = useState('');
-  const { terms, relatedTerms, isLoading } = useOntologyTerms(sourceId);
+  const { sourceTerms: terms, relatedTerms, isLoading } = useOntologyTerms(sourceId);
   const { addTermByName, removeTerm, isAdding, isRemoving } = useTermMutations(sourceId);
 
   const handleAddTerm = () => {
@@ -121,3 +121,4 @@ export function OntologyTermsPanel({ sourceId, editable = false }: OntologyTerms
     </div>
   );
 }
+

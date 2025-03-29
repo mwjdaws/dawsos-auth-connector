@@ -4,12 +4,12 @@ import { processWikilinks } from "@/components/MarkdownViewer/utils/wikilinksPro
 import { useWikiLinks } from "@/hooks/markdown-editor/useWikiLinks";
 
 export const useContentProcessor = (content: string, sourceId?: string) => {
-  const [processedContent, setProcessedContent] = useState(content);
+  const [processedContent, setProcessedContent] = useState(content || '');
   const [isPending, startTransition] = useTransition();
   const { processWikilinks: saveWikiLinks, processingLinks } = useWikiLinks(sourceId);
 
   const processContent = useCallback((rawContent: string) => {
-    return processWikilinks(rawContent);
+    return processWikilinks(rawContent || '');
   }, []);
 
   useEffect(() => {
@@ -20,7 +20,7 @@ export const useContentProcessor = (content: string, sourceId?: string) => {
     // Process and save wikilinks to the database if source ID is provided
     if (sourceId) {
       const debounceTimer = setTimeout(() => {
-        saveWikiLinks(content);
+        saveWikiLinks(content || '');
       }, 2000);
       
       return () => clearTimeout(debounceTimer);

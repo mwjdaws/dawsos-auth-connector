@@ -28,7 +28,7 @@ export function ContentPanel({ content, processedContent, externalSourceUrl }: C
       )}
       <div className="prose dark:prose-invert max-w-none">
         <Suspense fallback={<Skeleton className="h-40 w-full" />}>
-          <ReactMarkdown>{processedContent}</ReactMarkdown>
+          <ReactMarkdown>{processedContent || ''}</ReactMarkdown>
         </Suspense>
       </div>
     </Card>

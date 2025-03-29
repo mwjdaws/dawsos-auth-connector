@@ -19,3 +19,4 @@ export * from './draft-operations/useDraftOperations';
 export * from './draft-operations/useValidation';
 export * from './draft-operations/useDatabaseOperations';
 export * from './draft-operations/useVersioning';
+export * from './useContentProcessor';
