@@ -15,12 +15,15 @@ export function useTermMutations(sourceId?: string) {
     mutationFn: async (termId: string) => {
       if (!sourceId) throw new Error('No source ID provided');
       
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id;
+      
       const { data, error } = await supabase
         .from('knowledge_source_ontology_terms')
         .insert({
           knowledge_source_id: sourceId,
           ontology_term_id: termId,
-          created_by: (await supabase.auth.getUser()).data.user?.id,
+          created_by: userId,
           review_required: false // User-added terms don't need review
         })
         .select();

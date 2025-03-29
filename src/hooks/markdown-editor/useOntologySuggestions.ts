@@ -123,13 +123,17 @@ export const useOntologySuggestions = () => {
         return true;
       }
       
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id;
+      
       // Create association in database
       const { error } = await supabase
         .from('knowledge_source_ontology_terms')
         .insert({
           knowledge_source_id: sourceId,
           ontology_term_id: termId,
-          created_by: (await supabase.auth.getUser()).data.user?.id,
+          created_by: userId,
           review_required: false // Mark as not requiring review since user explicitly approved it
         });
       
@@ -201,12 +205,17 @@ export const useOntologySuggestions = () => {
    */
   const applyAllSuggestedTerms = async (sourceId: string, minScore = 60) => {
     try {
+      // Get the current user's ID first
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id;
+      
+      // Then create the terms to apply
       const termsToApply = suggestions.terms
         .filter(term => !term.applied && !term.rejected && (term.score || 0) >= minScore)
         .map(term => ({
           knowledge_source_id: sourceId,
           ontology_term_id: term.id,
-          created_by: (await supabase.auth.getUser()).data.user?.id,
+          created_by: userId,
           review_required: false // Admin-applied terms don't need review
         }));
       
@@ -272,13 +281,17 @@ export const useOntologySuggestions = () => {
         return true;
       }
       
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id;
+      
       // Create relationship in database
       const { error } = await supabase
         .from('note_links')
         .insert({
           source_id: sourceId,
           target_id: targetId,
-          created_by: (await supabase.auth.getUser()).data.user?.id,
+          created_by: userId,
           link_type: 'related'
         });
       
