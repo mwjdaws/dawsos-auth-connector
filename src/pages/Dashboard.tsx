@@ -93,10 +93,8 @@ const DashboardPage = () => {
         try {
           const { data, error } = await supabase
             .from('agent_tasks')
-            .select('id, agent_name, action, status')
+            .select('id, agent_name, payload, status')
             .eq('status', 'completed')
-            // Commenting out notified check as it doesn't exist in the schema
-            // .is('notified', false)
             .limit(5);
             
           if (error) throw error;
@@ -105,10 +103,12 @@ const DashboardPage = () => {
           if (data && data.length > 0) {
             // Update task status instead of using notified flag
             for (const task of data) {
-              await supabase
-                .from('agent_tasks')
-                .update({ status: 'notified' })
-                .eq('id', task.id);
+              if (task && task.id) {
+                await supabase
+                  .from('agent_tasks')
+                  .update({ status: 'notified' })
+                  .eq('id', task.id);
+              }
             }
               
             // Show a notification
