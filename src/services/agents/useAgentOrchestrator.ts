@@ -1,3 +1,4 @@
+
 import { useAgentLogger } from '@/hooks/useAgentLogger';
 import { Json } from '@/integrations/supabase/types';
 import { AgentTaskRequest, AgentTaskResult } from './types';
@@ -59,27 +60,6 @@ export function useAgentOrchestrator() {
         error: error instanceof Error ? error.message : String(error)
       };
     }
-  };
-  
-  /**
-   * Get the status of a background task
-   */
-  const getBackgroundTaskStatus = async (taskId: string): Promise<AgentTaskResult> => {
-    return agentOrchestrator.getBackgroundTaskStatus(taskId);
-  };
-  
-  /**
-   * Get all background tasks for a knowledge source
-   */
-  const getBackgroundTasksForSource = async (knowledgeSourceId: string): Promise<AgentTaskResult> => {
-    return agentOrchestrator.getBackgroundTasksForSource(knowledgeSourceId);
-  };
-  
-  /**
-   * Get the current queue status
-   */
-  const getQueueStatus = async (): Promise<{ queuedTasks: number, runningTasks: number, pendingBackgroundTasks: number }> => {
-    return agentOrchestrator.getQueueStatus();
   };
   
   return {
