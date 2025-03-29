@@ -26,6 +26,13 @@ export const useVersionFetching = () => {
       return;
     }
     
+    // Skip fetching versions for temporary documents (starts with "temp-")
+    if (documentId.startsWith('temp-')) {
+      console.log("Skipping version fetch for temporary document:", documentId);
+      setVersions([]);
+      return;
+    }
+    
     try {
       setIsLoading(true);
       

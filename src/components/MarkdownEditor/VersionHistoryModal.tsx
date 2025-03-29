@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Clock, RotateCcw, Loader2 } from 'lucide-react';
+import { Clock, RotateCcw, Loader2, AlertCircle } from 'lucide-react';
 import { useDocumentVersioning } from '@/hooks/markdown-editor/useDocumentVersioning';
 import { format } from 'date-fns';
 import { KnowledgeSourceVersion } from '@/services/api/types';
@@ -29,7 +29,7 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
     if (isOpen && documentId) {
       fetchVersions(documentId);
     }
-  }, [isOpen, documentId]);
+  }, [isOpen, documentId, fetchVersions]);
   
   // Handle restoring a version
   const handleRestore = async (versionId: string) => {
@@ -73,6 +73,9 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
       return dateString;
     }
   };
+
+  // Check if document is temporary (not yet saved)
+  const isTemporaryDocument = documentId?.startsWith('temp-');
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -84,7 +87,13 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
           </DialogTitle>
         </DialogHeader>
         
-        {isLoading ? (
+        {isTemporaryDocument ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <AlertCircle className="h-8 w-8 mx-auto mb-2 text-amber-500" />
+            <p className="font-medium">This document hasn't been saved yet</p>
+            <p className="mt-1">Save the document first to start tracking version history.</p>
+          </div>
+        ) : isLoading ? (
           <div className="flex justify-center items-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="ml-2">Loading versions...</p>
