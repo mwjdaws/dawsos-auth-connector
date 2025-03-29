@@ -9,6 +9,8 @@ export function useGraphData(startingNodeId?: string) {
   const [error, setError] = useState<string | null>(null);
   
   const fetchGraphData = useCallback(async () => {
+    if (loading && graphData.nodes.length > 0) return; // Prevent refetching while already loading
+    
     setLoading(true);
     setError(null);
     
@@ -110,7 +112,7 @@ export function useGraphData(startingNodeId?: string) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loading, graphData.nodes.length]);
   
   useEffect(() => {
     fetchGraphData();

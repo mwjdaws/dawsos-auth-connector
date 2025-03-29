@@ -1,5 +1,5 @@
 
-import { ReactNode, useTransition, Suspense } from "react";
+import { ReactNode, useTransition, Suspense, lazy } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TagPanel, MarkdownPanel } from "@/components";

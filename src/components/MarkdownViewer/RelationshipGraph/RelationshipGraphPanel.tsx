@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useTransition } from 'react';
 import { RelationshipGraph } from './RelationshipGraph';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -14,18 +14,23 @@ export function RelationshipGraphPanel({ sourceId, className }: RelationshipGrap
   const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isPending, startTransition] = useTransition();
   
   const toggleFullscreen = () => {
-    if (!isFullscreen) {
-      setDimensions({ width: window.innerWidth - 40, height: window.innerHeight - 120 });
-    } else {
-      setDimensions({ width: 800, height: 500 });
-    }
-    setIsFullscreen(!isFullscreen);
+    startTransition(() => {
+      if (!isFullscreen) {
+        setDimensions({ width: window.innerWidth - 40, height: window.innerHeight - 120 });
+      } else {
+        setDimensions({ width: 800, height: 500 });
+      }
+      setIsFullscreen(!isFullscreen);
+    });
   };
   
   const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
+    startTransition(() => {
+      setRefreshKey(prev => prev + 1);
+    });
   };
   
   return (
@@ -38,14 +43,16 @@ export function RelationshipGraphPanel({ sourceId, className }: RelationshipGrap
             size="sm" 
             onClick={handleRefresh}
             title="Refresh graph data"
+            disabled={isPending}
           >
-            <RefreshCw className="h-4 w-4 mr-1" />
-            Refresh
+            <RefreshCw className={`h-4 w-4 mr-1 ${isPending ? 'animate-spin' : ''}`} />
+            {isPending ? 'Refreshing...' : 'Refresh'}
           </Button>
           <Button 
             variant="outline" 
             size="sm" 
             onClick={toggleFullscreen}
+            disabled={isPending}
           >
             {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           </Button>
