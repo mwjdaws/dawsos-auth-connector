@@ -1,8 +1,10 @@
 
 import React, { useState } from 'react';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useTemplates } from '@/hooks/useTemplates';
 import { useMarkdownEditor } from '@/hooks/markdown-editor';
+import { useKnowledgeSources } from '@/hooks/markdown-editor/useKnowledgeSources';
 import EditorHeader from './EditorHeader';
 import EditorActions from './EditorActions';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,6 +12,7 @@ import { VersionHistoryModal } from './VersionHistoryModal';
 import SplitEditor from './SplitEditor';
 import FullscreenEditor from './FullscreenEditor';
 import EditorToolbar from './EditorToolbar';
+import { KnowledgeSourceBrowser } from './KnowledgeSourceBrowser';
 
 interface MarkdownEditorProps {
   initialTitle?: string;
@@ -38,6 +41,13 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   
   const {
+    isSourceBrowserOpen,
+    openSourceBrowser,
+    closeSourceBrowser,
+    handleSourceSelection
+  } = useKnowledgeSources();
+  
+  const {
     title,
     setTitle,
     content,
@@ -53,7 +63,8 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     isLoading,
     handleSaveDraft,
     handlePublish,
-    handleTemplateChange
+    handleTemplateChange,
+    setTemplateId
   } = useMarkdownEditor({
     initialTitle,
     initialContent,
@@ -114,6 +125,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           toggleFullscreen={toggleFullscreen}
           documentId={effectiveDocumentId}
           onHistoryClick={() => setIsHistoryOpen(true)}
+          onSourceBrowserClick={openSourceBrowser}
         />
       </div>
 
@@ -155,6 +167,23 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           onVersionRestore={handleVersionRestore}
         />
       )}
+
+      {/* Knowledge Source Browser Dialog */}
+      <Dialog open={isSourceBrowserOpen} onOpenChange={closeSourceBrowser}>
+        <DialogContent className="sm:max-w-[600px]">
+          <KnowledgeSourceBrowser 
+            onSelectSource={(source) => 
+              handleSourceSelection(
+                source, 
+                setTitle, 
+                setContent, 
+                setTemplateId, 
+                setExternalSourceUrl
+              )
+            } 
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
