@@ -98,7 +98,7 @@ const EditorActions = ({
               <TooltipTrigger asChild>
                 <Button
                   variant="outline"
-                  size="icon"
+                  size="sm"
                 >
                   <ExternalLink className="h-4 w-4" />
                 </Button>

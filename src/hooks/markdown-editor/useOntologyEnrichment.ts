@@ -89,8 +89,9 @@ export const useOntologyEnrichment = () => {
    */
   const saveEnrichmentMetadata = async (sourceId: string, enrichmentResult: EnrichmentResult) => {
     try {
+      // We need to update the metadata field, not create a new agent_metadata field
       const metadataUpdate = {
-        agent_metadata: {
+        metadata: {
           ontology_enrichment: {
             suggested_terms: enrichmentResult.terms,
             related_notes: enrichmentResult.notes,
