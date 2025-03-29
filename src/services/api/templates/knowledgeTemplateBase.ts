@@ -54,6 +54,24 @@ export function getTemplateCategory(template: KnowledgeTemplate | string): strin
 }
 
 /**
+ * Validates a UUID string
+ * @param id The UUID string to validate
+ * @param entityName Optional name of the entity for better error messages
+ * @throws Error if the UUID is invalid
+ */
+export function validateUuid(id: string, entityName: string = 'ID'): void {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  
+  if (!id || typeof id !== 'string') {
+    throw new Error(`Invalid ${entityName}: Must be a string`);
+  }
+  
+  if (!uuidRegex.test(id)) {
+    throw new Error(`Invalid ${entityName}: Must be a valid UUID format`);
+  }
+}
+
+/**
  * Base functions for working with knowledge templates
  */
 export async function fetchKnowledgeTemplateBaseById(id: string): Promise<KnowledgeTemplate> {
