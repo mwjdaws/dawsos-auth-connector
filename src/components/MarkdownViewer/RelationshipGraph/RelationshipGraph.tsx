@@ -12,6 +12,8 @@ interface GraphNode {
   type: 'source' | 'term';
   val?: number;
   color?: string;
+  x?: number;
+  y?: number;
 }
 
 interface GraphLink {

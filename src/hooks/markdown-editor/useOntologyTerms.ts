@@ -5,6 +5,9 @@ import { useAllTermsAndDomains } from './ontology-terms/useAllTermsAndDomains';
 import { useTermMutations } from './ontology-terms/useTermMutations';
 import type { OntologyTerm, RelatedTerm } from './ontology-terms/types';
 
+// Export the types explicitly
+export type { OntologyTerm, RelatedTerm };
+
 /**
  * Hook for managing ontology terms for a knowledge source
  */

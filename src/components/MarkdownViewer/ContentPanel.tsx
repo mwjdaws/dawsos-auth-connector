@@ -31,3 +31,6 @@ export function ContentPanel({ content, processedContent, externalSourceUrl }: C
     </Card>
   );
 }
+
+// Default export
+export default ContentPanel;

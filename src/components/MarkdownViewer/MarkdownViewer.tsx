@@ -6,7 +6,7 @@ import { ContentPanel } from "./ContentPanel";
 import { MetadataPanel } from "./MetadataPanel/MetadataPanel";
 import { useMarkdownMetadata, useTagManagement, useContentProcessor } from "@/hooks/markdown-viewer";
 
-interface MarkdownViewerProps {
+export interface MarkdownViewerProps {
   content: string;
   contentId: string;
   editable?: boolean;
@@ -69,3 +69,6 @@ export function MarkdownViewer({ content, contentId, editable = false, className
     </div>
   );
 }
+
+// Default export
+export default MarkdownViewer;

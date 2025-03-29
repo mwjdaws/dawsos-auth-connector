@@ -1,7 +1,8 @@
 
 export { TagInput } from './TagInput';
-export { default as ContentPanel } from './ContentPanel';
-export { default as MarkdownViewer } from './MarkdownViewer';
+export { ContentPanel } from './ContentPanel';
+export { MarkdownViewer } from './MarkdownViewer';
+export type { MarkdownViewerProps } from './MarkdownViewer';
 export * from './MetadataPanel';
 export * from './OntologyTerms';
 export * from './RelationshipGraph';
