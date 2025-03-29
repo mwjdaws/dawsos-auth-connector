@@ -6,12 +6,15 @@ type TagsResult = {
   tags: string[];
   error?: string;
   fallback?: boolean;
+  tag_types?: Record<string, string[]>;
 };
 
 // Rate limiting and retry configuration 
-const MAX_RETRIES = 2;
+const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
+const MAX_TOKENS = 350; // Increased token limit for more detailed responses with categorization
 
+// Main function to generate tags using OpenAI
 export async function generateTagsWithOpenAI(content: string): Promise<TagsResult> {
   let retries = 0;
   let lastError: Error | null = null;
@@ -28,10 +31,15 @@ export async function generateTagsWithOpenAI(content: string): Promise<TagsResul
         };
       }
 
-      console.log("Generating tags for content:", content.substring(0, 100) + "...");
+      // Truncate content for logging
+      const truncatedContent = content.length > 150 
+        ? content.substring(0, 150) + "..." 
+        : content;
+      
+      console.log(`Generating tags for content: ${truncatedContent}`);
       console.log(`Attempt ${retries + 1} of ${MAX_RETRIES + 1}`);
 
-      // Call OpenAI API to generate tags
+      // Create a more structured prompt for better tag categorization
       const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -43,22 +51,29 @@ export async function generateTagsWithOpenAI(content: string): Promise<TagsResul
           messages: [
             {
               role: "system",
-              content: "You are a tag generation assistant. Extract 5-10 relevant tags from the provided content. Return ONLY a JSON array of string tags, nothing else. Do not include any markdown formatting, backticks, or explanations."
+              content: `You are a tag generation assistant that categorizes tags into predefined types. 
+              Extract 5-15 relevant tags from the provided content and categorize them by type.
+              Available tag types: Topic, System, Debug, Error, Process, Compliance.
+              Return ONLY a JSON object with a "tags" array for uncategorized tags and properties for each applicable tag type.
+              Example format: {"tags": ["general_tag1", "general_tag2"], "Topic": ["topic1", "topic2"], "System": ["system1"]}`
             },
             {
               role: "user",
               content
             }
           ],
-          temperature: 0.3,
-          max_tokens: 150
+          temperature: 0.2, // Lower temperature for more consistent results
+          max_tokens: MAX_TOKENS,
+          response_format: { type: "json_object" } // Enforce JSON response format
         })
       });
 
-      // Handle rate limiting
+      // Handle rate limiting with exponential backoff
       if (openaiResponse.status === 429) {
         const retryAfter = openaiResponse.headers.get("retry-after");
-        const waitTime = retryAfter ? parseInt(retryAfter, 10) * 1000 : RETRY_DELAY_MS * (retries + 1);
+        const waitTime = retryAfter 
+          ? parseInt(retryAfter, 10) * 1000 
+          : RETRY_DELAY_MS * Math.pow(2, retries);
         
         console.warn(`Rate limited by OpenAI. Retrying after ${waitTime}ms`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
@@ -66,14 +81,14 @@ export async function generateTagsWithOpenAI(content: string): Promise<TagsResul
         continue;
       }
 
+      // Handle other API errors
       if (!openaiResponse.ok) {
         const errorData = await openaiResponse.json();
         console.error("OpenAI API error:", errorData);
         
-        // If we have retries left, try again
         if (retries < MAX_RETRIES) {
           retries++;
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * retries));
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * Math.pow(2, retries - 1)));
           continue;
         }
         
@@ -85,22 +100,21 @@ export async function generateTagsWithOpenAI(content: string): Promise<TagsResul
       }
 
       const openaiData = await openaiResponse.json();
-      const tagsContent = openaiData.choices[0].message.content;
-      console.log("Raw OpenAI response:", tagsContent);
+      const responseContent = openaiData.choices[0].message.content;
+      console.log("Raw OpenAI response:", responseContent);
       
-      // Process and return the tags
-      const parsedTags = sanitizeTagsResponse(tagsContent);
-      console.log("Final sanitized tags:", parsedTags);
+      // Process and parse the response
+      const result = parseTagsResponse(responseContent);
+      console.log("Final processed tags:", result);
       
-      return { tags: parsedTags };
+      return result;
     } catch (error) {
       console.error(`Error generating tags with OpenAI (attempt ${retries + 1}):`, error);
       lastError = error instanceof Error ? error : new Error(String(error));
       
-      // If we have retries left, try again
       if (retries < MAX_RETRIES) {
         retries++;
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * retries));
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * Math.pow(2, retries - 1)));
         continue;
       }
       
@@ -121,91 +135,59 @@ export async function generateTagsWithOpenAI(content: string): Promise<TagsResul
 }
 
 /**
- * Sanitizes and cleans the tags response from OpenAI
- * Handles various response formats and removes markdown artifacts
+ * Parse and process the OpenAI response, extracting tags and tag types
  */
-function sanitizeTagsResponse(rawResponse: string): string[] {
-  if (!rawResponse || typeof rawResponse !== 'string') {
-    console.error("Invalid response format, received:", rawResponse);
-    return getFallbackTags();
+function parseTagsResponse(responseContent: string): TagsResult {
+  if (!responseContent || typeof responseContent !== 'string') {
+    console.error("Invalid response format, received:", responseContent);
+    return { tags: getFallbackTags(), fallback: true };
   }
 
-  // Log the original response for debugging
-  console.log("Sanitizing raw response:", rawResponse);
-  
-  // Step 1: Remove markdown code block syntax
-  let cleanedResponse = rawResponse
-    .replace(/```json/g, '')
-    .replace(/```/g, '')
-    .trim();
-  
-  console.log("After removing markdown:", cleanedResponse);
-  
   try {
-    // Step 2: Try to parse as JSON if it looks like JSON
-    if (
-      (cleanedResponse.startsWith('[') && cleanedResponse.endsWith(']')) || 
-      (cleanedResponse.startsWith('{') && cleanedResponse.endsWith('}'))
-    ) {
-      const parsedJson = JSON.parse(cleanedResponse);
-      
-      // Handle array format
-      if (Array.isArray(parsedJson)) {
-        console.log("Parsed JSON array successfully");
-        return cleanTagArray(parsedJson);
-      }
-      
-      // Handle object format with a tags property
-      if (parsedJson && typeof parsedJson === 'object' && parsedJson.tags && Array.isArray(parsedJson.tags)) {
-        console.log("Parsed JSON object with tags property");
-        return cleanTagArray(parsedJson.tags);
-      }
-      
-      // Handle object format where values are the tags
-      if (parsedJson && typeof parsedJson === 'object') {
-        console.log("Parsed JSON object, extracting values");
-        const tagValues = Object.values(parsedJson)
-          .filter(val => typeof val === 'string')
-          .map(val => String(val));
-        return cleanTagArray(tagValues);
-      }
+    // Parse JSON response
+    const parsedResponse = JSON.parse(responseContent);
+    
+    // Extract general tags
+    let allTags: string[] = [];
+    if (Array.isArray(parsedResponse.tags)) {
+      allTags = cleanTagArray(parsedResponse.tags);
     }
-  } catch (parseError) {
-    console.error("JSON parsing failed:", parseError);
-    // Continue to alternative parsing methods
+    
+    // Create tag_types object for categorized tags
+    const tagTypes: Record<string, string[]> = {};
+    const validTagTypes = ["Topic", "System", "Debug", "Error", "Process", "Compliance"];
+    
+    // Process each tag type
+    validTagTypes.forEach(tagType => {
+      if (parsedResponse[tagType] && Array.isArray(parsedResponse[tagType])) {
+        const cleanedTypeTags = cleanTagArray(parsedResponse[tagType]);
+        if (cleanedTypeTags.length > 0) {
+          tagTypes[tagType] = cleanedTypeTags;
+          
+          // Add to the overall tags array if not already included
+          cleanedTypeTags.forEach(tag => {
+            if (!allTags.includes(tag)) {
+              allTags.push(tag);
+            }
+          });
+        }
+      }
+    });
+    
+    // Ensure we have at least some tags
+    if (allTags.length === 0) {
+      console.warn("No valid tags found in response, using fallback");
+      return { tags: getFallbackTags(), fallback: true };
+    }
+    
+    return { 
+      tags: allTags,
+      tag_types: Object.keys(tagTypes).length > 0 ? tagTypes : undefined
+    };
+  } catch (error) {
+    console.error("Failed to parse OpenAI response:", error);
+    return { tags: getFallbackTags(), fallback: true };
   }
-  
-  // Step 3: Try to parse as a line-by-line list
-  console.log("Trying line-by-line parsing");
-  const lineBasedTags = cleanedResponse
-    .split(/[\n,]+/)
-    .map(line => {
-      // Remove list markers, quotes and trim
-      return line
-        .replace(/^[-*•]/, '')
-        .replace(/["'`]/g, '')
-        .trim();
-    })
-    .filter(tag => tag && tag.length > 1);
-
-  if (lineBasedTags.length > 0) {
-    console.log("Line-based parsing successful");
-    return cleanTagArray(lineBasedTags);
-  }
-  
-  // Step 4: Last resort - split by spaces and hope for the best
-  console.log("Using last resort space-based parsing");
-  const wordBasedTags = cleanedResponse
-    .split(/\s+/)
-    .map(word => word.trim())
-    .filter(word => word.length > 2 && !word.includes('[') && !word.includes(']'));
-  
-  if (wordBasedTags.length > 0) {
-    return cleanTagArray(wordBasedTags);
-  }
-  
-  console.warn("All parsing methods failed, returning fallback tags");
-  return getFallbackTags();
 }
 
 /**
@@ -214,7 +196,7 @@ function sanitizeTagsResponse(rawResponse: string): string[] {
 function cleanTagArray(tags: any[]): string[] {
   if (!Array.isArray(tags)) {
     console.error("Expected array input for cleanTagArray, got:", typeof tags);
-    return getFallbackTags();
+    return [];
   }
   
   // Filter and clean tags
@@ -254,10 +236,13 @@ function cleanTagArray(tags: any[]): string[] {
     }
   }
   
-  // Limit to 10 tags maximum
-  return uniqueTags.slice(0, 10);
+  // Limit to 15 tags maximum
+  return uniqueTags.slice(0, 15);
 }
 
+/**
+ * Provide fallback tags when tag generation fails
+ */
 export function getFallbackTags(): string[] {
   return ["content", "document", "text", "analysis", "metadata"];
 }
