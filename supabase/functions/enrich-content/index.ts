@@ -119,13 +119,8 @@ serve(async (req) => {
       reading_time_minutes: readingTime,
       extracted_tags: tags,
       enriched_at: new Date().toISOString(),
-      user_id: userId // Ensure user_id is preserved in metadata
-    };
-    
-    // Create agent_metadata for ontology enrichment
-    const agentMetadata = {
-      enriched_at: new Date().toISOString(),
-      extracted_tags: tags,
+      user_id: userId, // Ensure user_id is preserved in metadata
+      enriched: true, // Mark as enriched
       analysis_type: "content_enrichment",
       term_matches: [], // This would be populated by the ontology suggestion function
       confidence_scores: {}, // Would be populated with confidence scores for each match
@@ -133,7 +128,6 @@ serve(async (req) => {
     };
 
     console.log("Updating metadata:", updatedMetadata);
-    console.log("Adding agent metadata:", agentMetadata);
     console.log("Published status:", isPublished);
     console.log("Published at:", publishedAt);
 
@@ -143,7 +137,6 @@ serve(async (req) => {
       .from("knowledge_sources")
       .update({
         metadata: updatedMetadata,
-        agent_metadata: agentMetadata,
         published: isPublished, // Explicitly set this to maintain state
         published_at: publishedAt // Preserve the original published timestamp
       })
@@ -220,7 +213,6 @@ serve(async (req) => {
           readingTime, 
           tags,
           metadata: updatedMetadata,
-          agentMetadata: agentMetadata,
           published: isPublished // Include published status in response
         } 
       }),

@@ -30,7 +30,6 @@ export const saveEnrichmentMetadata = async (sourceId: string, enrichmentResult:
     const { error } = await supabase
       .from('knowledge_sources')
       .update({ 
-        // Use metadata field which is already defined in the database types
         metadata: enrichmentData as Json
       })
       .eq('id', sourceId);

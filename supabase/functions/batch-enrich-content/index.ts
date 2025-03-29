@@ -26,12 +26,12 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get published knowledge sources that haven't been enriched yet
-    // We look for sources where either agent_metadata is null or agent_metadata->enriched is not true
+    // We look for sources where either metadata is null or metadata->enriched is not true
     const { data: sourcesToEnrich, error: fetchError } = await supabase
       .from("knowledge_sources")
       .select("id, title, content")
       .eq("published", true)
-      .or("agent_metadata.is.null,not.agent_metadata->enriched.eq.true")
+      .or("metadata.is.null,not.metadata->enriched.eq.true")
       .limit(batchSize);
 
     if (fetchError) {
@@ -79,8 +79,8 @@ serve(async (req) => {
         
         console.log(`Got ${suggestionsData?.terms?.length || 0} term suggestions for source ${source.id}`);
         
-        // Step 2: Prepare agent_metadata for ontology enrichment
-        const agentMetadata = {
+        // Step 2: Prepare metadata for ontology enrichment
+        const enrichmentMetadata = {
           enriched: true,
           enriched_at: new Date().toISOString(),
           suggested_terms: suggestionsData?.terms || [],
@@ -92,7 +92,7 @@ serve(async (req) => {
         // Step 3: Update the knowledge source with enriched metadata
         const { error: updateError } = await supabase
           .from("knowledge_sources")
-          .update({ agent_metadata: agentMetadata })
+          .update({ metadata: enrichmentMetadata })
           .eq("id", source.id);
           
         if (updateError) {

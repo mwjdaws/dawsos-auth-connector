@@ -41,8 +41,8 @@ export const enrichSingleSource = async (sourceId: string, applyOntologyTerms: b
     
     if (suggestionsError) throw new ApiError(suggestionsError.message, parseSupabaseErrorCode(suggestionsError));
     
-    // Prepare agent_metadata for ontology enrichment
-    const agentMetadata = {
+    // Prepare metadata for ontology enrichment
+    const enrichmentMetadata = {
       enriched: true,
       enriched_at: new Date().toISOString(),
       suggested_terms: suggestionsData?.terms || [],
@@ -54,7 +54,7 @@ export const enrichSingleSource = async (sourceId: string, applyOntologyTerms: b
     // Update the knowledge source with enriched metadata
     const { error: updateError } = await supabase
       .from('knowledge_sources')
-      .update({ agent_metadata: agentMetadata })
+      .update({ metadata: enrichmentMetadata })
       .eq('id', sourceId);
     
     if (updateError) throw new ApiError(updateError.message, parseSupabaseErrorCode(updateError));

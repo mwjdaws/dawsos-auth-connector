@@ -54,7 +54,7 @@ export async function fetchKnowledgeSources(supabase: any, sourceId: string) {
 }
 
 /**
- * Stores the analysis results in the knowledge source's agent_metadata field
+ * Stores the analysis results in the knowledge source's metadata field
  */
 export async function storeAnalysisResults(supabase: any, sourceId: string, keywords: string[], termMatches: any[], sourceMatches: any[]) {
   if (!sourceId || sourceId.startsWith('temp-')) {
@@ -63,7 +63,7 @@ export async function storeAnalysisResults(supabase: any, sourceId: string, keyw
   }
 
   try {
-    // Create agent metadata for the analysis
+    // Create metadata for the analysis
     const metadataUpdate = {
       analysis_type: "ontology_term_suggestions",
       analyzed_at: new Date().toISOString(),
