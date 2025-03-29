@@ -52,7 +52,7 @@ export async function submitBackgroundTask(request: AgentTaskRequest): Promise<A
       `${request.action}:queue-failed`,
       error instanceof Error ? error.message : String(error),
       request.knowledgeSourceId,
-      request.metadata as unknown as Json
+      request.metadata as Record<string, any>
     );
     
     return {

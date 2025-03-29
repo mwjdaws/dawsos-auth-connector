@@ -16,7 +16,7 @@ export async function executeTask(request: AgentTaskRequest): Promise<AgentTaskR
       knowledge_source_id: request.knowledgeSourceId,
       agent_name: request.agentName,
       action: request.action,
-      metadata: request.metadata as unknown as Json
+      metadata: request.metadata as Record<string, any> as Json
     });
     
     console.log(`[TaskExecutor] Starting task ${taskId} for agent ${request.agentName}`);
@@ -36,7 +36,7 @@ export async function executeTask(request: AgentTaskRequest): Promise<AgentTaskR
         request.action,
         request.knowledgeSourceId,
         result.data?.confidence,
-        request.metadata as unknown as Json
+        request.metadata as Record<string, any>
       );
     } else {
       // Log failure
@@ -45,7 +45,7 @@ export async function executeTask(request: AgentTaskRequest): Promise<AgentTaskR
         request.action,
         result.error || 'Unknown error',
         request.knowledgeSourceId,
-        request.metadata as unknown as Json
+        request.metadata as Record<string, any>
       );
     }
     
@@ -63,7 +63,7 @@ export async function executeTask(request: AgentTaskRequest): Promise<AgentTaskR
       request.action,
       error instanceof Error ? error.message : String(error),
       request.knowledgeSourceId,
-      request.metadata as unknown as Json
+      request.metadata as Record<string, any>
     );
     
     return {
