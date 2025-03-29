@@ -39,6 +39,14 @@ export const generateTags = async (
     clearTimeout(timeoutId);
     const newTimeoutId = setTimeout(() => abortController.abort(), dynamicTimeout);
     
+    // Add metadata for logging
+    const requestMetadata = {
+      requestId: `tag-gen-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
+      contentLength,
+      save,
+      requestType: 'user-initiated'
+    };
+    
     // Add retry mechanism
     const MAX_RETRIES = 3;
     let retryCount = 0;
@@ -46,15 +54,36 @@ export const generateTags = async (
     
     while (retryCount <= MAX_RETRIES) {
       try {
-        const { data, error } = await supabase.functions.invoke('generate-tags', {
+        const { data, error, status } = await supabase.functions.invoke('generate-tags', {
           body: { 
             content: trimmedContent, 
             save, 
             contentId,
-            retryCount  // Send retry count to help the edge function adapt
+            retryCount,
+            metadata: requestMetadata
           }
           // Signal property is intentionally omitted to avoid errors
         });
+
+        // Check for rate limiting (429 status)
+        if (status === 429) {
+          console.warn('Rate limited by tag generation service');
+          
+          // Get retry delay from headers or use exponential backoff
+          const retryAfter = data?.retryAfter || Math.pow(2, retryCount) * 1000;
+          
+          if (retryCount < MAX_RETRIES) {
+            console.log(`Waiting ${retryAfter}ms before retry ${retryCount + 1}/${MAX_RETRIES}`);
+            await new Promise(resolve => setTimeout(resolve, retryAfter));
+            retryCount++;
+            continue;
+          } else {
+            // Return fallback tags when all retries are exhausted
+            clearTimeout(newTimeoutId);
+            console.error('Rate limit retries exhausted for tag generation');
+            return ["content", "text", "document", "rate_limited", "fallback"]; 
+          }
+        }
 
         if (error) {
           console.error('Error invoking generate-tags function:', error);
@@ -70,6 +99,7 @@ export const generateTags = async (
           }
           
           // Return fallback tags on max retries
+          clearTimeout(newTimeoutId);
           return ["content", "text", "document", "fallback", "error"];
         }
 
@@ -116,5 +146,61 @@ export const generateTags = async (
     
     // Return fallback tags instead of throwing
     return ["content", "text", "document", "fallback", "error"];
+  }
+};
+
+/**
+ * Run batch tag generation for multiple content items
+ */
+export const generateTagsBatch = async (
+  contentItems: Array<{id: string, content: string, title?: string}>
+): Promise<{
+  success: boolean;
+  results: Array<{id: string, tags: string[], error?: string}>;
+}> => {
+  try {
+    console.log(`Batch generating tags for ${contentItems.length} items`);
+    
+    // Add request metadata
+    const requestMetadata = {
+      requestId: `batch-tags-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
+      itemCount: contentItems.length,
+      requestType: 'batch'
+    };
+    
+    const { data, error } = await supabase.functions.invoke('batch-tag-generation', {
+      body: {
+        items: contentItems,
+        metadata: requestMetadata
+      }
+    });
+    
+    if (error) {
+      console.error('Error in batch tag generation:', error);
+      return {
+        success: false,
+        results: contentItems.map(item => ({
+          id: item.id,
+          tags: ["batch", "error", "fallback"],
+          error: error.message
+        }))
+      };
+    }
+    
+    return {
+      success: true,
+      results: data.results || []
+    };
+  } catch (error) {
+    console.error('Exception in batch tag generation:', error);
+    
+    return {
+      success: false,
+      results: contentItems.map(item => ({
+        id: item.id,
+        tags: ["batch", "exception", "fallback"],
+        error: error instanceof Error ? error.message : String(error)
+      }))
+    };
   }
 };

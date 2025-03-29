@@ -26,8 +26,17 @@ export const batchEnrichSources = async (
   try {
     console.log(`Starting batch enrichment for ${sourceIds.length} sources`);
     
+    // Add request metadata for logging purposes
+    const metadata = {
+      requestId: `batch-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
+      sourceCount: sourceIds.length
+    };
+    
     const { data, error } = await supabase.functions.invoke('batch-ontology-enrichment', {
-      body: { sourceIds }
+      body: { 
+        sourceIds,
+        metadata
+      }
     });
     
     if (error) {
@@ -104,6 +113,44 @@ export const enrichMultipleSources = async (
       successful: 0,
       failed: sourceIds.length,
       results: []
+    };
+  }
+};
+
+// Add a function to check agent task quotas and rate limits
+export const checkAgentQuotas = async (agentName: string): Promise<{
+  canProcess: boolean;
+  rateLimited: boolean;
+  quotaExceeded: boolean;
+  resetTime?: string;
+  message?: string;
+}> => {
+  try {
+    // Call a lightweight edge function to check quotas and rate limits
+    const { data, error } = await supabase.functions.invoke('check-agent-quotas', {
+      body: { agentName }
+    });
+    
+    if (error) {
+      console.error(`Error checking quotas for ${agentName}:`, error);
+      // Default to allowing processing if quota check fails
+      return {
+        canProcess: true,
+        rateLimited: false,
+        quotaExceeded: false,
+        message: `Could not check quotas: ${error.message}`
+      };
+    }
+    
+    return data;
+  } catch (error) {
+    console.error(`Exception checking quotas for ${agentName}:`, error);
+    // Default to allowing processing if quota check fails
+    return {
+      canProcess: true,
+      rateLimited: false,
+      quotaExceeded: false,
+      message: `Exception checking quotas: ${error instanceof Error ? error.message : String(error)}`
     };
   }
 };
