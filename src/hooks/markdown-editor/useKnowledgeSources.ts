@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { KnowledgeSource } from '@/services/api/types';
 import { toast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export function useKnowledgeSources() {
   const [isSourceBrowserOpen, setIsSourceBrowserOpen] = useState(false);
@@ -40,4 +42,29 @@ export function useKnowledgeSources() {
     closeSourceBrowser,
     handleSourceSelection
   };
+}
+
+// Add a separate hook for fetching knowledge sources
+export function useKnowledgeSourcesQuery(searchTerm: string = '') {
+  return useQuery({
+    queryKey: ['knowledgeSources', searchTerm],
+    queryFn: async () => {
+      let query = supabase
+        .from('knowledge_sources')
+        .select('*')
+        .order('title');
+      
+      if (searchTerm) {
+        query = query.ilike('title', `%${searchTerm}%`);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        throw error;
+      }
+      
+      return data || [];
+    }
+  });
 }

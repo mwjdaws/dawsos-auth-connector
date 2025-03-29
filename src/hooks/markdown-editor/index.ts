@@ -5,7 +5,7 @@ export { useMarkdownEditor } from './useMarkdownEditor';
 export { useContentLoader } from './useContentLoader';
 export { useContentState } from './useContentState';
 export { useDocumentOperationHandlers } from './useDocumentOperationHandlers';
-export { useKnowledgeSources } from './useKnowledgeSources';
+export { useKnowledgeSources, useKnowledgeSourcesQuery } from './useKnowledgeSources';
 export * from './types';
 export * from './handlers/useSaveDraftHandler';
 export * from './handlers/usePublishHandler';

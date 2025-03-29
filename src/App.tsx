@@ -1,36 +1,21 @@
 
-import { BrowserRouter as Router } from "react-router-dom";
+import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
-import { AuthProvider } from "@/context/AuthContext";
-import Navigation from "@/components/Navigation";
-import { AppRoutes } from "@/routes";
-import { Suspense } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
-
-const LoadingFallback = () => (
-  <div className="min-h-screen p-4">
-    <div className="max-w-7xl mx-auto">
-      <Skeleton className="h-16 w-full mb-8" />
-      <div className="space-y-4">
-        <Skeleton className="h-48 w-full" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
-      </div>
-    </div>
-  </div>
-);
+import { AuthProvider } from "./context/AuthContext";
+import { QueryProvider } from "./providers/QueryProvider";
+import AppRoutes from "./routes";
+import "./App.css";
 
 function App() {
   return (
-    <Suspense fallback={<LoadingFallback />}>
+    <QueryProvider>
       <AuthProvider>
-        <Router>
-          <Navigation />
+        <BrowserRouter>
           <AppRoutes />
           <Toaster />
-        </Router>
+        </BrowserRouter>
       </AuthProvider>
-    </Suspense>
+    </QueryProvider>
   );
 }
 
