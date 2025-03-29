@@ -1,104 +1,104 @@
 
-import { useMetadataPanel } from "./useMetadataPanel";
-import { useMemo } from "react";
-import { MetadataContextState } from "../types";
-
 /**
  * useMetadataContext Hook
  * 
- * Provides access to metadata state and operations from anywhere in the component tree.
- * Use this hook to access metadata outside of the MetadataPanel component.
+ * Custom hook that provides access to the metadata context state and operations for a specific content.
+ * It is a wrapper around useMetadataPanel that adds some additional functionality and memoizes the
+ * results to prevent unnecessary re-renders.
+ * 
+ * @param contentId - The ID of the content for which to fetch metadata
+ * @param onMetadataChange - Optional callback to be triggered when metadata changes
+ * @param isCollapsible - Whether the metadata panel should be collapsible
+ * @param initialCollapsed - Initial collapsed state if the panel is collapsible
+ * 
+ * @returns A memoized metadata context state object with all operations and properties
  * 
  * @example
  * ```tsx
- * const metadata = useMetadataContext("content-123");
+ * // Basic usage
+ * const metadata = useMetadataContext('content-123');
  * 
- * // Access metadata state
- * console.log(metadata.tags);
+ * // Access state
+ * const { tags, isLoading } = metadata;
  * 
  * // Perform operations
  * metadata.handleAddTag();
- * metadata.handleDeleteTag(tagId);
- * 
- * // Refresh metadata
  * metadata.refreshMetadata();
  * ```
- * 
- * @param contentId - The ID of the content to get metadata for
- * @returns Object containing metadata state and operations
  */
-export const useMetadataContext = (
+
+import { useMemo } from 'react';
+import { useMetadataPanel } from './useMetadataPanel';
+import { MetadataContextState } from '../types';
+
+export function useMetadataContext(
   contentId: string,
   onMetadataChange?: () => void,
-  isCollapsible = false,
-  initialCollapsed = false
-): MetadataContextState => {
-  const {
-    tags,
-    isLoading,
-    error,
-    isPending,
-    newTag,
-    setNewTag,
-    user,
-    externalSourceUrl,
-    needsExternalReview,
-    lastCheckedAt,
-    isCollapsed,
-    setIsCollapsed,
-    handleRefresh,
-    handleAddTag,
-    handleDeleteTag
-  } = useMetadataPanel(contentId, onMetadataChange, isCollapsible, initialCollapsed);
+  isCollapsible?: boolean,
+  initialCollapsed?: boolean
+): MetadataContextState {
+  // Get the base metadata state and operations from useMetadataPanel
+  const metadataState = useMetadataPanel(
+    contentId,
+    onMetadataChange,
+    isCollapsible,
+    initialCollapsed
+  );
 
-  // Determine if content is editable based on user presence
-  const isEditable = !!user;
-
-  // Create a function to refresh metadata that returns a promise
-  const refreshMetadata = async (): Promise<void> => {
+  // Create a refreshMetadata function that returns a promise
+  const refreshMetadata = async () => {
+    metadataState.handleRefresh();
     return new Promise<void>((resolve) => {
-      handleRefresh();
-      // Since handleRefresh is synchronous but triggers async operations,
-      // we resolve after a short delay to allow state updates to propagate
-      setTimeout(resolve, 100);
+      // Small delay to ensure the refresh operation has time to start
+      setTimeout(() => {
+        resolve();
+      }, 100);
     });
   };
 
-  // Memoize the context state to prevent unnecessary re-renders
-  const contextState = useMemo<MetadataContextState>(
+  // Determine if content is editable based on user presence
+  const isEditable = !!metadataState.user;
+
+  // Memoize the result to prevent unnecessary re-renders
+  return useMemo(
     () => ({
+      // Content info
       contentId,
-      tags,
-      newTag,
-      setNewTag,
-      handleAddTag,
-      handleDeleteTag,
-      externalSourceUrl,
-      needsExternalReview,
-      lastCheckedAt,
-      isLoading,
-      error,
-      isPending,
-      isCollapsed,
-      setIsCollapsed,
+      
+      // Pass through all state from useMetadataPanel
+      tags: metadataState.tags,
+      newTag: metadataState.newTag,
+      setNewTag: metadataState.setNewTag,
+      handleAddTag: metadataState.handleAddTag,
+      handleDeleteTag: metadataState.handleDeleteTag,
+      externalSourceUrl: metadataState.externalSourceUrl,
+      needsExternalReview: metadataState.needsExternalReview,
+      lastCheckedAt: metadataState.lastCheckedAt,
+      isLoading: metadataState.isLoading,
+      error: metadataState.error,
+      isPending: metadataState.isPending,
+      isCollapsed: metadataState.isCollapsed,
+      setIsCollapsed: metadataState.setIsCollapsed,
+      
+      // Additional computed properties
       isEditable,
-      handleRefresh,
+      
+      // Operations
+      handleRefresh: metadataState.handleRefresh,
       refreshMetadata
     }),
     [
       contentId,
-      tags,
-      newTag,
-      externalSourceUrl,
-      needsExternalReview,
-      lastCheckedAt,
-      isLoading,
-      error,
-      isPending,
-      isCollapsed,
+      metadataState.tags,
+      metadataState.newTag,
+      metadataState.externalSourceUrl,
+      metadataState.needsExternalReview,
+      metadataState.lastCheckedAt,
+      metadataState.isLoading,
+      metadataState.error,
+      metadataState.isPending,
+      metadataState.isCollapsed,
       isEditable
     ]
   );
-
-  return contextState;
-};
+}

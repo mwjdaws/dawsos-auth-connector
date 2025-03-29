@@ -12,6 +12,11 @@
  *   editable={true}
  * />
  * ```
+ * 
+ * @remarks
+ * - Renders the OntologyTermsPanel component with the provided sourceId
+ * - The editable prop controls whether terms can be added or removed
+ * - Relies on the OntologyTermsPanel component for the actual rendering and functionality
  */
 import React from "react";
 import { OntologyTermsPanel } from "@/components/MarkdownViewer/OntologyTermsPanel";

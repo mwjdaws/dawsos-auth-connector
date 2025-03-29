@@ -14,6 +14,11 @@
  * ```tsx
  * <DomainSection domain={null} /> // Shows "No domain specified" message
  * ```
+ * 
+ * @remarks
+ * - Displays the domain in a styled badge when available
+ * - Shows a placeholder message when domain is null
+ * - Has consistent styling with other metadata sections
  */
 import React from "react";
 import { Badge } from "@/components/ui/badge";

@@ -3,7 +3,7 @@
  * TagsSection Component
  * 
  * Displays and manages tags associated with content. Provides functionality to add and remove tags
- * when in editable mode. Displays a message when no tags are available.
+ * when in editable mode. Shows a list of existing tags or a message when no tags are available.
  * 
  * @example
  * ```tsx
@@ -16,6 +16,12 @@
  *   onDeleteTag={handleDeleteTag}
  * />
  * ```
+ * 
+ * @remarks
+ * - Displays "No tags available" message when tags array is empty
+ * - Only shows the tag input field when editable is true
+ * - Tags can only be deleted when editable is true
+ * - Uses Badge component to visualize tags
  */
 import React from "react";
 import { Badge } from "@/components/ui/badge";

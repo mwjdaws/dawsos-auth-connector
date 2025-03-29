@@ -16,6 +16,11 @@
  *   setIsCollapsed={setIsCollapsed}
  * />
  * ```
+ * 
+ * @remarks
+ * - The refresh button shows a spinner animation when isLoading is true
+ * - When needsExternalReview is true, displays a warning indicator
+ * - Only shows collapse/expand controls when isCollapsible is true
  */
 import React from "react";
 import { Button } from "@/components/ui/button";

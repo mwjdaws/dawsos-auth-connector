@@ -14,6 +14,11 @@
  * ```tsx
  * <LoadingState className="my-4" />
  * ```
+ * 
+ * @remarks
+ * - Provides visual feedback during loading operations
+ * - Uses Skeleton components with varying widths for a more natural appearance
+ * - Can be styled with optional className prop
  */
 import React from "react";
 import { Skeleton } from "@/components/ui/skeleton";

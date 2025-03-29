@@ -9,6 +9,16 @@
  * ```tsx
  * <ContentIdSection contentId="ks-123456" />
  * ```
+ * 
+ * @example
+ * ```tsx
+ * <ContentIdSection contentId="ks-123456" className="mt-4 text-xs" />
+ * ```
+ * 
+ * @remarks
+ * - Simple display component showing the content ID in muted text
+ * - Can be styled with optional className prop
+ * - Useful for debugging and reference purposes
  */
 import React from "react";
 import { ContentIdSectionProps } from "../types";
