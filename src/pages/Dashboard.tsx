@@ -11,6 +11,10 @@ import { ContentManagement } from "@/components/Dashboard/ContentManagement";
 import { DashboardUserInfo } from "@/components/Dashboard/DashboardUserInfo";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { usePermissions } from "@/utils/access-control";
+import { useUserPreferences } from "@/utils/user-onboarding";
+import { invokeEdgeFunctionReliably } from "@/utils/edge-function-reliability";
+import { handleError } from "@/utils/errors";
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("tag-generator");
@@ -19,6 +23,15 @@ const DashboardPage = () => {
   const [showDebug, setShowDebug] = useState(false);
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { checkPermission } = usePermissions();
+  const { preferences, updatePreferences } = useUserPreferences(user?.id);
+  
+  // Set initial active tab from user preferences
+  useEffect(() => {
+    if (preferences && preferences.defaultTab) {
+      setActiveTab(preferences.defaultTab);
+    }
+  }, [preferences]);
   
   // Authentication check
   useEffect(() => {
@@ -73,6 +86,76 @@ const DashboardPage = () => {
     }
   }, [navigate, user, authLoading]);
 
+  // Check for pending agent tasks
+  useEffect(() => {
+    if (user) {
+      const checkPendingTasks = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('agent_tasks')
+            .select('id, agent_name, action, status')
+            .eq('status', 'completed')
+            .is('notified', false)
+            .limit(5);
+            
+          if (error) throw error;
+          
+          // Notify user of completed tasks
+          if (data && data.length > 0) {
+            // Mark as notified
+            await supabase
+              .from('agent_tasks')
+              .update({ notified: true })
+              .in('id', data.map(task => task.id));
+              
+            // Show a notification
+            toast({
+              title: `${data.length} Background Task${data.length > 1 ? 's' : ''} Completed`,
+              description: `Agent tasks have finished processing.`,
+            });
+          }
+        } catch (error) {
+          console.error("Failed to check pending tasks:", error);
+        }
+      };
+      
+      // Check on load and set interval
+      checkPendingTasks();
+      const interval = setInterval(checkPendingTasks, 30000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  // Handle tab change
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    
+    // Save as preference if user is logged in
+    if (user) {
+      updatePreferences({ defaultTab: tab });
+    }
+  };
+
+  // Check for edge function health
+  useEffect(() => {
+    const checkEdgeFunctionHealth = async () => {
+      if (user) {
+        try {
+          await invokeEdgeFunctionReliably('get-related-tags', { knowledgeSourceId: contentId }, {
+            timeoutMs: 5000,
+            showErrorToast: false
+          });
+        } catch (error) {
+          console.warn("Edge function health check failed:", error);
+          // No need to show toast for this silent check
+        }
+      }
+    };
+    
+    checkEdgeFunctionHealth();
+  }, [contentId, user]);
+
   // Show loading state if auth is loading
   if (authLoading) {
     return <DashboardLoading />;
@@ -114,6 +197,18 @@ const DashboardPage = () => {
             </button>
           </div>
         }
+        onError={(error) => {
+          handleError(
+            error,
+            "Dashboard component crashed",
+            { 
+              level: "error",
+              context: { activeTab, contentId },
+              actionLabel: "Reload",
+              action: () => window.location.reload() 
+            }
+          );
+        }}
       >
         <DashboardHeader 
           contentId={contentId}
@@ -125,7 +220,7 @@ const DashboardPage = () => {
           contentId={contentId}
           setContentId={setContentId}
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={handleTabChange}
           user={user}
         />
       </ErrorBoundary>
