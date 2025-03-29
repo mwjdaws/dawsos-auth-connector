@@ -21,7 +21,7 @@ export interface MetadataPanelProps {
   children?: ReactNode;
 }
 
-export interface HeaderSectionProps {
+export interface HeaderSectionProps extends BaseSectionProps {
   needsExternalReview: boolean;
   handleRefresh: () => void;
   isLoading: boolean;
@@ -30,20 +30,20 @@ export interface HeaderSectionProps {
   setIsCollapsed: (isCollapsed: boolean) => void;
 }
 
-export interface ExternalSourceSectionProps {
+export interface ExternalSourceSectionProps extends BaseSectionProps {
   externalSourceUrl?: string;
   lastCheckedAt?: string;
 }
 
-export interface DomainSectionProps {
+export interface DomainSectionProps extends BaseSectionProps {
   domain: string | null;
 }
 
-export interface ContentIdSectionProps {
+export interface ContentIdSectionProps extends BaseSectionProps {
   contentId: string;
 }
 
-export interface OntologyTermsSectionProps {
+export interface OntologyTermsSectionProps extends BaseSectionProps {
   sourceId: string;
   editable: boolean;
 }

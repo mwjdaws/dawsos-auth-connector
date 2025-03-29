@@ -1,105 +1,112 @@
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useMetadataContext } from '../../useMetadataContext';
+import { renderHook } from '@testing-library/react';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
+import { useMetadataContext } from '../useMetadataContext';
 import { useMetadataPanel } from '../useMetadataPanel';
 
-// Mock the hooks we're importing
+// Mock the useMetadataPanel hook
 vi.mock('../useMetadataPanel', () => ({
   useMetadataPanel: vi.fn()
 }));
 
-// Sample test data
-const mockMetadata = {
-  contentId: 'test-content-id',
-  title: 'Test Title',
-  tags: ['tag1', 'tag2'],
-  domains: ['domain1', 'domain2'],
-  externalSource: 'https://example.com',
-  ontologyTerms: [
-    { id: 'term1', term: 'Term 1', description: 'Description 1' },
-    { id: 'term2', term: 'Term 2', description: 'Description 2' }
-  ],
-  loading: false,
-  error: null
-};
-
 describe('useMetadataContext', () => {
-  // Setup mock implementations
+  const mockMetadataPanelResult = {
+    tags: [{ id: '1', name: 'React', content_id: 'content-123' }],
+    isLoading: false,
+    error: null,
+    isPending: false,
+    newTag: '',
+    setNewTag: vi.fn(),
+    user: { id: 'user-1' },
+    externalSourceUrl: 'https://example.com',
+    needsExternalReview: false,
+    lastCheckedAt: '2023-01-01T00:00:00Z',
+    isCollapsed: false,
+    setIsCollapsed: vi.fn(),
+    handleRefresh: vi.fn(),
+    handleAddTag: vi.fn(),
+    handleDeleteTag: vi.fn()
+  };
+
   beforeEach(() => {
-    (useMetadataPanel as any).mockReturnValue({
-      ...mockMetadata,
-      setTags: vi.fn(),
-      addTag: vi.fn(),
-      removeTag: vi.fn(),
-      refreshTags: vi.fn()
-    });
+    vi.clearAllMocks();
+    (useMetadataPanel as any).mockReturnValue(mockMetadataPanelResult);
   });
 
-  test('should provide metadata context values', () => {
-    const { result } = renderHook(() => useMetadataContext('test-content-id'));
-    
-    // Test that the context values are provided correctly
-    expect(result.current.contentId).toBe('test-content-id');
-    expect(result.current.tags).toEqual(mockMetadata.tags);
-    expect(result.current.domains).toBeDefined();
-    expect(result.current.externalSource).toBeDefined();
-    expect(result.current.loading).toBeDefined();
-    expect(result.current.error).toBeDefined();
-    expect(typeof result.current.setTags).toBe('function');
-    expect(typeof result.current.addTag).toBe('function');
-    expect(typeof result.current.removeTag).toBe('function');
-    expect(typeof result.current.refreshMetadata).toBe('function');
+  test('returns metadata context state with all required properties', () => {
+    const contentId = 'content-123';
+    const onMetadataChange = vi.fn();
+
+    const { result } = renderHook(() => 
+      useMetadataContext(contentId, onMetadataChange)
+    );
+
+    // Check that all expected properties are present
+    expect(result.current).toHaveProperty('contentId', contentId);
+    expect(result.current).toHaveProperty('tags', mockMetadataPanelResult.tags);
+    expect(result.current).toHaveProperty('domains');
+    expect(result.current).toHaveProperty('externalSource', mockMetadataPanelResult.externalSourceUrl);
+    expect(result.current).toHaveProperty('ontologyTerms');
+    expect(result.current).toHaveProperty('loading', mockMetadataPanelResult.isLoading);
+    expect(result.current).toHaveProperty('error', mockMetadataPanelResult.error);
+    expect(result.current).toHaveProperty('setTags');
+    expect(result.current).toHaveProperty('addTag', mockMetadataPanelResult.handleAddTag);
+    expect(result.current).toHaveProperty('removeTag', mockMetadataPanelResult.handleDeleteTag);
+    expect(result.current).toHaveProperty('refreshTags');
   });
 
-  test('should call setTags when invoked', () => {
-    const { result } = renderHook(() => useMetadataContext('test-content-id'));
-    const newTags = ['new-tag1', 'new-tag2'];
-    
-    act(() => {
-      result.current.setTags(newTags);
-    });
-    
-    // This would check if setTags was called with the right parameters
-    // in a real implementation
-    expect(typeof result.current.setTags).toBe('function');
+  test('calls useMetadataPanel with the correct parameters', () => {
+    const contentId = 'content-123';
+    const onMetadataChange = vi.fn();
+    const isCollapsible = true;
+    const initialCollapsed = true;
+
+    renderHook(() => 
+      useMetadataContext(contentId, onMetadataChange, isCollapsible, initialCollapsed)
+    );
+
+    expect(useMetadataPanel).toHaveBeenCalledWith(
+      contentId, 
+      onMetadataChange, 
+      isCollapsible, 
+      initialCollapsed
+    );
   });
 
-  test('should call addTag when invoked', () => {
-    const { result } = renderHook(() => useMetadataContext('test-content-id'));
-    const newTag = 'new-tag';
+  test('refreshTags returns a promise and calls handleRefresh', async () => {
+    // Mock setTimeout to resolve immediately
+    vi.useFakeTimers();
     
-    act(() => {
-      result.current.addTag(newTag);
-    });
+    const contentId = 'content-123';
+    const { result } = renderHook(() => useMetadataContext(contentId));
     
-    // This would check if addTag was called with the right parameters
-    // in a real implementation
-    expect(typeof result.current.addTag).toBe('function');
+    const refreshPromise = result.current.refreshTags();
+    
+    // Verify handleRefresh was called
+    expect(mockMetadataPanelResult.handleRefresh).toHaveBeenCalledTimes(1);
+    
+    // Fast-forward timers to resolve the promise
+    vi.advanceTimersByTime(100);
+    
+    // Wait for the promise to resolve
+    await refreshPromise;
+    
+    // Clean up
+    vi.useRealTimers();
   });
 
-  test('should call removeTag when invoked', () => {
-    const { result } = renderHook(() => useMetadataContext('test-content-id'));
-    const tagToRemove = 'tag1';
+  test('memoizes the context state to prevent unnecessary re-renders', () => {
+    const contentId = 'content-123';
     
-    act(() => {
-      result.current.removeTag(tagToRemove);
-    });
+    // First render
+    const { result, rerender } = renderHook(() => useMetadataContext(contentId));
+    const firstResult = result.current;
     
-    // This would check if removeTag was called with the right parameters
-    // in a real implementation
-    expect(typeof result.current.removeTag).toBe('function');
-  });
-
-  test('should call refreshMetadata when invoked', async () => {
-    const { result } = renderHook(() => useMetadataContext('test-content-id'));
+    // Re-render with the same props (should use memoized value)
+    rerender();
+    const secondResult = result.current;
     
-    await act(async () => {
-      await result.current.refreshMetadata();
-    });
-    
-    // This would check if refreshMetadata triggered the right operations
-    // in a real implementation
-    expect(typeof result.current.refreshMetadata).toBe('function');
+    // The objects should be referentially equal
+    expect(secondResult).toBe(firstResult);
   });
 });
