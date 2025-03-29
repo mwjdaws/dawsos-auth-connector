@@ -9,6 +9,50 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      agent_actions: {
+        Row: {
+          action: string
+          agent_name: string
+          confidence: number | null
+          created_at: string | null
+          error: string | null
+          id: string
+          knowledge_source_id: string | null
+          metadata: Json | null
+          success: boolean | null
+        }
+        Insert: {
+          action: string
+          agent_name: string
+          confidence?: number | null
+          created_at?: string | null
+          error?: string | null
+          id?: string
+          knowledge_source_id?: string | null
+          metadata?: Json | null
+          success?: boolean | null
+        }
+        Update: {
+          action?: string
+          agent_name?: string
+          confidence?: number | null
+          created_at?: string | null
+          error?: string | null
+          id?: string
+          knowledge_source_id?: string | null
+          metadata?: Json | null
+          success?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_actions_knowledge_source_id_fkey"
+            columns: ["knowledge_source_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       external_link_audits: {
         Row: {
           checked_at: string

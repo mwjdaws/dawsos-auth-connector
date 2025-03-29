@@ -3,3 +3,4 @@
 export * from './tag-generation';
 export * from './external-source-validator';
 export * from './audit-logs';
+export * from './agent-actions';
