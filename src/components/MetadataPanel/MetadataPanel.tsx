@@ -1,15 +1,46 @@
 
+/**
+ * MetadataPanel Component
+ * 
+ * This is the unified entry point for displaying and editing content metadata.
+ * It combines various section components to create a complete metadata panel.
+ * 
+ * Usage:
+ * ```tsx
+ * <MetadataPanel 
+ *   contentId="content-123" 
+ *   onMetadataChange={() => {}} 
+ *   isCollapsible={true}
+ *   showOntologyTerms={true}
+ *   editable={true}
+ * />
+ * ```
+ * 
+ * Available sections:
+ * - HeaderSection: Panel title and controls
+ * - ExternalSourceSection: External source URL and last checked date
+ * - TagsSection: Content tags with add/delete functionality
+ * - OntologyTermsSection: Ontology terms associated with the content
+ * - DomainSection: Content domain information
+ * - ContentIdSection: Display content ID
+ */
+
 import React, { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useMetadataPanel } from "./hooks/useMetadataPanel";
-import { HeaderSection } from "./HeaderSection";
-import { ExternalSourceSection } from "./ExternalSourceSection";
-import { TagsSection } from "./TagsSection";
-import { ContentIdSection } from "./ContentIdSection";
-import { LoadingState } from "./LoadingState";
-import { OntologyTermsPanel } from "@/components/MarkdownViewer/OntologyTermsPanel";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+
+// Import all sections from the unified sections directory
+import {
+  HeaderSection,
+  ExternalSourceSection,
+  TagsSection,
+  OntologyTermsSection,
+  ContentIdSection,
+  LoadingState,
+  DomainSection
+} from "./sections";
 
 interface MetadataPanelProps {
   contentId: string;
@@ -18,6 +49,8 @@ interface MetadataPanelProps {
   initialCollapsed?: boolean;
   showOntologyTerms?: boolean;
   editable?: boolean;
+  showDomain?: boolean;
+  domain?: string | null;
   className?: string;
   children?: ReactNode;
 }
@@ -28,6 +61,8 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   isCollapsible = false,
   initialCollapsed = false,
   showOntologyTerms = true,
+  showDomain = false,
+  domain = null,
   editable,
   className = "",
   children
@@ -110,10 +145,14 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
               />
               
               {showOntologyTerms && contentId && (
-                <OntologyTermsPanel 
+                <OntologyTermsSection 
                   sourceId={contentId} 
                   editable={isEditable} 
                 />
+              )}
+              
+              {showDomain && (
+                <DomainSection domain={domain} />
               )}
               
               {children}

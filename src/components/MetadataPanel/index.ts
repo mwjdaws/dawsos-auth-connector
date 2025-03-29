@@ -2,12 +2,11 @@
 // Export the default component
 export { default } from './MetadataPanel';
 
-// Export named components/sections 
-export { HeaderSection } from './HeaderSection';
-export { ExternalSourceSection } from './ExternalSourceSection'; 
-export { TagsSection } from './TagsSection';
-export { ContentIdSection } from './ContentIdSection';
-export { LoadingState } from './LoadingState';
+// Export all sections
+export * from './sections';
 
 // Export the hook
 export { useMetadataPanel } from './hooks/useMetadataPanel';
+
+// Export types
+export type { Tag } from './hooks/useTagOperations';
