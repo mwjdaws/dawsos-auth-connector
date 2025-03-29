@@ -23,6 +23,10 @@ export const createSupabaseMock = () => ({
         data: null,
         error: null
       })),
+      maybeSingle: vi.fn(() => ({
+        data: null,
+        error: null
+      })),
       limit: vi.fn(() => ({
         data: [],
         error: null
@@ -59,7 +63,8 @@ export const createSupabaseMock = () => ({
       on: vi.fn(() => ({
         subscribe: vi.fn((callback) => callback('SUBSCRIBED'))
       }))
-    }))
+    })),
+    subscribe: vi.fn((callback) => callback('SUBSCRIBED'))
   })),
   removeChannel: vi.fn()
 });

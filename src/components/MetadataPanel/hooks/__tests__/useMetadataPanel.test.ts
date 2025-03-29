@@ -1,6 +1,6 @@
 
 import { renderHook, act } from '@testing-library/react';
-import { vi } from 'vitest';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { useMetadataPanel } from '../useMetadataPanel';
 import { useTagOperations } from '../useTagOperations';
 import { useSourceMetadata } from '../useSourceMetadata';

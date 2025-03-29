@@ -10,11 +10,41 @@ vi.mock('@/integrations/supabase/client', () => ({
         eq: vi.fn(() => ({
           data: [],
           error: null
+        })),
+        is: vi.fn(() => ({
+          data: [],
+          error: null
+        })),
+        in: vi.fn(() => ({
+          data: [],
+          error: null
+        })),
+        single: vi.fn(() => ({
+          data: null,
+          error: null
+        })),
+        maybeSingle: vi.fn(() => ({
+          data: null,
+          error: null
+        })),
+        limit: vi.fn(() => ({
+          data: [],
+          error: null
         }))
       })),
       insert: vi.fn(() => ({
         select: vi.fn(() => ({
           data: [],
+          error: null
+        }))
+      })),
+      update: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          data: null,
+          error: null
+        })),
+        in: vi.fn(() => ({
+          data: null,
           error: null
         }))
       })),
@@ -24,7 +54,19 @@ vi.mock('@/integrations/supabase/client', () => ({
           error: null
         }))
       }))
-    }))
+    })),
+    functions: {
+      invoke: vi.fn(() => Promise.resolve({ data: {}, error: null }))
+    },
+    channel: vi.fn(() => ({
+      on: vi.fn(() => ({
+        on: vi.fn(() => ({
+          subscribe: vi.fn((callback) => callback('SUBSCRIBED'))
+        }))
+      })),
+      subscribe: vi.fn((callback) => callback('SUBSCRIBED'))
+    })),
+    removeChannel: vi.fn()
   }
 }));
 

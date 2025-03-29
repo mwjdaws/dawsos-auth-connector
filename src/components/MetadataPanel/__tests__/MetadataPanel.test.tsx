@@ -2,7 +2,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi } from 'vitest';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import MetadataPanel from '../MetadataPanel';
 import { useMetadataPanel } from '../hooks/useMetadataPanel';
 
