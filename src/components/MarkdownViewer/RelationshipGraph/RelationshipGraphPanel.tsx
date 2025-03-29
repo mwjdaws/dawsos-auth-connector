@@ -1,4 +1,16 @@
 
+/**
+ * RelationshipGraphPanel Component
+ * 
+ * This component serves as the main container for displaying the knowledge network visualization.
+ * It manages the graph's dimensions, fullscreen state, and provides controls for refreshing
+ * and toggling the fullscreen mode.
+ * 
+ * Features:
+ * - Responsive sizing with fullscreen toggle
+ * - Graph refresh capability 
+ * - Control panel with zoom slider
+ */
 import React, { useState, useTransition } from 'react';
 import { RelationshipGraph } from './RelationshipGraph';
 import { Button } from '@/components/ui/button';
@@ -6,16 +18,21 @@ import { Slider } from '@/components/ui/slider';
 import { ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
 
 interface RelationshipGraphPanelProps {
-  sourceId?: string;
-  className?: string;
+  sourceId?: string;  // Optional ID of the starting knowledge source node
+  className?: string; // Optional CSS class for styling
 }
 
 export function RelationshipGraphPanel({ sourceId, className }: RelationshipGraphPanelProps) {
+  // State for managing graph dimensions and display mode
   const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isPending, startTransition] = useTransition();
   
+  /**
+   * Toggles fullscreen mode and adjusts graph dimensions accordingly
+   * Uses React's useTransition to prevent UI freezes during the state update
+   */
   const toggleFullscreen = () => {
     startTransition(() => {
       if (!isFullscreen) {
@@ -27,6 +44,10 @@ export function RelationshipGraphPanel({ sourceId, className }: RelationshipGrap
     });
   };
   
+  /**
+   * Refreshes the graph data by incrementing the refreshKey
+   * This causes the RelationshipGraph component to re-fetch data
+   */
   const handleRefresh = () => {
     startTransition(() => {
       setRefreshKey(prev => prev + 1);

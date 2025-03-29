@@ -1,4 +1,10 @@
 
+/**
+ * GraphLoading Component
+ * 
+ * Displays a loading indicator when the graph data is being fetched.
+ * This provides visual feedback to users during data loading.
+ */
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 

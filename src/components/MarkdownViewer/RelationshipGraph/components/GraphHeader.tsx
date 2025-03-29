@@ -1,9 +1,15 @@
 
+/**
+ * GraphHeader Component
+ * 
+ * Displays information about the graph at the top of the visualization,
+ * including the title and statistics about the number of nodes and connections.
+ */
 import React from 'react';
 import { GraphData } from '../types';
 
 interface GraphHeaderProps {
-  graphData: GraphData;
+  graphData: GraphData;  // The graph data containing nodes and links
 }
 
 export function GraphHeader({ graphData }: GraphHeaderProps) {

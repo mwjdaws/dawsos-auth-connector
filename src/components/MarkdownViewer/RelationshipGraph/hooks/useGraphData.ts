@@ -1,4 +1,18 @@
 
+/**
+ * useGraphData Hook
+ * 
+ * This custom hook is responsible for fetching and constructing the graph data
+ * from multiple Supabase tables. It fetches:
+ * - Knowledge sources (nodes)
+ * - Note links (connections between sources)
+ * - Ontology terms (nodes)
+ * - Ontology relationships (connections between terms)
+ * - Source-term relationships (connections between sources and terms)
+ * 
+ * The hook returns the constructed graph data along with loading and error states,
+ * and a function to refresh the data.
+ */
 import { useCallback, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { GraphData } from '../types';
@@ -8,6 +22,11 @@ export function useGraphData(startingNodeId?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  /**
+   * Fetches graph data from Supabase and constructs the graph structure
+   * This function aggregates data from multiple tables to build a complete
+   * representation of the knowledge network.
+   */
   const fetchGraphData = useCallback(async () => {
     if (loading && graphData.nodes.length > 0) return; // Prevent refetching while already loading
     
@@ -55,7 +74,7 @@ export function useGraphData(startingNodeId?: string) {
       
       if (sourceTermsError) throw sourceTermsError;
       
-      // Prepare graph data
+      // Prepare graph data by combining all fetched data
       const nodes = [
         // Knowledge source nodes
         ...sources.map(source => ({
@@ -114,6 +133,7 @@ export function useGraphData(startingNodeId?: string) {
     }
   }, [loading, graphData.nodes.length]);
   
+  // Fetch data when the component mounts
   useEffect(() => {
     fetchGraphData();
   }, [fetchGraphData]);

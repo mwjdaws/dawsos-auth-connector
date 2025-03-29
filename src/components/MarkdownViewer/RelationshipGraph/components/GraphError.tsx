@@ -1,10 +1,16 @@
 
+/**
+ * GraphError Component
+ * 
+ * Displays an error message when there's a problem fetching or processing
+ * the graph data. Provides a retry button to attempt fetching the data again.
+ */
 import React from 'react';
 import { Button } from '@/components/ui/button';
 
 interface GraphErrorProps {
-  error: string;
-  onRetry: () => void;
+  error: string;         // Error message to display
+  onRetry: () => void;   // Function to call when retry button is clicked
 }
 
 export function GraphError({ error, onRetry }: GraphErrorProps) {

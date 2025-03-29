@@ -1,18 +1,33 @@
 
+/**
+ * GraphRenderer Component
+ * 
+ * This component renders the force-directed graph visualization using react-force-graph-2d.
+ * It handles:
+ * - Setting up the graph visualization
+ * - Configuring node and link appearance
+ * - Custom node rendering with labels
+ * - Handling node click events for navigation
+ */
 import React, { useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { useNavigate } from 'react-router-dom';
 import { GraphData, GraphNode } from '../types';
 
 interface GraphRendererProps {
-  graphData: GraphData;
-  width: number;
-  height: number;
+  graphData: GraphData;    // Data structure containing nodes and links
+  width: number;           // Width of the graph container
+  height: number;          // Height of the graph container
 }
 
 export function GraphRenderer({ graphData, width, height }: GraphRendererProps) {
   const navigate = useNavigate();
   
+  /**
+   * Handles node click events
+   * - For source nodes: Navigate to the source detail page
+   * - For term nodes: Log the term details (could be expanded to show details in UI)
+   */
   const handleNodeClick = useCallback((node: GraphNode) => {
     if (node.type === 'source') {
       navigate(`/source/${node.id}`);
@@ -36,6 +51,7 @@ export function GraphRenderer({ graphData, width, height }: GraphRendererProps) 
         width={width}
         height={height}
         nodeCanvasObject={(node, ctx, globalScale) => {
+          // Custom node rendering with text labels
           const label = node.name as string;
           const fontSize = 12/globalScale;
           ctx.font = `${fontSize}px Sans-Serif`;
