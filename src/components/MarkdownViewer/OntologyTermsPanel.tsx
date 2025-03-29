@@ -129,7 +129,7 @@ export function OntologyTermsPanel({ sourceId, editable = false }: OntologyTerms
                   {term.term}
                   {editable && (
                     <button 
-                      onClick={() => handleRemoveTerm(term.associationId)}
+                      onClick={() => handleRemoveTerm(term.associationId!)}
                       className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-1"
                     >
                       <X className="h-3 w-3" />

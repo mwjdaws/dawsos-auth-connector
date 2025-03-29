@@ -9,9 +9,14 @@ export interface OntologyTerm {
   term: string;
   description?: string;
   domain?: string;
+  associationId?: string; // ID of the association record (for removal)
 }
 
-export interface RelatedTerm extends OntologyTerm {
+export interface RelatedTerm {
+  term_id: string;
+  term: string;
+  description: string;
+  domain: string;
   relation_type: string;
 }
 
@@ -50,7 +55,10 @@ export function useOntologyTerms(sourceId?: string) {
       
       return data?.map(item => ({
         associationId: item.id,
-        ...item.ontology_terms
+        id: item.ontology_terms.id,
+        term: item.ontology_terms.term,
+        description: item.ontology_terms.description,
+        domain: item.ontology_terms.domain
       })) || [];
     },
     enabled: !!sourceId
