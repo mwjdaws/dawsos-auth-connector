@@ -38,11 +38,13 @@ export const mockSections = {
       </button>
     </div>
   ),
+  
   ExternalSourceSection: ({ externalSourceUrl }) => (
     <div data-testid="external-source-section">
       {externalSourceUrl && <a href={externalSourceUrl}>{externalSourceUrl}</a>}
     </div>
   ),
+  
   TagsSection: ({ tags, editable, newTag, setNewTag, onAddTag, onDeleteTag }) => (
     <div data-testid="tags-section">
       <ul>
@@ -72,15 +74,19 @@ export const mockSections = {
       )}
     </div>
   ),
+  
   OntologyTermsSection: ({ sourceId, editable }) => (
     <div data-testid="ontology-terms-section" data-source-id={sourceId} data-editable={editable}>
       Ontology Terms
     </div>
   ),
+  
   ContentIdSection: ({ contentId }) => (
     <div data-testid="content-id-section">Content ID: {contentId}</div>
   ),
+  
   LoadingState: () => <div data-testid="loading-state">Loading...</div>,
+  
   DomainSection: ({ domain }) => (
     <div data-testid="domain-section">
       {domain || 'No domain'}
