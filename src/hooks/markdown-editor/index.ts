@@ -1,3 +1,4 @@
+
 // Re-export hooks and types
 export { useMarkdownEditor } from './useMarkdownEditor';
 export { useAutosave } from './useAutosave';
@@ -30,6 +31,13 @@ export type {
   EnrichmentOptions,
   EnrichmentMetadata 
 } from './ontology-enrichment/types';
+
+// Re-export ontology suggestions related types
+export type {
+  OntologySuggestion as OntologySuggestionType,
+  RelatedNote as RelatedNoteType,
+  EnrichmentResult as EnrichmentResultType
+} from './ontology-suggestions/types';
 
 // Re-export draft operations
 export { useDraftOperations } from './useDraftOperations';
