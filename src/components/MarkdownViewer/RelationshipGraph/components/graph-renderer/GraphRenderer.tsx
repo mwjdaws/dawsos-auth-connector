@@ -6,12 +6,15 @@
  * It uses custom hooks to handle different aspects of the rendering.
  */
 import React, { useCallback, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
-import ForceGraph2D from 'react-force-graph-2d';
+// Use dynamic import to avoid direct module reference issues
 import { useNavigate } from 'react-router-dom';
 import { GraphData, GraphNode, GraphRendererRef } from '../../types';
 import { useNodeRenderer } from './useNodeRenderer';
 import { useLinkRenderer } from './useLinkRenderer';
 import { useGraphRenderStyles } from './useGraphRenderStyles';
+
+// Dynamically import ForceGraph2D to avoid module loading issues
+const ForceGraph2DComponent = React.lazy(() => import('react-force-graph-2d'));
 
 interface GraphRendererProps {
   graphData: GraphData;        // Data structure containing nodes and links
@@ -123,29 +126,38 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
     
     return (
       <div style={{ height }}>
-        <ForceGraph2D
-          ref={graphRef}
-          graphData={graphData}
-          nodeAutoColorBy="type"
-          nodeLabel={node => node.name}
-          linkDirectionalArrowLength={3.5}
-          linkDirectionalArrowRelPos={1}
-          linkLabel={getLinkLabel}
-          linkColor={getLinkColor}
-          onNodeClick={handleNodeClick}
-          width={width}
-          height={height}
-          nodeCanvasObject={nodeCanvasObject}
-          cooldownTicks={100}
-          minZoom={0.5}
-          maxZoom={5}
-          warmupTicks={50}
-          d3AlphaDecay={0.02} // Slower decay for more stable graph
-          d3VelocityDecay={0.3} // Increased velocity decay for smoother motion
-          onEngineStop={() => console.log('Graph physics simulation completed')}
-          linkWidth={link => (link.value as number) * 2}
-          nodeRelSize={6}
-        />
+        <React.Suspense fallback={
+          <div className="flex items-center justify-center h-full bg-muted/10">
+            <div className="flex flex-col items-center">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mb-4"></div>
+              <p className="text-sm text-muted-foreground">Loading graph renderer...</p>
+            </div>
+          </div>
+        }>
+          <ForceGraph2DComponent
+            ref={graphRef}
+            graphData={graphData}
+            nodeAutoColorBy="type"
+            nodeLabel={node => node.name}
+            linkDirectionalArrowLength={3.5}
+            linkDirectionalArrowRelPos={1}
+            linkLabel={getLinkLabel}
+            linkColor={getLinkColor}
+            onNodeClick={handleNodeClick}
+            width={width}
+            height={height}
+            nodeCanvasObject={nodeCanvasObject}
+            cooldownTicks={100}
+            minZoom={0.5}
+            maxZoom={5}
+            warmupTicks={50}
+            d3AlphaDecay={0.02} // Slower decay for more stable graph
+            d3VelocityDecay={0.3} // Increased velocity decay for smoother motion
+            onEngineStop={() => console.log('Graph physics simulation completed')}
+            linkWidth={link => (link.value as number) * 2}
+            nodeRelSize={6}
+          />
+        </React.Suspense>
       </div>
     );
   }
