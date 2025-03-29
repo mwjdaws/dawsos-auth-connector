@@ -101,7 +101,7 @@ export class AgentOrchestrator {
         knowledge_source_id: request.knowledgeSourceId,
         agent_name: request.agentName,
         action: request.action,
-        metadata: request.metadata as Json
+        metadata: request.metadata as unknown as Json
       });
       
       console.log(`[AgentOrchestrator] Starting task ${taskId} for agent ${request.agentName}`);
@@ -121,11 +121,7 @@ export class AgentOrchestrator {
           request.action,
           request.knowledgeSourceId,
           result.data?.confidence,
-          { 
-            ...request.metadata, 
-            executionTime,
-            result: result.data 
-          } as Json
+          request.metadata as unknown as Json
         );
       } else {
         // Log failure
@@ -134,10 +130,7 @@ export class AgentOrchestrator {
           request.action,
           result.error || 'Unknown error',
           request.knowledgeSourceId,
-          { 
-            ...request.metadata, 
-            executionTime 
-          } as Json
+          request.metadata as unknown as Json
         );
       }
       
@@ -155,7 +148,7 @@ export class AgentOrchestrator {
         request.action,
         error instanceof Error ? error.message : String(error),
         request.knowledgeSourceId,
-        request.metadata as Json
+        request.metadata as unknown as Json
       );
       
       return {
@@ -478,11 +471,7 @@ export function useAgentOrchestrator() {
           request.action,
           request.knowledgeSourceId,
           result.data?.confidence,
-          { 
-            ...request.metadata, 
-            executionTime: result.executionTime,
-            backgroundTaskId: result.backgroundTaskId 
-          },
+          request.metadata as unknown as Json,
           true // Show toast
         );
       } else if (!result.success && showToast) {
@@ -491,7 +480,7 @@ export function useAgentOrchestrator() {
           request.action,
           result.error || 'Unknown error',
           request.knowledgeSourceId,
-          { ...request.metadata, executionTime: result.executionTime },
+          request.metadata as unknown as Json,
           true // Show toast
         );
       }
