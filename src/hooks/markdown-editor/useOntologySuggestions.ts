@@ -1,423 +1,358 @@
 
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import Fuse from 'fuse.js';
+import { handleError } from '@/utils/error-handling';
 
-interface OntologyTerm {
+interface OntologySuggestion {
   id: string;
   term: string;
   description?: string;
   domain?: string;
   score?: number;
+  applied?: boolean;
+  rejected?: boolean;
 }
 
 interface RelatedNote {
   id: string;
   title: string;
   score?: number;
+  applied?: boolean;
+  rejected?: boolean;
 }
 
-interface SuggestionResult {
-  terms: OntologyTerm[];
+interface EnrichmentResult {
+  sourceId: string;
+  terms: OntologySuggestion[];
   notes: RelatedNote[];
 }
 
-/**
- * Hook for suggesting ontology terms and related notes based on content
- */
-export function useOntologySuggestions() {
-  const [suggestions, setSuggestions] = useState<SuggestionResult>({
+export const useOntologySuggestions = () => {
+  const [suggestions, setSuggestions] = useState<EnrichmentResult>({
+    sourceId: '',
     terms: [],
     notes: []
   });
   const [isLoading, setIsLoading] = useState(false);
 
   /**
-   * Analyze content and suggest relevant ontology terms and notes
-   * Uses edge function if available, falls back to client-side analysis
+   * Analyze content to get ontology term and related note suggestions
    */
-  const analyzeContent = useCallback(async (content: string, title: string, sourceId?: string) => {
-    if (!content || content.length < 20) return;
-    
+  const analyzeContent = async (content: string, title: string, sourceId: string) => {
+    if (!content || content.length < 20 || !sourceId) {
+      console.log('Content too short or sourceId missing');
+      return;
+    }
+
     setIsLoading(true);
-    
+
     try {
-      console.log(`Analyzing content for suggestions (${content.length} chars)`);
+      // Call the edge function to get ontology suggestions
+      const { data, error } = await supabase.functions.invoke('suggest-ontology-terms', {
+        body: { content, title, sourceId }
+      });
       
-      // Try to use the edge function first
-      try {
-        const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke(
-          'suggest-ontology-terms',
-          {
-            body: { content, title, sourceId }
-          }
-        );
-        
-        if (!edgeFunctionError && edgeFunctionData?.terms) {
-          console.log('Using results from edge function:', edgeFunctionData);
-          setSuggestions({
-            terms: edgeFunctionData.terms || [],
-            notes: edgeFunctionData.notes || []
-          });
-          return {
-            terms: edgeFunctionData.terms || [],
-            notes: edgeFunctionData.notes || []
-          };
-        }
-        
-        console.log('Edge function unavailable, falling back to client-side analysis');
-      } catch (edgeError) {
-        console.error('Error calling edge function:', edgeError);
-        console.log('Falling back to client-side analysis');
+      if (error) {
+        console.error('Error calling suggest-ontology-terms function:', error);
+        throw error;
       }
       
-      // Extract important keywords and phrases from content
-      const keywords = extractKeywords(content, title);
-      console.log('Extracted keywords:', keywords);
-      
-      // Fetch all ontology terms
-      const { data: allTerms, error: termsError } = await supabase
-        .from('ontology_terms')
-        .select('id, term, description, domain');
-      
-      if (termsError) {
-        console.error('Error fetching ontology terms:', termsError);
-        throw termsError;
+      if (!data) {
+        console.warn('No data returned from suggest-ontology-terms function');
+        return;
       }
+
+      console.log('Received enrichment data:', data);
       
-      // Fetch published knowledge sources
-      const { data: knowledgeSources, error: sourcesError } = await supabase
-        .from('knowledge_sources')
-        .select('id, title, content')
-        .eq('published', true)
-        .not('id', 'eq', sourceId); // Exclude current source
+      // Get already applied terms to mark them as applied in the UI
+      const { data: existingTerms } = await supabase
+        .from('knowledge_source_ontology_terms')
+        .select('ontology_term_id')
+        .eq('knowledge_source_id', sourceId);
       
-      if (sourcesError) {
-        console.error('Error fetching knowledge sources:', sourcesError);
-        throw sourcesError;
-      }
+      const appliedTermIds = new Set((existingTerms || []).map(link => link.ontology_term_id));
       
-      // Use fuzzy search to find matching terms
-      const termFuse = new Fuse(allTerms || [], {
-        keys: ['term', 'description'],
-        threshold: 0.4,
-        includeScore: true
+      // Update the suggestion terms with applied status
+      const terms = (data.terms || []).map(term => ({
+        ...term,
+        applied: appliedTermIds.has(term.id),
+        rejected: false
+      }));
+      
+      const notes = (data.notes || []).map(note => ({
+        ...note,
+        applied: false,
+        rejected: false
+      }));
+      
+      setSuggestions({
+        sourceId,
+        terms,
+        notes
       });
       
-      const termMatches = keywords.flatMap(keyword => {
-        const results = termFuse.search(keyword);
-        return results.map(result => ({
-          id: result.item.id,
-          term: result.item.term,
-          description: result.item.description,
-          domain: result.item.domain,
-          score: (1 - (result.score || 0.5)) * 100 // Convert to percentage relevance
-        }));
-      });
-      
-      // Use fuzzy search to find matching notes
-      const notesFuse = new Fuse(knowledgeSources || [], {
-        keys: ['title', 'content'],
-        threshold: 0.3,
-        includeScore: true
-      });
-      
-      const noteMatches = keywords.flatMap(keyword => {
-        const results = notesFuse.search(keyword);
-        return results.map(result => ({
-          id: result.item.id,
-          title: result.item.title,
-          score: (1 - (result.score || 0.5)) * 100 // Convert to percentage relevance
-        }));
-      });
-      
-      // Filter duplicates and sort by relevance
-      const uniqueTerms = filterUniqueByProperty(termMatches, 'id').slice(0, 8);
-      const uniqueNotes = filterUniqueByProperty(noteMatches, 'id').slice(0, 5);
-      
-      // Update suggestions
-      const results = {
-        terms: uniqueTerms,
-        notes: uniqueNotes
-      };
-      
-      setSuggestions(results);
-      
-      // Return the suggestions in case caller needs immediate access
-      return results;
+      return { terms, notes };
     } catch (error) {
-      console.error('Error analyzing content for suggestions:', error);
-      toast({
-        title: 'Analysis Error',
-        description: 'Failed to analyze content for suggestions',
-        variant: 'destructive'
-      });
-      
-      return {
-        terms: [],
-        notes: []
-      };
+      handleError(
+        error,
+        "Failed to analyze content for ontology suggestions",
+        { level: "warning", technical: true, silent: true }
+      );
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  };
   
   /**
-   * Apply suggested ontology term
+   * Apply a suggested term by creating an association between the term and the source
    */
-  const applySuggestedTerm = useCallback(async (
-    termId: string, 
-    sourceId: string
-  ) => {
+  const applySuggestedTerm = async (termId: string, sourceId: string) => {
     try {
-      if (!sourceId) {
-        throw new Error('Source ID is required to apply a term');
-      }
+      // Check if this term is already applied
+      const updatedTerms = [...suggestions.terms];
+      const termIndex = updatedTerms.findIndex(term => term.id === termId);
       
-      // Check if term is already applied
-      const { data: existingAssociations, error: checkError } = await supabase
-        .from('knowledge_source_ontology_terms')
-        .select('id')
-        .match({
-          knowledge_source_id: sourceId,
-          ontology_term_id: termId
-        });
-        
-      if (checkError) {
-        console.error('Error checking existing term association:', checkError);
-        throw checkError;
-      }
-      
-      // If already associated, just inform the user
-      if (existingAssociations && existingAssociations.length > 0) {
-        toast({
-          title: 'Term Already Applied',
-          description: 'This ontology term is already associated with this document.'
-        });
+      if (termIndex === -1) {
+        console.warn(`Term ${termId} not found in suggestions`);
         return false;
       }
       
-      // Add the ontology term association
-      const { data, error } = await supabase
+      // If already applied, do nothing
+      if (updatedTerms[termIndex].applied) {
+        return true;
+      }
+      
+      // Create association in database
+      const { error } = await supabase
         .from('knowledge_source_ontology_terms')
         .insert({
           knowledge_source_id: sourceId,
           ontology_term_id: termId,
-          created_by: (await supabase.auth.getUser()).data.user?.id
-        })
-        .select();
-        
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+          review_required: false
+        });
+      
       if (error) {
-        console.error('Error applying suggested term:', error);
-        throw error;
+        if (error.code === '23505') {
+          // Ignore unique constraint violations
+          console.log('Term already associated with this source');
+        } else {
+          console.error('Error applying ontology term:', error);
+          throw error;
+        }
       }
+      
+      // Update UI state
+      updatedTerms[termIndex] = {
+        ...updatedTerms[termIndex],
+        applied: true,
+        rejected: false
+      };
+      
+      setSuggestions({
+        ...suggestions,
+        terms: updatedTerms
+      });
       
       toast({
         title: 'Term Applied',
-        description: 'The ontology term has been associated with this document.'
+        description: `Added "${updatedTerms[termIndex].term}" to this document`,
       });
       
       return true;
     } catch (error) {
-      console.error('Error applying suggested term:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to apply the suggested term',
-        variant: 'destructive'
-      });
+      handleError(
+        error,
+        "Failed to apply ontology term suggestion",
+        { level: "warning", technical: true }
+      );
       return false;
     }
-  }, []);
+  };
   
   /**
-   * Apply suggested note link
+   * Reject a suggested term by marking it as rejected in the UI only
    */
-  const applySuggestedLink = useCallback(async (
-    targetId: string,
-    sourceId: string
-  ) => {
+  const rejectSuggestedTerm = (termId: string) => {
+    const updatedTerms = [...suggestions.terms];
+    const termIndex = updatedTerms.findIndex(term => term.id === termId);
+    
+    if (termIndex === -1) {
+      return false;
+    }
+    
+    updatedTerms[termIndex] = {
+      ...updatedTerms[termIndex],
+      rejected: true,
+      applied: false
+    };
+    
+    setSuggestions({
+      ...suggestions,
+      terms: updatedTerms
+    });
+    
+    return true;
+  };
+  
+  /**
+   * Apply all suggested terms that match certain criteria (for admin/auto mode)
+   */
+  const applyAllSuggestedTerms = async (sourceId: string, minScore = 60) => {
     try {
-      if (!sourceId) {
-        throw new Error('Source ID is required to create a link');
+      const termsToApply = suggestions.terms
+        .filter(term => !term.applied && !term.rejected && (term.score || 0) >= minScore)
+        .map(term => ({
+          knowledge_source_id: sourceId,
+          ontology_term_id: term.id,
+          created_by: null,
+          review_required: false
+        }));
+      
+      if (termsToApply.length === 0) {
+        return true;
       }
       
-      // Skip if source and target are the same
-      if (sourceId === targetId) {
-        toast({
-          title: 'Link Error',
-          description: 'Cannot link a document to itself',
-          variant: 'destructive'
-        });
+      // Insert all terms at once
+      const { error } = await supabase
+        .from('knowledge_source_ontology_terms')
+        .insert(termsToApply);
+      
+      if (error) {
+        console.error('Error applying all ontology terms:', error);
+        throw error;
+      }
+      
+      // Update UI state for all applied terms
+      const updatedTerms = suggestions.terms.map(term => {
+        if (!term.applied && !term.rejected && (term.score || 0) >= minScore) {
+          return { ...term, applied: true };
+        }
+        return term;
+      });
+      
+      setSuggestions({
+        ...suggestions,
+        terms: updatedTerms
+      });
+      
+      toast({
+        title: 'Terms Applied',
+        description: `Added ${termsToApply.length} ontology terms to this document`,
+      });
+      
+      return true;
+    } catch (error) {
+      handleError(
+        error,
+        "Failed to apply all ontology term suggestions",
+        { level: "warning", technical: true }
+      );
+      return false;
+    }
+  };
+  
+  /**
+   * Apply a suggested link by creating a relationship between documents
+   */
+  const applySuggestedLink = async (targetId: string, sourceId: string) => {
+    try {
+      // Check if this note is already applied
+      const updatedNotes = [...suggestions.notes];
+      const noteIndex = updatedNotes.findIndex(note => note.id === targetId);
+      
+      if (noteIndex === -1) {
+        console.warn(`Note ${targetId} not found in suggestions`);
         return false;
       }
       
-      // Check if link already exists
-      const { data: existingLinks, error: checkError } = await supabase
-        .from('note_links')
-        .select('id')
-        .match({
-          source_id: sourceId,
-          target_id: targetId
-        });
-        
-      if (checkError) {
-        console.error('Error checking existing links:', checkError);
-        throw checkError;
+      // If already applied, do nothing
+      if (updatedNotes[noteIndex].applied) {
+        return true;
       }
       
-      // If already linked, just inform the user
-      if (existingLinks && existingLinks.length > 0) {
-        toast({
-          title: 'Link Already Exists',
-          description: 'These documents are already linked'
-        });
-        return false;
-      }
-      
-      // Create the note link
-      const { data, error } = await supabase
+      // Create relationship in database
+      const { error } = await supabase
         .from('note_links')
         .insert({
           source_id: sourceId,
           target_id: targetId,
-          link_type: 'AI-suggested',
-          created_by: (await supabase.auth.getUser()).data.user?.id
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+          link_type: 'related'
         });
-        
+      
       if (error) {
-        console.error('Error creating suggested link:', error);
-        throw error;
+        if (error.code === '23505') {
+          // Ignore unique constraint violations
+          console.log('Link already exists between these documents');
+        } else {
+          console.error('Error applying note link:', error);
+          throw error;
+        }
       }
       
+      // Update UI state
+      updatedNotes[noteIndex] = {
+        ...updatedNotes[noteIndex],
+        applied: true,
+        rejected: false
+      };
+      
+      setSuggestions({
+        ...suggestions,
+        notes: updatedNotes
+      });
+      
       toast({
-        title: 'Link Created',
-        description: 'The documents have been linked successfully'
+        title: 'Link Applied',
+        description: `Added link to "${updatedNotes[noteIndex].title}"`,
       });
       
       return true;
     } catch (error) {
-      console.error('Error applying suggested link:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to create the suggested link',
-        variant: 'destructive'
-      });
+      handleError(
+        error,
+        "Failed to apply note link suggestion",
+        { level: "warning", technical: true }
+      );
       return false;
     }
-  }, []);
+  };
+  
+  /**
+   * Reject a suggested link by marking it as rejected in the UI only
+   */
+  const rejectSuggestedLink = (noteId: string) => {
+    const updatedNotes = [...suggestions.notes];
+    const noteIndex = updatedNotes.findIndex(note => note.id === noteId);
+    
+    if (noteIndex === -1) {
+      return false;
+    }
+    
+    updatedNotes[noteIndex] = {
+      ...updatedNotes[noteIndex],
+      rejected: true,
+      applied: false
+    };
+    
+    setSuggestions({
+      ...suggestions,
+      notes: updatedNotes
+    });
+    
+    return true;
+  };
 
   return {
     suggestions,
     isLoading,
     analyzeContent,
     applySuggestedTerm,
-    applySuggestedLink
+    rejectSuggestedTerm,
+    applyAllSuggestedTerms,
+    applySuggestedLink,
+    rejectSuggestedLink
   };
-}
-
-/**
- * Helper function to extract keywords from content
- */
-function extractKeywords(content: string, title: string): string[] {
-  // Simple extraction of important terms
-  // In a production system, this would use NLP or ML techniques
-  
-  // Clean up content
-  const cleanContent = content
-    .replace(/```[\s\S]*?```/g, '') // Remove code blocks
-    .replace(/#+\s+([^\n]+)/g, '$1') // Extract headers
-    .toLowerCase();
-  
-  // Extract words, prioritizing from title and headers
-  const titleWords = title.toLowerCase().split(/\W+/).filter(w => w.length > 3);
-  
-  // Extract potential header content (basic approach)
-  const headerPattern = /#+\s+([^\n]+)/g;
-  let headerWords: string[] = [];
-  let match;
-  while ((match = headerPattern.exec(content)) !== null) {
-    headerWords = headerWords.concat(
-      match[1].toLowerCase().split(/\W+/).filter(w => w.length > 3)
-    );
-  }
-  
-  // Get all content words excluding common stop words
-  const stopWords = new Set([
-    'about', 'after', 'all', 'also', 'and', 'any', 'been', 'before', 'between',
-    'both', 'but', 'for', 'from', 'had', 'has', 'have', 'here', 'how', 'into',
-    'more', 'not', 'now', 'over', 'some', 'such', 'than', 'that', 'the', 'their',
-    'them', 'then', 'there', 'these', 'they', 'this', 'through', 'under', 'very',
-    'was', 'were', 'what', 'when', 'where', 'which', 'while', 'with', 'would'
-  ]);
-  
-  const contentWords = cleanContent
-    .split(/\W+/)
-    .filter(w => w.length > 4 && !stopWords.has(w));
-  
-  // Count word frequencies to identify important terms
-  const wordCounts = new Map<string, number>();
-  for (const word of contentWords) {
-    wordCounts.set(word, (wordCounts.get(word) || 0) + 1);
-  }
-  
-  // Prioritize title words, then header words, then frequent content words
-  const titleSet = new Set(titleWords);
-  const headerSet = new Set(headerWords.filter(w => !titleSet.has(w)));
-  
-  // Get top frequent words
-  const sortedContentWords = [...wordCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(entry => entry[0])
-    .filter(w => !titleSet.has(w) && !headerSet.has(w))
-    .slice(0, 15);
-  
-  // Combine phrases from title 
-  const titlePhrases = extractPhrases(title);
-  
-  // Combine all keywords
-  return [
-    ...titlePhrases,
-    ...titleWords,
-    ...headerWords,
-    ...sortedContentWords
-  ].slice(0, 20); // Limit to 20 keywords
-}
-
-/**
- * Extract meaningful phrases from text
- */
-function extractPhrases(text: string): string[] {
-  if (!text || text.length < 5) return [];
-  
-  // Simple phrase extraction (2-3 word combos)
-  const words = text.toLowerCase().split(/\W+/).filter(w => w.length > 2);
-  const phrases: string[] = [];
-  
-  // Create 2-word phrases
-  for (let i = 0; i < words.length - 1; i++) {
-    phrases.push(`${words[i]} ${words[i+1]}`);
-  }
-  
-  // Create 3-word phrases
-  for (let i = 0; i < words.length - 2; i++) {
-    phrases.push(`${words[i]} ${words[i+1]} ${words[i+2]}`);
-  }
-  
-  return phrases;
-}
-
-/**
- * Filter unique objects by a property
- */
-function filterUniqueByProperty<T>(array: T[], property: keyof T): T[] {
-  const seen = new Set();
-  return array
-    .filter(item => {
-      const value = item[property];
-      if (seen.has(value)) return false;
-      seen.add(value);
-      return true;
-    })
-    .sort((a: any, b: any) => b.score - a.score); // Sort by score descending
-}
+};

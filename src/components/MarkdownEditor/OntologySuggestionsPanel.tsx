@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useOntologySuggestions } from '@/hooks/markdown-editor/useOntologySuggestions';
-import { Lightbulb, Tag, FileText, RefreshCw } from 'lucide-react';
+import { Lightbulb, Tag, FileText, RefreshCw, CheckCircle, XCircle, Shield } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/hooks/useAuth';
 
 interface OntologySuggestionsPanelProps {
   content: string;
@@ -21,12 +22,17 @@ export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> =
   sourceId,
   onApplySuggestion
 }) => {
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
   const {
     suggestions,
     isLoading,
     analyzeContent,
     applySuggestedTerm,
-    applySuggestedLink
+    rejectSuggestedTerm,
+    applyAllSuggestedTerms,
+    applySuggestedLink,
+    rejectSuggestedLink
   } = useOntologySuggestions();
   
   const [activeTab, setActiveTab] = useState<string>('terms');
@@ -35,6 +41,15 @@ export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> =
   
   // Check if content is different from what was analyzed
   const contentChanged = analyzedContent !== content;
+  
+  // Check if user has admin role
+  useEffect(() => {
+    // For demo purposes, just checking if email contains admin
+    // In a real app, you'd check user roles in the database
+    if (user?.email?.includes('admin')) {
+      setIsAdmin(true);
+    }
+  }, [user]);
   
   // Analyze content initially and when it changes significantly
   useEffect(() => {
@@ -60,11 +75,26 @@ export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> =
     }
   };
   
+  const handleRejectTerm = (termId: string) => {
+    rejectSuggestedTerm(termId);
+  };
+  
+  const handleApplyAllTerms = async () => {
+    const success = await applyAllSuggestedTerms(sourceId);
+    if (success && onApplySuggestion) {
+      onApplySuggestion();
+    }
+  };
+  
   const handleApplyLink = async (targetId: string) => {
     const success = await applySuggestedLink(targetId, sourceId);
     if (success && onApplySuggestion) {
       onApplySuggestion();
     }
+  };
+  
+  const handleRejectLink = (noteId: string) => {
+    rejectSuggestedLink(noteId);
   };
   
   // Don't render if there's not enough content to analyze
@@ -133,21 +163,78 @@ export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> =
               <TabsContent value="terms" className="mt-0">
                 {suggestions.terms.length > 0 ? (
                   <div className="grid gap-2">
+                    {isAdmin && (
+                      <div className="flex justify-end mb-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleApplyAllTerms}
+                          className="h-6 text-[10px] flex items-center"
+                        >
+                          <Shield className="h-3 w-3 mr-1" /> Apply All High-Confidence Terms
+                        </Button>
+                      </div>
+                    )}
+                    
                     {suggestions.terms.map(term => (
-                      <div key={term.id} className="flex justify-between items-center p-2 bg-muted/50 rounded text-xs">
+                      <div 
+                        key={term.id} 
+                        className={`flex justify-between items-center p-2 rounded text-xs ${
+                          term.applied 
+                            ? 'bg-green-50 border border-green-100' 
+                            : term.rejected 
+                              ? 'bg-gray-50 border border-gray-100 opacity-60' 
+                              : 'bg-muted/50'
+                        }`}
+                      >
                         <div className="flex flex-col">
                           <span className="font-medium">{term.term}</span>
                           <span className="text-muted-foreground text-[10px]">{term.description || 'No description'}</span>
-                          {term.domain && <Badge variant="outline" className="text-[9px] px-1 py-0 mt-1 h-4 w-fit">{term.domain}</Badge>}
+                          <div className="flex items-center gap-2 mt-1">
+                            {term.domain && (
+                              <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 w-fit">
+                                {term.domain}
+                              </Badge>
+                            )}
+                            {term.score && (
+                              <Badge variant={term.score > 70 ? "default" : "outline"} className="text-[9px] px-1 py-0 h-4 w-fit">
+                                {Math.round(term.score)}%
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 text-[10px]"
-                          onClick={() => handleApplyTerm(term.id)}
-                        >
-                          Apply
-                        </Button>
+                        
+                        <div className="flex items-center gap-1">
+                          {term.applied ? (
+                            <span className="text-[10px] text-green-600 flex items-center">
+                              <CheckCircle className="h-3 w-3 mr-1" /> Applied
+                            </span>
+                          ) : term.rejected ? (
+                            <span className="text-[10px] text-muted-foreground flex items-center">
+                              <XCircle className="h-3 w-3 mr-1" /> Rejected
+                            </span>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-[10px] text-green-600 hover:text-green-700 hover:bg-green-50 p-1"
+                                onClick={() => handleApplyTerm(term.id)}
+                              >
+                                <CheckCircle className="h-3 w-3 mr-1" /> Apply
+                              </Button>
+                              
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-[10px] text-gray-500 hover:text-gray-700 hover:bg-gray-50 p-1"
+                                onClick={() => handleRejectTerm(term.id)}
+                              >
+                                <XCircle className="h-3 w-3 mr-1" /> Reject
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -162,19 +249,52 @@ export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> =
                 {suggestions.notes.length > 0 ? (
                   <div className="grid gap-2">
                     {suggestions.notes.map(note => (
-                      <div key={note.id} className="flex justify-between items-center p-2 bg-muted/50 rounded text-xs">
+                      <div 
+                        key={note.id} 
+                        className={`flex justify-between items-center p-2 rounded text-xs ${
+                          note.applied 
+                            ? 'bg-green-50 border border-green-100' 
+                            : note.rejected 
+                              ? 'bg-gray-50 border border-gray-100 opacity-60' 
+                              : 'bg-muted/50'
+                        }`}
+                      >
                         <div className="flex flex-col">
                           <span className="font-medium">{note.title}</span>
                           {note.score && <span className="text-muted-foreground text-[10px]">Relevance: {Math.round(note.score)}%</span>}
                         </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 text-[10px]"
-                          onClick={() => handleApplyLink(note.id)}
-                        >
-                          Link
-                        </Button>
+                        
+                        <div className="flex items-center gap-1">
+                          {note.applied ? (
+                            <span className="text-[10px] text-green-600 flex items-center">
+                              <CheckCircle className="h-3 w-3 mr-1" /> Linked
+                            </span>
+                          ) : note.rejected ? (
+                            <span className="text-[10px] text-muted-foreground flex items-center">
+                              <XCircle className="h-3 w-3 mr-1" /> Rejected
+                            </span>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-[10px] text-green-600 hover:text-green-700 hover:bg-green-50 p-1"
+                                onClick={() => handleApplyLink(note.id)}
+                              >
+                                <CheckCircle className="h-3 w-3 mr-1" /> Link
+                              </Button>
+                              
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-[10px] text-gray-500 hover:text-gray-700 hover:bg-gray-50 p-1"
+                                onClick={() => handleRejectLink(note.id)}
+                              >
+                                <XCircle className="h-3 w-3 mr-1" /> Reject
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

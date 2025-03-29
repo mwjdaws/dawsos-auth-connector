@@ -26,6 +26,7 @@ interface EnrichmentResult {
 interface EnrichmentOptions {
   autoLink?: boolean;
   saveMetadata?: boolean;
+  reviewRequired?: boolean;
 }
 
 export const useOntologyEnrichment = () => {
@@ -37,7 +38,7 @@ export const useOntologyEnrichment = () => {
     sourceId: string,
     content: string,
     title: string,
-    options: EnrichmentOptions = { autoLink: false, saveMetadata: true }
+    options: EnrichmentOptions = { autoLink: false, saveMetadata: true, reviewRequired: true }
   ) => {
     if (!sourceId || sourceId.startsWith('temp-') || !content || content.length < 50) {
       console.log('Skipping ontology enrichment for temporary or small content');
@@ -72,7 +73,7 @@ export const useOntologyEnrichment = () => {
       
       // Automatically create links if requested
       if (options.autoLink) {
-        await createOntologyLinks(sourceId, result);
+        await createOntologyLinks(sourceId, result, options.reviewRequired);
       }
       
       return result;
@@ -149,7 +150,7 @@ export const useOntologyEnrichment = () => {
   /**
    * Create links between the knowledge source and ontology terms
    */
-  const createOntologyLinks = async (sourceId: string, enrichmentResult: EnrichmentResult) => {
+  const createOntologyLinks = async (sourceId: string, enrichmentResult: EnrichmentResult, reviewRequired = true) => {
     try {
       // Only process if we have terms to link
       if (!enrichmentResult.terms.length) {
@@ -188,7 +189,8 @@ export const useOntologyEnrichment = () => {
         knowledge_source_id: sourceId,
         ontology_term_id: term.id,
         created_at: new Date().toISOString(),
-        created_by: null // This would be user ID in authenticated context
+        created_by: null, // This would be user ID in authenticated context
+        review_required: reviewRequired
       }));
       
       const { error: insertError } = await supabase
