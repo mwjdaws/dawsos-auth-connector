@@ -27,15 +27,15 @@ export function useMetadataContext(
     isCollapsed,
     setIsCollapsed,
     handleRefresh,
-    handleAddTag: addTag,
-    handleDeleteTag: removeTag
+    handleAddTag,
+    handleDeleteTag
   } = useMetadataPanel(contentId, onMetadataChange, isCollapsible, initialCollapsed);
 
   // Determine if content is editable based on user presence
   const isEditable = !!user;
 
   // Function to refresh metadata asynchronously
-  const refreshTags = () => {
+  const refreshTags = async () => {
     handleRefresh();
     // Return a promise that resolves after a short delay
     return new Promise<void>(resolve => setTimeout(resolve, 100));
@@ -43,8 +43,15 @@ export function useMetadataContext(
 
   // Function to set tags (wrapper for setting tags in the panel)
   const setTags = (newTags: any[]) => {
-    // Implementation would depend on how tags are managed
+    // This is a placeholder - in a real implementation, we would
+    // need to update the tags in the database or backend
     console.log('Setting tags:', newTags);
+  };
+
+  // Add a tag wrapper function that matches the interface
+  const addTag = (tag: string) => {
+    setNewTag(tag);
+    handleAddTag();
   };
 
   // Memoize the context state to prevent unnecessary re-renders
@@ -54,12 +61,12 @@ export function useMetadataContext(
       tags,
       domains: [], // This would come from actual data
       externalSource,
-      ontologyTerms: [], // This would come from actual data
+      ontologyTerms: [] as OntologyTerm[], // Properly typed empty array
       loading,
       error: error || null,
       setTags,
       addTag,
-      removeTag,
+      removeTag: handleDeleteTag,
       refreshTags
     }),
     [
@@ -68,8 +75,8 @@ export function useMetadataContext(
       externalSource,
       loading,
       error,
-      addTag,
-      removeTag
+      handleAddTag,
+      handleDeleteTag
     ]
   );
 }

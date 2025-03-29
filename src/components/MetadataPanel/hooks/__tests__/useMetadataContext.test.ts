@@ -1,5 +1,5 @@
 
-import { renderHook } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { useMetadataContext } from '../useMetadataContext';
 import { useMetadataPanel } from '../useMetadataPanel';
@@ -50,7 +50,7 @@ describe('useMetadataContext', () => {
     expect(result.current).toHaveProperty('loading', mockMetadataPanelResult.isLoading);
     expect(result.current).toHaveProperty('error', mockMetadataPanelResult.error);
     expect(result.current).toHaveProperty('setTags');
-    expect(result.current).toHaveProperty('addTag', mockMetadataPanelResult.handleAddTag);
+    expect(result.current).toHaveProperty('addTag');
     expect(result.current).toHaveProperty('removeTag', mockMetadataPanelResult.handleDeleteTag);
     expect(result.current).toHaveProperty('refreshTags');
   });
@@ -93,6 +93,18 @@ describe('useMetadataContext', () => {
     
     // Clean up
     vi.useRealTimers();
+  });
+
+  test('addTag sets the newTag value and calls handleAddTag', () => {
+    const contentId = 'content-123';
+    const { result } = renderHook(() => useMetadataContext(contentId));
+    
+    act(() => {
+      result.current.addTag('New Tag');
+    });
+    
+    expect(mockMetadataPanelResult.setNewTag).toHaveBeenCalledWith('New Tag');
+    expect(mockMetadataPanelResult.handleAddTag).toHaveBeenCalledTimes(1);
   });
 
   test('memoizes the context state to prevent unnecessary re-renders', () => {
