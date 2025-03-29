@@ -1,25 +1,20 @@
 
 /**
- * MetadataPanel Section Components
+ * MetadataPanel Sections
  * 
- * This file exports all the individual section components that make up the MetadataPanel.
- * These components can be used independently or together within the main MetadataPanel.
+ * This file exports all of the individual section components that make up the MetadataPanel.
+ * Each section is responsible for displaying and managing a specific aspect of content metadata.
  * 
- * Available sections:
- * - HeaderSection: Panel title and controls
- * - ExternalSourceSection: External source URL and last checked date
- * - TagsSection: Content tags with add/delete functionality
- * - OntologyTermsSection: Ontology terms associated with the content
- * - DomainSection: Content domain information
- * - ContentIdSection: Display content ID
- * - LoadingState: Loading skeleton UI
+ * These components can be used independently or as part of the unified MetadataPanel.
  */
 
-// Export all section components
-export * from './HeaderSection';
-export * from './ExternalSourceSection';
-export * from './TagsSection';
-export * from './ContentIdSection';
-export * from './OntologyTermsSection';
-export * from './DomainSection';
-export * from './LoadingState';
+export { HeaderSection } from './HeaderSection';
+export { ExternalSourceSection } from './ExternalSourceSection';
+export { TagsSection } from './TagsSection';
+export { OntologyTermsSection } from './OntologyTermsSection';
+export { ContentIdSection } from './ContentIdSection';
+export { LoadingState } from './LoadingState';
+export { DomainSection } from './DomainSection';
+
+// Aliases for backward compatibility
+export { HeaderSection as CollapsibleHeader } from './HeaderSection';

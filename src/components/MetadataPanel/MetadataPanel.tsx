@@ -1,4 +1,3 @@
-
 /**
  * MetadataPanel Component
  * 
@@ -12,16 +11,15 @@
  * - Loading and error states
  * - Type safety with comprehensive TypeScript interfaces
  * 
- * @example Basic usage
- * ```tsx
+ * @example
+ * // Basic usage
  * <MetadataPanel 
  *   contentId="content-123" 
  *   onMetadataChange={() => {}} 
  * />
- * ```
  * 
- * @example Advanced usage with options
- * ```tsx
+ * @example
+ * // Advanced usage with options
  * <MetadataPanel 
  *   contentId="content-123" 
  *   onMetadataChange={handleMetadataChange} 
@@ -36,10 +34,9 @@
  *   {/* Additional custom content */}
  *   <CustomSection />
  * </MetadataPanel>
- * ```
  * 
- * @example Using the metadata context outside the component
- * ```tsx
+ * @example
+ * // Using the metadata context outside the component
  * import { useMetadataContext } from "@/components/MetadataPanel";
  * 
  * function MyComponent({ contentId }) {
@@ -54,7 +51,6 @@
  *   // Refresh metadata
  *   metadata.refreshMetadata();
  * }
- * ```
  */
 
 import React from "react";
