@@ -9,7 +9,7 @@ export { useKnowledgeSources, useKnowledgeSourcesQuery } from './useKnowledgeSou
 export { useNoteLinks, useSourceLinks } from './useNoteLinks';
 export { useWikiLinks } from './useWikiLinks';
 export { useOntologyTerms } from './useOntologyTerms';
-export { OntologyTerm, RelatedTerm } from './ontology-terms/types';
+export type { OntologyTerm, RelatedTerm } from './ontology-terms/types';
 export * from './types';
 export * from './handlers/useSaveDraftHandler';
 export * from './handlers/usePublishHandler';

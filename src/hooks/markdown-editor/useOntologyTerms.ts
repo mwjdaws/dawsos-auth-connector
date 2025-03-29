@@ -3,7 +3,7 @@ import { useSourceTerms } from './ontology-terms/useSourceTerms';
 import { useRelatedTerms } from './ontology-terms/useRelatedTerms';
 import { useAllTermsAndDomains } from './ontology-terms/useAllTermsAndDomains';
 import { useTermMutations } from './ontology-terms/useTermMutations';
-export { OntologyTerm, RelatedTerm } from './ontology-terms/types';
+export type { OntologyTerm, RelatedTerm } from './ontology-terms/types';
 
 /**
  * Hook for managing ontology terms for a knowledge source
