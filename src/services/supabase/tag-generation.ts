@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/errors';
 
@@ -54,7 +53,7 @@ export const generateTags = async (
     
     while (retryCount <= MAX_RETRIES) {
       try {
-        const { data, error, status } = await supabase.functions.invoke('generate-tags', {
+        const { data, error } = await supabase.functions.invoke('generate-tags', {
           body: { 
             content: trimmedContent, 
             save, 
@@ -65,11 +64,12 @@ export const generateTags = async (
           // Signal property is intentionally omitted to avoid errors
         });
 
-        // Check for rate limiting (429 status)
-        if (status === 429) {
+        // Check for rate limiting by examining error or data properties
+        // Since status is not directly available, we'll check error message or code
+        if (error && (error.message?.includes('429') || error.code === 429)) {
           console.warn('Rate limited by tag generation service');
           
-          // Get retry delay from headers or use exponential backoff
+          // Get retry delay from data or use exponential backoff
           const retryAfter = data?.retryAfter || Math.pow(2, retryCount) * 1000;
           
           if (retryCount < MAX_RETRIES) {
