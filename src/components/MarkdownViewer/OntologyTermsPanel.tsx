@@ -151,10 +151,10 @@ export function OntologyTermsPanel({ sourceId, editable = false }: OntologyTerms
                 <div className="flex flex-wrap gap-2">
                   {relatedTerms.map((term) => (
                     <Badge 
-                      key={`${term.id}-${term.relation_type}`} 
+                      key={`${term.term_id}-${term.relation_type}`} 
                       variant="outline"
                       className="bg-slate-50 hover:bg-slate-100 cursor-pointer"
-                      onClick={() => editable && !attachedTermIds.has(term.id) && addTerm(term.id)}
+                      onClick={() => editable && !attachedTermIds.has(term.term_id) && addTerm(term.term_id)}
                     >
                       {term.term}
                       <span className="text-xs opacity-70 ml-1">
