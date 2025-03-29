@@ -27,69 +27,37 @@ export const createDefaultMetadataPanelMock = () => ({
  * Mocks for individual section components
  */
 export const mockSections = {
-  HeaderSection: ({ handleRefresh, setIsCollapsed, isCollapsed }) => (
-    <div data-testid="header-section">
-      <button data-testid="refresh-button" onClick={handleRefresh}>Refresh</button>
-      <button 
-        data-testid="collapse-button" 
-        onClick={() => setIsCollapsed(!isCollapsed)}
-      >
-        {isCollapsed ? 'Expand' : 'Collapse'}
-      </button>
-    </div>
-  ),
+  HeaderSection: vi.fn().mockImplementation(({ handleRefresh, setIsCollapsed, isCollapsed }) => ({
+    type: 'header-section',
+    props: { handleRefresh, setIsCollapsed, isCollapsed }
+  })),
   
-  ExternalSourceSection: ({ externalSourceUrl }) => (
-    <div data-testid="external-source-section">
-      {externalSourceUrl && <a href={externalSourceUrl}>{externalSourceUrl}</a>}
-    </div>
-  ),
+  ExternalSourceSection: vi.fn().mockImplementation(({ externalSourceUrl }) => ({
+    type: 'external-source-section',
+    props: { externalSourceUrl }
+  })),
   
-  TagsSection: ({ tags, editable, newTag, setNewTag, onAddTag, onDeleteTag }) => (
-    <div data-testid="tags-section">
-      <ul>
-        {tags?.map(tag => (
-          <li key={tag.id} data-testid={`tag-${tag.id}`}>
-            {tag.name}
-            {editable && (
-              <button 
-                data-testid={`delete-tag-${tag.id}`}
-                onClick={() => onDeleteTag(tag.id)}
-              >
-                Delete
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-      {editable && (
-        <div>
-          <input 
-            data-testid="new-tag-input"
-            value={newTag}
-            onChange={e => setNewTag(e.target.value)}
-          />
-          <button data-testid="add-tag-button" onClick={onAddTag}>Add Tag</button>
-        </div>
-      )}
-    </div>
-  ),
+  TagsSection: vi.fn().mockImplementation(({ tags, editable, newTag, setNewTag, onAddTag, onDeleteTag }) => ({
+    type: 'tags-section',
+    props: { tags, editable, newTag, setNewTag, onAddTag, onDeleteTag }
+  })),
   
-  OntologyTermsSection: ({ sourceId, editable }) => (
-    <div data-testid="ontology-terms-section" data-source-id={sourceId} data-editable={editable}>
-      Ontology Terms
-    </div>
-  ),
+  OntologyTermsSection: vi.fn().mockImplementation(({ sourceId, editable }) => ({
+    type: 'ontology-terms-section',
+    props: { sourceId, editable }
+  })),
   
-  ContentIdSection: ({ contentId }) => (
-    <div data-testid="content-id-section">Content ID: {contentId}</div>
-  ),
+  ContentIdSection: vi.fn().mockImplementation(({ contentId }) => ({
+    type: 'content-id-section',
+    props: { contentId }
+  })),
   
-  LoadingState: () => <div data-testid="loading-state">Loading...</div>,
+  LoadingState: vi.fn().mockImplementation(() => ({
+    type: 'loading-state'
+  })),
   
-  DomainSection: ({ domain }) => (
-    <div data-testid="domain-section">
-      {domain || 'No domain'}
-    </div>
-  )
+  DomainSection: vi.fn().mockImplementation(({ domain }) => ({
+    type: 'domain-section',
+    props: { domain }
+  }))
 };
