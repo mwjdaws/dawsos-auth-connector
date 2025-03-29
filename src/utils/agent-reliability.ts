@@ -72,7 +72,7 @@ export async function executeAgentTask(
   try {
     // For tasks that should run in the background, create a task record and submit
     if (runInBackground) {
-      const { data, error } = await supabase
+      const { data: taskData, error } = await supabase
         .from("agent_tasks")
         .insert({
           agent_name: agentName,
@@ -102,7 +102,7 @@ export async function executeAgentTask(
       
       return {
         success: true,
-        taskId: data.id,
+        taskId: taskData?.id,
         data: { message: "Task submitted for background processing" },
       };
     }
@@ -221,13 +221,15 @@ export async function getAgentTaskStatus(taskId: string): Promise<{
       
     if (error) throw error;
     
+    const payload = data.payload && typeof data.payload === 'object' ? data.payload : {};
+    
     return {
       status: data.status as AgentTaskStatus,
       retryCount: data.retry_count,
       lastAttempt: data.last_attempt_at ? new Date(data.last_attempt_at) : undefined,
       nextAttempt: data.next_attempt_at ? new Date(data.next_attempt_at) : undefined,
       error: data.error_message,
-      result: data.payload && typeof data.payload === 'object' ? data.payload.result : undefined,
+      result: payload.result,
     };
   } catch (error) {
     handleError(

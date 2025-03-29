@@ -2,157 +2,130 @@
 /**
  * Edge Function Reliability Utilities
  * 
- * These utilities help improve reliability when working with Supabase Edge Functions
- * by adding retry logic, timeout handling, and fallback options.
+ * Provides utilities for reliable edge function invocation:
+ * - Automatic retries with exponential backoff
+ * - Timeout handling
+ * - Error classification
+ * - Fallback mechanisms
  */
 
-import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "../hooks/use-toast";
+import { handleError } from "./errors";
 
 /**
- * Timeout wrapper for edge function calls
- * Prevents hanging UI if an edge function doesn't respond in a reasonable time
+ * Options for edge function invocation
  */
-export const withTimeout = <T>(
-  promise: Promise<T>,
-  timeoutMs = 10000,
-  fallbackValue?: T
-): Promise<T> => {
-  return new Promise<T>((resolve, reject) => {
-    // Set timeout to reject or return fallback
-    const timeoutId = setTimeout(() => {
-      if (fallbackValue !== undefined) {
-        console.warn(`Edge function call timed out after ${timeoutMs}ms, using fallback value`);
-        resolve(fallbackValue);
-      } else {
-        reject(new Error(`Edge function call timed out after ${timeoutMs}ms`));
-      }
-    }, timeoutMs);
-
-    // Try to execute the actual promise
-    promise
-      .then((result) => {
-        clearTimeout(timeoutId);
-        resolve(result);
-      })
-      .catch((error) => {
-        clearTimeout(timeoutId);
-        reject(error);
-      });
-  });
-};
+export interface EdgeFunctionOptions {
+  timeoutMs?: number;
+  maxRetries?: number;
+  retryDelay?: number;
+  showErrorToast?: boolean;
+  fallbackFn?: () => any;
+}
 
 /**
- * Retry wrapper for edge function calls
- * Automatically retries failed calls with exponential backoff
+ * Invokes a Supabase Edge Function with reliability enhancements
+ * 
+ * @param functionName The name of the edge function to invoke
+ * @param payload The payload to send to the function
+ * @param options Configuration options for reliability features
  */
-export const withRetry = async <T>(
-  fn: () => Promise<T>,
-  options: {
-    maxRetries?: number;
-    initialDelayMs?: number;
-    maxDelayMs?: number;
-    onRetry?: (attempt: number, error: Error) => void;
-    shouldRetry?: (error: Error) => boolean;
-  } = {}
-): Promise<T> => {
-  const {
-    maxRetries = 3,
-    initialDelayMs = 500,
-    maxDelayMs = 5000,
-    onRetry = (attempt, error) => console.warn(`Retry attempt ${attempt} after error: ${error.message}`),
-    shouldRetry = () => true
-  } = options;
-
-  let lastError: Error;
-  let delay = initialDelayMs;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      // First attempt or retry
-      return await fn();
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      
-      // Check if we should retry
-      if (attempt >= maxRetries || !shouldRetry(lastError)) {
-        throw lastError;
-      }
-
-      // Log retry
-      onRetry(attempt + 1, lastError);
-      
-      // Wait before next retry with exponential backoff
-      await new Promise(resolve => setTimeout(resolve, delay));
-      delay = Math.min(delay * 2, maxDelayMs);
-    }
-  }
-
-  // This should never be reached, but TypeScript requires a return value
-  throw lastError!;
-};
-
-/**
- * Enhances supabase.functions.invoke with reliability features
- * - Adds timeout protection
- * - Adds automatic retry with exponential backoff
- * - Provides fallback mechanisms
- */
-export const invokeEdgeFunctionReliably = async <T>(
+export async function invokeEdgeFunctionReliably<T = any>(
   functionName: string,
-  payload?: any,
-  options?: {
-    timeoutMs?: number;
-    maxRetries?: number;
-    fallbackFn?: () => Promise<T> | T;
-    showErrorToast?: boolean;
-  }
-): Promise<T> => {
-  const { 
+  payload: any = {},
+  options: EdgeFunctionOptions = {}
+): Promise<T> {
+  const {
     timeoutMs = 10000,
     maxRetries = 2,
-    fallbackFn,
-    showErrorToast = true 
-  } = options || {};
-  
-  try {
-    // Import supabase dynamically to avoid issues with edge functions
-    const { supabase } = await import("@/integrations/supabase/client");
-    
-    // Call with retry and timeout protection
-    return await withRetry(
-      async () => {
-        const response = await withTimeout(
-          supabase.functions.invoke<T>(functionName, {
-            body: payload
-          }),
-          timeoutMs
-        );
+    retryDelay = 1000,
+    showErrorToast = true,
+    fallbackFn
+  } = options;
+
+  let retries = 0;
+  let lastError: any = null;
+
+  // Attempt with retries
+  while (retries <= maxRetries) {
+    try {
+      // Create a timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(`Function ${functionName} timed out after ${timeoutMs}ms`)), timeoutMs);
+      });
+
+      // Create the function call promise
+      const functionPromise = supabase.functions.invoke(functionName, {
+        body: payload
+      });
+
+      // Race the function call against the timeout
+      const { data, error } = await Promise.race([
+        functionPromise,
+        timeoutPromise
+      ]) as any;
+
+      // Handle Supabase error
+      if (error) {
+        lastError = error;
+        console.error(`Edge function ${functionName} error (attempt ${retries + 1}/${maxRetries + 1}):`, error);
         
-        if (response.error) {
-          throw new Error(`Edge function ${functionName} failed: ${response.error.message}`);
+        // If it's a server error (5xx), retry
+        if (error.status >= 500 && retries < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay * Math.pow(2, retries)));
+          retries++;
+          continue;
         }
         
-        return response.data as T;
-      },
-      { maxRetries }
-    );
-  } catch (error) {
-    console.error(`Failed to call edge function ${functionName}:`, error);
-    
-    if (showErrorToast) {
-      toast({
-        title: "Operation Failed",
-        description: error instanceof Error ? error.message : "Failed to complete operation",
-        variant: "destructive",
-      });
+        throw error;
+      }
+
+      // Return the data
+      return data as T;
+    } catch (error) {
+      lastError = error;
+      console.error(`Edge function ${functionName} exception (attempt ${retries + 1}/${maxRetries + 1}):`, error);
+      
+      // Check if we should retry
+      if (retries < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay * Math.pow(2, retries)));
+        retries++;
+      } else {
+        break;
+      }
     }
-    
-    // Use fallback function if provided
-    if (fallbackFn) {
-      console.log(`Using fallback for edge function ${functionName}`);
-      return await Promise.resolve(fallbackFn());
-    }
-    
-    throw error;
   }
-};
+
+  // All retries failed, use fallback if provided
+  if (fallbackFn) {
+    try {
+      console.log(`Using fallback for edge function ${functionName}`);
+      return await fallbackFn();
+    } catch (fallbackError) {
+      console.error(`Fallback for edge function ${functionName} failed:`, fallbackError);
+      // Continue to error handling
+    }
+  }
+
+  // Show toast if enabled
+  if (showErrorToast) {
+    toast({
+      title: "Operation Failed",
+      description: `The operation couldn't be completed. Please try again later.`,
+      variant: "destructive",
+    });
+  }
+
+  // Log detailed error with context
+  handleError(
+    lastError,
+    `Edge function ${functionName} failed after ${retries} retries`,
+    {
+      level: "error",
+      context: { functionName, payload }
+    }
+  );
+
+  throw lastError;
+}

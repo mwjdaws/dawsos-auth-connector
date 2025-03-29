@@ -1,3 +1,4 @@
+
 /**
  * Ontology Management Utilities
  * 
@@ -10,6 +11,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { handleError } from "@/utils/errors";
+import { invokeEdgeFunctionReliably } from "./edge-function-reliability";
 
 /**
  * Interface for ontology domain
@@ -206,13 +208,11 @@ export async function validateTerm(term: string, domain?: string): Promise<boole
     
     // Validate domain if provided
     if (domain) {
-      const { data: domains } = await supabase
-        .from("ontology_domains")
-        .select("name")
-        .eq("name", domain)
-        .single();
-        
-      if (!domains) {
+      // We need to check if the domain exists in the domains we have
+      const domains = await getAllDomains();
+      const domainExists = domains.some(d => d.name === domain);
+      
+      if (!domainExists) {
         return false;
       }
     }
