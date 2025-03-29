@@ -30,15 +30,23 @@ export const useTagOperations = ({ contentId, user, onMetadataChange }: UseTagOp
     try {
       console.log("Fetching tags for contentId:", contentId);
       
-      const { data: tagData, error: tagError } = await supabase
+      const result = await supabase
         .from("tags")
         .select("*")
         .eq("content_id", contentId);
       
-      if (tagError) throw tagError;
+      // Defensive check for valid response format
+      if (typeof result === 'object' && result !== null && 'data' in result) {
+        const { data: tagData, error: tagError } = result;
+        
+        if (tagError) throw tagError;
+        
+        console.log("Tags fetched:", tagData);
+        return tagData || [];
+      }
       
-      console.log("Tags fetched:", tagData);
-      return tagData || [];
+      // Default return if response format is unexpected
+      return [];
     } catch (err: any) {
       console.error("Error fetching tags:", err);
       
@@ -82,30 +90,37 @@ export const useTagOperations = ({ contentId, user, onMetadataChange }: UseTagOp
       
       console.log("Adding tag:", newTagData);
       
-      const { data, error } = await supabase
+      const result = await supabase
         .from("tags")
         .insert(newTagData)
         .select();
       
-      if (error) throw error;
-      
-      // Verify we got data back before updating state
-      if (data && data.length > 0) {
-        setTags(prev => [...prev, data[0]]);
-        setNewTag("");
+      // Defensive check for valid response format
+      if (typeof result === 'object' && result !== null && 'data' in result) {
+        const { data, error } = result;
         
-        toast({
-          title: "Success",
-          description: "Tag added successfully",
-        });
+        if (error) throw error;
         
-        if (onMetadataChange) {
-          onMetadataChange();
+        // Verify we got data back before updating state
+        if (data && data.length > 0) {
+          setTags(prev => [...prev, data[0]]);
+          setNewTag("");
+          
+          toast({
+            title: "Success",
+            description: "Tag added successfully",
+          });
+          
+          if (onMetadataChange) {
+            onMetadataChange();
+          }
+          
+          console.log("Tag added successfully:", data[0]);
+        } else {
+          throw new Error("Failed to create tag: No data returned");
         }
-        
-        console.log("Tag added successfully:", data[0]);
       } else {
-        throw new Error("Failed to create tag: No data returned");
+        throw new Error("Unexpected response format when adding tag");
       }
     } catch (error: any) {
       console.error("Error adding tag:", error);
@@ -137,12 +152,16 @@ export const useTagOperations = ({ contentId, user, onMetadataChange }: UseTagOp
     try {
       console.log("Deleting tag with ID:", tagId);
       
-      const { error } = await supabase
+      const result = await supabase
         .from("tags")
         .delete()
         .eq("id", tagId);
       
-      if (error) throw error;
+      // Defensive check for valid response format
+      if (typeof result === 'object' && result !== null && 'error' in result) {
+        const { error } = result;
+        if (error) throw error;
+      }
       
       // Update state after successful deletion
       setTags(tags.filter(tag => tag.id !== tagId));

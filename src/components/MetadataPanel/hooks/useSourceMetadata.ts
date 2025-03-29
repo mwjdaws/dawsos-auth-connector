@@ -27,19 +27,31 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
     
     try {
       // Fetch source metadata
-      const { data: sourceData, error: sourceError } = await supabase
+      const result = await supabase
         .from("knowledge_sources")
         .select("external_source_url, needs_external_review, external_source_checked_at")
         .eq("id", contentId)
         .maybeSingle(); // Use maybeSingle instead of single to avoid errors when no rows are returned
       
-      // Handle error but exclude "no rows returned" as it's not a real error for us
-      if (sourceError && sourceError.code !== 'PGRST116') {
-        throw sourceError;
+      // Defensive check for valid response format
+      if (typeof result === 'object' && result !== null && 'data' in result) {
+        const { data: sourceData, error: sourceError } = result;
+        
+        // Handle error but exclude "no rows returned" as it's not a real error for us
+        if (sourceError && sourceError.code !== 'PGRST116') {
+          throw sourceError;
+        }
+        
+        console.log("Source metadata fetched:", sourceData);
+        return sourceData || {
+          external_source_url: null,
+          needs_external_review: false,
+          external_source_checked_at: null
+        };
       }
       
-      console.log("Source metadata fetched:", sourceData);
-      return sourceData || {
+      // Default return if response format is unexpected
+      return {
         external_source_url: null,
         needs_external_review: false,
         external_source_checked_at: null
@@ -57,7 +69,7 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
     }
   };
 
-  const updateSourceMetadataState = (sourceData: SourceMetadata) => {
+  const updateSourceMetadataState = (sourceData: SourceMetadata | null) => {
     if (sourceData) {
       setExternalSourceUrl(sourceData.external_source_url);
       setNeedsExternalReview(sourceData.needs_external_review || false);

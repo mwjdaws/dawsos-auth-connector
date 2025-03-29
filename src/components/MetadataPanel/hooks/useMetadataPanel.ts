@@ -1,9 +1,10 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useTransition } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTagOperations } from './useTagOperations';
 import { useSourceMetadata } from './useSourceMetadata';
 import { usePanelState } from './usePanelState';
+import { isValidContentId } from '@/utils/content-validation';
 
 export function useMetadataPanel(
   contentId: string,
@@ -20,9 +21,13 @@ export function useMetadataPanel(
     fetchTags,
     handleAddTag,
     handleDeleteTag
-  } = useTagOperations(contentId, onMetadataChange);
+  } = useTagOperations({ 
+    contentId, 
+    user, 
+    onMetadataChange 
+  });
 
-  const sourceMetadata = useSourceMetadata(contentId);
+  const sourceMetadata = useSourceMetadata({ contentId });
   
   const {
     isLoading,
@@ -48,10 +53,8 @@ export function useMetadataPanel(
     
     try {
       // Fetch tags and source metadata concurrently
-      const [tagsResult] = await Promise.all([
-        fetchTags(),
-        sourceMetadata.fetchSourceMetadata()
-      ]);
+      const tagsResult = await fetchTags();
+      const sourceResult = await sourceMetadata.fetchSourceMetadata();
       
       // Update state in a non-blocking way
       startTransition(() => {
@@ -63,13 +66,17 @@ export function useMetadataPanel(
           }
           
           // Update source metadata state
-          sourceMetadata.updateSourceMetadataState();
+          if (typeof sourceResult === 'object' && sourceResult !== null) {
+            sourceMetadata.updateSourceMetadataState(sourceResult);
+          }
           
           // Finish loading
           finishLoading(true);
           
           // Notify parent component of metadata change
-          onMetadataChange?.();
+          if (onMetadataChange) {
+            onMetadataChange();
+          }
         }
       });
     } catch (err) {
