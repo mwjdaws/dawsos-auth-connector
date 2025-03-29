@@ -1,15 +1,11 @@
 
-import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, X } from "lucide-react";
-import { useOntologyTerms } from "@/hooks/markdown-editor";
-import { 
-  AttachedTermsList, 
-  RelatedTermsList, 
-  TermBrowser, 
-  CreateTermForm 
-} from "./OntologyTerms";
+import React, { useState, useTransition } from 'react';
+import { OntologyTerm, useOntologyTerms, useTermMutations } from '@/hooks/markdown-editor';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { PlusCircle, X, Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 
 interface OntologyTermsPanelProps {
   sourceId?: string;
@@ -17,131 +13,109 @@ interface OntologyTermsPanelProps {
 }
 
 export function OntologyTermsPanel({ sourceId, editable = false }: OntologyTermsPanelProps) {
-  const [isAddingTerms, setIsAddingTerms] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [newTerm, setNewTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<string>('attached');
-  
-  const {
-    sourceTerms,
-    relatedTerms,
-    allTerms,
-    domains,
-    isLoading,
-    isAdding,
-    isRemoving,
-    searchTerm,
-    setSearchTerm,
-    selectedDomain,
-    setSelectedDomain,
-    addTerm,
-    removeTerm,
-    addTermByName
-  } = useOntologyTerms(sourceId);
+  const { terms, relatedTerms, isLoading } = useOntologyTerms(sourceId);
+  const { addTermByName, removeTerm, isAdding, isRemoving } = useTermMutations(sourceId);
 
-  // Filter out terms that are already attached to avoid duplicates
-  const attachedTermIds = new Set(sourceTerms.map(term => term.id));
-  const availableTerms = allTerms.filter(term => !attachedTermIds.has(term.id));
-  
-  const handleAddCustomTerm = () => {
-    if (newTerm.trim()) {
-      addTermByName(newTerm, selectedDomain || undefined);
-      setNewTerm('');
-    }
+  const handleAddTerm = () => {
+    if (!newTerm.trim() || !sourceId) return;
+    
+    startTransition(() => {
+      addTermByName(newTerm).then(() => {
+        setNewTerm('');
+      });
+    });
   };
 
-  // Toggle the term selector UI
-  const toggleAddTerms = () => {
-    setIsAddingTerms(!isAddingTerms);
-    if (!isAddingTerms) {
-      setSearchTerm('');
-      setSelectedDomain(null);
-    }
+  const handleRemoveTerm = (termAssociationId: string) => {
+    if (!sourceId) return;
+    
+    startTransition(() => {
+      removeTerm(termAssociationId);
+    });
   };
 
   if (isLoading) {
     return (
-      <div className="p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium">Ontology Terms</h3>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <div className="bg-slate-100 animate-pulse px-3 py-1 rounded-full text-sm">
-            Loading...
-          </div>
-        </div>
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium mb-2">Ontology Terms</h3>
+        <Skeleton className="h-6 w-full" />
+        <Skeleton className="h-6 w-3/4" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">Ontology Terms</h3>
-        {editable && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={toggleAddTerms}
-            aria-expanded={isAddingTerms}
-          >
-            {isAddingTerms ? <X className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
-            {isAddingTerms ? 'Close' : 'Add Terms'}
-          </Button>
+    <div className="space-y-2">
+      <h3 className="text-sm font-medium mb-2">Ontology Terms</h3>
+      
+      <div className="flex flex-wrap gap-2 mb-3">
+        {terms.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No ontology terms</p>
+        ) : (
+          terms.map((term) => (
+            <Badge 
+              key={term.association_id} 
+              variant="secondary"
+              className="flex items-center gap-1"
+            >
+              {term.domain && <span className="text-xs text-muted-foreground">{term.domain}:</span>}{' '}
+              {term.term}
+              {editable && (
+                <button
+                  onClick={() => handleRemoveTerm(term.association_id)}
+                  className="ml-1 text-muted-foreground hover:text-foreground"
+                  disabled={isRemoving}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </Badge>
+          ))
         )}
+        {isPending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
       </div>
-
-      {/* Display attached and related terms when not in adding mode */}
-      {!isAddingTerms && (
-        <>
-          <AttachedTermsList 
-            terms={sourceTerms} 
-            editable={editable} 
-            onRemoveTerm={removeTerm} 
+      
+      {editable && (
+        <div className="flex gap-2 items-center">
+          <Input
+            value={newTerm}
+            onChange={(e) => setNewTerm(e.target.value)}
+            placeholder="Add ontology term..."
+            className="text-sm h-8"
+            onKeyDown={(e) => e.key === 'Enter' && handleAddTerm()}
           />
-          
-          <RelatedTermsList 
-            terms={relatedTerms} 
-            editable={editable} 
-            attachedTermIds={attachedTermIds} 
-            onAddTerm={addTerm} 
-          />
-        </>
+          <Button 
+            size="sm"
+            variant="ghost"
+            disabled={!newTerm.trim() || isAdding}
+            onClick={handleAddTerm}
+          >
+            {isAdding ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <PlusCircle className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
       )}
-
-      {/* Term selector UI */}
-      {isAddingTerms && (
-        <div className="border rounded-md p-4 space-y-4">
-          <Tabs defaultValue="browse" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="browse">Browse Terms</TabsTrigger>
-              <TabsTrigger value="create">Add New Term</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="browse" className="space-y-4">
-              <TermBrowser 
-                availableTerms={availableTerms}
-                domains={domains}
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                selectedDomain={selectedDomain}
-                setSelectedDomain={setSelectedDomain}
-                onAddTerm={addTerm}
-                isAdding={isAdding}
-              />
-            </TabsContent>
-            
-            <TabsContent value="create" className="space-y-4">
-              <CreateTermForm 
-                newTerm={newTerm}
-                setNewTerm={setNewTerm}
-                selectedDomain={selectedDomain}
-                setSelectedDomain={setSelectedDomain}
-                domains={domains}
-                onAddTerm={handleAddCustomTerm}
-                isAdding={isAdding}
-              />
-            </TabsContent>
-          </Tabs>
+      
+      {relatedTerms.length > 0 && (
+        <div className="mt-4">
+          <h4 className="text-xs font-medium text-muted-foreground mb-2">Related Terms</h4>
+          <div className="flex flex-wrap gap-2">
+            {relatedTerms.map((term) => (
+              <Badge 
+                key={term.term_id} 
+                variant="outline"
+                className="text-xs"
+              >
+                {term.domain && <span className="text-xs text-muted-foreground">{term.domain}:</span>}{' '}
+                {term.term}
+              </Badge>
+            ))}
+          </div>
         </div>
       )}
     </div>

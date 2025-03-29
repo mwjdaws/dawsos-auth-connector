@@ -8,6 +8,7 @@ import { VersionHistoryModal } from './VersionHistoryModal';
 import SplitEditor from './SplitEditor';
 import FullscreenEditor from './FullscreenEditor';
 import EditorToolbar from './EditorToolbar';
+import { OntologySuggestionsPanel } from './OntologySuggestionsPanel';
 
 export {
   MarkdownEditor,
@@ -18,7 +19,8 @@ export {
   VersionHistoryModal,
   SplitEditor,
   FullscreenEditor,
-  EditorToolbar
+  EditorToolbar,
+  OntologySuggestionsPanel
 };
 
 export default MarkdownEditor;

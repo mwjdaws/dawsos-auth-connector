@@ -1,8 +1,9 @@
 
-import React from "react";
+import React, { Suspense } from "react";
 import { Card } from "@/components/ui/card";
 import ReactMarkdown from "react-markdown";
 import { ExternalLink } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ContentPanelProps {
   content: string;
@@ -26,11 +27,12 @@ export function ContentPanel({ content, processedContent, externalSourceUrl }: C
         </div>
       )}
       <div className="prose dark:prose-invert max-w-none">
-        <ReactMarkdown>{processedContent}</ReactMarkdown>
+        <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+          <ReactMarkdown>{processedContent}</ReactMarkdown>
+        </Suspense>
       </div>
     </Card>
   );
 }
 
-// Default export
 export default ContentPanel;

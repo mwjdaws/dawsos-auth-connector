@@ -1,13 +1,11 @@
 
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect, useTransition } from 'react';
+import { useOntologySuggestions } from '@/hooks/markdown-editor';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useOntologySuggestions } from '@/hooks/markdown-editor/useOntologySuggestions';
-import { Lightbulb, Tag, FileText, RefreshCw, CheckCircle, XCircle, Shield } from 'lucide-react';
+import { CheckCircle2, XCircle, Lightbulb, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/hooks/useAuth';
 
 interface OntologySuggestionsPanelProps {
   content: string;
@@ -16,316 +14,174 @@ interface OntologySuggestionsPanelProps {
   onApplySuggestion?: () => void;
 }
 
-export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> = ({
-  content,
-  title,
+export function OntologySuggestionsPanel({ 
+  content, 
+  title, 
   sourceId,
   onApplySuggestion
-}) => {
-  const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
+}: OntologySuggestionsPanelProps) {
+  const [isPending, startTransition] = useTransition();
+  const [isVisible, setIsVisible] = useState(false);
   const {
     suggestions,
     isLoading,
     analyzeContent,
     applySuggestedTerm,
     rejectSuggestedTerm,
-    applyAllSuggestedTerms,
-    applySuggestedLink,
-    rejectSuggestedLink
+    applyAllSuggestedTerms
   } = useOntologySuggestions();
-  
-  const [activeTab, setActiveTab] = useState<string>('terms');
-  const [analyzedContent, setAnalyzedContent] = useState<string>('');
-  const [hasAnalyzed, setHasAnalyzed] = useState<boolean>(false);
-  
-  // Check if content is different from what was analyzed
-  const contentChanged = analyzedContent !== content;
-  
-  // Check if user has admin role
+
   useEffect(() => {
-    // For demo purposes, just checking if email contains admin
-    // In a real app, you'd check user roles in the database
-    if (user?.email?.includes('admin')) {
-      setIsAdmin(true);
+    // Only load suggestions if panel is visible and content is substantial
+    if (isVisible && content.length > 100 && sourceId) {
+      startTransition(() => {
+        analyzeContent(content, title, sourceId);
+      });
     }
-  }, [user]);
-  
-  // Analyze content initially and when it changes significantly
-  useEffect(() => {
-    const shouldAnalyze = 
-      !hasAnalyzed || 
-      (content.length > 100 && Math.abs(content.length - analyzedContent.length) > 50);
-    
-    if (sourceId && shouldAnalyze && content.trim().length > 20) {
-      performAnalysis();
-    }
-  }, [sourceId, content, hasAnalyzed]);
-  
-  const performAnalysis = async () => {
-    await analyzeContent(content, title, sourceId);
-    setAnalyzedContent(content);
-    setHasAnalyzed(true);
+  }, [isVisible, content, title, sourceId, analyzeContent]);
+
+  const handleApplyTerm = (termId: string) => {
+    startTransition(() => {
+      applySuggestedTerm(termId, sourceId).then(() => {
+        if (onApplySuggestion) onApplySuggestion();
+      });
+    });
   };
-  
-  const handleApplyTerm = async (termId: string) => {
-    const success = await applySuggestedTerm(termId, sourceId);
-    if (success && onApplySuggestion) {
-      onApplySuggestion();
-    }
-  };
-  
+
   const handleRejectTerm = (termId: string) => {
-    rejectSuggestedTerm(termId);
+    startTransition(() => {
+      rejectSuggestedTerm(termId);
+    });
   };
-  
-  const handleApplyAllTerms = async () => {
-    const success = await applyAllSuggestedTerms(sourceId);
-    if (success && onApplySuggestion) {
-      onApplySuggestion();
-    }
+
+  const handleApplyAll = () => {
+    if (!sourceId) return;
+    
+    startTransition(() => {
+      applyAllSuggestedTerms(sourceId, 70).then(() => {
+        if (onApplySuggestion) onApplySuggestion();
+      });
+    });
   };
-  
-  const handleApplyLink = async (targetId: string) => {
-    const success = await applySuggestedLink(targetId, sourceId);
-    if (success && onApplySuggestion) {
-      onApplySuggestion();
-    }
+
+  const handleRefresh = () => {
+    if (!sourceId) return;
+    
+    startTransition(() => {
+      analyzeContent(content, title, sourceId);
+    });
   };
-  
-  const handleRejectLink = (noteId: string) => {
-    rejectSuggestedLink(noteId);
-  };
-  
-  // Don't render if there's not enough content to analyze
-  if (content.trim().length < 20) {
-    return null;
-  }
-  
-  // Show analysis prompt if content has changed significantly
-  if (hasAnalyzed && contentChanged) {
+
+  if (!isVisible) {
     return (
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center">
-            <Lightbulb className="h-4 w-4 mr-2" /> Content Changed
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-between items-center">
-            <CardDescription className="text-xs">
-              The content has changed. Would you like to analyze again for new suggestions?
-            </CardDescription>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              onClick={performAnalysis}
-              disabled={isLoading}
-              className="ml-2"
-            >
-              {isLoading ? <RefreshCw className="h-3 w-3 animate-spin" /> : "Analyze"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <Button 
+        variant="outline" 
+        className="mt-4 w-full" 
+        onClick={() => setIsVisible(true)}
+      >
+        <Lightbulb className="mr-2 h-4 w-4" />
+        Analyze for Ontology Terms
+      </Button>
     );
   }
-  
+
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center">
-          <Lightbulb className="h-4 w-4 mr-2" /> Content Analysis
-        </CardTitle>
-        <CardDescription className="text-xs">
-          Suggested terms and related documents based on content
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
+    <Card className="p-4 mt-4">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-sm font-medium">Suggested Ontology Terms</h3>
+        <div className="flex gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={isLoading || isPending}
+          >
+            <RefreshCw className={`h-4 w-4 ${(isLoading || isPending) ? 'animate-spin' : ''}`} />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setIsVisible(false)}
+          >
+            <XCircle className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {(isLoading || isPending) ? (
+        <div className="space-y-2">
+          <Skeleton className="h-6 w-full" />
+          <Skeleton className="h-6 w-3/4" />
+        </div>
+      ) : suggestions.terms.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-2">
+          No term suggestions available. Try refreshing or modifying your content.
+        </p>
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {suggestions.terms
+              .filter(term => !term.applied && !term.rejected)
+              .map(term => (
+                <div 
+                  key={term.id} 
+                  className="flex items-center gap-1 border rounded-lg px-2 py-1 text-sm"
+                >
+                  <span>
+                    {term.domain && <span className="text-xs text-muted-foreground">{term.domain}:</span>}{' '}
+                    {term.term}
+                    {term.score && <span className="text-xs text-muted-foreground ml-1">({Math.round(term.score)}%)</span>}
+                  </span>
+                  <div className="flex">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5"
+                      onClick={() => handleApplyTerm(term.id)}
+                    >
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5"
+                      onClick={() => handleRejectTerm(term.id)}
+                    >
+                      <XCircle className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
           </div>
-        ) : (
-          <>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-2">
-                <TabsTrigger value="terms" className="text-xs flex items-center">
-                  <Tag className="h-3 w-3 mr-1" /> Terms ({suggestions.terms.length})
-                </TabsTrigger>
-                <TabsTrigger value="notes" className="text-xs flex items-center">
-                  <FileText className="h-3 w-3 mr-1" /> Notes ({suggestions.notes.length})
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="terms" className="mt-0">
-                {suggestions.terms.length > 0 ? (
-                  <div className="grid gap-2">
-                    {isAdmin && (
-                      <div className="flex justify-end mb-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleApplyAllTerms}
-                          className="h-6 text-[10px] flex items-center"
-                        >
-                          <Shield className="h-3 w-3 mr-1" /> Apply All High-Confidence Terms
-                        </Button>
-                      </div>
-                    )}
-                    
-                    {suggestions.terms.map(term => (
-                      <div 
-                        key={term.id} 
-                        className={`flex justify-between items-center p-2 rounded text-xs ${
-                          term.applied 
-                            ? 'bg-green-50 border border-green-100' 
-                            : term.rejected 
-                              ? 'bg-gray-50 border border-gray-100 opacity-60' 
-                              : 'bg-muted/50'
-                        }`}
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-medium">{term.term}</span>
-                          <span className="text-muted-foreground text-[10px]">{term.description || 'No description'}</span>
-                          <div className="flex items-center gap-2 mt-1">
-                            {term.domain && (
-                              <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 w-fit">
-                                {term.domain}
-                              </Badge>
-                            )}
-                            {term.score && (
-                              <Badge variant={term.score > 70 ? "default" : "outline"} className="text-[9px] px-1 py-0 h-4 w-fit">
-                                {Math.round(term.score)}%
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-1">
-                          {term.applied ? (
-                            <span className="text-[10px] text-green-600 flex items-center">
-                              <CheckCircle className="h-3 w-3 mr-1" /> Applied
-                            </span>
-                          ) : term.rejected ? (
-                            <span className="text-[10px] text-muted-foreground flex items-center">
-                              <XCircle className="h-3 w-3 mr-1" /> Rejected
-                            </span>
-                          ) : (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 text-[10px] text-green-600 hover:text-green-700 hover:bg-green-50 p-1"
-                                onClick={() => handleApplyTerm(term.id)}
-                              >
-                                <CheckCircle className="h-3 w-3 mr-1" /> Apply
-                              </Button>
-                              
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 text-[10px] text-gray-500 hover:text-gray-700 hover:bg-gray-50 p-1"
-                                onClick={() => handleRejectTerm(term.id)}
-                              >
-                                <XCircle className="h-3 w-3 mr-1" /> Reject
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground text-center p-2">
-                    No ontology term suggestions found
-                  </p>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="notes" className="mt-0">
-                {suggestions.notes.length > 0 ? (
-                  <div className="grid gap-2">
-                    {suggestions.notes.map(note => (
-                      <div 
-                        key={note.id} 
-                        className={`flex justify-between items-center p-2 rounded text-xs ${
-                          note.applied 
-                            ? 'bg-green-50 border border-green-100' 
-                            : note.rejected 
-                              ? 'bg-gray-50 border border-gray-100 opacity-60' 
-                              : 'bg-muted/50'
-                        }`}
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-medium">{note.title}</span>
-                          {note.score && <span className="text-muted-foreground text-[10px]">Relevance: {Math.round(note.score)}%</span>}
-                        </div>
-                        
-                        <div className="flex items-center gap-1">
-                          {note.applied ? (
-                            <span className="text-[10px] text-green-600 flex items-center">
-                              <CheckCircle className="h-3 w-3 mr-1" /> Linked
-                            </span>
-                          ) : note.rejected ? (
-                            <span className="text-[10px] text-muted-foreground flex items-center">
-                              <XCircle className="h-3 w-3 mr-1" /> Rejected
-                            </span>
-                          ) : (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 text-[10px] text-green-600 hover:text-green-700 hover:bg-green-50 p-1"
-                                onClick={() => handleApplyLink(note.id)}
-                              >
-                                <CheckCircle className="h-3 w-3 mr-1" /> Link
-                              </Button>
-                              
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 text-[10px] text-gray-500 hover:text-gray-700 hover:bg-gray-50 p-1"
-                                onClick={() => handleRejectLink(note.id)}
-                              >
-                                <XCircle className="h-3 w-3 mr-1" /> Reject
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground text-center p-2">
-                    No related note suggestions found
-                  </p>
-                )}
-              </TabsContent>
-            </Tabs>
-            
-            <div className="flex justify-end mt-2">
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                onClick={performAnalysis}
-                className="h-7 text-xs"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <RefreshCw className="h-3 w-3 animate-spin" />
-                ) : (
-                  <>
-                    <RefreshCw className="h-3 w-3 mr-1" /> Refresh
-                  </>
-                )}
-              </Button>
+
+          {suggestions.terms.filter(term => !term.applied && !term.rejected && (term.score || 0) >= 70).length > 1 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={handleApplyAll}
+            >
+              Apply All High-Confidence Terms
+            </Button>
+          )}
+
+          {suggestions.terms.filter(term => term.applied).length > 0 && (
+            <div className="mt-3">
+              <h4 className="text-xs font-medium text-muted-foreground mb-2">Applied Terms</h4>
+              <div className="flex flex-wrap gap-2">
+                {suggestions.terms
+                  .filter(term => term.applied)
+                  .map(term => (
+                    <Badge key={term.id} variant="secondary">
+                      {term.domain && <span className="text-xs text-muted-foreground">{term.domain}:</span>}{' '}
+                      {term.term}
+                    </Badge>
+                  ))}
+              </div>
             </div>
-          </>
-        )}
-      </CardContent>
+          )}
+        </>
+      )}
     </Card>
   );
-};
+}
