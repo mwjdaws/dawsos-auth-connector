@@ -26,7 +26,7 @@ export function useAgentOrchestrator() {
           request.action,
           request.knowledgeSourceId,
           result.data?.confidence,
-          request.metadata as unknown as Record<string, any>,
+          request.metadata as unknown as Json,
           true // Show toast
         );
       } else if (!result.success && showToast) {
@@ -35,7 +35,7 @@ export function useAgentOrchestrator() {
           request.action,
           result.error || 'Unknown error',
           request.knowledgeSourceId,
-          request.metadata as unknown as Record<string, any>,
+          request.metadata as unknown as Json,
           true // Show toast
         );
       }
@@ -50,7 +50,7 @@ export function useAgentOrchestrator() {
           request.action,
           error instanceof Error ? error.message : String(error),
           request.knowledgeSourceId,
-          request.metadata as unknown as Record<string, any>,
+          request.metadata as unknown as Json,
           true
         );
       }
