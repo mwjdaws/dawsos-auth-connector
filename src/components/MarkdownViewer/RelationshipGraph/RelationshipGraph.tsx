@@ -13,7 +13,7 @@
 import React, { useCallback, memo, useState, useEffect, useRef, useTransition } from 'react';
 import { useGraphData } from './hooks/graph-data';
 import { GraphHeader } from './components/GraphHeader';
-import { GraphRenderer } from './components/GraphRenderer';
+import { GraphRenderer } from './components/graph-renderer/GraphRenderer';
 import { GraphLoading } from './components/GraphLoading';
 import { GraphError } from './components/GraphError';
 import { GraphSearch } from './components/GraphSearch';
