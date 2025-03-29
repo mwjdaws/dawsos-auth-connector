@@ -1,20 +1,61 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/error-handling';
+import { KnowledgeSourceVersion } from '@/services/api/types';
 
 /**
  * Hook for managing document versioning functionality
  * 
- * This hook handles the creation and management of document versions,
+ * This hook handles the creation, fetching, and management of document versions,
  * allowing the system to track changes over time and restore previous
  * versions if needed.
  * 
- * @returns Object with version creation and management functions
+ * @returns Object with version creation, fetching and management functions
  */
 export const useDocumentVersioning = () => {
   const [isCreatingVersion, setIsCreatingVersion] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [versions, setVersions] = useState<KnowledgeSourceVersion[]>([]);
+  
+  /**
+   * Fetches all versions for a specific document
+   * 
+   * @param documentId The ID of the document to fetch versions for
+   * @returns Promise that resolves when versions are fetched
+   */
+  const fetchVersions = async (documentId: string): Promise<void> => {
+    if (!documentId) {
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      
+      const { data, error } = await supabase
+        .from('knowledge_source_versions')
+        .select('*')
+        .eq('source_id', documentId)
+        .order('version_number', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      setVersions(data || []);
+    } catch (error) {
+      console.error("Error fetching document versions:", error);
+      handleError(
+        error,
+        "Failed to fetch document versions",
+        { level: "warning" }
+      );
+      setVersions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   /**
    * Creates a new version of a document
@@ -150,8 +191,11 @@ export const useDocumentVersioning = () => {
   };
   
   return {
+    versions,
+    isLoading,
+    isCreatingVersion,
+    fetchVersions,
     createVersion,
-    restoreVersion,
-    isCreatingVersion
+    restoreVersion
   };
 };

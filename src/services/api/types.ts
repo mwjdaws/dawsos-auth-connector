@@ -1,4 +1,3 @@
-
 import { Json } from '@/integrations/supabase/types';
 
 export interface PaginationParams {
@@ -35,8 +34,8 @@ export interface KnowledgeSourceVersion {
   source_id: string;
   version_number: number;
   content: string;
-  metadata?: Json;
-  created_at?: string;
+  metadata?: any;
+  created_at: string;
 }
 
 export interface KnowledgeTemplate {
