@@ -4,16 +4,12 @@
  * This re-export exists for backward compatibility and will be removed in a future version.
  */
 
+// Import and re-export the implementation
 import { useTagOperations as useTagOperationsImpl } from './tag-operations/useTagOperations';
-export { useTagOperations as default, useTagOperations } from './tag-operations/useTagOperations';
+export { useTagOperations } from './tag-operations/useTagOperations';
+
+// For backward compatibility, preserve the original export signature
+export default useTagOperationsImpl;
+
+// Re-export the Tag type for convenience
 export type { Tag } from './tag-operations/types';
-
-// For backward compatibility, re-export the hook with its original signature
-export interface UseTagOperationsProps {
-  contentId: string;
-  user: any;
-  onMetadataChange?: () => void;
-}
-
-// Re-export with the same interface for backward compatibility
-export const useTagOperations = useTagOperationsImpl;

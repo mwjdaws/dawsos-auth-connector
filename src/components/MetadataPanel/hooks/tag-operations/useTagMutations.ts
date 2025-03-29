@@ -53,7 +53,8 @@ export function useTagMutations(
         
         // Verify we got data back before updating state
         if (data && data.length > 0) {
-          setTags(prev => [...prev, data[0]]);
+          // Fix: Use the spread operator correctly to maintain type consistency
+          setTags([...tags, data[0]]);
           setNewTag("");
           
           toast({
