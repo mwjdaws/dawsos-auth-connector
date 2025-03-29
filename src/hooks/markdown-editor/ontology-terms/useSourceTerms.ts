@@ -12,6 +12,8 @@ export function useSourceTerms(sourceId?: string) {
     queryFn: async () => {
       if (!sourceId) return [];
       
+      console.log(`Fetching ontology terms for source: ${sourceId}`);
+      
       const { data, error } = await supabase
         .from('knowledge_source_ontology_terms')
         .select(`
@@ -31,6 +33,8 @@ export function useSourceTerms(sourceId?: string) {
         throw error;
       }
       
+      console.log(`Found ${data?.length || 0} ontology terms for source ${sourceId}`);
+      
       return data?.map(item => ({
         associationId: item.id,
         id: item.ontology_terms.id,
@@ -39,6 +43,7 @@ export function useSourceTerms(sourceId?: string) {
         domain: item.ontology_terms.domain
       })) as OntologyTerm[] || [];
     },
-    enabled: !!sourceId
+    enabled: !!sourceId,
+    staleTime: 60000 // 1 minute
   });
 }

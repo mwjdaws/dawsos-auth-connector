@@ -30,12 +30,27 @@ export const GraphRenderer = memo(({ graphData, width, height }: GraphRendererPr
   const navigate = useNavigate();
   const graphRef = useRef(null);
   
+  // Debug output for graph data
+  useEffect(() => {
+    console.log(`Rendering graph with ${graphData.nodes.length} nodes and ${graphData.links.length} links`);
+    
+    // Log some sample data for debugging
+    if (graphData.nodes.length > 0) {
+      console.log('Sample node:', graphData.nodes[0]);
+    }
+    
+    if (graphData.links.length > 0) {
+      console.log('Sample link:', graphData.links[0]);
+    }
+  }, [graphData]);
+  
   /**
    * Handles node click events
    * - For source nodes: Navigate to the source detail page
    * - For term nodes: Log the term details (could be expanded to show details in UI)
    */
   const handleNodeClick = useCallback((node: GraphNode) => {
+    console.log('Node clicked:', node);
     if (node.type === 'source') {
       navigate(`/source/${node.id}`);
     } else {
@@ -57,10 +72,14 @@ export const GraphRenderer = memo(({ graphData, width, height }: GraphRendererPr
     // Allow the graph to stabilize after data changes
     const timer = setTimeout(() => {
       if (graphRef.current) {
-        // @ts-ignore - ForceGraph2D instance has zoomToFit method
-        graphRef.current.zoomToFit(400, 40);
+        try {
+          // @ts-ignore - ForceGraph2D instance has zoomToFit method
+          graphRef.current.zoomToFit(400, 40);
+        } catch (error) {
+          console.error("Error zooming to fit graph:", error);
+        }
       }
-    }, 300);
+    }, 500);
     
     return () => clearTimeout(timer);
   }, [graphData]);
@@ -99,7 +118,7 @@ export const GraphRenderer = memo(({ graphData, width, height }: GraphRendererPr
     }
   }, [nodeColors]);
   
-  // Handle empty data case
+  // Handle empty data case - should never happen as this is checked in the parent
   if (!graphData || !graphData.nodes || graphData.nodes.length === 0) {
     return (
       <div className="flex items-center justify-center h-[300px]">
@@ -130,6 +149,8 @@ export const GraphRenderer = memo(({ graphData, width, height }: GraphRendererPr
         d3AlphaDecay={0.02} // Slower decay for more stable graph
         d3VelocityDecay={0.3} // Increased velocity decay for smoother motion
         onEngineStop={() => console.log('Graph physics simulation completed')}
+        linkWidth={2}
+        nodeRelSize={6}
       />
     </div>
   );
