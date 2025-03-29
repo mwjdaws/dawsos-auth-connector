@@ -10,12 +10,13 @@
  * - useGraphData hook for fetching the graph data
  * - GraphHeader, GraphRenderer, GraphLoading, and GraphError components
  */
-import React, { useCallback, memo, useState, useEffect } from 'react';
+import React, { useCallback, memo, useState, useEffect, useRef } from 'react';
 import { useGraphData } from './hooks/useGraphData';
 import { GraphHeader } from './components/GraphHeader';
 import { GraphRenderer } from './components/GraphRenderer';
 import { GraphLoading } from './components/GraphLoading';
 import { GraphError } from './components/GraphError';
+import { GraphSearch } from './components/GraphSearch';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RelationshipGraphProps } from './types';
 import { toast } from '@/hooks/use-toast';
@@ -40,6 +41,8 @@ export function RelationshipGraph({
   // Track loading time independently to provide more accurate feedback
   const [loadingTime, setLoadingTime] = useState(0);
   const [isManualRetry, setIsManualRetry] = useState(false);
+  const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null);
+  const graphRendererRef = useRef<any>(null);
   
   // Log the startingNodeId to help debug
   useEffect(() => {
@@ -102,6 +105,24 @@ export function RelationshipGraph({
     }
   }, [hasAttemptedRetry, loading, loadingTime, fetchGraphData, isManualRetry]);
   
+  // Handle node found from search
+  const handleNodeFound = useCallback((nodeId: string) => {
+    setHighlightedNodeId(nodeId);
+    
+    // If we have a reference to the graph renderer, center the view on the node
+    if (graphRendererRef.current) {
+      try {
+        const node = graphData?.nodes.find(n => n.id === nodeId);
+        if (node) {
+          graphRendererRef.current.centerOnNode(nodeId);
+          console.log(`Centering on node: ${node.name} (${nodeId})`);
+        }
+      } catch (err) {
+        console.error("Error centering on node:", err);
+      }
+    }
+  }, [graphData]);
+  
   // Memoized retry handler
   const handleRetry = useCallback(() => {
     console.log("Manual retry requested for graph data");
@@ -144,9 +165,23 @@ export function RelationshipGraph({
   // Render the graph when data is available, wrapped in an error boundary
   return (
     <ErrorBoundary fallback={<ErrorFallback onRetry={handleRetry} />}>
-      <div className="border rounded-lg bg-card overflow-hidden">
+      <div className="border rounded-lg bg-card overflow-hidden flex flex-col">
         <GraphHeader graphData={graphData} />
-        <GraphRenderer graphData={graphData} width={width} height={height} />
+        
+        <div className="px-3 py-2 border-b">
+          <GraphSearch 
+            nodes={graphData.nodes}
+            onNodeFound={handleNodeFound}
+          />
+        </div>
+        
+        <GraphRenderer 
+          ref={graphRendererRef}
+          graphData={graphData} 
+          width={width} 
+          height={height}
+          highlightedNodeId={highlightedNodeId}
+        />
       </div>
     </ErrorBoundary>
   );

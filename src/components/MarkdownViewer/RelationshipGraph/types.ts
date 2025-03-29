@@ -1,4 +1,3 @@
-
 /**
  * Type definitions for the RelationshipGraph components
  */
@@ -44,4 +43,8 @@ export interface RelationshipGraphProps {
 export interface RelationshipGraphPanelProps {
   sourceId?: string;
   hasAttemptedRetry?: boolean;
+}
+
+export interface GraphRendererRef {
+  centerOnNode: (nodeId: string) => void;
 }
