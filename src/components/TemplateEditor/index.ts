@@ -1,4 +1,6 @@
 
+// Direct export of all components from their files
+// This pattern avoids circular dependencies
 import TemplateEditor from './TemplateEditor';
 import { JsonEditor } from './JsonEditor';
 import UseTemplate from './UseTemplate';
