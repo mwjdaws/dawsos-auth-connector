@@ -7,7 +7,7 @@ import {
   isValidContentId, 
   normalizeContentId, 
   getContentIdValidationResult, 
-  type ContentIdValidationResult 
+  ContentIdValidationResult 
 } from './contentIdValidation';
 import { validateTag, validateTags, type ValidationResult } from './tagValidation';
 

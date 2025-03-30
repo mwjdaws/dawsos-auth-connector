@@ -1,12 +1,12 @@
 
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { SaveTagsResult } from "./hooks/types";
+import { SaveTagsResult, SaveTagsOptions } from "./hooks/types";
 
 interface TagSaverProps {
   tags: string[];
   contentId: string;
-  saveTags: (text: string, tags: string[], options?: any) => Promise<SaveTagsResult>;
+  saveTags: (text: string, tags: string[], options?: SaveTagsOptions) => Promise<SaveTagsResult>;
   isProcessing: boolean;
   isRetrying: boolean;
   onTagsSaved: (contentId: string) => void;
@@ -27,9 +27,13 @@ export function TagSaver({
     
     const result = await saveTags("", tags, { contentId });
     
-    // Only call onTagsSaved if we have a valid result
-    if (result && typeof result === 'string') {
-      onTagsSaved(result);
+    // Handle different result formats
+    if (result) {
+      if (typeof result === 'string') {
+        onTagsSaved(result);
+      } else if (typeof result === 'object' && result.success && result.contentId) {
+        onTagsSaved(result.contentId);
+      }
     }
   };
 

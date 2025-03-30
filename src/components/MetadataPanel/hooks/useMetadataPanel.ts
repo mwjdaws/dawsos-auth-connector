@@ -1,170 +1,58 @@
-
-import { useEffect, useState, useRef, useTransition } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useTagOperations } from './tag-operations';
+// Import necessary hooks
+import { useState, useEffect } from 'react';
 import { useSourceMetadata } from './useSourceMetadata';
+import { useTagOperations } from './tag-operations/useTagOperations';
+import { User } from '@supabase/supabase-js';
 import { usePanelState } from './usePanelState';
-import { isValidContentId } from '@/utils/content-validation';
-import { supabase } from '@/integrations/supabase/client';
+import { usePanelContent } from './usePanelContent';
+import { MetadataPanelProps } from '../types';
 
-export function useMetadataPanel(
-  contentId?: string,
-  onMetadataChange?: () => void,
-  isCollapsible = false,
-  initialCollapsed = false
-) {
-  const { user } = useAuth();
-  const {
-    tags,
-    setTags,
-    newTag,
-    setNewTag,
-    fetchTags,
-    handleAddTag,
-    handleDeleteTag
-  } = useTagOperations({ 
+export const useMetadataPanel = (props: MetadataPanelProps) => {
+  const { contentId, user, onMetadataChange } = props;
+  
+  // Use the tag operations hook
+  const tagOperations = useTagOperations(contentId);
+  
+  // Use source metadata hook
+  const sourceMetadata = useSourceMetadata(contentId);
+  
+  // Panel state and content
+  const panelState = usePanelState({ contentId });
+  const panelContent = usePanelContent({ 
     contentId, 
-    user, 
-    onMetadataChange 
+    isLoading: sourceMetadata.isLoading,
+    error: sourceMetadata.error,
+    data: sourceMetadata.data,
+    validationResult: panelState.validationResult
   });
-
-  const sourceMetadata = useSourceMetadata({ contentId });
   
-  const panelStateProps = {
-    contentId,
-    onMetadataChange,
-    isCollapsible,
-    initialCollapsed
-  };
+  // Call onMetadataChange when data changes
+  useEffect(() => {
+    if (onMetadataChange && sourceMetadata.data) {
+      onMetadataChange();
+    }
+  }, [sourceMetadata.data, onMetadataChange]);
   
-  const {
-    isLoading,
-    error,
-    isPending,
-    startTransition,
-    isCollapsed,
-    setIsCollapsed,
-    toggleCollapsed,
-    isMounted,
-    validateContentId,
-    startLoading,
-    finishLoading,
-    contentExists
-  } = usePanelState(panelStateProps);
-
-  // Function to check if the knowledge source exists
-  useEffect(() => {
-    const checkKnowledgeSource = async () => {
-      if (!contentId || !isValidContentId(contentId)) {
-        return;
-      }
-      
-      try {
-        const { data, error } = await supabase
-          .from('knowledge_sources')
-          .select('id')
-          .eq('id', contentId)
-          .maybeSingle();
-          
-        if (error) {
-          console.error('Error checking knowledge source existence:', error);
-        }
-        
-        if (!data) {
-          console.warn(`Knowledge source not found for ID: ${contentId}`);
-        }
-      } catch (err) {
-        console.error('Error checking content existence:', err);
-      }
-    };
-    
-    checkKnowledgeSource();
-  }, [contentId]);
-
-  // Function to fetch metadata
-  const fetchMetadata = async () => {
-    // Skip fetching if contentId is undefined or invalid
-    if (!contentId || !isValidContentId(contentId)) {
-      finishLoading(true);
-      return;
-    }
-    
-    // Validate contentId
-    if (!validateContentId()) return;
-    
-    // Start loading state
-    startLoading();
-    
-    try {
-      // Fetch tags and source metadata concurrently
-      const tagsResult = await fetchTags();
-      const sourceResult = await sourceMetadata.fetchSourceMetadata();
-      
-      // Update state in a non-blocking way
-      startTransition(() => {
-        // If the component is still mounted
-        if (isMounted.current) {
-          // Update tags safely if we got a valid response
-          if (Array.isArray(tagsResult)) {
-            setTags(tagsResult);
-          }
-          
-          // Update source metadata state
-          if (typeof sourceResult === 'object' && sourceResult !== null) {
-            sourceMetadata.updateSourceMetadataState(sourceResult);
-          }
-          
-          // Finish loading
-          finishLoading(true);
-          
-          // Notify parent component of metadata change
-          if (onMetadataChange) {
-            onMetadataChange();
-          }
-        }
-      });
-    } catch (err) {
-      console.error('Error fetching metadata:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error fetching metadata';
-      finishLoading(false, errorMessage);
-    }
-  };
-
-  // Handle refresh action
-  const handleRefresh = () => {
-    if (contentId && isValidContentId(contentId)) {
-      fetchMetadata();
-    }
-  };
-
-  // Initial fetch when component mounts or contentId changes
-  useEffect(() => {
-    if (contentId) {
-      if (isValidContentId(contentId)) {
-        fetchMetadata();
-      } else {
-        // For invalid content IDs, just finish loading without error
-        finishLoading(true);
-      }
-    }
-  }, [contentId]);
-
   return {
-    tags,
-    isLoading,
-    error,
-    isPending,
-    newTag,
-    setNewTag,
-    user,
-    externalSourceUrl: sourceMetadata.externalSourceUrl,
-    needsExternalReview: sourceMetadata.needsExternalReview,
-    lastCheckedAt: sourceMetadata.lastCheckedAt,
-    isCollapsed,
-    setIsCollapsed,
-    handleRefresh,
-    handleAddTag,
-    handleDeleteTag,
-    contentExists
+    // Source metadata
+    ...sourceMetadata,
+    
+    // Tag operations
+    tags: tagOperations.tags,
+    isTagsLoading: tagOperations.isLoading,
+    tagsError: tagOperations.error,
+    newTag: tagOperations.newTag,
+    setNewTag: tagOperations.setNewTag,
+    handleAddTag: tagOperations.handleAddTag,
+    handleDeleteTag: tagOperations.handleDeleteTag,
+    handleUpdateTagOrder: tagOperations.handleUpdateTagOrder,
+    
+    // Panel state and content
+    ...panelState,
+    ...panelContent,
+    
+    // Other props
+    contentId,
+    user
   };
-}
+};

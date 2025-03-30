@@ -48,8 +48,14 @@ export const useTagMutations = (contentId?: string) => {
     onError: (error) => {
       handleError(error, 'Failed to add tag', {
         context: { contentId },
-        level: 'error',
-        showToast: true
+        level: 'error'
+      });
+      
+      // Display toast separately
+      toast({
+        title: "Error",
+        description: "Failed to add tag",
+        variant: "destructive"
       });
     }
   });
@@ -85,8 +91,14 @@ export const useTagMutations = (contentId?: string) => {
     onError: (error) => {
       handleError(error, 'Failed to delete tag', {
         context: { contentId },
-        level: 'error',
-        showToast: true
+        level: 'error'
+      });
+      
+      // Display toast separately
+      toast({
+        title: "Error",
+        description: "Failed to delete tag",
+        variant: "destructive"
       });
     }
   });

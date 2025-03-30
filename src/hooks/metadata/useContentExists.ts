@@ -12,7 +12,7 @@ export function useContentExists(contentId?: string) {
   const isValidId = contentId ? isValidContentId(contentId) : false;
   
   return useQuery({
-    queryKey: contentId ? queryKeys.contentExists(contentId) : ['contentExists', 'invalid'],
+    queryKey: contentId ? ['contentExists', contentId] : ['contentExists', 'invalid'],
     queryFn: async () => {
       try {
         if (!contentId || !isValidId) {

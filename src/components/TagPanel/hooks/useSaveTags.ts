@@ -4,12 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTagValidator } from './useTagValidator';
 import { handleError } from '@/utils/errors';
 import { toast } from '@/hooks/use-toast';
-
-export interface SaveTagsResult {
-  success: boolean;
-  contentId?: string;
-  message?: string;
-}
+import { SaveTagsResult, SaveTagsOptions } from './types';
 
 export const useSaveTags = (initialContentId?: string) => {
   const [isSaving, setIsSaving] = useState(false);
@@ -17,7 +12,7 @@ export const useSaveTags = (initialContentId?: string) => {
   const [isRetrying, setIsRetrying] = useState(false);
   const tagValidator = useTagValidator();
 
-  const saveTags = async (text: string, tags: string[], options?: { contentId?: string }): Promise<SaveTagsResult> => {
+  const saveTags = async (text: string, tags: string[], options?: SaveTagsOptions): Promise<SaveTagsResult> => {
     const contentId = options?.contentId || initialContentId;
     
     if (!contentId) {

@@ -1,7 +1,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-export type SaveTagsResult = string | false;
+// Update the SaveTagsResult type to be compatible with both implementations
+export type SaveTagsResult = string | boolean | { success: boolean; contentId?: string; message?: string };
 
 export interface SaveTagsOptions {
   contentId?: string;

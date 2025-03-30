@@ -63,8 +63,14 @@ export const useTagOperations = (contentId?: string) => {
     } catch (error) {
       handleError(error, 'Failed to update tag order', {
         context: { contentId },
-        level: 'error',
-        showToast: true
+        level: 'error'
+      });
+      
+      // Display toast separately
+      toast({
+        title: "Error",
+        description: "Failed to update tag order",
+        variant: "destructive"
       });
     }
   };
@@ -80,8 +86,14 @@ export const useTagOperations = (contentId?: string) => {
     } catch (error) {
       handleError(error, 'Failed to refresh tags', {
         context: { contentId },
-        level: 'error',
-        showToast: true
+        level: 'error'
+      });
+      
+      // Display toast separately
+      toast({
+        title: "Error",
+        description: "Failed to refresh tags",
+        variant: "destructive"
       });
     }
   };
