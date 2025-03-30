@@ -9,5 +9,15 @@ export { validateContentId, getContentIdValidationResult } from './contentIdVali
 export { validateTag, validateTags } from './tagValidation';
 export { validateDocument, validateDocumentTitle } from './documentValidation';
 
+// Export compatibility layer
+export { 
+  ensureString, 
+  nullToUndefined, 
+  undefinedToNull,
+  safeCallback,
+  createCompatibleValidationResult,
+  VALIDATION_RESULTS
+} from './compatibility';
+
 // Re-export types
 export * from './types';

@@ -2,7 +2,7 @@
 import { ContentIdValidationResult, ContentIdValidationResultType } from './types';
 
 /**
- * Validates a content ID
+ * Validates a content ID with enhanced handling for null/undefined
  */
 export function validateContentId(contentId?: string | null): ContentIdValidationResult {
   if (contentId === undefined || contentId === null) {

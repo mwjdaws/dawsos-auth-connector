@@ -1,27 +1,28 @@
 
-import { validateDocumentTitle, validateDocumentForSave } from '@/utils/validation/documentValidation';
-import type { ValidationResult } from '@/utils/validation/types';
+import { toast } from '@/hooks/use-toast';
+import { validateDocument } from '@/utils/validation/documentValidation';
 
-/**
- * Hook for validation operations
- */
-export const useValidation = () => {
+export function useValidation() {
   /**
-   * Validate a document title
+   * Validate document for saving
    */
-  const validateTitle = (title: string): ValidationResult => {
-    return validateDocumentTitle(title);
+  const validateDocumentForSave = (title: string): { isValid: boolean; errorMessage: string | null } => {
+    // Use the existing validation function
+    const validationResult = validateDocument(title);
+    
+    if (!validationResult.isValid) {
+      // Show toast with error message
+      toast({
+        title: "Validation Error",
+        description: validationResult.errorMessage || "Please fix validation errors before saving",
+        variant: "destructive"
+      });
+    }
+    
+    return validationResult;
   };
-  
-  /**
-   * Validate a document before saving
-   */
-  const validateDocumentForSaving = (title: string): ValidationResult => {
-    return validateDocumentForSave(title);
-  };
-  
+
   return {
-    validateTitle,
-    validateDocumentForSave: validateDocumentForSaving
+    validateDocumentForSave
   };
-};
+}

@@ -1,50 +1,49 @@
 
-import { ContentIdValidationResultType } from '@/utils/validation/types';
+/**
+ * Content validation utilities
+ */
+import { 
+  ContentIdValidationResult, 
+  ContentIdValidationResultType 
+} from './validation/types';
+import { 
+  validateContentId as validateContentIdOriginal,
+  isValidContentId as isValidContentIdOriginal,
+  getContentIdValidationResult
+} from './validation/contentIdValidation';
+import { VALIDATION_RESULTS } from './validation/compatibility';
 
 /**
- * Validates if a content ID is valid
+ * Simple validation of a content ID
+ * This version is compatible with all components
  */
-export function isValidContentId(contentId: string | null | undefined): contentId is string {
+export function isValidContentId(contentId?: string | null): boolean {
+  return isValidContentIdOriginal(contentId);
+}
+
+/**
+ * Full content ID validation with detailed result
+ */
+export function validateContentId(contentId?: string | null): ContentIdValidationResult {
+  return validateContentIdOriginal(contentId);
+}
+
+/**
+ * Higher-level validation for content existence check
+ */
+export function contentExists(contentId?: string | null): boolean {
   if (!contentId) return false;
   
-  // Temporary IDs should be considered valid but with special handling
-  if (contentId.startsWith('temp-')) return true;
-  
-  // UUID format validation (basic check)
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(contentId);
+  const result = validateContentId(contentId);
+  return result.isValid && result.result !== VALIDATION_RESULTS.TEMPORARY;
 }
 
 /**
- * Gets detailed validation result for a content ID
+ * Check if content ID is temporary
  */
-export function getContentIdValidationResult(contentId: string | null | undefined): ContentIdValidationResultType {
-  if (!contentId) {
-    return ContentIdValidationResultType.MISSING;
-  }
+export function isTemporaryContent(contentId?: string | null): boolean {
+  if (!contentId) return false;
   
-  if (contentId.startsWith('temp-')) {
-    return ContentIdValidationResultType.TEMPORARY;
-  }
-  
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(contentId) 
-    ? ContentIdValidationResultType.VALID 
-    : ContentIdValidationResultType.INVALID;
-}
-
-/**
- * Normalizes a content ID
- */
-export function normalizeContentId(contentId: string | null | undefined): string | null {
-  if (!contentId) return null;
-  
-  contentId = contentId.trim();
-  
-  // Return as-is if it's a valid UUID or temp ID
-  if (isValidContentId(contentId)) {
-    return contentId;
-  }
-  
-  return null;
+  const result = validateContentId(contentId);
+  return result.result === VALIDATION_RESULTS.TEMPORARY;
 }
