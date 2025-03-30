@@ -1,5 +1,6 @@
 
 import { toast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 import { ErrorHandlingOptions } from './types';
 import { categorizeError } from './categorize';
 
@@ -68,14 +69,18 @@ export function handleError(
   
   const toastMessage = userMessage || errorMessage;
   
+  // Map level to toast variant - ensure we only use valid variants
+  const variant = level === 'error' ? 'destructive' : 'default';
+  
   toast({
     title: toastTitle,
     description: toastMessage,
-    variant: level === 'error' ? 'destructive' : level === 'warning' ? 'warning' : 'default',
+    variant: variant,
     // Include action if provided
-    action: options?.actionLabel && options?.action ? {
-      label: options.actionLabel,
-      onClick: options.action
-    } : undefined
+    action: options?.actionLabel && options?.action ? (
+      <ToastAction altText={options.actionLabel} onClick={options.action}>
+        {options.actionLabel}
+      </ToastAction>
+    ) : undefined
   });
 }

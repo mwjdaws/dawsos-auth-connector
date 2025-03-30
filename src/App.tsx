@@ -1,21 +1,15 @@
+import React from 'react';
+import { BrowserRouter } from 'react-router-dom';
+import { AppRoutes } from './routes';
+import { Toaster } from './components/ui/toaster';
 
-import { BrowserRouter } from "react-router-dom";
-import { Toaster } from "@/components/ui/toaster";
-import { AuthProvider } from "./context/AuthContext";
-import { QueryProvider } from "./providers/QueryProvider";
-import { AppRoutes } from "./routes";
-import "./App.css";
-
+// Keep App.tsx as minimal as possible to avoid potential issues
 function App() {
   return (
-    <QueryProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-          <Toaster />
-        </BrowserRouter>
-      </AuthProvider>
-    </QueryProvider>
+    <BrowserRouter>
+      <AppRoutes />
+      <Toaster />
+    </BrowserRouter>
   );
 }
 

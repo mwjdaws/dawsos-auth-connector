@@ -39,6 +39,9 @@ export interface ErrorHandlingOptions {
   title?: string;
 }
 
+// Alias for backward compatibility
+export type ErrorOptions = ErrorHandlingOptions;
+
 /**
  * Base custom error class
  */

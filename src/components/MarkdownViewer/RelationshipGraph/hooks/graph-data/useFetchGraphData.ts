@@ -9,7 +9,10 @@ import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { FetchResult, GraphFetchOptions } from './types';
 import { GraphData } from '../../types';
-import { handleError, categorizeError } from '@/utils/errors';
+import { handleError } from '@/utils/errors';
+
+// Define error categories as an enum or union type for type safety
+type ErrorCategory = 'NETWORK' | 'AUTHENTICATION' | 'DATABASE' | 'TIMEOUT' | 'UNKNOWN';
 
 export function useFetchGraphData() {
   /**
@@ -187,6 +190,28 @@ export function useFetchGraphData() {
   }, []);
 
   /**
+   * Determine error category for consistent error handling
+   */
+  const determineErrorCategory = (err: unknown): ErrorCategory => {
+    const errorMessage = err instanceof Error ? err.message.toLowerCase() : 
+                        typeof err === 'string' ? err.toLowerCase() : '';
+
+    if (errorMessage.includes('network') || errorMessage.includes('fetch') || errorMessage.includes('connection')) {
+      return 'NETWORK';
+    }
+    if (errorMessage.includes('auth') || errorMessage.includes('permission') || errorMessage.includes('unauthorized')) {
+      return 'AUTHENTICATION';
+    }
+    if (errorMessage.includes('database') || errorMessage.includes('db') || errorMessage.includes('query')) {
+      return 'DATABASE';
+    }
+    if (errorMessage.includes('timeout') || errorMessage.includes('time out') || errorMessage.includes('timed out')) {
+      return 'TIMEOUT';
+    }
+    return 'UNKNOWN';
+  };
+
+  /**
    * Main function to fetch and process graph data
    */
   const fetchAndProcessGraphData = useCallback(async (
@@ -207,8 +232,8 @@ export function useFetchGraphData() {
     } catch (err) {
       console.error('Error fetching graph data:', err);
       
-      // Use the error handling utility for consistent error handling
-      const errorCategory = categorizeError(err);
+      // Use our helper to determine error category instead of categorizeError
+      const errorCategory = determineErrorCategory(err);
       let errorMessage = 'Failed to load relationship data';
       
       // Customize error messages based on error category
