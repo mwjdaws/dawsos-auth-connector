@@ -1,65 +1,50 @@
-import { ReactNode } from "react";
 
-export interface GraphNode {
+export type GraphNode = {
   id: string;
-  name: string;
-  type: 'source' | 'term';
-  val: number;
-  color: string;
-  description?: string;
+  title: string;
+  color?: string;
+  group?: string;
+  // Required for force-graph library
   x?: number;
   y?: number;
-}
+  index?: number;
+  vx?: number;
+  vy?: number;
+  fx?: number | null;
+  fy?: number | null;
+};
 
-export interface GraphLink {
-  id: string;
+export type GraphLink = {
   source: string;
   target: string;
-  type: string;
-  value: number;
-}
+  label?: string;
+  color?: string;
+  value?: number;
+};
 
-export interface GraphData {
+export type GraphData = {
   nodes: GraphNode[];
   links: GraphLink[];
-}
+};
 
-export interface RelationshipGraphProps {
-  startingNodeId?: string;
-  width?: number;
+export interface GraphRendererProps {
+  data: GraphData;
+  onNodeClick?: (node: GraphNode) => void;
+  onLinkClick?: (link: GraphLink) => void;
+  selectedNodeIds?: string[];
+  highlightNodeIds?: string[];
+  autoCenter?: boolean;
   height?: number;
-  hasAttemptedRetry?: boolean;
+  width?: number;
 }
 
-export interface RelationshipGraphPanelProps {
-  sourceId?: string;
-  hasAttemptedRetry?: boolean;
+export interface NodeRendererProps {
+  node: GraphNode;
+  isSelected?: boolean;
+  isHighlighted?: boolean;
 }
 
-export interface GraphRendererRef {
-  centerOnNode: (nodeId: string) => void;
-  setZoom: (zoomLevel: number, duration?: number) => void;
-}
-
-export interface WithErrorHandlingOptions {
-  errorMessage?: string;
-  fallbackValue?: any;
-  silent?: boolean;
-  onError?: (error: unknown) => void;
-  level?: 'info' | 'warn' | 'warning' | 'error' | 'critical';
-  context?: Record<string, any>;
-}
-
-export interface FetchResult {
-  sources?: Array<{ id: string; title: string }>;
-  links?: Array<{ id: string; source_id: string; target_id: string; link_type: string }>;
-  terms?: Array<{ id: string; term: string; domain?: string }>;
-  termRelationships?: Array<{ id: string; term_id: string; related_term_id: string; relation_type: string }>;
-  sourceTerms?: Array<{ id: string; knowledge_source_id: string; ontology_term_id: string }>;
-}
-
-export interface GraphFetchOptions {
-  depth?: number;
-  includeTerms?: boolean;
-  includeLinks?: boolean;
+export interface LinkRendererProps {
+  link: GraphLink;
+  isHighlighted?: boolean;
 }

@@ -9,7 +9,7 @@ type UsePublishHandlerProps = {
 };
 
 export const usePublishHandler = ({ user }: UsePublishHandlerProps) => {
-  const handlePublish = useCallback(async (id: string, title: string, content: string, templateId: string | null) => {
+  const handlePublish = useCallback(async (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string = '') => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -19,10 +19,10 @@ export const usePublishHandler = ({ user }: UsePublishHandlerProps) => {
       return;
     }
     
-    console.log("Content published:", { id, title, templateId });
+    console.log("Publishing content:", { id, title, templateId });
     
-    // Verify that the content was published correctly
     try {
+      // Verify that the content was published correctly
       const { data, error } = await supabase
         .from('knowledge_sources')
         .select('published, published_at, user_id')
@@ -69,6 +69,7 @@ export const usePublishHandler = ({ user }: UsePublishHandlerProps) => {
             
           if (updateError) {
             console.error("Failed to update user ID:", updateError);
+            handleError(updateError, "Failed to update user ID for published content");
           } else {
             console.log("Fixed user ID for published content:", id);
           }
@@ -81,13 +82,10 @@ export const usePublishHandler = ({ user }: UsePublishHandlerProps) => {
       });
     } catch (error) {
       console.error("Error checking published content:", error);
-      
       handleError(
         error,
         "There was an error verifying the published status. The content may still be published.",
-        { 
-          level: "warning"
-        }
+        { level: "warning" }
       );
     }
   }, [user]);

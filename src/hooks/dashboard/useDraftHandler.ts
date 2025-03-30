@@ -9,7 +9,7 @@ type UseDraftHandlerProps = {
 };
 
 export const useDraftHandler = ({ user }: UseDraftHandlerProps) => {
-  const handleSaveDraft = useCallback(async (id: string, title: string, content: string, templateId: string | null) => {
+  const handleSaveDraft = useCallback(async (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string = '') => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -19,14 +19,10 @@ export const useDraftHandler = ({ user }: UseDraftHandlerProps) => {
       return;
     }
     
-    console.log("Draft saved:", { id, title, templateId });
-    toast({
-      title: "Draft Saved",
-      description: `"${title}" has been saved as a draft.`,
-    });
+    console.log("Saving draft:", { id, title, templateId });
     
-    // Verify that the draft was saved with the current user's ID
     try {
+      // Verify that the draft was saved with the current user's ID
       const { data, error } = await supabase
         .from('knowledge_sources')
         .select('user_id, published')
@@ -52,13 +48,20 @@ export const useDraftHandler = ({ user }: UseDraftHandlerProps) => {
             
           if (updateError) {
             console.error("Failed to update user ID:", updateError);
+            handleError(updateError, "Failed to update user ID for draft");
           } else {
             console.log("Fixed user ID for draft:", id);
           }
         }
       }
+      
+      toast({
+        title: "Draft Saved",
+        description: `"${title}" has been saved as a draft.`,
+      });
     } catch (error) {
       console.error("Error checking saved draft:", error);
+      handleError(error, "Error saving draft");
     }
   }, [user]);
 

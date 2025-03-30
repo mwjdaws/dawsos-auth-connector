@@ -23,13 +23,13 @@ export function ContentManagement({
   setActiveTab,
   user
 }: ContentManagementProps) {
-  const tagGenerationHandler = useTagGenerationHandler({
+  const handleTagGenerationComplete = useTagGenerationHandler({
     setContentId,
     setActiveTab,
     activeTab
   });
   
-  const metadataHandler = useMetadataHandler();
+  const handleMetadataChange = useMetadataHandler();
   const { handleSaveDraft } = useDraftHandler({ user });
   const { handlePublish } = usePublishHandler({ user });
 
@@ -38,8 +38,8 @@ export function ContentManagement({
       activeTab={activeTab}
       contentId={contentId}
       onTabChange={setActiveTab}
-      onTagGenerationComplete={tagGenerationHandler}
-      onMetadataChange={metadataHandler}
+      onTagGenerationComplete={handleTagGenerationComplete}
+      onMetadataChange={handleMetadataChange}
       onSaveDraft={handleSaveDraft}
       onPublish={handlePublish}
     />
