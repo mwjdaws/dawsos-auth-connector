@@ -31,13 +31,14 @@ export function useTagsQuery(contentId: string, options?: UseTagsQueryOptions) {
       try {
         // Determine what to select based on includeTypeInfo option
         const selectClause = options?.includeTypeInfo 
-          ? 'id, name, content_id, type_id, tag_types(name)' 
-          : 'id, name, content_id, type_id';
+          ? 'tags.id, tags.name, tags.content_id, tags.type_id, tag_types(name)' 
+          : 'tags.id, tags.name, tags.content_id, tags.type_id';
         
         const { data, error } = await supabase
           .from('tags')
           .select(selectClause)
-          .eq('content_id', contentId);
+          .eq('content_id', contentId)
+          .order('name', { ascending: true });
 
         if (error) throw error;
 

@@ -2,7 +2,6 @@
 import { useState, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Tag } from '@/components/MetadataPanel/hooks/tag-operations/types';
-import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/errors';
 
 interface UseTagReorderingProps {

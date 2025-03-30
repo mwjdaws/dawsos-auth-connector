@@ -50,8 +50,8 @@ export function useTagMutations(contentId?: string) {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
       toast({
-        title: 'Tag Added',
-        description: 'The tag was successfully added',
+        title: "Tag Added",
+        description: "The tag was successfully added",
       });
     },
     onError: (error) => {
@@ -80,8 +80,8 @@ export function useTagMutations(contentId?: string) {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
       toast({
-        title: 'Tag Removed',
-        description: 'The tag was successfully removed',
+        title: "Tag Removed",
+        description: "The tag was successfully removed",
       });
     },
     onError: (error) => {
@@ -109,8 +109,8 @@ export function useTagMutations(contentId?: string) {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
       toast({
-        title: 'Tags Reordered',
-        description: 'Tag order was successfully updated',
+        title: "Tags Reordered",
+        description: "Tag order was successfully updated",
       });
     },
     onError: (error) => {
