@@ -28,11 +28,17 @@ export function GraphContent({
   isPending,
   graphRendererRef
 }: GraphContentProps) {
+  // Ensure we have valid data with nodes and links
+  const safeGraphData: GraphData = {
+    nodes: graphData?.nodes || [],
+    links: graphData?.links || []
+  };
+  
   return (
-    <>
+    <div className="relative w-full h-full">
       <GraphRenderer 
         ref={graphRendererRef}
-        graphData={graphData} 
+        graphData={safeGraphData} 
         width={width} 
         height={height}
         highlightedNodeId={highlightedNodeId}
@@ -40,10 +46,10 @@ export function GraphContent({
       />
       
       {isPending && (
-        <div className="absolute bottom-4 right-4 bg-primary/70 text-white px-2 py-1 text-xs rounded-md backdrop-blur-sm">
+        <div className="absolute bottom-4 right-4 bg-primary/70 text-primary-foreground px-3 py-1.5 text-xs rounded-md backdrop-blur-sm shadow-sm">
           Updating view...
         </div>
       )}
-    </>
+    </div>
   );
 }

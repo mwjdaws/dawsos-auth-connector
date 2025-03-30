@@ -1,14 +1,12 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { KnowledgeTemplate, PaginationParams } from "@/services/api/types";
 import { fetchKnowledgeTemplates } from "@/services/api";
-import TemplateSelector from "@/components/TemplateSelector";
 import { TemplatePreviewCard } from "./TemplatePreviewCard";
 import { TemplateListCard } from "./TemplateListCard";
-import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card";
+import { TemplateSelectorCard } from "./TemplateSelectorCard";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 export function TemplatesPanel() {
@@ -141,52 +139,11 @@ export function TemplatesPanel() {
         templates={paginatedTemplates}
         loading={loading}
         pagination={pagination}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        handlePageChange={handlePageChange}
-        handleTemplateSelect={handleTemplateSelect}
-        filterType={filterType}
-        onFilterChange={handleFilterChange}
+        onPageChange={handlePageChange}
+        onSelectTemplate={handleTemplateSelect}
+        selectedTemplateId={selectedTemplate?.id}
       />
     </div>
-  );
-}
-
-// Component for the Template Selector Card
-function TemplateSelectorCard({ 
-  onSelectTemplate, 
-  onCreateFromTemplate, 
-  selectedTemplate 
-}: { 
-  onSelectTemplate: (template: KnowledgeTemplate) => void;
-  onCreateFromTemplate: () => void;
-  selectedTemplate: KnowledgeTemplate | null;
-}) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Template Selector</CardTitle>
-        <CardDescription>
-          Choose a template to start creating new content
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <TemplateSelector 
-          onSelectTemplate={onSelectTemplate} 
-          className="w-full"
-        />
-      </CardContent>
-      <CardFooter>
-        <Button 
-          onClick={onCreateFromTemplate} 
-          disabled={!selectedTemplate}
-          className="flex items-center gap-2"
-        >
-          <Plus size={16} />
-          Create from Template
-        </Button>
-      </CardFooter>
-    </Card>
   );
 }
 

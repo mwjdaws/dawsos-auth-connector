@@ -33,10 +33,16 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
     const { nodeCanvasObject } = useNodeRenderer({ highlightedNodeId });
     const { getLinkColor, getLinkLabel } = useLinkRenderer();
     
+    // Ensure we have valid graph data
+    const safeGraphData: GraphData = {
+      nodes: Array.isArray(graphData?.nodes) ? graphData.nodes : [],
+      links: Array.isArray(graphData?.links) ? graphData.links : []
+    };
+    
     // Expose methods to parent via ref
     useImperativeHandle(ref, () => ({
       centerOnNode: (nodeId: string) => {
-        const node = graphData.nodes.find(n => n.id === nodeId);
+        const node = safeGraphData.nodes.find(n => n.id === nodeId);
         if (graphRef.current && node) {
           console.log(`Centering graph on node: ${node.name || node.title}`);
           graphRef.current.centerAt(node.x, node.y, 1000);
@@ -83,31 +89,17 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
       }
     }, [zoom]);
     
-    // Debug output for graph data
-    useEffect(() => {
-      console.log(`GraphRenderer: Rendering graph with ${graphData.nodes.length} nodes and ${graphData.links.length} links`);
-      
-      // Log some sample data for debugging
-      if (graphData.nodes.length > 0) {
-        console.log('Sample node:', graphData.nodes[0]);
-      }
-      
-      if (graphData.links.length > 0) {
-        console.log('Sample link:', graphData.links[0]);
-      }
-    }, [graphData]);
-    
     // Center on highlighted node when it changes
     useEffect(() => {
       if (highlightedNodeId && graphRef.current) {
-        const node = graphData.nodes.find(n => n.id === highlightedNodeId);
+        const node = safeGraphData.nodes.find(n => n.id === highlightedNodeId);
         if (node) {
           console.log(`Auto-centering on highlighted node: ${node.name || node.title}`);
           graphRef.current.centerAt(node.x, node.y, 1000);
           graphRef.current.zoom(2.5, 1000);
         }
       }
-    }, [highlightedNodeId, graphData.nodes]);
+    }, [highlightedNodeId, safeGraphData.nodes]);
     
     /**
      * Handles node click events
@@ -128,7 +120,7 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
     useEffect(() => {
       // Allow the graph to stabilize after data changes
       const timer = setTimeout(() => {
-        if (graphRef.current) {
+        if (graphRef.current && safeGraphData.nodes.length > 0) {
           try {
             // @ts-ignore - ForceGraph2D instance has zoomToFit method
             graphRef.current.zoomToFit(400, 40);
@@ -139,10 +131,10 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
       }, 500);
       
       return () => clearTimeout(timer);
-    }, [graphData]);
+    }, [safeGraphData]);
     
-    // Handle empty data case - should never happen as this is checked in the parent
-    if (!graphData || !graphData.nodes || graphData.nodes.length === 0) {
+    // Handle empty data case
+    if (!safeGraphData.nodes || safeGraphData.nodes.length === 0) {
       return (
         <div className={styles.emptyStateStyle}>
           <p className={styles.emptyStateText}>No graph data available</p>
@@ -162,9 +154,9 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
         }>
           <ForceGraph2DComponent
             ref={graphRef}
-            graphData={graphData}
+            graphData={safeGraphData}
             nodeAutoColorBy="type"
-            nodeLabel={node => node.name}
+            nodeLabel={node => node.name || node.title || node.id}
             linkDirectionalArrowLength={3.5}
             linkDirectionalArrowRelPos={1}
             linkLabel={getLinkLabel}
@@ -180,7 +172,7 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
             d3AlphaDecay={0.02} // Slower decay for more stable graph
             d3VelocityDecay={0.3} // Increased velocity decay for smoother motion
             onEngineStop={() => console.log('Graph physics simulation completed')}
-            linkWidth={link => (link.value as number) * 2}
+            linkWidth={link => ((link.value as number) || 1) * 1.5}
             nodeRelSize={6}
           />
         </React.Suspense>

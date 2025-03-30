@@ -1,11 +1,13 @@
 
-import React, { useState, Suspense } from "react";
+import React, { useState, Suspense, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RelationshipGraphPanel } from "@/components/MarkdownViewer/RelationshipGraph";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, AlertCircle } from "lucide-react";
 import { useOntologyTerms } from "@/hooks/markdown-editor/useOntologyTerms";
 import { useSourceLinks } from "@/hooks/markdown-editor/useNoteLinks";
+import { toast } from "@/hooks/use-toast";
+import { Card } from "@/components/ui/card";
 
 interface RelationshipGraphTabProps {
   contentId: string;
@@ -13,10 +15,25 @@ interface RelationshipGraphTabProps {
 
 export function RelationshipGraphTab({ contentId }: RelationshipGraphTabProps) {
   const [hasAttemptedRetry, setHasAttemptedRetry] = useState(false);
-  const { sourceTerms, isLoading: isLoadingTerms } = useOntologyTerms(contentId);
-  const { outboundLinks, inboundLinks, isLoading: isLoadingLinks } = useSourceLinks(contentId);
+  const [error, setError] = useState<Error | null>(null);
   
+  const { sourceTerms, isLoading: isLoadingTerms } = useOntologyTerms(contentId);
+  const { outboundLinks, inboundLinks, isLoading: isLoadingLinks, error: linksError } = useSourceLinks(contentId);
+  
+  useEffect(() => {
+    if (linksError) {
+      setError(linksError instanceof Error ? linksError : new Error('Failed to load graph data'));
+      
+      toast({
+        title: "Error loading graph data",
+        description: "There was a problem loading relationship data",
+        variant: "destructive",
+      });
+    }
+  }, [linksError]);
+
   const handleRefresh = () => {
+    setError(null);
     setHasAttemptedRetry(true);
   };
 
@@ -33,7 +50,7 @@ export function RelationshipGraphTab({ contentId }: RelationshipGraphTabProps) {
           onClick={handleRefresh}
           className="flex items-center gap-2"
         >
-          <RefreshCw className="h-4 w-4" />
+          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh Graph
         </Button>
       </div>
@@ -48,16 +65,29 @@ export function RelationshipGraphTab({ contentId }: RelationshipGraphTabProps) {
           </div>
         )}
         
-        <Suspense fallback={<Skeleton className="h-[400px] w-full rounded-lg" />}>
-          <div className="min-h-[400px] border rounded-lg bg-card overflow-hidden">
-            <RelationshipGraphPanel 
-              contentId={contentId} 
-              hasAttemptedRetry={hasAttemptedRetry}
-            />
-          </div>
-        </Suspense>
+        {error ? (
+          <Card className="min-h-[400px] flex items-center justify-center">
+            <div className="text-center p-6">
+              <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+              <h3 className="font-medium text-lg mb-2">Error Loading Graph</h3>
+              <p className="text-muted-foreground mb-4">
+                {error.message || "Failed to load the knowledge graph"}
+              </p>
+              <Button onClick={handleRefresh}>Try Again</Button>
+            </div>
+          </Card>
+        ) : (
+          <Suspense fallback={<Skeleton className="h-[400px] w-full rounded-lg" />}>
+            <div className="min-h-[400px] border rounded-lg bg-card overflow-hidden">
+              <RelationshipGraphPanel 
+                contentId={contentId} 
+                hasAttemptedRetry={hasAttemptedRetry}
+              />
+            </div>
+          </Suspense>
+        )}
         
-        {!isLoading && !hasConnections && (
+        {!isLoading && !hasConnections && !error && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="text-center bg-card/80 backdrop-blur-sm p-4 rounded-lg shadow-sm">
               <p className="text-muted-foreground mb-2">
