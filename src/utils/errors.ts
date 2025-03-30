@@ -1,11 +1,15 @@
 
 import { toast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 
-interface ErrorHandlingOptions {
-  level?: 'info' | 'warning' | 'error';
+export interface ErrorHandlingOptions {
+  level?: 'info' | 'warning' | 'error' | 'success';
   context?: Record<string, any>;
   actionLabel?: string;
   action?: () => void;
+  title?: string;
+  technical?: boolean;
+  silent?: boolean;
 }
 
 /**
@@ -20,7 +24,15 @@ export function handleError(
   userMessage?: string,
   options: ErrorHandlingOptions = {}
 ): void {
-  const { level = 'error', context = {}, actionLabel, action } = options;
+  const { 
+    level = 'error', 
+    context = {}, 
+    actionLabel, 
+    action,
+    title,
+    technical = false,
+    silent = false
+  } = options;
   
   // Default message if none provided
   const defaultMessage = 'An unexpected error occurred';
@@ -44,15 +56,30 @@ export function handleError(
     context
   });
   
+  // If silent mode is enabled, don't show a toast
+  if (silent) return;
+  
+  // Determine what message to show (technical details or user-friendly)
+  const displayMessage = userMessage || (technical ? errorMessage : defaultMessage);
+  
+  // Map level to variant for toast
+  const variantMap = {
+    'error': 'destructive',
+    'warning': 'default',
+    'info': 'default',
+    'success': 'default'
+  } as const;
+  
   // Display toast notification
   toast({
-    title: level === 'error' ? 'Error' : level === 'warning' ? 'Warning' : 'Notice',
-    description: userMessage || errorMessage || defaultMessage,
-    variant: level === 'error' ? 'destructive' : level === 'warning' ? 'warning' : 'default',
-    action: actionLabel && action ? {
-      label: actionLabel,
-      onClick: action
-    } : undefined
+    title: title || (level === 'error' ? 'Error' : level === 'warning' ? 'Warning' : level === 'info' ? 'Notice' : 'Success'),
+    description: displayMessage,
+    variant: variantMap[level],
+    action: actionLabel && action ? (
+      <ToastAction altText={actionLabel} onClick={action}>
+        {actionLabel}
+      </ToastAction>
+    ) : undefined
   });
 }
 

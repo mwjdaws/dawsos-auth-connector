@@ -17,7 +17,7 @@ export function handleError(
 ): void {
   const { 
     level = "error", 
-    title = "Error", 
+    title = level === "error" ? "Error" : level === "warning" ? "Warning" : level === "info" ? "Notice" : "Success", 
     actionLabel,
     action,
     technical = false,
@@ -53,11 +53,19 @@ export function handleError(
   // Don't show toast if silent mode is enabled
   if (silent) return;
   
+  // Map level to variant for toast
+  const variantMap: Record<string, "default" | "destructive"> = {
+    "error": "destructive",
+    "warning": "default",
+    "info": "default",
+    "success": "default"
+  };
+  
   // Display toast with appropriate styling
   toast({
     title,
     description: errorMessage,
-    variant: level === "error" ? "destructive" : undefined,
+    variant: variantMap[level],
     action: actionLabel && action ? (
       <ToastAction altText={actionLabel} onClick={action}>
         {actionLabel}

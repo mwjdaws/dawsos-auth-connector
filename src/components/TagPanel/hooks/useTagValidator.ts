@@ -1,6 +1,7 @@
 
 import { useState, useCallback } from "react";
-import { handleError, ValidationError } from "@/utils/error-handling";
+import { handleError } from "@/utils/error-handling";
+import { ValidationError } from "@/utils/errors/types";
 
 /**
  * Hook that provides tag validation functionality
