@@ -8,15 +8,18 @@ export type ErrorLevel = 'debug' | 'info' | 'warning' | 'error' | 'critical';
 
 // Standardized error object for consistent error handling
 export interface StandardizedError extends Error {
-  originalError: unknown;
-  userMessage: string;
-  timestamp: number;
+  originalError?: unknown;
+  userMessage?: string;
+  timestamp?: number;
   context?: Record<string, any>;
   code?: string;
   source?: string;
   technical?: boolean;
   silent?: boolean;
   level?: ErrorLevel;
+  status?: number;
+  handled?: boolean;
+  name: string;
 }
 
 // API error specific structure
@@ -45,6 +48,7 @@ export interface ErrorHandlingOptions {
   onRetry?: () => void;
   preventDuplicate?: boolean;
   duration?: number;
+  deduplicate?: boolean;
 }
 
 // Type guard to check if an error is a StandardizedError
@@ -52,9 +56,7 @@ export function isStandardizedError(error: unknown): error is StandardizedError 
   return (
     typeof error === 'object' &&
     error !== null &&
-    'originalError' in error &&
-    'userMessage' in error &&
-    'timestamp' in error
+    'message' in error
   );
 }
 

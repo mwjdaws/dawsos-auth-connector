@@ -20,6 +20,21 @@ const ERROR_CODES = {
 };
 
 /**
+ * Gets a user-friendly error message from a standardized error
+ * @param error The standardized error object
+ * @returns A user-friendly error message
+ */
+export function getErrorMessage(error: StandardizedError): string {
+  // Return userMessage if available
+  if (error.userMessage) {
+    return error.userMessage;
+  }
+  
+  // Return the technical message as fallback
+  return error.message || 'An unknown error occurred';
+}
+
+/**
  * Categorizes and normalizes an unknown error into a standardized error object
  * 
  * Handles various error types including:
@@ -52,6 +67,11 @@ export function categorizeError(error: unknown): StandardizedError {
       standardError.code = ERROR_CODES.UNKNOWN;
     }
     
+    // Initialize missing properties
+    standardError.originalError = standardError.originalError || error;
+    standardError.userMessage = standardError.userMessage || standardError.message;
+    standardError.timestamp = standardError.timestamp || Date.now();
+    
     return standardError;
   }
   
@@ -59,6 +79,9 @@ export function categorizeError(error: unknown): StandardizedError {
   if (error === null || error === undefined) {
     const standardError = new Error('An unknown error occurred') as StandardizedError;
     standardError.code = ERROR_CODES.UNKNOWN;
+    standardError.originalError = error;
+    standardError.userMessage = 'An unknown error occurred';
+    standardError.timestamp = Date.now();
     return standardError;
   }
   
@@ -68,6 +91,8 @@ export function categorizeError(error: unknown): StandardizedError {
     const standardError = new Error(message) as StandardizedError;
     standardError.code = ERROR_CODES.UNKNOWN;
     standardError.originalError = error;
+    standardError.userMessage = message;
+    standardError.timestamp = Date.now();
     return standardError;
   }
   
@@ -108,6 +133,8 @@ export function categorizeError(error: unknown): StandardizedError {
     standardError.code = code;
     standardError.status = status;
     standardError.originalError = error;
+    standardError.userMessage = message;
+    standardError.timestamp = Date.now();
     return standardError;
   }
   
@@ -115,5 +142,10 @@ export function categorizeError(error: unknown): StandardizedError {
   const standardError = new Error('An unknown error occurred') as StandardizedError;
   standardError.code = ERROR_CODES.UNKNOWN;
   standardError.originalError = error;
+  standardError.userMessage = 'An unknown error occurred';
+  standardError.timestamp = Date.now();
   return standardError;
 }
+
+// Export error codes for use elsewhere
+export { ERROR_CODES };
