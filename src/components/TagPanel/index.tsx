@@ -14,12 +14,40 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ManualTagCreator } from "./ManualTagCreator";
 import { GroupedTagList } from "./GroupedTagList";
 
+/**
+ * TagPanel Component
+ *
+ * Renders the UI for manually adding and displaying tags on a knowledge source.
+ * Supports grouped rendering by tag type and integration with Supabase for CRUD.
+ *
+ * ## Props
+ * @param {string} contentId - The ID of the note or knowledge source
+ * @param {boolean} editable - Whether the tag input is editable
+ * @param {Function} onMetadataChange - Callback triggered after tag updates
+ *
+ * ## Behavior
+ * - Tags are stored in the `tags` table with associated `content_id` and `type_id`
+ * - Grouping is handled by `GroupedTagList` based on `tag_types.name`
+ * - Input is trimmed, lowercased, and validated before insert
+ * - Duplicate tags for the same note are prevented
+ *
+ * ## Example
+ * ```tsx
+ * <TagPanel
+ *   contentId="abc123"
+ *   editable
+ *   onMetadataChange={refresh}
+ * />
+ * ```
+ */
 interface TagPanelProps {
   contentId: string;
   onTagsSaved: (contentId: string) => void;
+  editable?: boolean;
+  onMetadataChange?: () => void;
 }
 
-export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
+export function TagPanel({ contentId, onTagsSaved, editable = true, onMetadataChange }: TagPanelProps) {
   const navigate = useNavigate();
   const {
     saveTags,
@@ -107,6 +135,12 @@ export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
     if (result && typeof result === 'string') {
       console.log("[TagPanel] Tags saved, calling onTagsSaved with:", result);
       onTagsSaved(result);
+      
+      // Also call onMetadataChange if provided
+      if (onMetadataChange) {
+        onMetadataChange();
+      }
+      
       setRefreshTrigger(prev => prev + 1); // Force refresh after save
     }
   };
@@ -123,6 +157,12 @@ export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
   // Trigger a refresh of the grouped tag list
   const handleTagCreated = () => {
     setRefreshTrigger(prev => prev + 1);
+    
+    // Call onMetadataChange if provided
+    if (onMetadataChange) {
+      onMetadataChange();
+    }
+    
     toast({
       title: "Success",
       description: "Tag created and added to the content",
@@ -164,7 +204,8 @@ export function TagPanel({ contentId, onTagsSaved }: TagPanelProps) {
           <TabsContent value="manual" className="space-y-6 pt-4">
             <ManualTagCreator 
               contentId={contentId} 
-              onTagCreated={handleTagCreated} 
+              onTagCreated={handleTagCreated}
+              editable={editable}
             />
             
             <Separator className="my-4" />

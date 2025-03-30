@@ -1,18 +1,10 @@
 
 import { useState, useEffect } from "react";
-import { PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { isValidContentId } from "@/utils/content-validation";
 
 interface TagType {
   id: string;
@@ -22,188 +14,147 @@ interface TagType {
 interface ManualTagCreatorProps {
   contentId: string;
   onTagCreated: () => void;
-  className?: string;
+  editable?: boolean;
 }
 
-/**
- * A component that allows users to manually create tags with specified types
- * 
- * @param contentId - The ID of the content to tag
- * @param onTagCreated - Callback function when a tag is created successfully
- * @param className - Optional CSS class name
- */
-export function ManualTagCreator({ contentId, onTagCreated, className }: ManualTagCreatorProps) {
-  const [tagName, setTagName] = useState("");
-  const [selectedTypeId, setSelectedTypeId] = useState<string | undefined>();
+export function ManualTagCreator({ contentId, onTagCreated, editable = true }: ManualTagCreatorProps) {
+  const [tag, setTag] = useState("");
+  const [tagTypeId, setTagTypeId] = useState<string>("");
   const [tagTypes, setTagTypes] = useState<TagType[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFetchingTypes, setIsFetchingTypes] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Fetch available tag types on component mount
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Fetch tag types when component mounts
   useEffect(() => {
     const fetchTagTypes = async () => {
-      try {
-        setIsFetchingTypes(true);
-        setError(null);
+      const { data, error } = await supabase
+        .from('tag_types')
+        .select('*')
+        .order('name');
         
-        console.log("ManualTagCreator: Fetching tag types...");
-        
-        const { data, error } = await supabase
-          .from("tag_types")
-          .select("id, name")
-          .order("name");
-
-        if (error) throw error;
-
-        setTagTypes(data || []);
-        
-        // Set a default selection if available
-        if (data && data.length > 0) {
-          setSelectedTypeId(data[0].id);
-        }
-      } catch (error) {
-        console.error("ManualTagCreator: Error fetching tag types:", error);
-        setError("Failed to load tag types");
+      if (error) {
+        console.error("Error fetching tag types:", error);
         toast({
           title: "Error",
           description: "Failed to load tag types",
-          variant: "destructive",
-        });
-      } finally {
-        setIsFetchingTypes(false);
-      }
-    };
-
-    fetchTagTypes();
-  }, []);
-
-  const handleCreateTag = async () => {
-    if (!tagName.trim() || !selectedTypeId) {
-      toast({
-        title: "Missing Information",
-        description: "Please provide a tag name and select a tag type",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate content ID before creating the tag
-    if (!isValidContentId(contentId)) {
-      toast({
-        title: "Invalid Content ID",
-        description: "Cannot create a tag for an invalid or temporary content ID",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      console.log("Creating tag with type_id:", selectedTypeId);
-      
-      // Check for duplicate tag
-      const { data: existingTags, error: checkError } = await supabase
-        .from("tags")
-        .select("id")
-        .eq("name", tagName.trim().toLowerCase())
-        .eq("content_id", contentId);
-      
-      if (checkError) throw checkError;
-      
-      if (existingTags && existingTags.length > 0) {
-        toast({
-          title: "Duplicate Tag",
-          description: "This tag already exists for this content",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
       
-      // Create the new tag with explicit type_id
-      const tagData = {
-        name: tagName.trim().toLowerCase(),
-        content_id: contentId,
-        type_id: selectedTypeId
-      };
+      setTagTypes(data || []);
       
-      console.log("Creating tag with data:", tagData);
+      // Set default tag type ID if we have options
+      if (data && data.length > 0) {
+        setTagTypeId(data[0].id);
+      }
+    };
+    
+    fetchTagTypes();
+  }, []);
+
+  const handleAddTag = async () => {
+    if (!tag.trim() || !contentId || !tagTypeId || !editable) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      const cleanTag = tag.trim().toLowerCase();
       
+      // Check if tag already exists for this content
+      const { data: existingTags, error: checkError } = await supabase
+        .from('tags')
+        .select('id, name')
+        .eq('content_id', contentId)
+        .eq('name', cleanTag);
+        
+      if (checkError) throw checkError;
+      
+      if (existingTags && existingTags.length > 0) {
+        toast({
+          title: "Tag Exists",
+          description: "This tag already exists for this content",
+          variant: "default"
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Add new tag
       const { data, error } = await supabase
-        .from("tags")
-        .insert(tagData)
+        .from('tags')
+        .insert({
+          name: cleanTag,
+          content_id: contentId,
+          type_id: tagTypeId
+        })
         .select();
-
+        
       if (error) throw error;
-
+      
+      setTag("");
+      onTagCreated();
+      
       toast({
         title: "Success",
-        description: "Tag created successfully",
+        description: "Tag added successfully",
       });
-
-      // Reset form
-      setTagName("");
       
-      // Notify parent component of the new tag
-      if (onTagCreated) {
-        onTagCreated();
-      }
     } catch (error: any) {
-      console.error("Error creating tag:", error);
-      setError(error.message || "Failed to create tag");
+      console.error("Error adding tag:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create tag",
+        description: error.message || "Failed to add tag",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
+  if (!editable) {
+    return null;
+  }
+
   return (
-    <div className={`flex flex-col space-y-2 ${className}`}>
-      <div className="text-sm font-medium mb-1">Add Manual Tag</div>
-      {error && (
-        <div className="text-sm text-red-500 mb-2">{error}</div>
-      )}
-      <div className="flex items-center space-x-2">
-        <Input
-          value={tagName}
-          onChange={(e) => setTagName(e.target.value)}
-          placeholder="Tag name"
-          className="flex-1"
-          disabled={isLoading}
-        />
-        
-        <Select
-          value={selectedTypeId}
-          onValueChange={setSelectedTypeId}
-          disabled={isFetchingTypes || isLoading}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select type" />
-          </SelectTrigger>
-          <SelectContent>
-            {tagTypes.map((type) => (
-              <SelectItem key={type.id} value={type.id}>
-                {type.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        
-        <Button
-          onClick={handleCreateTag}
-          disabled={!tagName.trim() || !selectedTypeId || isLoading || !isValidContentId(contentId)}
-          size="sm"
-        >
-          <PlusCircle className="h-4 w-4 mr-1" />
-          Add
-        </Button>
+    <div className="space-y-4">
+      <div className="flex flex-col space-y-2">
+        <div className="flex items-center space-x-2">
+          <Input
+            value={tag}
+            onChange={(e) => setTag(e.target.value)}
+            placeholder="Tag name"
+            className="flex-1"
+            disabled={isSubmitting}
+          />
+          
+          <Select 
+            value={tagTypeId} 
+            onValueChange={setTagTypeId}
+            disabled={isSubmitting}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select type" />
+            </SelectTrigger>
+            <SelectContent>
+              {tagTypes.map((type) => (
+                <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <Button 
+            onClick={handleAddTag} 
+            disabled={!tag.trim() || isSubmitting || !tagTypeId}
+          >
+            Add
+          </Button>
+        </div>
       </div>
+      <p className="text-xs text-muted-foreground">
+        Add tags to categorize this content. Tags will be grouped by their type.
+      </p>
     </div>
   );
 }

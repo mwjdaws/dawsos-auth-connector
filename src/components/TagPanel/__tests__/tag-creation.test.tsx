@@ -86,12 +86,15 @@ describe('TagPanel Component - Manual Tag Creation', () => {
 
   test('creates a new tag with type and displays it grouped by tag type', async () => {
     const mockOnTagsSaved = vi.fn();
+    const mockOnMetadataChange = vi.fn();
     
     render(
       <MemoryRouter>
         <TagPanel
           contentId="mock-note-123"
           onTagsSaved={mockOnTagsSaved}
+          editable={true}
+          onMetadataChange={mockOnMetadataChange}
         />
       </MemoryRouter>
     );
