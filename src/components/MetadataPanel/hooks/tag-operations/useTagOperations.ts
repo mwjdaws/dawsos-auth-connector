@@ -1,106 +1,82 @@
 
-import { useState } from 'react';
-import { isValidContentId } from '@/utils/validation/contentIdValidation';
-import type { Tag } from '@/types';
+import { useState, useCallback } from 'react';
 import { useTagState } from './useTagState';
 import { useTagFetch } from './useTagFetch';
 import { useTagMutations } from './useTagMutations';
+import type { Tag, UseTagOperationsResult } from './types';
 
-// Define the interface for useTagOperations return value
-export interface UseTagOperationsResult {
-  newTag: string;
-  setNewTag: (value: string) => void;
-  tags: Tag[];
-  isLoading: boolean;
-  error: Error | null;
-  isAddingTag: boolean;
-  isDeletingTag: boolean;
-  isReordering: boolean;
-  fetchTags: () => Promise<Tag[]>;
-  refreshTags: () => Promise<void>;
-  handleAddTag: () => void;
-  handleDeleteTag: (tagId: string) => void;
-  reorderTags: (positions: { id: string; position: number }[]) => Promise<void>;
-}
-
+/**
+ * Main hook for tag operations that combines state, fetching, and mutations
+ */
 export const useTagOperations = (contentId: string): UseTagOperationsResult => {
-  const isValid = isValidContentId(contentId);
+  const { tags, setTags } = useTagState();
   const [newTag, setNewTag] = useState('');
   
-  // Use the tag state hook
-  const {
-    tags,
-    setTags,
-  } = useTagState();
-
-  // Additional state to handle loading and errors
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  // Set up tag fetching
+  const { 
+    fetchTags, 
+    isLoading, 
+    error 
+  } = useTagFetch({ 
+    contentId, 
+    setTags 
+  });
   
-  // Use the tag fetch hook
-  const { fetchTags } = useTagFetch(contentId);
+  // Set up tag mutations
+  const { 
+    addTag, 
+    deleteTag, 
+    reorderTags, 
+    isAddingTag, 
+    isDeletingTag, 
+    isReordering 
+  } = useTagMutations({ 
+    contentId, 
+    setTags, 
+    tags 
+  });
   
-  // Manual refreshTags implementation
-  const refreshTags = async () => {
-    if (!isValid) return;
-    try {
-      setIsLoading(true);
-      const fetchedTags = await fetchTags();
-      setTags(fetchedTags);
-      setError(null);
-    } catch (err) {
-      console.error("Error refreshing tags:", err);
-      setError(err instanceof Error ? err : new Error('Failed to refresh tags'));
-    } finally {
-      setIsLoading(false);
+  // Fetch tags on initial load
+  const handleRefresh = useCallback(async () => {
+    await fetchTags();
+  }, [fetchTags]);
+  
+  // Handle adding a tag
+  const handleAddTag = async () => {
+    if (!newTag.trim()) return;
+    
+    const result = await addTag({ 
+      name: newTag, 
+      contentId 
+    });
+    
+    if (result) {
+      setNewTag('');
     }
   };
   
-  // Use tag mutations hook
-  const {
-    addTag: addTagMutation,
-    deleteTag: deleteTagMutation,
-    reorderTags: reorderTagsMutation,
-    isAddingTag,
-    isDeletingTag,
-    isReordering
-  } = useTagMutations({
-    contentId,
-  });
-  
-  const handleAddTag = () => {
-    if (!newTag.trim() || !isValid) return;
-    
-    addTagMutation({
-      name: newTag,
-      contentId
-    });
-    
-    setNewTag('');
+  // Handle deleting a tag
+  const handleDeleteTag = async (tagId: string) => {
+    await deleteTag({ tagId, contentId });
   };
   
-  const handleDeleteTag = (tagId: string) => {
-    if (!isValid) return;
-    
-    deleteTagMutation({ 
-      tagId,
-      contentId 
-    });
+  // Handle reordering tags
+  const handleReorderTags = async (tagPositions: { id: string; position: number }[]) => {
+    await reorderTags(tagPositions);
   };
   
   return {
-    newTag,
-    setNewTag,
     tags,
     isLoading,
     error,
-    isAddingTag,
-    isDeletingTag,
-    isReordering,
-    fetchTags,
-    refreshTags,
+    newTag,
+    setNewTag,
     handleAddTag,
     handleDeleteTag,
-    reorderTags: reorderTagsMutation
+    handleReorderTags,
+    handleRefresh,
+    isAddingTag,
+    isDeletingTag,
+    isReordering
   };
 };

@@ -1,72 +1,87 @@
 
-import type { ValidationResult } from './types';
+import { ValidationResult } from './types';
 
 /**
- * Validates a document title
- * @param title The title to validate
- * @returns A validation result
+ * Validates document title
+ * @param title The document title to validate
+ * @returns Validation result
  */
 export function validateDocumentTitle(title: string): ValidationResult {
   if (!title || title.trim() === '') {
     return {
       isValid: false,
-      message: 'Title is required',
-      errorCode: 'TITLE_REQUIRED',
-      errorMessage: 'Title is required' // Added for compatibility
+      message: "Title is required",
+      errorCode: "DOC_TITLE_REQUIRED",
+      errorMessage: "Title is required"
     };
   }
-  
-  if (title.length > 255) {
+
+  if (title.length > 200) {
     return {
       isValid: false,
-      message: 'Title must be 255 characters or less',
-      errorCode: 'TITLE_TOO_LONG',
-      errorMessage: 'Title must be 255 characters or less' // Added for compatibility
+      message: "Title cannot exceed 200 characters",
+      errorCode: "DOC_TITLE_TOO_LONG",
+      errorMessage: "Title cannot exceed 200 characters"
     };
   }
-  
+
   return {
     isValid: true,
     message: null,
     errorCode: null,
-    errorMessage: null // Added for compatibility
+    errorMessage: null
   };
 }
 
 /**
- * Validates a document for saving
- * @param title The document title
- * @returns A validation result
- */
-export function validateDocumentForSave(title: string): ValidationResult {
-  return validateDocumentTitle(title);
-}
-
-/**
- * Validates a document for publishing
+ * Validates document for saving
  * @param title The document title
  * @param content The document content
- * @returns A validation result
+ * @returns Validation result
  */
-export function validateDocumentForPublish(title: string, content: string): ValidationResult {
+export function validateDocumentForSave(title: string, content?: string): ValidationResult {
+  // Title is always required
   const titleValidation = validateDocumentTitle(title);
   if (!titleValidation.isValid) {
     return titleValidation;
   }
-  
-  if (!content || content.trim() === '') {
-    return {
-      isValid: false,
-      message: 'Content cannot be empty',
-      errorCode: 'CONTENT_EMPTY',
-      errorMessage: 'Content cannot be empty' // Added for compatibility
-    };
-  }
-  
+
+  // For saving, content can be empty
   return {
     isValid: true,
     message: null,
     errorCode: null,
-    errorMessage: null // Added for compatibility
+    errorMessage: null
+  };
+}
+
+/**
+ * Validates document for publishing
+ * @param title The document title
+ * @param content The document content
+ * @returns Validation result
+ */
+export function validateDocumentForPublish(title: string, content?: string): ValidationResult {
+  // Title validation
+  const titleValidation = validateDocumentTitle(title);
+  if (!titleValidation.isValid) {
+    return titleValidation;
+  }
+
+  // For publishing, content should not be empty
+  if (!content || content.trim() === '') {
+    return {
+      isValid: false,
+      message: "Content is required for publishing",
+      errorCode: "DOC_CONTENT_REQUIRED",
+      errorMessage: "Content is required for publishing"
+    };
+  }
+
+  return {
+    isValid: true,
+    message: null,
+    errorCode: null,
+    errorMessage: null
   };
 }

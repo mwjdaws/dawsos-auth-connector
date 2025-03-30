@@ -1,4 +1,3 @@
-
 import { ReactNode, useTransition, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -110,7 +109,7 @@ console.log(greeting);
                 initialTitle="Draft Document"
                 initialContent={sampleMarkdown}
                 initialTemplateId={null}
-                sourceId={contentId !== `temp-${Date.now()}` ? contentId : undefined}
+                sourceId={contentId !== `temp-${Date.now()}` ? contentId : null}
                 onSaveDraft={onSaveDraft}
                 onPublish={onPublish}
               />

@@ -6,6 +6,7 @@ export interface ValidationResult {
   isValid: boolean;
   message: string | null;
   errorCode?: string | null;
+  errorMessage?: string | null; // Added for backward compatibility
 }
 
 /**
@@ -13,8 +14,16 @@ export interface ValidationResult {
  */
 export interface ExtendedValidationResult extends ValidationResult {
   details?: Record<string, any> | null;
-  // Add an errorMessage property as some code is looking for this
-  errorMessage?: string | null;
+}
+
+/**
+ * Content ID validation result type enum
+ */
+export enum ContentIdValidationResultType {
+  VALID = 'valid',
+  TEMPORARY = 'temporary',
+  MISSING = 'missing',
+  INVALID = 'invalid'
 }
 
 /**
@@ -23,6 +32,7 @@ export interface ExtendedValidationResult extends ValidationResult {
 export interface ContentIdValidationResult {
   isValid: boolean;
   message: string | null;
+  resultType: ContentIdValidationResultType;
 }
 
 /**
@@ -41,14 +51,4 @@ export interface TagValidationOptions {
 export interface TagPosition {
   id: string;
   position: number;
-}
-
-/**
- * Enum for content ID validation result types
- */
-export enum ContentIdValidationResultType {
-  VALID = 'valid',
-  TEMPORARY = 'temporary',
-  MISSING = 'missing',
-  INVALID = 'invalid'
 }

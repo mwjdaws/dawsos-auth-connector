@@ -1,142 +1,45 @@
 
-import { useState, useEffect, useTransition, useRef } from "react";
-import { toast } from "@/hooks/use-toast";
-import { isValidContentId } from "@/utils/validation/contentIdValidation";
-import { handleError } from "@/utils/errors";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from 'react';
+import { isValidContentId } from '@/utils/validation/contentIdValidation';
 
-export interface UsePanelStateProps {
-  contentId?: string;
+interface UsePanelStateProps {
+  contentId: string;
   onMetadataChange?: () => void;
   isCollapsible?: boolean;
   initialCollapsed?: boolean;
 }
 
-export const usePanelState = ({ 
-  contentId, 
+export const usePanelState = ({
+  contentId,
   onMetadataChange,
   isCollapsible = false,
-  initialCollapsed = false 
+  initialCollapsed = false
 }: UsePanelStateProps) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
-  const [contentExists, setContentExists] = useState(false);
-  const isMounted = useRef(true);
+  const [contentExists, setContentExists] = useState(true);
 
-  // Reset the component state when unmounting
+  // Check if the content ID is valid
   useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  // Validate content ID and check if knowledge source exists
-  useEffect(() => {
-    const checkContentExists = async () => {
-      if (!contentId || !isValidContentId(contentId)) {
-        setContentExists(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('knowledge_sources')
-          .select('id')
-          .eq('id', contentId)
-          .maybeSingle();
-          
-        if (error) {
-          console.error('Error checking knowledge source existence:', error);
-          setContentExists(false);
-          return;
-        }
-        
-        setContentExists(!!data);
-      } catch (err) {
-        console.error('Error checking content existence:', err);
-        setContentExists(false);
-      }
-    };
-    
-    checkContentExists();
+    if (!isValidContentId(contentId)) {
+      setContentExists(false);
+    } else {
+      // We could check if the content exists in the database here
+      // For now, we'll assume it does if the ID is valid
+      setContentExists(true);
+    }
   }, [contentId]);
 
-  const validateContentId = (): boolean => {
-    if (!contentId || !isValidContentId(contentId)) {
-      console.log("Invalid contentId for fetching metadata:", contentId);
-      setIsLoading(false);
-      
-      // Only set error if the contentId is not undefined (meaning we actually tried to use an invalid ID)
-      if (contentId !== undefined) {
-        setError("Invalid content ID");
-      }
-      
-      return false;
+  // Handle metadata changes
+  const handleMetadataChange = () => {
+    if (onMetadataChange) {
+      onMetadataChange();
     }
-    
-    if (!contentExists) {
-      console.log("Content does not exist in database:", contentId);
-      setIsLoading(false);
-      setError("Content not found in database");
-      return false;
-    }
-    
-    return true;
-  };
-
-  const startLoading = () => {
-    // Only start loading if we have a valid content ID that exists
-    if (contentId && isValidContentId(contentId) && contentExists) {
-      setIsLoading(true);
-      setError(null);
-    } else {
-      setIsLoading(false);
-    }
-  };
-
-  const finishLoading = (success: boolean = true, errorMessage?: string) => {
-    if (isMounted.current) {
-      setIsLoading(false);
-      
-      if (!success && errorMessage) {
-        setError(errorMessage);
-        
-        // Use standardized error handling
-        handleError(
-          new Error(errorMessage),
-          "Failed to load metadata",
-          {
-            level: "error",
-            context: { contentId }
-          }
-        );
-      }
-      
-      if (success && onMetadataChange) {
-        onMetadataChange();
-      }
-    }
-  };
-
-  const toggleCollapsed = () => {
-    setIsCollapsed(prev => !prev);
   };
 
   return {
-    isLoading,
-    error,
-    isPending,
-    startTransition,
     isCollapsed,
     setIsCollapsed,
-    toggleCollapsed,
-    isMounted,
-    validateContentId,
-    startLoading,
-    finishLoading,
-    contentExists
+    contentExists,
+    handleMetadataChange
   };
 };

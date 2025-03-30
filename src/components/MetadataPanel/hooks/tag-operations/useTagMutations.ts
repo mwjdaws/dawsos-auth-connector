@@ -1,112 +1,122 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Tag, UseTagMutationsProps, UseTagMutationsResult } from './types';
 import { isValidContentId } from '@/utils/validation/contentIdValidation';
-import { TagPosition } from '@/utils/validation/types';
-import type { Tag } from '@/types';
 
-interface UseTagMutationsProps {
-  contentId: string;
-}
-
-export interface UseTagMutationsResult {
-  addTag: (params: { name: string; contentId?: string }) => Promise<void>;
-  deleteTag: (params: { tagId: string; contentId?: string }) => Promise<void>;
-  reorderTags: (positions: TagPosition[]) => Promise<void>;
-  isAddingTag: boolean;
-  isDeletingTag: boolean;
-  isReordering: boolean;
-}
-
-export const useTagMutations = ({ contentId }: UseTagMutationsProps): UseTagMutationsResult => {
+/**
+ * Hook for tag mutations (add, delete, reorder)
+ */
+export const useTagMutations = ({
+  contentId,
+  setTags,
+  tags = []
+}: UseTagMutationsProps): UseTagMutationsResult => {
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [isDeletingTag, setIsDeletingTag] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
 
-  const addTag = async ({ name, contentId: overrideContentId }: { name: string; contentId?: string }): Promise<void> => {
-    const effectiveContentId = overrideContentId || contentId;
-    
-    if (!isValidContentId(effectiveContentId) || !name.trim()) {
-      return;
+  /**
+   * Add a new tag
+   */
+  const addTag = async ({ name, contentId, type_id = null }: { name: string; contentId: string; type_id?: string | null }): Promise<Tag | null> => {
+    if (!isValidContentId(contentId) || !name.trim()) {
+      return null;
     }
-    
+
+    setIsAddingTag(true);
     try {
-      setIsAddingTag(true);
-      
-      // Add tag to database
       const { data, error } = await supabase
         .from('tags')
         .insert({
-          name: name.trim(), 
-          content_id: effectiveContentId
+          name: name.trim(),
+          content_id: contentId,
+          type_id
         })
         .select()
         .single();
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
+
+      if (error) throw new Error(error.message);
+
+      const newTag: Tag = {
+        id: data.id,
+        name: data.name,
+        content_id: data.content_id,
+        type_id: data.type_id,
+        type_name: null
+      };
+
+      setTags(prevTags => [...prevTags, newTag]);
+      return newTag;
     } catch (err) {
       console.error('Error adding tag:', err);
-      throw err;
+      return null;
     } finally {
       setIsAddingTag(false);
     }
   };
-  
-  const deleteTag = async ({ tagId, contentId: overrideContentId }: { tagId: string; contentId?: string }): Promise<void> => {
-    const effectiveContentId = overrideContentId || contentId;
-    
-    if (!isValidContentId(effectiveContentId) || !tagId) {
-      return;
+
+  /**
+   * Delete a tag
+   */
+  const deleteTag = async ({ tagId, contentId }: { tagId: string; contentId: string }): Promise<boolean> => {
+    if (!isValidContentId(contentId) || !tagId) {
+      return false;
     }
-    
+
+    setIsDeletingTag(true);
     try {
-      setIsDeletingTag(true);
-      
-      // Delete tag from database
       const { error } = await supabase
         .from('tags')
         .delete()
-        .eq('id', tagId)
-        .eq('content_id', effectiveContentId);
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
+        .match({ id: tagId, content_id: contentId });
+
+      if (error) throw new Error(error.message);
+
+      setTags(prevTags => prevTags.filter(tag => tag.id !== tagId));
+      return true;
     } catch (err) {
       console.error('Error deleting tag:', err);
-      throw err;
+      return false;
     } finally {
       setIsDeletingTag(false);
     }
   };
-  
-  const reorderTags = async (positions: TagPosition[]): Promise<void> => {
-    if (!isValidContentId(contentId) || !positions.length) {
-      return;
-    }
-    
-    try {
-      setIsReordering(true);
 
-      // In a real implementation, this would update tag positions in the database
-      // For now, this is a stub implementation
-      console.log('Reordering tags:', positions);
+  /**
+   * Reorder tags
+   */
+  const reorderTags = async (tagPositions: { id: string; position: number }[]): Promise<boolean> => {
+    if (!isValidContentId(contentId) || tagPositions.length === 0) {
+      return false;
+    }
+
+    setIsReordering(true);
+    try {
+      // In a real implementation, we would update tag positions in the database
+      // For now, we'll just sort the tags in memory
+      const posMap = new Map(tagPositions.map(p => [p.id, p.position]));
       
-      // Simulate a delay to show loading state
-      await new Promise(resolve => setTimeout(resolve, 500));
+      setTags(prevTags => {
+        // First sort by the provided positions
+        const sortedTags = [...prevTags];
+        sortedTags.sort((a, b) => {
+          const posA = posMap.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+          const posB = posMap.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+          return posA - posB;
+        });
+        return sortedTags;
+      });
       
+      return true;
     } catch (err) {
       console.error('Error reordering tags:', err);
-      throw err;
+      return false;
     } finally {
       setIsReordering(false);
     }
   };
-  
+
   return {
     addTag,
     deleteTag,

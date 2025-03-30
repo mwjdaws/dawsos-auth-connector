@@ -1,4 +1,3 @@
-
 /**
  * MetadataPanel Component
  * 
@@ -71,12 +70,10 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
 
   if (!isValidContent || !contentExists) {
     return (
-      <Card className={className}>
+      <Card className="w-full">
         <CardContent className="pt-4">
           <ContentAlert 
-            contentId={contentId}
             validationResult={getContentIdValidationResult(contentId)} 
-            contentExists={contentExists} 
           />
         </CardContent>
       </Card>
@@ -98,7 +95,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
         <CardContent className="pt-4">
           <MetadataContent
             isLoading={isLoading}
-            error={error}
+            error={error instanceof Error ? error : new Error(String(error))}
             contentId={contentId}
             externalSourceUrl={externalSourceUrl}
             lastCheckedAt={lastCheckedAt}
