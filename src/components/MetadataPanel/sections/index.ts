@@ -1,7 +1,7 @@
 
-export { default as HeaderSection } from './HeaderSection';
-export { default as ExternalSourceSection } from './ExternalSourceSection';
-export { default as TagsSection } from './TagsSection';
-export { default as OntologySection } from './OntologySection';
-export { default as ContentIdSection } from './ContentIdSection';
+export { HeaderSection } from './HeaderSection';
+export { ExternalSourceSection } from './ExternalSourceSection';
+export { TagsSection } from './TagsSection';
+export { OntologySection } from './OntologySection';
+export { ContentIdSection } from './ContentIdSection';
 export { LoadingState } from './LoadingState';

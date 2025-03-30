@@ -6,7 +6,9 @@ import { toast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { X, Info } from "lucide-react";
 import { isValidContentId } from "@/utils/content-validation";
 import { useTagsQuery, useTagMutations } from "@/hooks/metadata";
 
@@ -40,16 +42,7 @@ export function TagPanel({
   const [newTag, setNewTag] = useState("");
   
   // Tag generation hook
-  const {
-    tags: generatedTags,
-    isLoading: isGeneratingTags,
-    contentId: tagContentId,
-    setContentId,
-    handleGenerateTags,
-    saveTags,
-    isProcessing,
-    isRetrying
-  } = useTagGeneration();
+  const tagGeneration = useTagGeneration();
   
   // Fetch existing tags with React Query
   const { 
@@ -74,10 +67,10 @@ export function TagPanel({
     if (!text || !text.trim()) return;
     
     startTransition(() => {
-      handleGenerateTags(text)
+      tagGeneration.handleGenerateTags(text)
         .then(newContentId => {
           if (newContentId) {
-            setContentId(newContentId);
+            tagGeneration.setContentId(newContentId);
             setRefreshTrigger(prev => prev + 1);
           }
         })
@@ -94,25 +87,27 @@ export function TagPanel({
   
   // Handle save tags
   const handleSaveTags = async () => {
-    if (!generatedTags.length) return;
+    if (!tagGeneration.tags.length) return;
     
-    const result = await saveTags("", generatedTags, {
-      contentId: tagContentId || contentId
-    });
-    
-    if (result && typeof result === 'string') {
-      onTagsSaved(result);
-      
-      if (onMetadataChange) {
-        onMetadataChange();
-      }
-      
-      setRefreshTrigger(prev => prev + 1);
-      
-      toast({
-        title: "Tags Saved",
-        description: "Tags were successfully saved to the content",
+    if (typeof tagGeneration.saveTags === 'function') {
+      const result = await tagGeneration.saveTags("", tagGeneration.tags, {
+        contentId: tagGeneration.contentId || contentId
       });
+      
+      if (result && typeof result === 'string') {
+        onTagsSaved(result);
+        
+        if (onMetadataChange) {
+          onMetadataChange();
+        }
+        
+        setRefreshTrigger(prev => prev + 1);
+        
+        toast({
+          title: "Tags Saved",
+          description: "Tags were successfully saved to the content",
+        });
+      }
     }
   };
   
@@ -179,26 +174,28 @@ export function TagPanel({
           
           <TabsContent value="automatic" className="space-y-6 pt-4">
             <TagGenerator 
-              isLoading={isGeneratingTags || isPending}
+              isLoading={tagGeneration.isLoading || isPending}
               onGenerateTags={processTagGeneration}
             />
             
             <TagList 
-              tags={generatedTags}
-              isLoading={isGeneratingTags || isPending}
-              knowledgeSourceId={tagContentId || (isValidContent ? contentId : undefined)}
+              tags={tagGeneration.tags}
+              isLoading={tagGeneration.isLoading || isPending}
+              knowledgeSourceId={tagGeneration.contentId || (isValidContent ? contentId : undefined)}
               onTagClick={handleTagClick}
             />
             
-            <TagSaver
-              tags={generatedTags}
-              contentId={tagContentId || contentId}
-              saveTags={saveTags}
-              isProcessing={isProcessing}
-              isRetrying={isRetrying}
-              onTagsSaved={onTagsSaved}
-              disabled={!isValidContent}
-            />
+            {typeof tagGeneration.saveTags === 'function' && (
+              <TagSaver
+                tags={tagGeneration.tags}
+                contentId={tagGeneration.contentId || contentId}
+                saveTags={tagGeneration.saveTags}
+                isProcessing={tagGeneration.isProcessing || false}
+                isRetrying={tagGeneration.isRetrying || false}
+                onTagsSaved={onTagsSaved}
+                disabled={!isValidContent}
+              />
+            )}
           </TabsContent>
           
           <TabsContent value="manual" className="space-y-6 pt-4">

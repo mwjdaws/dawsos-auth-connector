@@ -1,35 +1,42 @@
 
-/**
- * ContentIdSection Component
- * 
- * Displays the content ID of the current knowledge source or document.
- * This is typically shown at the bottom of the metadata panel for reference purposes.
- * 
- * @example
- * ```tsx
- * <ContentIdSection contentId="ks-123456" />
- * ```
- * 
- * @example
- * ```tsx
- * <ContentIdSection contentId="ks-123456" className="mt-4 text-xs" />
- * ```
- * 
- * @remarks
- * - Simple display component showing the content ID in muted text
- * - Can be styled with optional className prop
- * - Useful for debugging and reference purposes
- */
 import React from "react";
-import { ContentIdSectionProps } from "../types";
+import { Clipboard, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
-export const ContentIdSection: React.FC<ContentIdSectionProps> = ({ 
-  contentId,
-  className 
-}) => {
+interface ContentIdSectionProps {
+  contentId: string;
+  className?: string;
+}
+
+export function ContentIdSection({ contentId, className = "" }: ContentIdSectionProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(contentId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className={`text-xs text-muted-foreground ${className || ''}`}>
-      Content ID: {contentId}
+    <div className={className}>
+      <h3 className="text-sm font-medium mb-2">Content ID</h3>
+      <div className="flex items-center gap-2">
+        <code className="text-xs bg-muted p-1 rounded">{contentId}</code>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={handleCopyId}
+          className="h-6 w-6 p-0"
+        >
+          {copied ? (
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+          ) : (
+            <Clipboard className="h-4 w-4" />
+          )}
+          <span className="sr-only">Copy ID</span>
+        </Button>
+      </div>
     </div>
   );
-};
+}

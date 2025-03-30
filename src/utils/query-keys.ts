@@ -19,7 +19,7 @@ export const queryKeys = {
     all: ['tags'] as const,
     byContentId: (contentId: string) => [...queryKeys.tags.all, 'content', contentId] as const,
     byType: (typeId: string) => [...queryKeys.tags.all, 'type', typeId] as const,
-    summary: [...queryKeys.tags.all, 'summary'] as const,
+    summary: ['tags', 'summary'] as const,
   },
   
   ontologyTerms: {
