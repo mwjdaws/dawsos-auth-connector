@@ -4,35 +4,8 @@ import { BrowserRouter } from 'react-router-dom';
 import { AppRoutes } from './routes';
 import { Toaster } from './components/ui/toaster';
 import { AuthProvider } from './context/AuthContext';
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryProvider } from './providers/QueryProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
-
-/**
- * Configure QueryClient with proper error handling
- * 
- * This creates a client with appropriate default settings for:
- * - Retry limits for failed requests
- * - Window focus refetching behavior
- * - Standard error handling via metadata
- */
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-      // Use meta for error handling instead of onError
-      meta: {
-        handleError: true
-      }
-    },
-    mutations: {
-      // Use meta for error handling instead of onError
-      meta: {
-        handleError: true
-      }
-    }
-  },
-});
 
 /**
  * Loading fallback component displayed during suspense states
@@ -76,7 +49,7 @@ function App() {
   return (
     <React.StrictMode>
       <ErrorBoundary fallback={<ErrorFallback error={new Error("Application failed to load")} resetErrorBoundary={() => window.location.reload()} />}>
-        <QueryClientProvider client={queryClient}>
+        <QueryProvider>
           <AuthProvider>
             <Suspense fallback={<LoadingFallback />}>
               <BrowserRouter>
@@ -85,7 +58,7 @@ function App() {
               </BrowserRouter>
             </Suspense>
           </AuthProvider>
-        </QueryClientProvider>
+        </QueryProvider>
       </ErrorBoundary>
     </React.StrictMode>
   );
