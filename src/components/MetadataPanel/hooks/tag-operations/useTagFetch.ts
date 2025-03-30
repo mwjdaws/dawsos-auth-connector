@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Tag, UseTagFetchResult } from './types';
 import { handleError } from "@/utils/errors";
-import { isValidContentId } from "@/utils/content-validation";
+import { isValidContentId } from "@/utils/validation";
 
 interface UseTagFetchProps {
   contentId?: string;
