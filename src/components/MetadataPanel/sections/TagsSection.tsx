@@ -11,10 +11,17 @@ interface TagsSectionProps {
   editable?: boolean;
   newTag?: string;
   setNewTag?: (value: string) => void;
-  onAddTag?: () => void;
+  onAddTag?: (typeId?: string) => void;
   onDeleteTag?: (tagId: string) => void;
 }
 
+/**
+ * Displays and manages a collection of content tags, optionally allowing
+ * editing capabilities
+ * 
+ * @param props - Component props
+ * @returns TagsSection component
+ */
 export const TagsSection: React.FC<TagsSectionProps> = ({
   tags,
   editable = false,
@@ -49,7 +56,7 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
           />
           <Button 
             size="sm" 
-            onClick={onAddTag}
+            onClick={() => onAddTag?.()}
             disabled={!newTag?.trim()}
           >
             <Plus className="h-4 w-4 mr-1" />

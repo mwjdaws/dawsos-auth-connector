@@ -5,12 +5,26 @@ import { handleError } from "@/utils/errors";
 import { isValidContentId } from "@/utils/content-validation";
 import { Tag, TagOperationsProps, UseTagStateResult, UseTagMutationsResult } from "./types";
 
+/**
+ * Hook for handling tag mutation operations (add/delete) with proper error handling
+ * and validation.
+ * 
+ * @param props - Configuration props including contentId and user info
+ * @param tagState - Current tag state from useTagState hook
+ * @returns Object with handleAddTag and handleDeleteTag functions
+ */
 export function useTagMutations(
   { contentId, user, onMetadataChange }: TagOperationsProps,
   { tags, setTags, newTag, setNewTag }: UseTagStateResult
 ): UseTagMutationsResult {
   
-  const handleAddTag = async (): Promise<void> => {
+  /**
+   * Adds a new tag to the content
+   * 
+   * @param typeId - Optional tag type ID for categorizing the tag
+   * @returns Promise that resolves when operation completes
+   */
+  const handleAddTag = async (typeId?: string): Promise<void> => {
     if (!newTag.trim() || !user) {
       if (!user) {
         toast({
@@ -35,7 +49,8 @@ export function useTagMutations(
     try {
       const newTagData = {
         name: newTag.trim(),
-        content_id: contentId
+        content_id: contentId,
+        type_id: typeId || null // Support for tag types
       };
       
       console.log("Adding tag:", newTagData);

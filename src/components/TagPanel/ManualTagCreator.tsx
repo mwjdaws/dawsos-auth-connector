@@ -25,6 +25,13 @@ interface ManualTagCreatorProps {
   className?: string;
 }
 
+/**
+ * A component that allows users to manually create tags with specified types
+ * 
+ * @param contentId - The ID of the content to tag
+ * @param onTagCreated - Callback function when a tag is created successfully
+ * @param className - Optional CSS class name
+ */
 export function ManualTagCreator({ contentId, onTagCreated, className }: ManualTagCreatorProps) {
   const [tagName, setTagName] = useState("");
   const [selectedTypeId, setSelectedTypeId] = useState<string | undefined>();
@@ -36,6 +43,11 @@ export function ManualTagCreator({ contentId, onTagCreated, className }: ManualT
   useEffect(() => {
     const fetchTagTypes = async () => {
       try {
+        setIsFetchingTypes(true);
+        setError(null);
+        
+        console.log("ManualTagCreator: Fetching tag types...");
+        
         const { data, error } = await supabase
           .from("tag_types")
           .select("id, name")
@@ -50,7 +62,7 @@ export function ManualTagCreator({ contentId, onTagCreated, className }: ManualT
           setSelectedTypeId(data[0].id);
         }
       } catch (error) {
-        console.error("Error fetching tag types:", error);
+        console.error("ManualTagCreator: Error fetching tag types:", error);
         toast({
           title: "Error",
           description: "Failed to load tag types",

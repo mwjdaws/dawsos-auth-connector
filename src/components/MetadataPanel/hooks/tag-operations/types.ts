@@ -1,33 +1,33 @@
 
-import { PostgrestError } from "@supabase/supabase-js";
+import { User } from '@supabase/supabase-js';
 
 export interface Tag {
   id: string;
   name: string;
   content_id: string;
-  type_id?: string;
+  type_id?: string | null;
 }
 
 export interface TagOperationsProps {
   contentId: string;
-  user: any;
+  user?: User | null;
   onMetadataChange?: () => void;
 }
 
 export interface UseTagStateResult {
   tags: Tag[];
-  setTags: (tags: Tag[]) => void;
+  setTags: React.Dispatch<React.SetStateAction<Tag[]>>;
   newTag: string;
-  setNewTag: (value: string) => void;
+  setNewTag: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export interface UseTagFetchResult {
   fetchTags: () => Promise<Tag[]>;
   isLoading: boolean;
-  error: PostgrestError | Error | null;
+  error: Error | null;
 }
 
 export interface UseTagMutationsResult {
-  handleAddTag: () => Promise<void>;
+  handleAddTag: (typeId?: string) => Promise<void>;
   handleDeleteTag: (tagId: string) => Promise<void>;
 }

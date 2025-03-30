@@ -27,7 +27,9 @@ export function useTagOperations(props: TagOperationsProps) {
   useEffect(() => {
     if (contentId) {
       fetchTags().then(tags => {
-        tagState.setTags(tags);
+        if (Array.isArray(tags)) {
+          tagState.setTags(tags);
+        }
       });
     }
   }, [contentId]);
