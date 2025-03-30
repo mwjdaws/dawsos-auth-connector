@@ -108,7 +108,9 @@ export function useGraphData(startingNodeId?: string) {
   const fetchGraphDataSafely = useCallback(() => {
     fetchAttempts.current = 0;
     withErrorHandling(fetchGraphData, {
-      errorMessage: "Failed to refresh graph data"
+      errorMessage: "Failed to refresh graph data",
+      silent: false,
+      level: "error"
     });
   }, [fetchGraphData]);
   
