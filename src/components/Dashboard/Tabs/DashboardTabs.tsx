@@ -1,6 +1,8 @@
+
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingIndicator } from "./LoadingIndicator";
+import { TagGeneratorTab, MetadataTab, MarkdownEditorTab } from "./TabContents";
 
 interface DashboardTabsProps {
   activeTab: string;
@@ -21,38 +23,62 @@ export function DashboardTabs({
   onSaveDraft,
   onPublish
 }: DashboardTabsProps) {
+  const [isPending, startTransition] = React.useTransition();
+
+  const handleTabChange = (value: string) => {
+    startTransition(() => {
+      onTabChange(value);
+    });
+  };
+
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={onTabChange}
-      className="w-full"
-    >
-      <TabsList className="grid grid-cols-3 mb-6">
-        <TabsTrigger value="tag-generator">Tag Generator</TabsTrigger>
-        <TabsTrigger value="metadata">Metadata</TabsTrigger>
-        <TabsTrigger value="editor">Editor</TabsTrigger>
-      </TabsList>
+    <>
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="w-full"
+      >
+        <TabsList className="grid grid-cols-3 mb-6">
+          <TabsTrigger value="tag-generator">Tag Generator</TabsTrigger>
+          <TabsTrigger value="metadata">Metadata</TabsTrigger>
+          <TabsTrigger value="editor">Editor</TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="tag-generator">
-        <div className="space-y-4">
-          {/* Tag Generator content will be implemented here */}
-          <p>Tag Generator content for content ID: {contentId}</p>
-        </div>
-      </TabsContent>
+        <TabsContent value="tag-generator">
+          <div className="bg-card border rounded-lg p-6 shadow-sm">
+            {onTagGenerationComplete && (
+              <TagGeneratorTab 
+                contentId={contentId} 
+                onTagsSaved={onTagGenerationComplete} 
+              />
+            )}
+          </div>
+        </TabsContent>
 
-      <TabsContent value="metadata">
-        <div className="space-y-4">
-          {/* Metadata content will be implemented here */}
-          <p>Metadata content for content ID: {contentId}</p>
-        </div>
-      </TabsContent>
+        <TabsContent value="metadata">
+          <div className="bg-card border rounded-lg p-6 shadow-sm">
+            {onMetadataChange && (
+              <MetadataTab
+                contentId={contentId}
+                onMetadataChange={onMetadataChange}
+              />
+            )}
+          </div>
+        </TabsContent>
 
-      <TabsContent value="editor">
-        <div className="space-y-4">
-          {/* Editor content will be implemented here */}
-          <p>Editor content for content ID: {contentId}</p>
-        </div>
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="editor">
+          <div className="bg-card border rounded-lg p-6 shadow-sm">
+            {onSaveDraft && onPublish && (
+              <MarkdownEditorTab
+                contentId={contentId}
+                onSaveDraft={onSaveDraft}
+                onPublish={onPublish}
+              />
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+      {isPending && <LoadingIndicator />}
+    </>
   );
 }

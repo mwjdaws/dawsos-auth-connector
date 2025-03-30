@@ -1,7 +1,7 @@
 
+import React, { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import MetadataPanel from "@/components/MetadataPanel";
-import { Suspense } from "react";
 
 interface MetadataTabProps {
   contentId: string;
@@ -16,7 +16,6 @@ export function MetadataTab({ contentId, onMetadataChange }: MetadataTabProps) {
         <MetadataPanel 
           contentId={contentId}
           onMetadataChange={onMetadataChange}
-          showOntologyTerms={true}
         />
       </Suspense>
     </>

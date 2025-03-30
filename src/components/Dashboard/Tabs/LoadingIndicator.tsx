@@ -8,5 +8,3 @@ export function LoadingIndicator() {
     </div>
   );
 }
-
-export default LoadingIndicator;
