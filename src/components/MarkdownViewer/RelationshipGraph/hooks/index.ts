@@ -9,4 +9,5 @@
 // Re-export the graph data hooks
 export * from './graph-data';
 
-// Add other hook exports here as needed
+// Export the relationship graph hook
+export * from './useRelationshipGraph';
