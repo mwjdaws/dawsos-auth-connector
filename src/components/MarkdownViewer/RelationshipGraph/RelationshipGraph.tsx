@@ -5,8 +5,13 @@
  * The main component that renders the knowledge graph visualization.
  * This component manages data loading states and renders the appropriate
  * subcomponents based on the current state.
+ * 
+ * Performance optimizations:
+ * - Uses React.memo for child components
+ * - Better loading states with time tracking
+ * - Proper error handling & recovery
  */
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { GraphHeader } from './components/GraphHeader';
 import { GraphLoading } from './components/GraphLoading';
@@ -35,6 +40,7 @@ export function RelationshipGraph({
     zoomLevel,
     isPending,
     graphRendererRef,
+    graphStats,
     handleNodeFound,
     handleZoomChange,
     handleResetZoom,
@@ -43,6 +49,12 @@ export function RelationshipGraph({
     startingNodeId,
     hasAttemptedRetry
   });
+  
+  // Memoize header data to prevent unnecessary re-renders
+  const headerData = useMemo(() => ({
+    nodeCount: graphStats?.nodeCount || 0,
+    linkCount: graphStats?.linkCount || 0
+  }), [graphStats]);
   
   // Show loading state while fetching data
   if (loading) {
@@ -65,7 +77,10 @@ export function RelationshipGraph({
   return (
     <ErrorBoundary fallback={<ErrorFallback onRetry={handleRetry} />}>
       <div className="border rounded-lg bg-card overflow-hidden flex flex-col">
-        <GraphHeader graphData={graphData} />
+        <GraphHeader 
+          nodeCount={headerData.nodeCount}
+          linkCount={headerData.linkCount}
+        />
         
         <GraphControls
           graphData={graphData}

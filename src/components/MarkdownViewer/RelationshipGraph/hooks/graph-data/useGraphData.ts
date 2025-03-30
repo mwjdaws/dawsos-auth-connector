@@ -10,8 +10,9 @@
  * - Debounced fetching
  * - Cache validation
  * - Error categorization
+ * - Request deduplication
  */
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useMemo } from 'react';
 import { GraphData, WithErrorHandlingOptions } from '../../types';
 import { withErrorHandling } from '@/utils/errors';
 import { toast } from '@/hooks/use-toast';
@@ -24,17 +25,49 @@ export function useGraphData(startingNodeId?: string) {
   const isMounted = useRef(true);
   const lastFetchTime = useRef<number>(0);
   const fetchAttempts = useRef<number>(0);
+  const requestCache = useRef<Map<string, { timestamp: number, data: GraphData }>>(new Map());
   const maxRetries = 3;
+  const cacheTimeoutMs = 5 * 60 * 1000; // 5 minutes cache validity
+  
+  // Create a stable cache key for the current request
+  const cacheKey = useMemo(() => `graph-${startingNodeId || 'all'}`, [startingNodeId]);
+  
+  /**
+   * Check if there's valid cached data
+   */
+  const getValidCachedData = useCallback(() => {
+    const cached = requestCache.current.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < cacheTimeoutMs) {
+      return cached.data;
+    }
+    return null;
+  }, [cacheKey]);
   
   /**
    * Fetches graph data from Supabase and constructs the graph structure
    * This function aggregates data from multiple tables to build a complete
    * representation of the knowledge network.
+   * 
+   * Includes optimizations:
+   * - Request throttling
+   * - Caching with timeout
+   * - Smart error handling with retry
    */
-  const fetchGraphData = useCallback(async () => {
+  const fetchGraphData = useCallback(async (skipCache = false) => {
     // Prevent excessive re-fetching and double fetches
     const now = Date.now();
     if (now - lastFetchTime.current < 2000) return; // Throttle to prevent rapid re-fetches
+    
+    // Check cache first (unless skipping cache)
+    if (!skipCache) {
+      const cachedData = getValidCachedData();
+      if (cachedData) {
+        console.log('Using cached graph data for:', cacheKey);
+        setGraphData(cachedData);
+        setLoading(false);
+        return;
+      }
+    }
     
     lastFetchTime.current = now;
     setLoading(true);
@@ -58,13 +91,38 @@ export function useGraphData(startingNodeId?: string) {
         setError(fetchError);
         setGraphData({ nodes: [], links: [] });
       } else if (data) {
+        // Cache successful responses
+        requestCache.current.set(cacheKey, {
+          timestamp: Date.now(),
+          data
+        });
+        
+        // Clean up old cached data
+        for (const [key, value] of requestCache.current.entries()) {
+          if (Date.now() - value.timestamp > cacheTimeoutMs) {
+            requestCache.current.delete(key);
+          }
+        }
+        
         setGraphData(data);
       }
     } catch (err) {
       console.error('Error in fetchGraphData:', err);
       
       if (isMounted.current) {
-        setError('An unexpected error occurred while fetching graph data');
+        // Categorize the error for better user feedback
+        const errorMessage = err instanceof Error 
+          ? err.message 
+          : 'An unexpected error occurred while fetching graph data';
+          
+        const isNetworkError = errorMessage.toLowerCase().includes('network') || 
+          errorMessage.toLowerCase().includes('fetch') || 
+          errorMessage.toLowerCase().includes('abort');
+          
+        setError(isNetworkError 
+          ? 'Network error: Please check your connection and try again' 
+          : errorMessage
+        );
         
         // Retry automatically if below max attempts
         if (fetchAttempts.current <= maxRetries) {
@@ -78,7 +136,7 @@ export function useGraphData(startingNodeId?: string) {
           // Retry with exponential backoff
           setTimeout(() => {
             if (isMounted.current) {
-              fetchGraphData();
+              fetchGraphData(true); // Skip cache on retry
             }
           }, Math.min(1000 * Math.pow(2, fetchAttempts.current - 1), 8000));
         }
@@ -88,7 +146,7 @@ export function useGraphData(startingNodeId?: string) {
         setLoading(false);
       }
     }
-  }, [startingNodeId, fetchAndProcessGraphData, setLoading, setError, setGraphData]);
+  }, [startingNodeId, fetchAndProcessGraphData, setLoading, setError, setGraphData, cacheKey, getValidCachedData]);
   
   // Handle component unmounting
   useEffect(() => {
@@ -111,7 +169,7 @@ export function useGraphData(startingNodeId?: string) {
       errorMessage: "Failed to refresh graph data",
       silent: false,
       level: "error"
-    })();
+    })(true); // Skip cache on manual refresh
   }, [fetchGraphData]);
   
   return {

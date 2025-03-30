@@ -1,24 +1,42 @@
 
-/**
- * GraphHeader Component
- * 
- * Displays information about the graph at the top of the visualization,
- * including the title and statistics about the number of nodes and connections.
- */
-import React from 'react';
-import { GraphData } from '../types';
+import React, { memo } from 'react';
+import { Info } from 'lucide-react';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface GraphHeaderProps {
-  graphData: GraphData;  // The graph data containing nodes and links
+  nodeCount: number;
+  linkCount: number;
 }
 
-export function GraphHeader({ graphData }: GraphHeaderProps) {
+export const GraphHeader = memo(function GraphHeader({ 
+  nodeCount, 
+  linkCount 
+}: GraphHeaderProps) {
   return (
-    <div className="p-2 border-b bg-muted/20 flex justify-between items-center">
-      <h3 className="text-sm font-medium">Knowledge Relationship Graph</h3>
-      <div className="text-xs text-muted-foreground">
-        {graphData.nodes.length} nodes, {graphData.links.length} connections
+    <div className="px-4 py-3 border-b flex justify-between items-center bg-muted/50">
+      <div className="flex items-center gap-2">
+        <h3 className="font-medium">Knowledge Graph</h3>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Visualizes connections between knowledge sources</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+      
+      <div className="text-sm text-muted-foreground flex gap-3">
+        <span>{nodeCount} nodes</span>
+        <span>{linkCount} connections</span>
       </div>
     </div>
   );
-}
+});

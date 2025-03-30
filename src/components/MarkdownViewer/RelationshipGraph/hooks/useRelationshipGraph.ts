@@ -4,8 +4,13 @@
  * 
  * Custom hook that manages the state and behavior of the relationship graph,
  * including loading, error handling, highlighting, and zoom.
+ * 
+ * Performance optimizations:
+ * - Proper memoization of handlers
+ * - Optimized state updates for better performance
+ * - Improved loading feedback
  */
-import { useState, useCallback, useRef, useEffect, useTransition } from 'react';
+import { useState, useCallback, useRef, useEffect, useTransition, useMemo } from 'react';
 import { useGraphData } from './graph-data';
 import { GraphData, GraphRendererRef } from '../types';
 import { toast } from '@/hooks/use-toast';
@@ -23,6 +28,7 @@ export function useRelationshipGraph({ startingNodeId, hasAttemptedRetry = false
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isPending, startTransition] = useTransition();
   const graphRendererRef = useRef<GraphRendererRef>(null);
+  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Log the startingNodeId to help debug
   useEffect(() => {
@@ -32,36 +38,64 @@ export function useRelationshipGraph({ startingNodeId, hasAttemptedRetry = false
   // Fetch graph data and track loading/error states
   const { graphData, loading, error, fetchGraphData } = useGraphData(startingNodeId);
   
+  // Memoize basic graph stats for logging and performance
+  const graphStats = useMemo(() => {
+    if (!graphData) return { nodeCount: 0, linkCount: 0, isEmpty: true };
+    
+    return {
+      nodeCount: graphData.nodes.length,
+      linkCount: graphData.links.length,
+      isEmpty: graphData.nodes.length === 0,
+      nodeTypes: graphData.nodes.reduce((acc, node) => {
+        const type = (node.type as string) || 'unknown';
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    };
+  }, [graphData]);
+  
   // Log every time graphData changes
   useEffect(() => {
     if (graphData) {
-      console.log(`Graph data updated: ${graphData.nodes.length} nodes, ${graphData.links.length} links`);
-      if (graphData.nodes.length === 0) {
+      console.log(`Graph data updated: ${graphStats.nodeCount} nodes, ${graphStats.linkCount} links`);
+      
+      if (graphStats.isEmpty) {
         console.log('No nodes found in graph data. This might be a data fetching issue.');
       } else {
         // Log node types distribution for debugging
-        const nodeTypes = graphData.nodes.reduce((acc, node) => {
-          acc[node.type as string] = (acc[node.type as string] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-        
-        console.log('Node type distribution:', nodeTypes);
+        console.log('Node type distribution:', graphStats.nodeTypes);
         console.log('First few nodes:', graphData.nodes.slice(0, 3));
         console.log('First few links:', graphData.links.slice(0, 3));
       }
     }
-  }, [graphData]);
+  }, [graphData, graphStats]);
   
-  // Loading timer
+  // Loading timer with cleanup
   useEffect(() => {
     if (loading) {
-      const timer = setInterval(() => {
+      // Clear any existing timer
+      if (loadingTimerRef.current) {
+        clearInterval(loadingTimerRef.current);
+      }
+      
+      // Start new timer
+      loadingTimerRef.current = setInterval(() => {
         setLoadingTime(prev => prev + 1);
       }, 1000);
       
-      return () => clearInterval(timer);
+      return () => {
+        if (loadingTimerRef.current) {
+          clearInterval(loadingTimerRef.current);
+          loadingTimerRef.current = null;
+        }
+      };
     } else {
+      // Reset timer and clear interval when loading completes
       setLoadingTime(0);
+      if (loadingTimerRef.current) {
+        clearInterval(loadingTimerRef.current);
+        loadingTimerRef.current = null;
+      }
     }
   }, [loading]);
   
@@ -85,7 +119,7 @@ export function useRelationshipGraph({ startingNodeId, hasAttemptedRetry = false
     }
   }, [hasAttemptedRetry, loading, loadingTime, fetchGraphData, isManualRetry]);
   
-  // Handle node found from search
+  // Handle node found from search - memoized for performance
   const handleNodeFound = useCallback((nodeId: string) => {
     setHighlightedNodeId(nodeId);
     
@@ -103,7 +137,7 @@ export function useRelationshipGraph({ startingNodeId, hasAttemptedRetry = false
     }
   }, [graphData]);
 
-  // Handle zoom change
+  // Handle zoom change - wrapped in transition for smoother UI
   const handleZoomChange = useCallback((newZoom: number) => {
     startTransition(() => {
       setZoomLevel(newZoom);
@@ -111,7 +145,7 @@ export function useRelationshipGraph({ startingNodeId, hasAttemptedRetry = false
     });
   }, []);
 
-  // Reset zoom
+  // Reset zoom - wrapped in transition for smoother UI
   const handleResetZoom = useCallback(() => {
     startTransition(() => {
       setZoomLevel(1);
@@ -142,6 +176,7 @@ export function useRelationshipGraph({ startingNodeId, hasAttemptedRetry = false
     zoomLevel,
     isPending,
     graphRendererRef,
+    graphStats,
     handleNodeFound,
     handleZoomChange,
     handleResetZoom,
