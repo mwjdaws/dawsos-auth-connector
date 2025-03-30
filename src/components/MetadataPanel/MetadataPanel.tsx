@@ -56,9 +56,10 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 import { MetadataPanelProps } from "./types";
 import { useMetadataPanel } from "./hooks/useMetadataPanel";
+import { ContentIdValidationResult, getContentIdValidationResult } from "@/utils/content-validation";
 
 // Import all sections from the unified sections directory
 import {
@@ -83,6 +84,9 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   className = "",
   children
 }) => {
+  const contentValidationResult = getContentIdValidationResult(contentId);
+  const isValidContent = contentValidationResult === ContentIdValidationResult.VALID;
+  
   const {
     tags,
     isLoading,
@@ -99,26 +103,62 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     handleRefresh,
     handleAddTag,
     handleDeleteTag
-  } = useMetadataPanel(contentId, onMetadataChange, isCollapsible, initialCollapsed);
+  } = useMetadataPanel(
+    isValidContent ? contentId : undefined, 
+    onMetadataChange, 
+    isCollapsible, 
+    initialCollapsed
+  );
 
   // Determine if content is editable (use prop or fallback to user presence)
-  const isEditable = editable !== undefined ? editable : !!user;
+  // Also ensure it's not editable if the content ID is temporary/invalid
+  const isEditable = (editable !== undefined ? editable : !!user) && isValidContent;
 
   // Determine card border styling based on review status
   const cardBorderClass = needsExternalReview
     ? "border-yellow-400 dark:border-yellow-600"
     : "";
 
-  if (!contentId) {
-    return (
-      <Card className={className}>
-        <CardContent className="pt-4">
+  // Function to render the appropriate alert message based on content ID validation result
+  const renderContentAlert = () => {
+    switch (contentValidationResult) {
+      case ContentIdValidationResult.MISSING:
+        return (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               No content ID provided. Metadata cannot be loaded.
             </AlertDescription>
           </Alert>
+        );
+      case ContentIdValidationResult.TEMPORARY:
+        return (
+          <Alert variant="warning" className="border-yellow-400 dark:border-yellow-600">
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Save the note before editing metadata. This is a temporary note.
+            </AlertDescription>
+          </Alert>
+        );
+      case ContentIdValidationResult.INVALID:
+        return (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Invalid content ID format. Metadata cannot be loaded.
+            </AlertDescription>
+          </Alert>
+        );
+      default:
+        return null;
+    }
+  };
+
+  if (!isValidContent) {
+    return (
+      <Card className={className}>
+        <CardContent className="pt-4">
+          {renderContentAlert()}
         </CardContent>
       </Card>
     );

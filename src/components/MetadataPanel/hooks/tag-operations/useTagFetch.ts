@@ -3,9 +3,10 @@ import { useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Tag, UseTagFetchResult } from './types';
 import { handleError } from "@/utils/errors";
+import { isValidContentId } from "@/utils/content-validation";
 
 interface UseTagFetchProps {
-  contentId: string;
+  contentId?: string;
 }
 
 /**
@@ -28,6 +29,12 @@ export function useTagFetch({ contentId }: UseTagFetchProps): UseTagFetchResult 
   const fetchTags = async (): Promise<Tag[]> => {
     if (!contentId) {
       console.warn('No contentId provided to fetchTags');
+      return [];
+    }
+    
+    // Skip fetching for invalid content IDs to avoid unnecessary API calls
+    if (!isValidContentId(contentId)) {
+      console.warn('Invalid contentId provided to fetchTags:', contentId);
       return [];
     }
     

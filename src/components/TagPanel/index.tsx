@@ -13,6 +13,9 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ManualTagCreator } from "./ManualTagCreator";
 import { GroupedTagList } from "./GroupedTagList";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
+import { isValidContentId } from "@/utils/content-validation";
 
 /**
  * TagPanel Component
@@ -40,6 +43,7 @@ import { GroupedTagList } from "./GroupedTagList";
  * />
  * ```
  */
+
 interface TagPanelProps {
   contentId: string;
   onTagsSaved: (contentId: string) => void;
@@ -69,18 +73,21 @@ export function TagPanel({ contentId, onTagsSaved, editable = true, onMetadataCh
   const [activeTab, setActiveTab] = useState<"automatic" | "manual">("automatic");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
+  const isValidContent = isValidContentId(contentId);
+  
   // Debug logging for component state
   useEffect(() => {
     console.log("[TagPanel] Current state:", {
       contentId,
       tagContentId,
+      isValidContentId: isValidContent,
       tags: tags.length > 0 ? `${tags.length} tags` : "no tags",
       isLoading,
       isPending,
       isProcessing,
       isRetrying
     });
-  }, [contentId, tagContentId, tags, isLoading, isPending, isProcessing, isRetrying]);
+  }, [contentId, tagContentId, tags, isLoading, isPending, isProcessing, isRetrying, isValidContent]);
   
   // Force refresh when contentId changes to ensure correct display
   useEffect(() => {
@@ -168,10 +175,21 @@ export function TagPanel({ contentId, onTagsSaved, editable = true, onMetadataCh
       description: "Tag created and added to the content",
     });
   };
+
+  const renderTemporaryContentAlert = () => (
+    <Alert className="border-yellow-400 dark:border-yellow-600 mb-4">
+      <Info className="h-4 w-4" />
+      <AlertDescription>
+        Save the note before adding tags. This is a temporary note.
+      </AlertDescription>
+    </Alert>
+  );
   
   return (
     <ErrorBoundary fallback={<TagPanelErrorFallback />}>
       <div className="space-y-6 w-full">
+        {!isValidContent && renderTemporaryContentAlert()}
+        
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "automatic" | "manual")} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="automatic">Automatic Tags</TabsTrigger>
@@ -187,7 +205,7 @@ export function TagPanel({ contentId, onTagsSaved, editable = true, onMetadataCh
             <TagList 
               tags={tags}
               isLoading={isLoading || isPending}
-              knowledgeSourceId={tagContentId || contentId}
+              knowledgeSourceId={tagContentId || (isValidContent ? contentId : undefined)}
               onTagClick={handleTagClick}
             />
             
@@ -198,6 +216,7 @@ export function TagPanel({ contentId, onTagsSaved, editable = true, onMetadataCh
               isProcessing={isProcessing}
               isRetrying={isRetrying}
               onTagsSaved={onTagsSaved}
+              disabled={!isValidContent}
             />
           </TabsContent>
           
@@ -205,7 +224,7 @@ export function TagPanel({ contentId, onTagsSaved, editable = true, onMetadataCh
             <ManualTagCreator 
               contentId={contentId} 
               onTagCreated={handleTagCreated}
-              editable={editable}
+              editable={editable && isValidContent}
             />
             
             <Separator className="my-4" />
@@ -216,6 +235,7 @@ export function TagPanel({ contentId, onTagsSaved, editable = true, onMetadataCh
                 contentId={contentId}
                 refreshTrigger={refreshTrigger}
                 onTagClick={handleTagClick}
+                disabled={!isValidContent}
               />
             </div>
           </TabsContent>

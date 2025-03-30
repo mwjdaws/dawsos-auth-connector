@@ -5,7 +5,7 @@ import { isValidContentId } from "@/utils/content-validation";
 import { handleError } from "@/utils/errors";
 
 export interface UseSourceMetadataProps {
-  contentId: string;
+  contentId?: string;
 }
 
 export interface SourceMetadata {
@@ -20,6 +20,11 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
   const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
 
   const fetchSourceMetadata = async (): Promise<SourceMetadata | null> => {
+    if (!contentId) {
+      console.log("No contentId provided for fetching source metadata");
+      return null;
+    }
+    
     if (!isValidContentId(contentId)) {
       console.log("Invalid contentId for fetching source metadata:", contentId);
       return null;

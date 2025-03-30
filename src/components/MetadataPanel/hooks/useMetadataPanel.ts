@@ -1,13 +1,13 @@
 
 import { useEffect, useState, useRef, useTransition } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useTagOperations } from './useTagOperations';
+import { useTagOperations } from './tag-operations';
 import { useSourceMetadata } from './useSourceMetadata';
 import { usePanelState } from './usePanelState';
 import { isValidContentId } from '@/utils/content-validation';
 
 export function useMetadataPanel(
-  contentId: string,
+  contentId?: string,
   onMetadataChange?: () => void,
   isCollapsible = false,
   initialCollapsed = false
@@ -52,6 +52,12 @@ export function useMetadataPanel(
 
   // Function to fetch metadata
   const fetchMetadata = async () => {
+    // Skip fetching if contentId is undefined or invalid
+    if (!contentId || !isValidContentId(contentId)) {
+      finishLoading(true);
+      return;
+    }
+    
     // Validate contentId
     if (!validateContentId()) return;
     
@@ -95,13 +101,20 @@ export function useMetadataPanel(
 
   // Handle refresh action
   const handleRefresh = () => {
-    fetchMetadata();
+    if (contentId && isValidContentId(contentId)) {
+      fetchMetadata();
+    }
   };
 
   // Initial fetch when component mounts or contentId changes
   useEffect(() => {
     if (contentId) {
-      fetchMetadata();
+      if (isValidContentId(contentId)) {
+        fetchMetadata();
+      } else {
+        // For invalid content IDs, just finish loading without error
+        finishLoading(true);
+      }
     }
   }, [contentId]);
 

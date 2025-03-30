@@ -5,7 +5,7 @@ import { isValidContentId } from "@/utils/content-validation";
 import { handleError } from "@/utils/errors";
 
 export interface UsePanelStateProps {
-  contentId: string;
+  contentId?: string;
   onMetadataChange?: () => void;
   isCollapsible?: boolean;
   initialCollapsed?: boolean;
@@ -32,18 +32,28 @@ export const usePanelState = ({
   }, []);
 
   const validateContentId = (): boolean => {
-    if (!isValidContentId(contentId)) {
+    if (!contentId || !isValidContentId(contentId)) {
       console.log("Invalid contentId for fetching metadata:", contentId);
       setIsLoading(false);
-      setError("Invalid content ID");
+      
+      // Only set error if the contentId is not undefined (meaning we actually tried to use an invalid ID)
+      if (contentId !== undefined) {
+        setError("Invalid content ID");
+      }
+      
       return false;
     }
     return true;
   };
 
   const startLoading = () => {
-    setIsLoading(true);
-    setError(null);
+    // Only start loading if we have a valid content ID
+    if (contentId && isValidContentId(contentId)) {
+      setIsLoading(true);
+      setError(null);
+    } else {
+      setIsLoading(false);
+    }
   };
 
   const finishLoading = (success: boolean = true, errorMessage?: string) => {

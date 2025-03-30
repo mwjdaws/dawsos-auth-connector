@@ -4,6 +4,7 @@ import { TagOperationsProps } from "./types";
 import { useTagState } from "./useTagState";
 import { useTagFetch } from "./useTagFetch";
 import { useTagMutations } from "./useTagMutations";
+import { isValidContentId } from "@/utils/content-validation";
 
 /**
  * A composable hook that combines tag state management, fetching, and mutations
@@ -25,7 +26,7 @@ export function useTagOperations(props: TagOperationsProps) {
   
   // Initial fetch when the component mounts or contentId changes
   useEffect(() => {
-    if (contentId) {
+    if (contentId && isValidContentId(contentId)) {
       fetchTags().then(tags => {
         if (Array.isArray(tags)) {
           tagState.setTags(tags);

@@ -1,133 +1,66 @@
 
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Save, CheckCircle } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
 interface TagSaverProps {
   tags: string[];
   contentId: string;
-  saveTags: (text: string, tags: string[], options: any) => Promise<string | boolean>;
+  saveTags: (text: string, tags: string[], options?: any) => Promise<string | undefined>;
   isProcessing: boolean;
   isRetrying: boolean;
   onTagsSaved: (contentId: string) => void;
+  disabled?: boolean; // Add disabled prop
 }
 
-export function TagSaver({
-  tags,
-  contentId,
-  saveTags,
-  isProcessing,
-  isRetrying,
-  onTagsSaved
+export function TagSaver({ 
+  tags, 
+  contentId, 
+  saveTags, 
+  isProcessing, 
+  isRetrying, 
+  onTagsSaved,
+  disabled = false
 }: TagSaverProps) {
-  const [saveComplete, setSaveComplete] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-
-  // Reset save status when tags or contentId changes
-  useEffect(() => {
-    setSaveComplete(false);
-    setSaveError(null);
-  }, [tags, contentId]);
-
   const handleSave = async () => {
-    if (tags.length === 0) {
-      toast({
-        title: "No Tags to Save",
-        description: "Generate tags first before saving",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    console.log("TagSaver: Saving tags:", {
-      tagCount: tags.length,
-      contentId: contentId,
-    });
+    if (disabled) return;
     
-    setSaveComplete(false);
-    setSaveError(null);
+    const savedContentId = await saveTags("", tags, { contentId });
     
-    try {
-      const result = await saveTags("", tags, {
-        contentId: contentId,
-        skipGenerateFunction: true
-      });
-      
-      console.log("TagSaver: Save result:", result);
-      
-      if (result && typeof result === 'string') {
-        setSaveComplete(true);
-        toast({
-          title: "Tags Saved",
-          description: `${tags.length} tags saved successfully`,
-        });
-        
-        // Notify parent component with a slight delay to allow UI state to update
-        setTimeout(() => {
-          onTagsSaved(result);
-        }, 100);
-      } else {
-        setSaveError("Failed to save tags");
-        toast({
-          title: "Error",
-          description: "Failed to save tags. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("TagSaver: Error saving tags:", error);
-      setSaveError(error instanceof Error ? error.message : "Failed to save tags");
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred while saving tags",
-        variant: "destructive",
-      });
+    if (savedContentId) {
+      onTagsSaved(savedContentId);
     }
   };
 
-  const isDisabled = isProcessing || isRetrying || tags.length === 0;
+  const hasTags = tags.length > 0;
+  const buttonDisabled = isProcessing || !hasTags || disabled;
   
+  let buttonText = "Save Tags";
+  if (isProcessing) buttonText = "Saving...";
+  if (isRetrying) buttonText = "Retrying...";
+  if (disabled) buttonText = "Save note first";
+
   return (
-    <div className="space-y-4">
-      {saveError && (
-        <Alert variant="destructive">
-          <AlertDescription>{saveError}</AlertDescription>
-        </Alert>
+    <div>
+      <Button 
+        onClick={handleSave}
+        disabled={buttonDisabled}
+        className="w-full"
+      >
+        {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {buttonText}
+      </Button>
+      
+      {!hasTags && !isProcessing && !disabled && (
+        <p className="text-xs text-muted-foreground mt-2">
+          Generate or add tags before saving
+        </p>
       )}
       
-      <div className="flex justify-between items-center">
-        <div className="text-sm text-muted-foreground">
-          {tags.length === 0 
-            ? "No tags to save" 
-            : `${tags.length} tags ready to save`}
-        </div>
-        
-        <Button
-          onClick={handleSave}
-          disabled={isDisabled}
-          variant={saveComplete ? "outline" : "default"}
-          className="min-w-[100px]"
-        >
-          {isProcessing || isRetrying ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : saveComplete ? (
-            <>
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Saved
-            </>
-          ) : (
-            <>
-              <Save className="mr-2 h-4 w-4" />
-              Save Tags
-            </>
-          )}
-        </Button>
-      </div>
+      {disabled && (
+        <p className="text-xs text-muted-foreground mt-2">
+          Save your note before adding tags to it
+        </p>
+      )}
     </div>
   );
 }
