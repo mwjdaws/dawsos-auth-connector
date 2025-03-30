@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import RefreshIcon from "@/components/DebugPanel/RefreshIcon";
+import { RefreshIcon } from "@/components/DebugPanel/RefreshIcon";
 import { Button } from "@/components/ui/button";
 
 interface Tag {

@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Code, BookOpen, FileEdit, Layers, ServerCrash, Activity, AlertCircle } from 'lucide-react';
+import { Code, BookOpen, FileEdit, Layers, ServerCrash, Activity, AlertCircle, RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { invokeEdgeFunctionReliably } from '@/utils/edge-function-reliability';
