@@ -7,6 +7,7 @@ import {
 } from '@/services/api/templates';
 import { KnowledgeTemplate } from '@/services/api/types';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import TemplateEditorHeader from './TemplateEditorHeader';
 import TemplateNameField from './TemplateNameField';
