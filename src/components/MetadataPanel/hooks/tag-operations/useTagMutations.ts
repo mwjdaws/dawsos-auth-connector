@@ -1,184 +1,247 @@
-
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
-import { handleError } from "@/utils/errors";
-import { isValidContentId } from "@/utils/validation";
-import { Tag, TagOperationsProps, UseTagStateResult, UseTagMutationsResult } from "./types";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { queryKeys } from '@/utils/query-keys';
+import { toast } from '@/hooks/use-toast';
+// Update import statement to correctly import isValidContentId
+import { isValidContentId } from '@/utils/validation';
+import { Tag } from './types';
 
 /**
- * Hook for handling tag mutation operations (add/delete) with proper error handling
- * and validation.
- * 
- * @param props - Configuration props including contentId and user info
- * @param tagState - Current tag state from useTagState hook
- * @returns Object with handleAddTag and handleDeleteTag functions
+ * Hook for creating a new tag
  */
-export function useTagMutations(
-  { contentId, user, onMetadataChange }: TagOperationsProps,
-  { tags, setTags, newTag, setNewTag }: UseTagStateResult
-): UseTagMutationsResult {
-  
-  /**
-   * Adds a new tag to the content
-   * 
-   * @param typeId - Optional tag type ID for categorizing the tag
-   * @returns Promise that resolves when operation completes
-   */
-  const handleAddTag = async (typeId?: string): Promise<void> => {
-    if (!newTag.trim() || !user) {
-      if (!user) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to add tags",
-          variant: "destructive",
-        });
-      }
-      return;
-    }
+export function useCreateTagMutation() {
+  const queryClient = useQueryClient();
 
-    // Validate contentId before adding tag
-    if (!isValidContentId(contentId)) {
+  return useMutation({
+    mutationFn: async ({ contentId, name, typeId }: { contentId: string; name: string; typeId?: string }) => {
+      const { data, error } = await supabase
+        .from('tags')
+        .insert([{ content_id: contentId, name, type_id: typeId }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Tag creation failed:', error);
+        throw new Error(error.message);
+      }
+
+      return data;
+    },
+    onSuccess: (newTag, { contentId }) => {
+      // Invalidate and refetch queries related to the content's tags
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags.byContentId(contentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags.summary });
+
       toast({
-        title: "Invalid Content",
-        description: "Cannot add tags to temporary or invalid content",
+        title: "Tag Created",
+        description: `Tag "${newTag.name}" has been created successfully.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error Creating Tag",
+        description: error.message || "Failed to create tag",
         variant: "destructive",
       });
-      return;
-    }
+    },
+  });
+}
 
-    try {
-      // Check for existing tag with same name and content_id to avoid duplicates
-      const { data: existingTags, error: checkError } = await supabase
-        .from("tags")
-        .select("id")
-        .eq("name", newTag.trim().toLowerCase())
-        .eq("content_id", contentId);
-      
-      if (checkError) throw checkError;
-      
-      if (existingTags && existingTags.length > 0) {
-        toast({
-          title: "Duplicate Tag",
-          description: "This tag already exists for this content",
-          variant: "destructive",
-        });
-        return;
+/**
+ * Hook for updating an existing tag
+ */
+export function useUpdateTagMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, name, typeId }: { id: string; name: string; typeId?: string }) => {
+      const { data, error } = await supabase
+        .from('tags')
+        .update({ name, type_id: typeId })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Tag update failed:', error);
+        throw new Error(error.message);
       }
-      
-      const newTagData = {
-        name: newTag.trim().toLowerCase(),
-        content_id: contentId,
-        type_id: typeId || null // Support for tag types
-      };
-      
-      console.log("Adding tag:", newTagData);
-      
-      const result = await supabase
-        .from("tags")
-        .insert(newTagData)
-        .select();
-      
-      // Defensive check for valid response format
-      if (typeof result === 'object' && result !== null && 'data' in result) {
-        const { data, error } = result;
-        
-        if (error) throw error;
-        
-        // Verify we got data back before updating state
-        if (data && data.length > 0) {
-          // Fix: Use the spread operator correctly to maintain type consistency
-          setTags([...tags, data[0]]);
-          setNewTag("");
-          
-          toast({
-            title: "Success",
-            description: "Tag added successfully",
-          });
-          
-          if (onMetadataChange) {
-            onMetadataChange();
-          }
-          
-          console.log("Tag added successfully:", data[0]);
-        } else {
-          throw new Error("Failed to create tag: No data returned");
-        }
-      } else {
-        throw new Error("Unexpected response format when adding tag");
-      }
-    } catch (error: any) {
-      console.error("Error adding tag:", error);
-      
-      // Use standardized error handling
-      handleError(error, "Failed to add tag", {
-        context: { tagName: newTag, contentId },
-        level: "error"
-      });
-      
+
+      return data;
+    },
+    onSuccess: (updatedTag) => {
+      // Invalidate and refetch queries related to the content's tags
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags.byContentId(updatedTag.content_id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags.summary });
+
       toast({
-        title: "Error",
-        description: error.message || "Failed to add tag",
+        title: "Tag Updated",
+        description: `Tag "${updatedTag.name}" has been updated successfully.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error Updating Tag",
+        description: error.message || "Failed to update tag",
         variant: "destructive",
       });
-    }
-  };
+    },
+  });
+}
 
-  const handleDeleteTag = async (tagId: string): Promise<void> => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to delete tags",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    try {
-      console.log("Deleting tag with ID:", tagId);
-      
-      const result = await supabase
-        .from("tags")
+/**
+ * Hook for deleting a tag
+ */
+export function useDeleteTagMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, contentId }: { id: string; contentId: string }) => {
+      const { data, error } = await supabase
+        .from('tags')
         .delete()
-        .eq("id", tagId);
-      
-      // Defensive check for valid response format
-      if (typeof result === 'object' && result !== null && 'error' in result) {
-        const { error } = result;
-        if (error) throw error;
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Tag deletion failed:', error);
+        throw new Error(error.message);
       }
-      
-      // Update state after successful deletion
-      setTags(tags.filter(tag => tag.id !== tagId));
-      
+
+      return data;
+    },
+    onSuccess: (_, { contentId }) => {
+      // Invalidate and refetch queries related to the content's tags
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags.byContentId(contentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags.summary });
+
       toast({
-        title: "Success",
-        description: "Tag deleted successfully",
+        title: "Tag Deleted",
+        description: "Tag has been deleted successfully.",
       });
-      
-      if (onMetadataChange) {
-        onMetadataChange();
-      }
-      
-      console.log("Tag deleted successfully");
-    } catch (error: any) {
-      console.error("Error deleting tag:", error);
-      
-      // Use standardized error handling
-      handleError(error, "Failed to delete tag", {
-        context: { tagId },
-        level: "error" 
-      });
-      
+    },
+    onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: "Error Deleting Tag",
         description: error.message || "Failed to delete tag",
         variant: "destructive",
       });
-    }
-  };
+    },
+  });
+}
+
+/**
+ * Hook for reordering tags
+ */
+export function useReorderTagsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ contentId, tagIds }: { contentId: string; tagIds: string[] }) => {
+      if (!isValidContentId(contentId)) {
+        throw new Error('Invalid content ID');
+      }
+
+      // Fetch existing tags for the content
+      const { data: existingTags, error: fetchError } = await supabase
+        .from<Tag>('tags')
+        .select('*')
+        .eq('content_id', contentId);
+
+      if (fetchError) {
+        console.error('Failed to fetch existing tags:', fetchError);
+        throw new Error(fetchError.message);
+      }
+
+      if (!existingTags) {
+        throw new Error('No tags found for this content ID');
+      }
+
+      // Create a map of tag IDs to their current positions
+      const tagPositions: { [key: string]: number } = {};
+      existingTags.forEach((tag) => {
+        tagPositions[tag.id] = existingTags.findIndex((t) => t.id === tag.id);
+      });
+
+      // Update the order value for each tag based on the provided tagIds array
+      const updates = tagIds.map((tagId, index) => ({
+        id: tagId,
+        order: index,
+      }));
+
+      // Execute the updates in a single transaction
+      const { error: updateError } = await supabase.from('tags').upsert(
+        updates.map(({ id, order }) => ({ id, order })),
+        { onConflict: 'id' }
+      );
+
+      if (updateError) {
+        console.error('Tag reordering failed:', updateError);
+        throw new Error(updateError.message);
+      }
+
+      return { contentId };
+    },
+    onSuccess: ({ contentId }) => {
+      // Invalidate and refetch queries related to the content's tags
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags.byContentId(contentId) });
+      toast({
+        title: "Tags Reordered",
+        description: "Tag order has been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error Reordering Tags",
+        description: error.message || "Failed to reorder tags",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+/**
+ * Custom hook that combines all tag-related mutations
+ */
+export function useTagMutations() {
+  const createTagMutation = useCreateTagMutation();
+  const updateTagMutation = useUpdateTagMutation();
+  const deleteTagMutation = useDeleteTagMutation();
+  const reorderTagsMutation = useReorderTagsMutation();
 
   return {
-    handleAddTag,
-    handleDeleteTag
+    createTag: createTagMutation.mutateAsync,
+    updateTag: updateTagMutation.mutateAsync,
+    deleteTag: deleteTagMutation.mutateAsync,
+    reorderTags: reorderTagsMutation.mutateAsync,
+    isCreating: createTagMutation.isPending,
+    isUpdating: updateTagMutation.isPending,
+    isDeleting: deleteTagMutation.isPending,
+    isReordering: reorderTagsMutation.isPending,
   };
+}
+
+/**
+ * Hook for adding a tag.  This is a wrapper around useCreateTagMutation
+ */
+export function useAddTagMutation() {
+    const createTagMutation = useCreateTagMutation();
+
+    return {
+        addTag: createTagMutation.mutateAsync,
+        isAdding: createTagMutation.isPending,
+    }
+}
+
+/**
+ * Hook for deleting a tag.  This is a wrapper around useDeleteTagMutation
+ */
+export function useDeleteTagMutation() {
+    const deleteTagMutation = useDeleteTagMutation();
+
+    return {
+        deleteTag: deleteTagMutation.mutateAsync,
+        isDeleting: deleteTagMutation.isPending,
+    }
 }

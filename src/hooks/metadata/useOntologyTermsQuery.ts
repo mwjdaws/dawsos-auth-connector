@@ -26,23 +26,32 @@ export function useOntologyTermsQuery(sourceId?: string, options?: UseOntologyTe
   const isValidSource = sourceId ? isValidContentId(sourceId) : false;
   
   return useQuery<OntologyTerm[]>({
-    queryKey: sourceId ? queryKeys.knowledgeSources.exists(sourceId) : ['ontologyTerms', 'invalid'],
+    queryKey: sourceId ? queryKeys.ontologyTerms.byContentId(sourceId) : ['ontologyTerms', 'invalid'],
     queryFn: async () => {
       if (!sourceId) return [];
       
+      // Query the knowledge_source_ontology_terms junction table joined with ontology_terms
       const { data, error } = await supabase
-        .from('ontology_terms')
-        .select('id, name:term, source_id, type')
-        .eq('source_id', sourceId);
+        .from('knowledge_source_ontology_terms')
+        .select(`
+          id,
+          ontology_terms:ontology_term_id (
+            id,
+            term,
+            domain
+          )
+        `)
+        .eq('knowledge_source_id', sourceId);
         
       if (error) throw error;
 
       // Map the data to match the OntologyTerm interface
       return (data || []).map(item => ({
-        id: item.id,
-        name: item.name, // Already aliased in the query
-        source_id: item.source_id,
-        type: item.type
+        id: item.ontology_terms.id,
+        name: item.ontology_terms.term,
+        source_id: sourceId,
+        type: item.ontology_terms.domain,
+        associationId: item.id // Include the junction table ID for potential removal operations
       }));
     },
     enabled: !!sourceId && isValidSource && (options?.enabled !== false),
