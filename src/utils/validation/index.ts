@@ -24,6 +24,8 @@ export {
   
   // Tag validation
   validateTag,
-  validateTags,
-  ValidationResult
+  validateTags
 };
+
+// When isolatedModules is enabled, types need to be exported with 'export type'
+export type { ValidationResult };

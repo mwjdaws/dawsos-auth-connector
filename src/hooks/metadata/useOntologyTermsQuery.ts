@@ -26,13 +26,13 @@ export function useOntologyTermsQuery(sourceId?: string, options?: UseOntologyTe
   const isValidSource = sourceId ? isValidContentId(sourceId) : false;
   
   return useQuery<OntologyTerm[]>({
-    queryKey: sourceId ? ['ontologyTerms', 'bySourceId', sourceId] : ['ontologyTerms', 'all'],
+    queryKey: sourceId ? queryKeys.knowledgeSources.exists(sourceId) : ['ontologyTerms', 'invalid'],
     queryFn: async () => {
       if (!sourceId) return [];
       
       const { data, error } = await supabase
         .from('ontology_terms')
-        .select('id, term, source_id, type')
+        .select('id, name:term, source_id, type')
         .eq('source_id', sourceId);
         
       if (error) throw error;
@@ -40,7 +40,7 @@ export function useOntologyTermsQuery(sourceId?: string, options?: UseOntologyTe
       // Map the data to match the OntologyTerm interface
       return (data || []).map(item => ({
         id: item.id,
-        name: item.term, // Map 'term' to 'name'
+        name: item.name, // Already aliased in the query
         source_id: item.source_id,
         type: item.type
       }));

@@ -32,6 +32,7 @@ interface TemplateListCardProps {
   handleTemplateSelect: (template: KnowledgeTemplate) => void;
   filterType: 'all' | 'global' | 'custom';
   onFilterChange: (type: 'all' | 'global' | 'custom') => void;
+  selectedTemplateId?: string | null; // Added this property to fix the type error
 }
 
 export const TemplateListCard = forwardRef<HTMLDivElement, TemplateListCardProps>(({
@@ -43,7 +44,8 @@ export const TemplateListCard = forwardRef<HTMLDivElement, TemplateListCardProps
   handlePageChange,
   handleTemplateSelect,
   filterType,
-  onFilterChange
+  onFilterChange,
+  selectedTemplateId
 }, ref) => {
   return (
     <Card ref={ref}>
@@ -128,17 +130,17 @@ export const TemplateListCard = forwardRef<HTMLDivElement, TemplateListCardProps
             </TableHeader>
             <TableBody>
               {templates.map((template) => (
-                <TableRow key={template.id}>
+                <TableRow key={template.id} className={selectedTemplateId === template.id ? "bg-primary/10" : ""}>
                   <TableCell className="font-medium">{template.name}</TableCell>
                   <TableCell>{template.is_global ? 'Global' : 'Custom'}</TableCell>
                   <TableCell className="text-right">
                     <Button
-                      variant="outline"
+                      variant={selectedTemplateId === template.id ? "default" : "outline"}
                       size="sm"
                       onClick={() => handleTemplateSelect(template)}
                     >
                       <Check className="h-4 w-4 mr-1" />
-                      Select
+                      {selectedTemplateId === template.id ? "Selected" : "Select"}
                     </Button>
                   </TableCell>
                 </TableRow>
