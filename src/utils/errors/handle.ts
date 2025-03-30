@@ -29,7 +29,7 @@ export function handleError(
     errorType,
     errorMessage,
     userMessage: userMessage || errorMessage,
-    ...options?.context,
+    ...(options?.context || {})
   };
   
   // Log error with context to console

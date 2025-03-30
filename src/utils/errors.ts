@@ -6,7 +6,7 @@ export * from './errors/categorize';
 export * from './errors/handle';
 export * from './errors/wrappers';
 
-// For backward compatibility, we still provide the original API
+// For backward compatibility, we provide the original API
 import { handleError as internalHandleError } from './errors/handle';
 import { ErrorHandlingOptions } from './errors/types';
 

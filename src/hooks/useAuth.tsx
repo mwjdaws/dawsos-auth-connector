@@ -2,6 +2,10 @@
 import { useAuth as useAuthFromContext } from "@/context/AuthContext";
 import { useTransition } from "react";
 
+/**
+ * Extended auth hook that provides transition capabilities
+ * for async operations that might update the UI
+ */
 export function useAuth() {
   const [isPending, startTransition] = useTransition();
   
