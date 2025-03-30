@@ -1,4 +1,3 @@
-
 import React, { useState, useTransition, useEffect } from "react";
 import { TagGenerator } from "./TagGenerator";
 import { TagList } from "./TagList";
@@ -125,13 +124,18 @@ export function TagPanel({ contentId, onTagsSaved, editable = true, onMetadataCh
     }
   };
   
-  // Handle save tags with improved logging
+  // Handle save tags with improved error handling and Promise resolution
   const handleSaveTags = async () => {
     console.log("[TagPanel] Saving tags:", {
       tagCount: tags.length,
       contentId: tagContentId || contentId,
       isProcessing
     });
+    
+    if (!tags.length) {
+      console.warn("[TagPanel] Attempted to save empty tags array");
+      return;
+    }
     
     const result = await saveTags("", tags, {
       contentId: tagContentId || contentId

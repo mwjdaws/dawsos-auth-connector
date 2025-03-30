@@ -1,91 +1,100 @@
 
 /**
- * Error handling type definitions
+ * Options for error handling customization
  */
-
-export type ErrorLevel = "info" | "warning" | "error" | "success";
-
-export interface ErrorOptions {
-  level?: ErrorLevel;
-  title?: string;
+export interface ErrorHandlingOptions {
+  /**
+   * Additional context to include with the error
+   */
+  context?: Record<string, any>;
+  
+  /**
+   * Logging level for the error
+   */
+  level?: 'error' | 'warning' | 'info' | 'debug';
+  
+  /**
+   * Label for the action button (if any)
+   */
   actionLabel?: string;
-  action?: () => void;
+  
+  /**
+   * Function to execute when the action button is clicked
+   */
+  action?: () => void | Promise<void>;
+  
+  /**
+   * Whether to show technical details in the UI
+   */
   technical?: boolean;
-  silent?: boolean; // For errors that should be logged but not shown to user
-  context?: Record<string, any>; // Additional context for logging/debugging
-}
-
-export enum ErrorCategory {
-  AUTHENTICATION = "AUTHENTICATION",
-  VALIDATION = "VALIDATION",
-  NETWORK = "NETWORK",
-  SERVER = "SERVER",
-  DATABASE = "DATABASE",
-  API = "API",
-  OPERATION = "OPERATION",
-  TIMEOUT = "TIMEOUT",
-  PERMISSION = "PERMISSION",
-  UNKNOWN = "UNKNOWN"
-}
-
-/**
- * Custom Error class for API-related errors
- */
-export class ApiError extends Error {
-  statusCode: number;
   
-  constructor(message: string, statusCode = 500) {
-    super(message);
-    this.name = "ApiError";
-    this.statusCode = statusCode;
-  }
-}
-
-/**
- * Custom Error class for validation errors
- */
-export class ValidationError extends Error {
-  fields?: Record<string, string>;
+  /**
+   * Whether to suppress UI notifications
+   */
+  silent?: boolean;
   
-  constructor(message: string, fields?: Record<string, string>) {
-    super(message);
-    this.name = "ValidationError";
-    this.fields = fields;
-  }
+  /**
+   * Custom title for error notifications
+   */
+  title?: string;
 }
 
 /**
- * Custom Error class for network-related errors
+ * Base custom error class
  */
-export class NetworkError extends Error {
-  retryable: boolean;
+export class BaseError extends Error {
+  code?: string | number;
   
-  constructor(message: string, retryable = true) {
+  constructor(message: string, code?: string | number) {
     super(message);
-    this.name = "NetworkError";
-    this.retryable = retryable;
-  }
-}
-
-/**
- * Custom Error class for authentication errors
- */
-export class AuthError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "AuthError";
-  }
-}
-
-/**
- * Custom Error class for database errors
- */
-export class DatabaseError extends Error {
-  code?: string;
-  
-  constructor(message: string, code?: string) {
-    super(message);
-    this.name = "DatabaseError";
+    this.name = this.constructor.name;
     this.code = code;
+    
+    // This is needed because extending built-in classes in TypeScript can
+    // have issues with the prototype chain
+    Object.setPrototypeOf(this, BaseError.prototype);
+  }
+}
+
+/**
+ * Error for validation failures
+ */
+export class ValidationError extends BaseError {
+  constructor(message: string, code?: string | number) {
+    super(message, code || 'VALIDATION_ERROR');
+    Object.setPrototypeOf(this, ValidationError.prototype);
+  }
+}
+
+/**
+ * Error for API-related failures
+ */
+export class ApiError extends BaseError {
+  status?: number;
+  
+  constructor(message: string, status?: number, code?: string | number) {
+    super(message, code || 'API_ERROR');
+    this.status = status;
+    Object.setPrototypeOf(this, ApiError.prototype);
+  }
+}
+
+/**
+ * Error for database operations
+ */
+export class DatabaseError extends BaseError {
+  constructor(message: string, code?: string | number) {
+    super(message, code || 'DATABASE_ERROR');
+    Object.setPrototypeOf(this, DatabaseError.prototype);
+  }
+}
+
+/**
+ * Error for authentication issues
+ */
+export class AuthError extends BaseError {
+  constructor(message: string, code?: string | number) {
+    super(message, code || 'AUTH_ERROR');
+    Object.setPrototypeOf(this, AuthError.prototype);
   }
 }

@@ -1,4 +1,3 @@
-
 import React, { useState, useTransition } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { TagPanelErrorFallback } from "./TagPanelErrorFallback";
@@ -190,7 +189,7 @@ export function TagPanel({
             <TagSaver
               tags={tagGeneration.tags}
               contentId={tagGeneration.contentId || contentId}
-              saveTags={handleSaveTags}
+              saveTags={saveTags}
               isProcessing={isProcessing}
               isRetrying={isRetrying}
               onTagsSaved={onTagsSaved}

@@ -1,22 +1,49 @@
 
 import { handleError } from './handle';
-import { ErrorOptions } from './types';
+import { ErrorHandlingOptions } from './types';
 
 /**
- * Wrap an async function with standardized error handling
- * @param fn The async function to wrap
- * @param defaultErrorMessage The default error message to show
- * @param options Error handling options
+ * Higher-order function that wraps a function with error handling
+ * 
+ * @param fn The function to wrap with error handling
+ * @param userMessage User-friendly message to display on error
+ * @param options Additional error handling options
+ * @returns A wrapped function with error handling
  */
-export async function withErrorHandling<T>(
-  fn: () => Promise<T>,
-  defaultErrorMessage = "An error occurred",
-  options: ErrorOptions = {}
-): Promise<T | null> {
+export function withErrorHandling<T extends (...args: any[]) => any>(
+  fn: T,
+  userMessage?: string,
+  options?: ErrorHandlingOptions
+): (...args: Parameters<T>) => Promise<ReturnType<T>> {
+  return async (...args: Parameters<T>): Promise<ReturnType<T>> => {
+    try {
+      return await fn(...args);
+    } catch (error) {
+      handleError(error, userMessage, options);
+      throw error; // Re-throw to allow caller to handle if needed
+    }
+  };
+}
+
+/**
+ * Wraps an async operation in a try/catch block with error handling
+ * 
+ * @param promise The promise to wrap with error handling
+ * @param userMessage User-friendly message to display on error
+ * @param options Additional error handling options
+ * @returns A promise that resolves to [data, null] or [null, error]
+ */
+export async function tryCatch<T>(
+  promise: Promise<T>,
+  userMessage?: string,
+  options?: ErrorHandlingOptions
+): Promise<[T | null, Error | null]> {
   try {
-    return await fn();
+    const data = await promise;
+    return [data, null];
   } catch (error) {
-    handleError(error, defaultErrorMessage, options);
-    return null;
+    const typedError = error instanceof Error ? error : new Error(String(error));
+    handleError(typedError, userMessage, options);
+    return [null, typedError];
   }
 }

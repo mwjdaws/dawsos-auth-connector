@@ -2,8 +2,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { generateTags } from "@/utils/supabase-functions";
-import { handleError } from "@/utils/errors"; // Updated import
+import { generateTags } from "@/services/supabase/tag-generation";
+import { handleError } from "@/utils/errors"; 
 import { SaveTagsOptions, SaveTagsResult } from "./types";
 import { useTagValidator } from "./useTagValidator";
 import { useBatchProcessor } from "./useBatchProcessor";

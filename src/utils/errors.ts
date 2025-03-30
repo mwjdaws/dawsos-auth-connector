@@ -1,125 +1,101 @@
 
-import { toast } from '@/hooks/use-toast';
-import { ToastAction } from '@/components/ui/toast';
-
-export interface ErrorHandlingOptions {
-  level?: 'info' | 'warning' | 'error' | 'success';
-  context?: Record<string, any>;
-  actionLabel?: string;
-  action?: () => void;
-  title?: string;
-  technical?: boolean;
-  silent?: boolean;
-}
+import { ErrorHandlingOptions } from './errors/types';
 
 /**
  * Centralized error handling function
  * 
  * @param error The error object
- * @param userMessage Human-friendly message to display
- * @param options Additional options for error handling
+ * @param userMessage User-friendly message to display
+ * @param options Additional error handling options
+ * @returns void
  */
 export function handleError(
   error: unknown,
   userMessage?: string,
-  options: ErrorHandlingOptions = {}
+  options?: ErrorHandlingOptions
 ): void {
-  const { 
-    level = 'error', 
-    context = {}, 
-    actionLabel, 
-    action,
-    title,
-    technical = false,
-    silent = false
-  } = options;
+  // Extract error details
+  const errorMessage = getErrorMessage(error);
+  const errorType = getErrorType(error);
   
-  // Default message if none provided
-  const defaultMessage = 'An unexpected error occurred';
+  // Prepare context data
+  const context = {
+    timestamp: new Date().toISOString(),
+    errorType,
+    errorMessage,
+    userMessage: userMessage || errorMessage,
+    ...options?.context,
+  };
   
-  // Extract message from error
-  let errorMessage: string;
-  if (error instanceof Error) {
-    errorMessage = error.message;
-  } else if (typeof error === 'string') {
-    errorMessage = error;
-  } else if (error && typeof error === 'object' && 'message' in error) {
-    errorMessage = String((error as any).message);
-  } else {
-    errorMessage = defaultMessage;
+  // Log error with context to console
+  console.error(`[${context.timestamp}] ${errorType}: ${errorMessage}`, {
+    context,
+    originalError: error,
+  });
+  
+  // Determine logging level
+  const level = options?.level || 'error';
+  
+  // Handle based on error level
+  switch (level) {
+    case 'warning':
+      console.warn(`Warning: ${userMessage || errorMessage}`, context);
+      break;
+    case 'info':
+      console.info(`Info: ${userMessage || errorMessage}`, context);
+      break;
+    case 'debug':
+      console.debug(`Debug: ${userMessage || errorMessage}`, context);
+      break;
+    case 'error':
+    default:
+      // Don't log again if already logged above
+      break;
   }
   
-  // Log the error with context
-  console.error('Error:', {
-    message: errorMessage,
-    originalError: error,
-    context
-  });
-  
-  // If silent mode is enabled, don't show a toast
-  if (silent) return;
-  
-  // Determine what message to show (technical details or user-friendly)
-  const displayMessage = userMessage || (technical ? errorMessage : defaultMessage);
-  
-  // Map level to variant for toast
-  const variantMap = {
-    'error': 'destructive',
-    'warning': 'default',
-    'info': 'default',
-    'success': 'default'
-  } as const;
-  
-  // Display toast notification
-  toast({
-    title: title || (level === 'error' ? 'Error' : level === 'warning' ? 'Warning' : level === 'info' ? 'Notice' : 'Success'),
-    description: displayMessage,
-    variant: variantMap[level],
-    action: actionLabel && action ? (
-      <ToastAction altText={actionLabel} onClick={action}>
-        {actionLabel}
-      </ToastAction>
-    ) : undefined
-  });
+  // Additional error reporting or integration could be added here
+  // e.g., send to error tracking service, display notification, etc.
 }
 
 /**
- * Extract API error details from various error formats
+ * Extracts the error type from an error object
+ * 
+ * @param error The error object
+ * @returns The error type as a string
  */
-export function extractApiErrorDetails(error: unknown): string {
-  if (!error) return 'Unknown error';
+function getErrorType(error: unknown): string {
+  if (error instanceof Error) {
+    return error.name;
+  }
   
-  // Handle Supabase errors
   if (typeof error === 'object' && error !== null) {
-    if ('code' in error && 'message' in error) {
-      const code = (error as any).code;
-      const message = (error as any).message;
-      
-      // Handle specific error codes
-      if (code === '23505') {
-        return 'This record already exists.';
-      } else if (code === '23503') {
-        return 'Referenced record does not exist.';
-      } else if (code === '42P01') {
-        return 'Database configuration issue. Please contact support.';
-      } else if (code === '23502') {
-        return 'Required data is missing.';
-      }
-      
-      return `${message} (Code: ${code})`;
+    if ('code' in error) {
+      return `Error_${String((error as any).code)}`;
     }
     
-    // Handle errors with details property
-    if ('details' in error) {
-      return String((error as any).details || 'Unknown error');
+    if ('type' in error) {
+      return String((error as any).type);
     }
   }
   
-  // Default to standard error handling
-  return error instanceof Error 
-    ? error.message
-    : typeof error === 'string'
-      ? error
+  return 'UnknownError';
+}
+
+/**
+ * Extracts a user-friendly message from an error object
+ * 
+ * @param error The error object
+ * @returns A string message describing the error
+ */
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  return typeof error === 'string'
+    ? error
+    : error && typeof error === 'object' && 'message' in error
+      ? String((error as any).message)
       : 'Unknown error occurred';
 }
 
