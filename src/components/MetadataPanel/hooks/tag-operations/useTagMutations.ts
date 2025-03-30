@@ -78,15 +78,18 @@ export const useTagMutations = (contentId: string) => {
     },
   });
 
-  // Update tag order mutation
+  // Update tag order mutation - Mock implementation since tag_positions table doesn't exist
   const updateTagOrderMutation = useMutation({
     mutationFn: async (tags: { id: string; position?: number }[]) => {
       if (!isValidContentId(contentId)) {
         throw new Error('Invalid content ID');
       }
 
-      // Since the position column doesn't exist, we'll mock this function
-      // In a real implementation, you would update the positions
+      // Log the intended changes for debugging
+      console.log('Would update tag order:', tags);
+      
+      // Since the tag_positions table doesn't exist, return the tags without changes
+      // In a real implementation, you would create the table or use another approach
       return tags;
     },
     onSuccess: () => {

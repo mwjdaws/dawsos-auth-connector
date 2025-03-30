@@ -28,5 +28,5 @@ export {
   ValidationResult
 };
 
-// Re-export types
+// Re-export types explicitly for TypeScript modules
 export type { ValidationResult };

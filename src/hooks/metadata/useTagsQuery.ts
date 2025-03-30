@@ -29,29 +29,37 @@ export function useTagsQuery(contentId: string, options?: UseTagsQueryOptions) {
       }
 
       try {
-        let query = supabase
+        // Determine what to select based on includeTypeInfo option
+        const selectClause = options?.includeTypeInfo 
+          ? 'id, name, content_id, type_id, tag_types(name)' 
+          : 'id, name, content_id, type_id';
+        
+        const { data, error } = await supabase
           .from('tags')
-          .select(
-            options?.includeTypeInfo 
-              ? 'id, name, content_id, type_id, tag_types(name)' 
-              : 'id, name, content_id, type_id'
-          )
+          .select(selectClause)
           .eq('content_id', contentId);
-
-        const { data, error } = await query;
 
         if (error) throw error;
 
-        // Transform data to include type_name if needed
-        return data.map(tag => ({
-          id: tag.id,
-          name: tag.name,
-          content_id: tag.content_id,
-          type_id: tag.type_id,
-          ...(options?.includeTypeInfo && tag.tag_types 
-            ? { type_name: tag.tag_types.name } 
-            : {})
-        }));
+        // Transform data to include type_name if type info was requested
+        return data.map(tag => {
+          const baseTag: Tag = {
+            id: tag.id,
+            name: tag.name,
+            content_id: tag.content_id,
+            type_id: tag.type_id
+          };
+          
+          // Only add type_name if we requested tag types and it exists
+          if (options?.includeTypeInfo && tag.tag_types) {
+            return {
+              ...baseTag,
+              type_name: tag.tag_types.name 
+            };
+          }
+          
+          return baseTag;
+        });
       } catch (err) {
         handleError(
           err instanceof Error ? err : new Error('Failed to fetch tags'),
