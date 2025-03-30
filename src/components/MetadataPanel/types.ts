@@ -1,6 +1,18 @@
 
 import { ReactNode } from 'react';
-import { Tag } from './hooks/tag-operations/types';
+
+export interface Tag {
+  id: string;
+  name: string;
+  content_id: string;
+  type_id: string | null;
+  type_name?: string | null;
+}
+
+export interface TagPosition {
+  id: string;
+  position: number;
+}
 
 export interface SourceMetadata {
   external_source_url: string | null;
@@ -11,7 +23,7 @@ export interface SourceMetadata {
 export interface OntologyTerm {
   id: string;
   term: string;
-  description?: string;
+  description: string | null;
   review_required?: boolean;
   domain?: string | null;
 }
@@ -31,7 +43,7 @@ export interface MetadataPanelProps {
 
 export interface MetadataContentProps {
   isLoading: boolean;
-  error: any;
+  error: Error | null;
   contentId: string;
   externalSourceUrl: string | null;
   lastCheckedAt: string | null;
@@ -39,8 +51,8 @@ export interface MetadataContentProps {
   editable?: boolean;
   newTag: string;
   setNewTag: (value: string) => void;
-  onAddTag: (typeId?: string | null) => Promise<void>;
-  onDeleteTag: (tagId: string) => Promise<void>;
+  onAddTag: () => void;
+  onDeleteTag: (tagId: string) => void;
   isPending: boolean;
   showOntologyTerms: boolean;
   ontologyTerms: OntologyTerm[];
@@ -56,4 +68,49 @@ export interface HeaderSectionProps {
   isCollapsible: boolean;
   isCollapsed: boolean;
   setIsCollapsed: (value: boolean) => void;
+  className?: string;
+}
+
+export interface OntologyTermsSectionProps {
+  terms: OntologyTerm[];
+  sourceId: string;
+  editable: boolean;
+  className?: string;
+}
+
+export interface ExternalSourceSectionProps {
+  contentId: string;
+  externalSourceUrl: string | null;
+  lastCheckedAt: string | null;
+  editable: boolean;
+  onMetadataChange?: () => void;
+  className?: string;
+}
+
+export interface TagsSectionProps {
+  tags: Tag[];
+  contentId: string;
+  editable: boolean;
+  newTag: string;
+  setNewTag: (value: string) => void;
+  onAddTag: () => void;
+  onDeleteTag: (tagId: string) => void;
+  onMetadataChange?: () => void;
+  className?: string;
+}
+
+export interface ErrorStateProps {
+  error: Error;
+  title: string;
+  retry?: () => void;
+}
+
+export interface UseInlineMetadataEditProps {
+  contentId: string;
+  onMetadataChange?: () => void;
+}
+
+export interface UseTagReorderingProps {
+  contentId: string;
+  onMetadataChange?: () => void;
 }

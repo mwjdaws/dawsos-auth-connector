@@ -32,7 +32,7 @@ export interface SaveDraftResult {
  * @property onPublish Optional callback when a document is published
  */
 export interface DocumentOperationsProps {
-  documentId?: string;
+  documentId?: string | null;
   onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
   onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
 }
@@ -46,10 +46,10 @@ export interface DocumentOperationHandlerProps {
   content: string;
   templateId: string | null;
   externalSourceUrl: string;
-  documentId?: string;
-  sourceId?: string;
-  saveDraft: (title: string, content: string, templateId: string | null, externalSourceUrl: string, userId: string | undefined, isAutoSave?: boolean) => Promise<string | null>;
-  publishDocument: (title: string, content: string, templateId: string | null, externalSourceUrl: string, userId: string | undefined) => Promise<DocumentOperationResult>;
+  documentId?: string | null;
+  sourceId?: string | null;
+  saveDraft: (title: string, content: string, templateId: string | null, externalSourceUrl: string, userId: string | null, isAutoSave?: boolean) => Promise<string | null>;
+  publishDocument: (title: string, content: string, templateId: string | null, externalSourceUrl: string, userId: string | null) => Promise<DocumentOperationResult>;
   setLastSavedTitle: Dispatch<SetStateAction<string>>;
   setLastSavedContent: Dispatch<SetStateAction<string>>;
   setLastSavedExternalSourceUrl: Dispatch<SetStateAction<string>>;
@@ -71,7 +71,7 @@ export interface DraftOperationsContext {
  * @property saveDraft Function to save a draft before publishing
  */
 export interface PublishOperationsContext {
-  saveDraft: (title: string, content: string, templateId: string | null, externalSourceUrl: string, userId: string | undefined, isAutoSave?: boolean) => Promise<string | null>;
+  saveDraft: (title: string, content: string, templateId: string | null, externalSourceUrl: string, userId: string | null, isAutoSave?: boolean) => Promise<string | null>;
 }
 
 /**
@@ -129,8 +129,89 @@ export interface MarkdownEditorProps {
   initialContent?: string;
   initialTemplateId?: string | null;
   initialExternalSourceUrl?: string;
-  documentId?: string;
-  sourceId?: string;
+  documentId?: string | null;
+  sourceId?: string | null;
   onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
   onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
+}
+
+/**
+ * Props for the ContentLoader hook
+ */
+export interface UseContentLoaderProps {
+  sourceId?: string | null;
+  setTitle: React.Dispatch<React.SetStateAction<string>>;
+  setContent: React.Dispatch<React.SetStateAction<string>>;
+  setTemplateId: React.Dispatch<React.SetStateAction<string | null>>;
+  setExternalSourceUrl: React.Dispatch<React.SetStateAction<string>>;
+  setLastSavedTitle: React.Dispatch<React.SetStateAction<string>>;
+  setLastSavedContent: React.Dispatch<React.SetStateAction<string>>;
+  setLastSavedExternalSourceUrl: React.Dispatch<React.SetStateAction<string>>;
+  setIsPublished: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsDirty: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+/**
+ * Props for the SaveDraftHandler hook
+ */
+export interface UseSaveDraftHandlerProps {
+  title: string;
+  content: string;
+  templateId: string | null;
+  externalSourceUrl: string;
+  documentId?: string | null;
+  sourceId?: string | null;
+  saveDraft: (title: string, content: string, templateId: string | null, externalSourceUrl: string, userId: string | null, isAutoSave?: boolean) => Promise<string | null>;
+  setLastSavedTitle: (title: string) => void;
+  setLastSavedContent: (content: string) => void;
+  setLastSavedExternalSourceUrl: (url: string) => void;
+  setIsDirty: (isDirty: boolean) => void;
+  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
+  createVersion: (documentId: string, content: string, metadata?: any, isAutoSave?: boolean) => Promise<void>;
+  enrichContentWithOntology?: (sourceId: string, content: string, title: string, options?: any) => Promise<any>;
+}
+
+/**
+ * Props for the PublishHandler hook
+ */
+export interface UsePublishHandlerProps {
+  title: string;
+  content: string;
+  templateId: string | null;
+  externalSourceUrl: string;
+  saveDraft: (options?: SaveHandlerOptions) => Promise<string | null>;
+  publishDocument: (title: string, content: string, templateId: string | null, externalSourceUrl: string, userId: string | null) => Promise<DocumentOperationResult>;
+  onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
+  createVersion: (documentId: string, content: string, metadata?: any) => Promise<void>;
+  enrichContentWithOntology?: (sourceId: string, content: string, title: string, options?: any) => Promise<any>;
+}
+
+/**
+ * Props for the TemplateHandling hook
+ */
+export interface UseTemplateHandlingProps {
+  setTitle: React.Dispatch<React.SetStateAction<string>>;
+  setContent: React.Dispatch<React.SetStateAction<string>>;
+  setTemplateId: React.Dispatch<React.SetStateAction<string | null>>;
+  setIsDirty: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+/**
+ * Props for the UseDocumentLifecycle hook
+ */
+export interface UseDocumentLifecycleProps {
+  createVersion?: (documentId: string, content: string, metadata?: any, isAutoSave?: boolean) => Promise<void>;
+  enrichContentWithOntology?: (sourceId: string, content: string, title: string, options?: any) => Promise<any>;
+}
+
+/**
+ * Props for the UseGraphRender hook 
+ */
+export interface GraphRendererProps {
+  ref: React.RefObject<any>;
+  graphData: any;
+  width: number;
+  height: number;
+  highlightedNodeId: string | null;
+  zoom: number;
 }

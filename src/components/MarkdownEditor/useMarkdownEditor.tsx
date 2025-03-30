@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-// Import directly from fetchers instead of through a barrel export
 import { fetchKnowledgeTemplateById } from '@/services/api/templates/knowledgeTemplateFetchers';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -11,8 +10,8 @@ interface UseMarkdownEditorProps {
   initialContent?: string;
   initialTemplateId?: string | null;
   initialExternalSourceUrl?: string;
-  documentId?: string;
-  sourceId?: string;
+  documentId?: string | null;
+  sourceId?: string | null;
   onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
   onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
 }
@@ -22,8 +21,8 @@ export const useMarkdownEditor = ({
   initialContent = '',
   initialTemplateId = null,
   initialExternalSourceUrl = '',
-  documentId,
-  sourceId,
+  documentId = null,
+  sourceId = null,
   onSaveDraft,
   onPublish
 }: UseMarkdownEditorProps) => {
@@ -52,7 +51,7 @@ export const useMarkdownEditor = ({
         description: "Please enter a title before saving",
         variant: "destructive",
       });
-      return;
+      return null;
     }
 
     setIsSaving(true);
@@ -62,7 +61,7 @@ export const useMarkdownEditor = ({
         content,
         template_id: templateId,
         external_source_url: externalSourceUrl,
-        user_id: user?.id,
+        user_id: user?.id || null
       };
 
       let savedDocumentId = documentId;
@@ -108,6 +107,7 @@ export const useMarkdownEditor = ({
         description: "There was an error saving your draft. Please try again.",
         variant: "destructive",
       });
+      return null;
     } finally {
       setIsSaving(false);
     }

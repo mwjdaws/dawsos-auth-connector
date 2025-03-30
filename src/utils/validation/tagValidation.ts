@@ -1,105 +1,63 @@
 
-/**
- * Result of a validation operation
- */
-export interface ValidationResult {
-  isValid: boolean;
-  message: string | null;
-}
-
-export interface TagValidationOptions {
-  maxLength?: number;
-  minLength?: number;
-  allowDuplicates?: boolean;
-  allowSpaces?: boolean;
-  blockedChars?: string[];
-}
+import { ValidationResult } from './types';
+import { TagValidationOptions } from './index';
 
 /**
- * Validates a single tag against the specified options
+ * Validates a list of tags
+ * @param tags Array of tag strings to validate
+ * @param options Optional validation configuration
+ * @returns Object containing validation result and error message
  */
-export function validateTag(tag: string, options?: TagValidationOptions): ValidationResult {
-  if (!tag || typeof tag !== 'string') {
-    return {
-      isValid: false,
-      message: "Tag is required"
-    };
-  }
-  
-  const trimmedTag = tag.trim();
-  const opts = {
-    maxLength: options?.maxLength || 50,
-    minLength: options?.minLength || 1,
-    allowSpaces: options?.allowSpaces || false,
-    blockedChars: options?.blockedChars || ['#', '%', '&', '{', '}', '\\', '<', '>', '*', '?', '/', '$', '!', "'", '"', ':', '@']
-  };
-  
-  if (trimmedTag.length < opts.minLength) {
-    return {
-      isValid: false,
-      message: `Tag must be at least ${opts.minLength} character${opts.minLength !== 1 ? 's' : ''} long`
-    };
-  }
-  
-  if (trimmedTag.length > opts.maxLength) {
-    return {
-      isValid: false,
-      message: `Tag must be no more than ${opts.maxLength} characters long`
-    };
-  }
-  
-  if (!opts.allowSpaces && trimmedTag.includes(' ')) {
-    return {
-      isValid: false,
-      message: "Tag cannot contain spaces"
-    };
-  }
-  
-  for (const char of opts.blockedChars) {
-    if (trimmedTag.includes(char)) {
-      return {
-        isValid: false,
-        message: `Tag cannot contain the character '${char}'`
-      };
-    }
-  }
-  
-  return {
-    isValid: true,
-    message: null
-  };
-}
+export function validateTags(tags: string[], options: TagValidationOptions = {}): ValidationResult {
+  const {
+    allowEmpty = true,
+    maxTags = 50,
+    minLength = 2,
+    maxLength = 30
+  } = options;
 
-/**
- * Validates an array of tags against the specified options
- */
-export function validateTags(tags: string[], options?: TagValidationOptions): ValidationResult {
-  if (!Array.isArray(tags)) {
+  // Check if tags are required but empty
+  if (!allowEmpty && (!tags || tags.length === 0)) {
     return {
       isValid: false,
-      message: "Tags must be an array"
+      message: "At least one tag is required"
     };
   }
-  
-  // Check for duplicates unless explicitly allowed
-  if (options?.allowDuplicates !== true) {
-    const uniqueTags = new Set(tags.map(tag => tag.toLowerCase().trim()));
-    if (uniqueTags.size !== tags.length) {
-      return {
-        isValid: false,
-        message: "Duplicate tags are not allowed"
-      };
-    }
+
+  // Check if too many tags
+  if (tags.length > maxTags) {
+    return {
+      isValid: false,
+      message: `Cannot have more than ${maxTags} tags`
+    };
   }
-  
-  // Validate each tag individually
-  for (const tag of tags) {
-    const result = validateTag(tag, options);
-    if (!result.isValid) {
-      return result;
-    }
+
+  // Check each tag's length and format
+  const invalidTags = tags.filter(tag => {
+    if (!tag || tag.trim().length < minLength) return true;
+    if (tag.trim().length > maxLength) return true;
+    
+    // Special characters validation
+    const invalidCharsRegex = /[^\w\s-]/; // Allow letters, numbers, spaces, hyphens
+    return invalidCharsRegex.test(tag);
+  });
+
+  if (invalidTags.length > 0) {
+    return {
+      isValid: false,
+      message: "Some tags have invalid format or length"
+    };
   }
-  
+
+  // Check for duplicate tags (case insensitive)
+  const lowerTags = tags.map(t => t.toLowerCase());
+  if (new Set(lowerTags).size !== lowerTags.length) {
+    return {
+      isValid: false,
+      message: "Duplicate tags are not allowed"
+    };
+  }
+
   return {
     isValid: true,
     message: null

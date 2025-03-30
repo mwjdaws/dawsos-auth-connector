@@ -2,7 +2,7 @@
 import React from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle, Info } from "lucide-react";
-import { ContentIdValidationResult } from "@/utils/validation";
+import type { ContentIdValidationResult } from "@/utils/validation/contentIdValidation";
 
 interface ContentAlertProps {
   contentId: string;

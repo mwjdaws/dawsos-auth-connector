@@ -1,42 +1,34 @@
 
-// Import all validation functions and types
+// Re-export all validation related utilities and types
 import { validateDocumentTitle } from './documentValidation';
-import { 
-  isValidContentId, 
-  normalizeContentId, 
-  getContentIdValidationResult,
-  ContentIdValidationResult 
-} from './contentIdValidation';
-import { 
-  validateTag, 
-  validateTags,
-  ValidationResult,
-  TagValidationOptions 
-} from './tagValidation';
+import { validateTags } from './tagValidation';
+import { isValidContentId } from './contentIdValidation';
 
-// Document validation
-export { validateDocumentTitle };
+// Export the validation functions
+export { validateDocumentTitle, validateTags, isValidContentId };
 
-// Content ID validation
-export { 
-  isValidContentId,
-  normalizeContentId,
-  getContentIdValidationResult,
-  ContentIdValidationResult
+// Export the validation result types
+export type ValidationResult = {
+  isValid: boolean;
+  message: string | null;
 };
 
-// Tag validation functions
-export { validateTag, validateTags };
+// Define tag validation options
+export interface TagValidationOptions {
+  allowEmpty?: boolean;
+  maxTags?: number;
+  minLength?: number;
+  maxLength?: number;
+}
 
-// Export types properly
-export type { ValidationResult, TagValidationOptions, ContentIdValidationResult };
+// Define content ID validation result
+export interface ContentIdValidationResult {
+  isValid: boolean;
+  message: string | null;
+}
 
-// Backward compatibility (with deprecation notices)
-/**
- * @deprecated Use isValidContentId from @/utils/validation instead.
- */
-export { 
-  isValidContentId as isValidId,
-  normalizeContentId as normalizeId,
-  getContentIdValidationResult as getIdValidationResult
-} from './contentIdValidation';
+// Export all other validation utilities from their respective files
+export * from './contentIdValidation';
+export * from './documentValidation';
+export * from './tagValidation';
+export * from './types';

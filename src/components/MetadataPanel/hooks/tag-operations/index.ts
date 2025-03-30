@@ -7,9 +7,9 @@ export { useTagMutations } from './useTagMutations';
 export { useTagOperations } from './useTagOperations';
 
 // If there's ambiguity with UseTagMutationsResult, use a named export
-import { 
+import type { 
   UseTagMutationsResult as UseTagMutationsResultOriginal 
 } from './types';
 
 // Re-export with a clarified name
-export { UseTagMutationsResultOriginal as UseTagMutationsResult };
+export type { UseTagMutationsResultOriginal as UseTagMutationsResult };

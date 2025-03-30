@@ -22,8 +22,8 @@ interface MarkdownEditorProps {
   initialContent?: string;
   initialTemplateId?: string | null;
   initialExternalSourceUrl?: string;
-  documentId?: string;
-  sourceId?: string;
+  documentId?: string | null;
+  sourceId?: string | null;
   onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
   onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
 }
@@ -33,8 +33,8 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   initialContent = '',
   initialTemplateId = null,
   initialExternalSourceUrl = '',
-  documentId,
-  sourceId,
+  documentId = null,
+  sourceId = null,
   onSaveDraft,
   onPublish,
 }) => {
@@ -126,7 +126,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         <EditorToolbar
           isFullscreen={isFullscreen}
           toggleFullscreen={toggleFullscreen}
-          documentId={effectiveDocumentId}
+          documentId={effectiveDocumentId || ''}
           onHistoryClick={() => setIsHistoryOpen(true)}
           onSourceBrowserClick={openSourceBrowser}
         />
@@ -161,7 +161,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         hasExternalSource={!!externalSourceUrl}
         title={title}
         content={content}
-        sourceId={sourceId}
+        sourceId={sourceId || ''}
       />
 
       {/* Version History Modal */}

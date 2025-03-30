@@ -1,54 +1,22 @@
 
 /**
- * Validation result for content ID validation
+ * Validates if a content ID is valid
  */
-export interface ContentIdValidationResult {
-  isValid: boolean;
-  contentExists?: boolean;
-  message: string | null;
-}
-
-/**
- * Check if a content ID is valid
- * 
- * @param contentId The content ID to validate
- * @returns boolean indicating if the content ID is valid
- */
-export function isValidContentId(contentId: string | null | undefined): boolean {
+export function isValidContentId(contentId: string | null): boolean {
   if (!contentId) return false;
   
-  // UUID format validation (simple regex check)
-  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidPattern.test(contentId);
+  // UUIDs should be 36 characters long (with hyphens)
+  if (contentId.length !== 36) return false;
+  
+  // Simple regex check for UUID format
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(contentId);
 }
 
 /**
- * Normalize a content ID to a standardized format
- * 
- * @param contentId The content ID to normalize
- * @returns The normalized content ID or null if invalid
+ * Gets detailed validation result for a content ID
  */
-export function normalizeContentId(contentId: string | null | undefined): string | null {
-  if (!contentId) return null;
-  
-  // Trim the contentId and convert to lowercase
-  const normalizedId = contentId.trim().toLowerCase();
-  
-  // If it doesn't match the UUID pattern, return null
-  if (!isValidContentId(normalizedId)) {
-    return null;
-  }
-  
-  return normalizedId;
-}
-
-/**
- * Get detailed validation result for a content ID
- * 
- * @param contentId The content ID to validate
- * @returns ValidationResult with details about the validation
- */
-export function getContentIdValidationResult(contentId: string | null | undefined): ContentIdValidationResult {
+export function getContentIdValidationResult(contentId: string | null): ContentIdValidationResult {
   if (!contentId) {
     return {
       isValid: false,
@@ -56,13 +24,18 @@ export function getContentIdValidationResult(contentId: string | null | undefine
     };
   }
   
-  // Normalize the ID first
-  const normalizedId = normalizeContentId(contentId);
-  
-  if (!normalizedId) {
+  if (contentId.length !== 36) {
     return {
       isValid: false,
-      message: "Invalid content ID format"
+      message: "Content ID must be a valid UUID (36 characters)"
+    };
+  }
+  
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(contentId)) {
+    return {
+      isValid: false,
+      message: "Content ID must be in a valid UUID format"
     };
   }
   
@@ -70,4 +43,9 @@ export function getContentIdValidationResult(contentId: string | null | undefine
     isValid: true,
     message: null
   };
+}
+
+export interface ContentIdValidationResult {
+  isValid: boolean;
+  message: string | null;
 }

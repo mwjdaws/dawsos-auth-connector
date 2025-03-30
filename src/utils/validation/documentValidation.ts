@@ -1,36 +1,45 @@
 
-import { ValidationResult } from './tagValidation';
+import { ValidationResult } from './types';
 
 /**
  * Validates a document title
- * 
- * @param title The document title to validate
- * @returns ValidationResult with isValid and message
+ * @param title Title to validate
+ * @returns Object containing validation result and error message
  */
 export function validateDocumentTitle(title: string): ValidationResult {
-  if (!title || typeof title !== 'string') {
+  // Check for empty title
+  if (!title || !title.trim()) {
     return {
       isValid: false,
-      message: "Title is required"
+      message: "Please enter a title before saving"
     };
   }
-  
-  const titleTrimmed = title.trim();
-  
-  if (titleTrimmed.length < 3) {
+
+  // Check for minimum length
+  if (title.trim().length < 3) {
     return {
       isValid: false,
       message: "Title must be at least 3 characters long"
     };
   }
-  
-  if (titleTrimmed.length > 255) {
+
+  // Check for maximum length
+  if (title.trim().length > 100) {
     return {
       isValid: false,
-      message: "Title must be no more than 255 characters long"
+      message: "Title cannot exceed 100 characters"
     };
   }
-  
+
+  // Check for invalid characters
+  const invalidCharsRegex = /[<>{}[\]\\^~|]/;
+  if (invalidCharsRegex.test(title)) {
+    return {
+      isValid: false,
+      message: "Title contains invalid characters"
+    };
+  }
+
   return {
     isValid: true,
     message: null

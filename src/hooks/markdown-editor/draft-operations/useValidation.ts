@@ -1,5 +1,6 @@
 
-import { validateDocumentTitle, ValidationResult } from '@/utils/validation';
+import { validateDocumentTitle } from '@/utils/validation/documentValidation';
+import type { ValidationResult } from '@/utils/validation/types';
 
 /**
  * Hook for validation operations

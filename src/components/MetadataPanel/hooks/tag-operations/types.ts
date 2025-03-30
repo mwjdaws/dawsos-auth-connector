@@ -44,3 +44,16 @@ export interface UseTagMutationsResult {
   isAdding: boolean;
   isDeleting: boolean;
 }
+
+export interface UseTagOperationsResult {
+  tags: Tag[];
+  newTag: string;
+  setNewTag: (value: string) => void;
+  fetchTags: () => Promise<Tag[]>;
+  handleAddTag: (typeId?: string | null) => Promise<void>;
+  handleDeleteTag: (tagId: string) => Promise<void>;
+  isLoading: boolean;
+  isAdding: boolean;
+  isDeleting: boolean;
+  error: Error | null;
+}
