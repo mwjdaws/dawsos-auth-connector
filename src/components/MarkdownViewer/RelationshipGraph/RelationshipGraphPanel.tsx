@@ -9,7 +9,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { RelationshipGraph } from './RelationshipGraph';
 import { RelationshipGraphPanelProps } from './types';
 
-export function RelationshipGraphPanel({ sourceId, hasAttemptedRetry }: RelationshipGraphPanelProps) {
+export function RelationshipGraphPanel({ sourceId, contentId, hasAttemptedRetry }: RelationshipGraphPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   
@@ -36,7 +36,7 @@ export function RelationshipGraphPanel({ sourceId, hasAttemptedRetry }: Relation
   return (
     <div ref={containerRef} className="w-full h-[600px]">
       <RelationshipGraph 
-        startingNodeId={sourceId} 
+        startingNodeId={sourceId || contentId} 
         width={dimensions.width} 
         height={dimensions.height}
         hasAttemptedRetry={hasAttemptedRetry}

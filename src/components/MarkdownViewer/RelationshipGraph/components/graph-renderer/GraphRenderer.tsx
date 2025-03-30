@@ -47,6 +47,32 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
         if (graphRef.current) {
           graphRef.current.zoom(zoomLevel, duration);
         }
+      },
+      zoomIn: () => {
+        if (graphRef.current) {
+          const currentZoom = graphRef.current.zoom();
+          graphRef.current.zoom(currentZoom * 1.2, 300);
+        }
+      },
+      zoomOut: () => {
+        if (graphRef.current) {
+          const currentZoom = graphRef.current.zoom();
+          graphRef.current.zoom(currentZoom * 0.8, 300);
+        }
+      },
+      resetZoom: () => {
+        if (graphRef.current) {
+          graphRef.current.zoom(1, 300);
+        }
+      },
+      centerGraph: () => {
+        if (graphRef.current) {
+          try {
+            graphRef.current.zoomToFit(400);
+          } catch (error) {
+            console.error("Error centering graph:", error);
+          }
+        }
       }
     }));
     

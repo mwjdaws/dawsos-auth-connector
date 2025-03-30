@@ -51,7 +51,7 @@ export function RelationshipGraphTab({ contentId }: RelationshipGraphTabProps) {
         <Suspense fallback={<Skeleton className="h-[400px] w-full rounded-lg" />}>
           <div className="min-h-[400px] border rounded-lg bg-card overflow-hidden">
             <RelationshipGraphPanel 
-              sourceId={contentId} 
+              contentId={contentId} 
               hasAttemptedRetry={hasAttemptedRetry}
             />
           </div>

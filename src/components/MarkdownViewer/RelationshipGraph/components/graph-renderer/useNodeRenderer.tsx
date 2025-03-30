@@ -25,7 +25,10 @@ export function useNodeRenderer({ highlightedNodeId }: UseNodeRendererProps) {
   }, []);
   
   // Memoized node canvas object renderer
-  const nodeCanvasObject = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
+  const nodeCanvasObject = useCallback((node: GraphNode & { x?: number, y?: number }, ctx: CanvasRenderingContext2D, globalScale: number) => {
+    // Ensure we have x and y coordinates (these are added by force-graph during rendering)
+    if (typeof node.x !== 'number' || typeof node.y !== 'number') return;
+    
     // Custom node rendering with text labels
     const label = node.name || node.title;
     const fontSize = 12/globalScale;
@@ -46,7 +49,7 @@ export function useNodeRenderer({ highlightedNodeId }: UseNodeRendererProps) {
       : (node.val || 2) * 2;
       
     ctx.beginPath();
-    ctx.arc(node.x as number, node.y as number, nodeSize, 0, 2 * Math.PI);
+    ctx.arc(node.x, node.y, nodeSize, 0, 2 * Math.PI);
     ctx.fill();
     
     // Add a stroke for highlighted nodes
@@ -64,8 +67,8 @@ export function useNodeRenderer({ highlightedNodeId }: UseNodeRendererProps) {
         : 'rgba(255, 255, 255, 0.8)';
         
       ctx.fillRect(
-        (node.x as number) - bckgDimensions[0] / 2,
-        (node.y as number) + 6,
+        node.x - bckgDimensions[0] / 2,
+        node.y + 6,
         bckgDimensions[0],
         bckgDimensions[1]
       );
@@ -74,7 +77,7 @@ export function useNodeRenderer({ highlightedNodeId }: UseNodeRendererProps) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = isHighlighted ? '#e53e3e' : '#222';
-      ctx.fillText(label, node.x as number, (node.y as number) + 6 + fontSize / 2);
+      ctx.fillText(label, node.x, node.y + 6 + fontSize / 2);
     }
   }, [highlightedNodeId, colors.nodes]);
 

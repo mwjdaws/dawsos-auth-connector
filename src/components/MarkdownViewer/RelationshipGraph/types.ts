@@ -14,6 +14,8 @@ export interface GraphNode {
   type: string;  // Required for node styling (e.g., "source", "term")
   val?: number;  // Size value for the node
   color?: string;
+  x?: number;    // Position x - added for force graph rendering
+  y?: number;    // Position y - added for force graph rendering
 }
 
 export interface GraphLink {
@@ -31,29 +33,30 @@ export interface GraphData {
 
 // Component props
 export interface RelationshipGraphProps {
+  startingNodeId?: string;
+  width?: number;
+  height?: number;
   contentId?: string;
   initialZoom?: number;
   showControls?: boolean;
   className?: string;
+  hasAttemptedRetry?: boolean;
 }
 
 export interface RelationshipGraphPanelProps {
+  sourceId?: string;
   contentId?: string;
   className?: string;
   isCollapsible?: boolean;
+  hasAttemptedRetry?: boolean;
 }
 
 export interface GraphRendererProps {
-  data: GraphData;
-  onNodeClick?: (node: GraphNode) => void;
-  onLinkClick?: (link: GraphLink) => void;
-  width?: number;
-  height?: number;
-  nodeSize?: number;
-  backgroundColor?: string;
-  showLabels?: boolean;
-  zoomLevel?: number;
-  onZoomChange?: (zoomLevel: number) => void;
+  graphData: GraphData;
+  width: number;
+  height: number;
+  highlightedNodeId?: string | null;
+  zoom?: number;
 }
 
 // Renderer component props
@@ -79,6 +82,8 @@ export interface GraphRendererRef {
   zoomOut: () => void;
   resetZoom: () => void;
   centerGraph: () => void;
+  centerOnNode: (nodeId: string) => void;
+  setZoom: (zoomLevel: number, duration?: number) => void;
 }
 
 // Error handling options
