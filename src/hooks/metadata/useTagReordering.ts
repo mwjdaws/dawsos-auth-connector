@@ -13,7 +13,7 @@ export function useTagReordering({ contentId, onMetadataChange }: UseTagReorderi
   const [isReordering, setIsReordering] = useState(false);
 
   /**
-   * Handles reordering tags and updating their order in the database
+   * Handles reordering tags and updating their order
    * Currently a workaround since there's no dedicated order column
    */
   const handleReorderTags = useCallback(async (reorderedTags: Tag[]) => {
@@ -26,7 +26,7 @@ export function useTagReordering({ contentId, onMetadataChange }: UseTagReorderi
       console.log('Would reorder tags:', reorderedTags.map((tag, index) => ({
         id: tag.id,
         name: tag.name,
-        display_order: index
+        display_order: index // This would be the column to add in future
       })));
       
       // In a real implementation, we would update a display_order field in the tags table

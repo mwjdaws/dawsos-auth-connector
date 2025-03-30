@@ -1,86 +1,86 @@
 
-import { ValidationError } from '../errors/types';
-import { handleError } from '../errors';
-
 /**
- * Standard validation result interface
+ * Tag validation utilities
  */
+
 export interface ValidationResult {
   isValid: boolean;
-  errors: string[];
+  message: string;
 }
+
+export interface TagValidationOptions {
+  minTagLength?: number;
+  maxTagLength?: number;
+  maxNumTags?: number;
+}
+
+const DEFAULT_OPTIONS: TagValidationOptions = {
+  minTagLength: 2,
+  maxTagLength: 30,
+  maxNumTags: 20,
+};
 
 /**
  * Validates a single tag
- * 
- * @param tag The tag to validate
- * @returns True if valid, false otherwise
  */
-export function validateTag(tag: string): boolean {
-  // Check if tag exists and is a non-empty string
-  if (!tag || typeof tag !== 'string' || tag.trim() === '') {
-    return false;
+export const validateTag = (
+  tag: string,
+  options: TagValidationOptions = DEFAULT_OPTIONS
+): ValidationResult => {
+  const { minTagLength = 2, maxTagLength = 30 } = options;
+
+  if (!tag || tag.trim().length === 0) {
+    return {
+      isValid: false,
+      message: 'Tag cannot be empty',
+    };
   }
-  
-  // Check for invalid formatting
-  if (tag.startsWith('```') || 
-      tag.startsWith('"') || 
-      tag.endsWith('"')) {
-    return false;
+
+  if (tag.trim().length < minTagLength) {
+    return {
+      isValid: false,
+      message: `Tag must be at least ${minTagLength} characters`,
+    };
   }
-  
-  return true;
-}
+
+  if (tag.trim().length > maxTagLength) {
+    return {
+      isValid: false,
+      message: `Tag cannot exceed ${maxTagLength} characters`,
+    };
+  }
+
+  return {
+    isValid: true,
+    message: '',
+  };
+};
 
 /**
  * Validates an array of tags
- * 
- * @param tags Array of tag strings to validate
- * @param reportErrors Whether to report errors using handleError
- * @returns Validation result with isValid flag and array of error messages
  */
-export function validateTags(tags: string[], reportErrors = true): ValidationResult {
-  const result: ValidationResult = {
-    isValid: true,
-    errors: []
-  };
-  
-  // Check for empty tags array
-  if (!tags?.length) {
-    result.isValid = false;
-    result.errors.push("No tags provided");
-    
-    if (reportErrors) {
-      handleError(
-        new ValidationError("No tags provided"),
-        "No tags to save"
-      );
-    }
-    
-    return result;
+export const validateTags = (
+  tags: string[],
+  options: TagValidationOptions = DEFAULT_OPTIONS
+): ValidationResult => {
+  const { maxNumTags = 20 } = options;
+
+  if (tags.length > maxNumTags) {
+    return {
+      isValid: false,
+      message: `Cannot add more than ${maxNumTags} tags`,
+    };
   }
-  
-  // Validate individual tags and collect invalid ones
-  const invalidTags = new Set<string>();
+
   for (const tag of tags) {
-    if (!validateTag(tag)) {
-      invalidTags.add(tag || 'empty');
+    const result = validateTag(tag, options);
+    if (!result.isValid) {
+      return result;
     }
   }
-  
-  // Report validation errors if any invalid tags were found
-  if (invalidTags.size > 0) {
-    result.isValid = false;
-    const errorMessage = `Found ${invalidTags.size} invalid tags`;
-    result.errors.push(errorMessage);
-    
-    if (reportErrors) {
-      handleError(
-        new ValidationError(errorMessage),
-        "Some tags are invalid and cannot be saved"
-      );
-    }
-  }
-  
-  return result;
-}
+
+  return {
+    isValid: true,
+    message: '',
+  };
+};

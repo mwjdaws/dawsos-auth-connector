@@ -8,7 +8,7 @@ interface Tag {
   id: string;
   name: string;
   content_id: string;
-  type_id?: string;
+  type_id?: string | null;
   type_name?: string;
 }
 

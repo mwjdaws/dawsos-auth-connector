@@ -18,7 +18,7 @@ interface TagDeleteParams {
 
 interface TagReorderParams {
   contentId: string;
-  newOrder: { id: string; position: number }[];
+  newOrder: { id: string; name: string }[];
 }
 
 export function useTagMutations(contentId?: string) {
@@ -48,7 +48,9 @@ export function useTagMutations(contentId?: string) {
     },
     onSuccess: () => {
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
+      if (contentId) {
+        queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
+      }
       toast({
         title: "Tag Added",
         description: "The tag was successfully added",
@@ -78,7 +80,9 @@ export function useTagMutations(contentId?: string) {
     },
     onSuccess: () => {
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
+      if (contentId) {
+        queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
+      }
       toast({
         title: "Tag Removed",
         description: "The tag was successfully removed",
@@ -89,7 +93,7 @@ export function useTagMutations(contentId?: string) {
     }
   });
   
-  // Reorder tags - Temporary workaround until we have a position column
+  // Reorder tags - Temporary workaround since there's no position column
   const reorderTagsMutation = useMutation({
     mutationFn: async ({ contentId: tagContentId, newOrder }: TagReorderParams) => {
       const effectiveContentId = tagContentId || contentId;
@@ -98,16 +102,26 @@ export function useTagMutations(contentId?: string) {
         throw new Error('Invalid content ID');
       }
       
-      // Since there's no tag_positions table or position column, we'll log the intended changes
-      // In a future implementation, we could add a display_order column to the tags table
-      console.log('Would reorder tags:', newOrder);
+      // Since there's no position column or tag_positions table, 
+      // we'll just log what would have been updated for now
+      console.log('Would reorder tags:', newOrder.map((tag, index) => ({
+        id: tag.id,
+        name: tag.name,
+        display_order: index // This would be the field to add in the future
+      })));
       
-      // For now, we'll just return the data without actually updating positions
+      // In a future implementation, we could:
+      // 1. Add a display_order column to the tags table
+      // 2. Or create a separate tag_positions table to store ordering information
+      
+      // For now, we'll just return the data without changes
       return { contentId: effectiveContentId, newOrder };
     },
     onSuccess: () => {
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
+      if (contentId) {
+        queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
+      }
       toast({
         title: "Tags Reordered",
         description: "Tag order was successfully updated",
