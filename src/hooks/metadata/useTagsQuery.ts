@@ -12,9 +12,27 @@ interface Tag {
   type_name?: string;
 }
 
+interface TagWithType extends Tag {
+  tag_types?: {
+    name: string;
+  } | null;
+}
+
 interface UseTagsQueryOptions {
   enabled?: boolean;
   includeTypeInfo?: boolean;
+}
+
+/**
+ * Type guard to check if an object is a valid tag
+ */
+function isValidTag(tag: any): tag is TagWithType {
+  return (
+    tag &&
+    typeof tag.id === 'string' &&
+    typeof tag.name === 'string' &&
+    typeof tag.content_id === 'string'
+  );
 }
 
 /**
@@ -45,24 +63,26 @@ export function useTagsQuery(contentId: string, options?: UseTagsQueryOptions) {
         if (!data) return [];
 
         // Transform data to include type_name if type info was requested
-        return data.map(tag => {
-          const baseTag: Tag = {
-            id: tag.id,
-            name: tag.name,
-            content_id: tag.content_id,
-            type_id: tag.type_id
-          };
-          
-          // Only add type_name if we requested tag types and it exists
-          if (options?.includeTypeInfo && tag.tag_types) {
-            return {
-              ...baseTag,
-              type_name: tag.tag_types.name 
+        return data
+          .filter(isValidTag) // Filter out any invalid tags
+          .map(tag => {
+            const baseTag: Tag = {
+              id: tag.id,
+              name: tag.name,
+              content_id: tag.content_id,
+              type_id: tag.type_id
             };
-          }
-          
-          return baseTag;
-        });
+            
+            // Only add type_name if we requested tag types and tag_types exists
+            if (options?.includeTypeInfo && tag.tag_types) {
+              return {
+                ...baseTag,
+                type_name: tag.tag_types.name 
+              };
+            }
+            
+            return baseTag;
+          });
       } catch (err) {
         handleError(
           err instanceof Error ? err : new Error('Failed to fetch tags'),
