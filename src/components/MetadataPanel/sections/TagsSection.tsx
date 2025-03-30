@@ -3,38 +3,22 @@
  * TagsSection Component
  * 
  * Displays and manages tags associated with a content source.
- * Provides UI for viewing, adding, and removing tags.
- * 
- * @example
- * ```tsx
- * <TagsSection
- *   tags={tags}
- *   contentId="content-123"
- *   editable={true}
- *   newTag={newTag}
- *   setNewTag={setNewTag}
- *   onAddTag={handleAddTag}
- *   onDeleteTag={handleDeleteTag}
- * />
- * ```
+ * Uses the DraggableTagList component for tag drag-and-drop reordering.
  */
 import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { X, Plus } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Tag } from '../hooks/tag-operations/types';
+import { TagInput } from "@/components/MarkdownViewer/TagInput";
 import { TagList } from "../components/TagList";
-import { useTagReordering } from "@/hooks/metadata";
+import { Tag } from "../hooks/tag-operations/types";
+import { useTagReordering } from "@/hooks/metadata/useTagReordering";
 
-interface TagsSectionProps {
+export interface TagsSectionProps {
   tags: Tag[];
   contentId: string;
-  editable?: boolean;
-  newTag?: string;
-  setNewTag?: (value: string) => void;
-  onAddTag?: () => void;
-  onDeleteTag?: (tagId: string) => void;
+  editable: boolean;
+  newTag: string;
+  setNewTag: (value: string) => void;
+  onAddTag: () => void;
+  onDeleteTag: (tagId: string) => void;
   onMetadataChange?: () => void;
   className?: string;
 }
@@ -42,59 +26,40 @@ interface TagsSectionProps {
 export const TagsSection: React.FC<TagsSectionProps> = ({
   tags,
   contentId,
-  editable = false,
-  newTag = '',
+  editable,
+  newTag,
   setNewTag,
   onAddTag,
   onDeleteTag,
   onMetadataChange,
-  className
+  className = ""
 }) => {
-  const { handleReorderTags } = useTagReordering({
+  const { handleReorderTags, isReordering } = useTagReordering({
     contentId,
     onMetadataChange
   });
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && onAddTag && newTag?.trim()) {
-      e.preventDefault();
-      onAddTag();
-    }
-  };
-
+  
   return (
     <div className={className}>
       <h3 className="text-sm font-medium mb-2">Tags</h3>
       
-      {editable && (
-        <div className="flex gap-2 mb-3">
-          <Input
-            placeholder="Add a tag..."
-            value={newTag}
-            onChange={(e) => setNewTag?.(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="flex-1"
-          />
-          
-          <Button 
-            size="sm" 
-            onClick={() => onAddTag?.()}
-            disabled={!newTag?.trim()}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add
-          </Button>
-        </div>
-      )}
-      
       <TagList
         tags={tags}
-        editable={editable}
-        onDeleteTag={onDeleteTag || (() => {})}
+        editable={editable && !isReordering}
+        onDeleteTag={onDeleteTag}
         onReorderTags={handleReorderTags}
       />
+      
+      {editable && (
+        <div className="mt-2">
+          <TagInput 
+            onAddTag={onAddTag} 
+            newTag={newTag} 
+            setNewTag={setNewTag} 
+            aria-label="Add a new tag"
+          />
+        </div>
+      )}
     </div>
   );
 };
-
-export default TagsSection;

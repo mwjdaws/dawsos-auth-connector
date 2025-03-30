@@ -9,7 +9,7 @@
 export { useTagReordering } from './useTagReordering';
 export { useInlineMetadataEdit } from './useInlineMetadataEdit';
 export { useTagsQuery } from './useTagsQuery';
-export { useTagMutation, useAddTagMutation, useDeleteTagMutation, useTagMutations } from './useTagMutation';
+export { useTagMutations, useAddTagMutation, useDeleteTagMutation } from './useTagMutation';
 export { useMetadataQuery } from './useMetadataQuery';
 export { useContentExists } from './useContentExists';
 export { useOntologyTermsQuery } from './useOntologyTermsQuery';

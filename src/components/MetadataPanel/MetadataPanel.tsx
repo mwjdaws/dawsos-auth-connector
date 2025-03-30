@@ -107,6 +107,10 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     ? "border-yellow-400 dark:border-yellow-600"
     : "";
 
+  // Ensure tag array always exists and is the right type
+  const tagsArray = Array.isArray(tags) ? tags : [];
+  const ontologyTermsArray = Array.isArray(ontologyTerms) ? ontologyTerms : [];
+
   if (!isValidContent || !contentExists) {
     return (
       <Card className={className}>
@@ -139,7 +143,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
             contentId={contentId}
             externalSourceUrl={externalSourceUrl}
             lastCheckedAt={lastCheckedAt}
-            tags={tags}
+            tags={tagsArray}
             editable={isEditable}
             newTag={newTag}
             setNewTag={setNewTag}
@@ -147,7 +151,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
             onDeleteTag={handleDeleteTag}
             isPending={isPending}
             showOntologyTerms={showOntologyTerms}
-            ontologyTerms={ontologyTerms}
+            ontologyTerms={ontologyTermsArray}
             onMetadataChange={onMetadataChange}
             onRefresh={handleRefresh}
             children={children}

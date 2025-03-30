@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { KnowledgeTemplate, PaginationParams } from "@/services/api/types";
@@ -8,6 +9,21 @@ import { TemplateSelectorCard } from "./TemplateSelectorCard";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+
+// Define TemplateListCardProps interface for clarity
+interface TemplateListCardProps {
+  templates: KnowledgeTemplate[];
+  loading: boolean;
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    count: number;
+  };
+  onPageChange: (page: number) => void;
+  onSelectTemplate: (template: KnowledgeTemplate) => void;
+  selectedTemplateId?: string | null;
+}
 
 export function TemplatesPanel() {
   const [templates, setTemplates] = useState<KnowledgeTemplate[]>([]);
