@@ -3,13 +3,15 @@
  * useLinkRenderer Hook
  * 
  * Custom hook for rendering links in the graph visualization.
- * Encapsulates the link appearance and labeling.
+ * Encapsulates the link appearance and labeling logic based on link types.
+ * 
+ * @returns {Object} Methods for getting link colors and labels
  */
 import { useCallback, useMemo } from 'react';
 import { GraphLink } from '../../types';
 
 export function useLinkRenderer() {
-  // Memoize link colors to prevent recalculations
+  // Memoize link colors to prevent recalculations on re-renders
   const colors = useMemo(() => {
     return {
       links: {
@@ -25,15 +27,25 @@ export function useLinkRenderer() {
     };
   }, []);
   
-  // Link color accessor function
+  /**
+   * Get the appropriate color for a link based on its type
+   * 
+   * @param {GraphLink} link - The link object
+   * @returns {string} The color to use for the link
+   */
   const getLinkColor = useCallback((link: GraphLink) => {
-    const linkType = link.type as string;
-    return colors.links[linkType as keyof typeof colors.links] || colors.links.default;
+    if (!link.type) return colors.links.default;
+    return colors.links[link.type as keyof typeof colors.links] || colors.links.default;
   }, [colors.links]);
   
-  // Link label accessor function
+  /**
+   * Get the label text for a link
+   * 
+   * @param {GraphLink} link - The link object
+   * @returns {string} The label to display for the link
+   */
   const getLinkLabel = useCallback((link: GraphLink) => {
-    return link.type as string;
+    return link.type || '';
   }, []);
   
   return {

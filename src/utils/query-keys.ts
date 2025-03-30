@@ -5,7 +5,7 @@
  * This module provides a centralized way to define query keys for React Query
  * to ensure consistency and avoid typos or mismatches across the application.
  * 
- * Query keys are structured as arrays to support nested invalidation.
+ * Query keys are structured as arrays to support nested invalidation patterns.
  */
 
 export const queryKeys = {
@@ -38,5 +38,13 @@ export const queryKeys = {
     all: ['knowledgeSources'] as const,
     byId: (id: string) => [...queryKeys.knowledgeSources.all, id] as const,
     versions: (id: string) => [...queryKeys.knowledgeSources.all, id, 'versions'] as const,
+    exists: (id: string) => [...queryKeys.knowledgeSources.all, 'exists', id] as const,
+  },
+  
+  relationships: {
+    all: ['relationships'] as const,
+    bySourceId: (id: string) => [...queryKeys.relationships.all, 'source', id] as const,
+    byTermId: (id: string) => [...queryKeys.relationships.all, 'term', id] as const,
+    graph: (id: string) => [...queryKeys.relationships.all, 'graph', id] as const,
   },
 };

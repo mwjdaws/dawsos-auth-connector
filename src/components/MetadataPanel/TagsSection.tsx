@@ -1,14 +1,14 @@
 
+/**
+ * TagsSection Component
+ * 
+ * Displays tags and provides functionality to add and remove them.
+ * Uses the extracted TagList component for better modularization.
+ */
 import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
 import { TagInput } from "@/components/MarkdownViewer/TagInput";
-
-interface Tag {
-  id: string;
-  name: string;
-  content_id: string;
-}
+import { TagList } from "./components/TagList";
+import { Tag } from "./hooks/tag-operations/types";
 
 export interface TagsSectionProps {
   tags: Tag[];
@@ -17,6 +17,7 @@ export interface TagsSectionProps {
   setNewTag: (value: string) => void;
   onAddTag: () => void;
   onDeleteTag: (tagId: string) => void;
+  className?: string;
 }
 
 export const TagsSection: React.FC<TagsSectionProps> = ({
@@ -25,34 +26,18 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
   newTag,
   setNewTag,
   onAddTag,
-  onDeleteTag
+  onDeleteTag,
+  className = ""
 }) => {
   return (
-    <div>
+    <div className={className}>
       <h3 className="text-sm font-medium mb-2">Tags</h3>
-      {tags.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {tags.map((tag) => (
-            <Badge 
-              key={tag.id} 
-              variant="secondary"
-              className="flex items-center gap-1"
-            >
-              {tag.name}
-              {editable && (
-                <button 
-                  onClick={() => onDeleteTag(tag.id)}
-                  className="text-muted-foreground hover:text-foreground ml-1"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-            </Badge>
-          ))}
-        </div>
-      ) : (
-        <p className="text-sm text-muted-foreground">No tags available</p>
-      )}
+      
+      <TagList
+        tags={tags}
+        editable={editable}
+        onDeleteTag={onDeleteTag}
+      />
       
       {editable && (
         <div className="mt-2">
@@ -60,6 +45,7 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
             onAddTag={onAddTag} 
             newTag={newTag} 
             setNewTag={setNewTag} 
+            aria-label="Add a new tag"
           />
         </div>
       )}
