@@ -2,7 +2,11 @@
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingIndicator } from "./LoadingIndicator";
-import { TagGeneratorTab, MetadataTab, MarkdownEditorTab } from "./TabContents";
+import { 
+  TagGeneratorTab, 
+  MetadataTab, 
+  MarkdownEditorTab 
+} from "./TabContents";
 
 interface DashboardTabsProps {
   activeTab: string;
