@@ -7,13 +7,13 @@ import {
   isValidContentId, 
   normalizeContentId, 
   getContentIdValidationResult, 
-  type ContentIdValidationResult 
+  ContentIdValidationResult 
 } from './contentIdValidation';
 import { 
   validateTag, 
-  validateTags, 
-  type ValidationResult,
-  type TagValidationOptions 
+  validateTags,
+  ValidationResult,
+  TagValidationOptions 
 } from './tagValidation';
 
 // Re-export all validation utilities
@@ -25,6 +25,7 @@ export {
   isValidContentId,
   normalizeContentId,
   getContentIdValidationResult,
+  ContentIdValidationResult,
   
   // Tag validation functions
   validateTag,
@@ -33,9 +34,6 @@ export {
 
 // Use export type for TypeScript interfaces and types
 export type { 
-  // Content ID validation types
-  ContentIdValidationResult,
-  
   // Tag validation types
   ValidationResult,
   TagValidationOptions
