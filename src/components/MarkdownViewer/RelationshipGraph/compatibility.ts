@@ -1,124 +1,65 @@
 
-/**
- * Compatibility layer for GraphRenderer
- * 
- * This module provides helpers to ensure backward compatibility between
- * different versions of the GraphRenderer component and its APIs.
- */
-import { GraphData, GraphNode, GraphLink, GraphRendererRef } from './types';
-import { GraphRendererRef as ModernGraphRendererRef } from './components/graph-renderer/GraphRendererTypes';
+import { GraphNode, GraphLink } from './types';
 
 /**
- * Create safe props for the graph component with proper defaults and type conversions
+ * Ensures a node has a valid ID string
  */
-export function createSafeGraphProps(props: any): any {
-  return {
-    startingNodeId: props.startingNodeId || props.contentId || undefined,
-    width: props.width || 800,
-    height: props.height || 600,
-    hasAttemptedRetry: props.hasAttemptedRetry || false,
-    contentId: props.contentId || props.sourceId || undefined,
-    initialZoom: props.initialZoom || 1,
-    showControls: props.showControls !== false,
-    className: props.className || '',
-  };
+export function ensureNodeId(node: GraphNode): string {
+  if (typeof node === 'string') {
+    return node;
+  }
+  return node.id || String(Math.random()).substring(2, 8);
 }
 
 /**
- * Converts a node to a safe format with required properties
+ * Gets a safe node property with type checking and default values
  */
-export function createSafeNode(node: any): GraphNode {
-  if (!node) return createEmptyNode();
+export function getNodeProperty<T>(
+  node: GraphNode,
+  property: string,
+  defaultValue: T
+): T {
+  if (typeof node === 'string') {
+    return defaultValue;
+  }
   
-  return {
-    id: node.id || `node-${Math.random().toString(36).substring(2, 9)}`,
-    title: node.title || node.name || 'Unnamed',
-    name: node.name || node.title || 'Unnamed',
-    type: node.type || 'default',
-    ...node,
-  };
+  const value = (node as any)[property];
+  return value !== undefined && value !== null ? value : defaultValue;
 }
 
 /**
- * Converts a link to a safe format with required properties
+ * Safely retrieves the source of a link as a string
  */
-export function createSafeLink(link: any): GraphLink {
-  if (!link) return createEmptyLink();
+export function getLinkSource(link: GraphLink): string {
+  if (typeof link.source === 'string') {
+    return link.source;
+  }
+  if (link.source && typeof link.source === 'object' && 'id' in link.source) {
+    return String(link.source.id);
+  }
+  return '';
+}
 
-  return {
-    source: link.source || '',
-    target: link.target || '',
-    type: link.type || 'default',
+/**
+ * Safely retrieves the target of a link as a string
+ */
+export function getLinkTarget(link: GraphLink): string {
+  if (typeof link.target === 'string') {
+    return link.target;
+  }
+  if (link.target && typeof link.target === 'object' && 'id' in link.target) {
+    return String(link.target.id);
+  }
+  return '';
+}
+
+/**
+ * Convert links to be compatible with the graph renderer
+ */
+export function convertLinks(links: GraphLink[]): GraphLink[] {
+  return links.map(link => ({
     ...link,
-  };
-}
-
-/**
- * Creates an empty node when no data is available
- */
-function createEmptyNode(): GraphNode {
-  return {
-    id: `empty-${Math.random().toString(36).substring(2, 9)}`,
-    title: 'No data',
-    name: 'No data',
-    type: 'empty',
-  };
-}
-
-/**
- * Creates an empty link when no data is available
- */
-function createEmptyLink(): GraphLink {
-  return {
-    source: '',
-    target: '',
-    type: 'empty',
-  };
-}
-
-/**
- * Creates a safe GraphData structure with nodes and links
- */
-export function createSafeGraphData(data: any): GraphData {
-  if (!data) {
-    return { nodes: [], links: [] };
-  }
-  
-  const safeNodes = Array.isArray(data.nodes) 
-    ? data.nodes.map(createSafeNode) 
-    : [];
-    
-  const safeLinks = Array.isArray(data.links) 
-    ? data.links.map(createSafeLink) 
-    : [];
-  
-  return {
-    nodes: safeNodes,
-    links: safeLinks
-  };
-}
-
-/**
- * Creates a compatibility wrapper for the GraphRendererRef
- */
-export function createCompatibleGraphRef(ref: ModernGraphRendererRef | null): GraphRendererRef {
-  if (!ref) {
-    return {
-      centerOnNode: () => {},
-      zoomIn: () => {},
-      zoomOut: () => {},
-      resetZoom: () => {},
-      centerGraph: () => {},
-      setZoom: () => {},
-    };
-  }
-  
-  return {
-    centerOnNode: ref.centerOnNode || (() => {}),
-    zoomIn: () => ref.setZoom(1.5),
-    zoomOut: () => ref.setZoom(0.75),
-    resetZoom: ref.resetZoom || (() => {}),
-    centerGraph: () => ref.zoomToFit(500),
-    setZoom: ref.setZoom || (() => {}),
-  };
+    source: getLinkSource(link),
+    target: getLinkTarget(link)
+  }));
 }

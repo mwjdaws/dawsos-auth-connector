@@ -45,3 +45,11 @@ export function isValidContentId(contentId: string | null | undefined): boolean 
   
   return uuidPattern.test(contentId) || tempIdPattern.test(contentId);
 }
+
+/**
+ * Gets a validation result with additional context information
+ * For compatibility with other validation functions
+ */
+export function getContentIdValidationResult(contentId: string | null | undefined): ContentIdValidationResult {
+  return validateContentId(contentId);
+}

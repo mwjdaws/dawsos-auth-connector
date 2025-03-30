@@ -1,49 +1,68 @@
 
-/**
- * Document validation utilities
- */
-import { ValidationResult } from './types';
-
-const MIN_TITLE_LENGTH = 3;
-const MAX_TITLE_LENGTH = 120;
+import { DocumentValidationResult } from './types';
 
 /**
- * Validates a document title
- * @param title The title to validate
- * @returns A validation result
+ * Validates document title
+ * @param title Document title to validate
+ * @returns Validation result
  */
-export function validateDocumentTitle(title: string): ValidationResult {
-  // Check if title is empty
-  if (!title.trim()) {
+export function validateDocument(title: string, content?: string): DocumentValidationResult {
+  if (!title || title.trim() === '') {
     return {
       isValid: false,
       errorMessage: 'Title is required',
-      message: 'Title is required' // For backward compatibility
+      type: 'title'
     };
   }
 
-  // Check if title is too short
-  if (title.trim().length < MIN_TITLE_LENGTH) {
+  if (title.length > 255) {
     return {
       isValid: false,
-      errorMessage: `Title must be at least ${MIN_TITLE_LENGTH} characters`,
-      message: `Title must be at least ${MIN_TITLE_LENGTH} characters` // For backward compatibility
+      errorMessage: 'Title must be less than 255 characters',
+      type: 'title'
     };
   }
 
-  // Check if title is too long
-  if (title.trim().length > MAX_TITLE_LENGTH) {
+  if (content && content.length > 100000) {
     return {
       isValid: false,
-      errorMessage: `Title must be no more than ${MAX_TITLE_LENGTH} characters`,
-      message: `Title must be no more than ${MAX_TITLE_LENGTH} characters` // For backward compatibility
+      errorMessage: 'Content is too long (max 100,000 characters)',
+      type: 'content'
     };
   }
 
-  // Title is valid
   return {
     isValid: true,
     errorMessage: null,
-    message: null // For backward compatibility
+    type: 'title'
+  };
+}
+
+/**
+ * Validates document content
+ * @param content Document content to validate
+ * @returns Validation result
+ */
+export function validateContent(content: string): DocumentValidationResult {
+  if (!content || content.trim() === '') {
+    return {
+      isValid: false,
+      errorMessage: 'Content cannot be empty',
+      type: 'content'
+    };
+  }
+
+  if (content.length > 100000) {
+    return {
+      isValid: false,
+      errorMessage: 'Content is too long (max 100,000 characters)',
+      type: 'content'
+    };
+  }
+
+  return {
+    isValid: true,
+    errorMessage: null,
+    type: 'content'
   };
 }

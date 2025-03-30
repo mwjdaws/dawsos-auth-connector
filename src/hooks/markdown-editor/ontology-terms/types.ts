@@ -4,8 +4,8 @@ import { UseQueryResult } from '@tanstack/react-query';
 export interface OntologyTerm {
   id: string;
   term: string;
-  description?: string;
-  domain?: string;
+  description?: string | null;
+  domain?: string | null;
   associationId?: string; // ID of the association record (for removal)
   review_required?: boolean; // Whether this term needs review
 }
@@ -13,8 +13,8 @@ export interface OntologyTerm {
 export interface RelatedTerm {
   term_id: string; // ID of the term
   term: string;
-  description: string;
-  domain: string;
+  description: string | null;
+  domain: string | null;
   relation_type: string;
 }
 
@@ -39,7 +39,7 @@ export interface UseTermMutationsProps {
 export interface UseTermMutationsResult {
   addTerm: (termId: string, reviewRequired?: boolean) => Promise<boolean>;
   deleteTerm: (associationId: string) => Promise<boolean>;
-  createAndAddTerm: (term: string, description?: string, domain?: string) => Promise<string | null>;
+  createAndAddTerm: (term: string, description?: string | null, domain?: string | null) => Promise<string | null>;
   isAdding: boolean;
   isDeleting: boolean;
   error: Error | null;

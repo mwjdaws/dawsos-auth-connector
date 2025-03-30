@@ -44,3 +44,25 @@ export function formatTechnicalError(error: StandardizedError): string {
   
   return `${basic}${stack}`;
 }
+
+/**
+ * Format validation errors for user feedback
+ */
+export function formatValidationError(field: string, message: string): string {
+  return `${field}: ${message}`;
+}
+
+/**
+ * Format API errors for display
+ */
+export function formatApiError(error: unknown): string {
+  const baseMessage = getErrorMessage(error);
+  
+  if (typeof error === 'object' && error !== null) {
+    const statusCode = 'statusCode' in error ? ` (${error.statusCode})` : '';
+    const endpoint = 'endpoint' in error ? ` [${error.endpoint}]` : '';
+    return `API Error${statusCode}${endpoint}: ${baseMessage}`;
+  }
+  
+  return `API Error: ${baseMessage}`;
+}

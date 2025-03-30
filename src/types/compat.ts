@@ -30,3 +30,27 @@ export function withDefault<T>(value: T | undefined, defaultValue: T): T {
 export function safeTypecast<T, U>(value: T, fallback: U): T | U {
   return value !== undefined && value !== null ? value : fallback;
 }
+
+/**
+ * Safe callback execution to handle undefined callbacks
+ */
+export function safeCallback<T extends (...args: any[]) => any>(
+  callback: T | undefined,
+  ...args: Parameters<T>
+): ReturnType<T> | undefined {
+  return callback ? callback(...args) : undefined;
+}
+
+/**
+ * Type-safe Object.entries wrapper
+ */
+export function typedEntries<T extends object>(obj: T) {
+  return Object.entries(obj) as [keyof T, T[keyof T]][];
+}
+
+/**
+ * Type-safe Object.keys wrapper
+ */
+export function typedKeys<T extends object>(obj: T) {
+  return Object.keys(obj) as Array<keyof T>;
+}
