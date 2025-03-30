@@ -136,6 +136,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
           <MetadataContent
             isLoading={isLoading}
             error={error}
+            contentId={contentId}
             externalSourceUrl={externalSourceUrl}
             lastCheckedAt={lastCheckedAt}
             tags={tags}
@@ -146,8 +147,9 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
             onDeleteTag={handleDeleteTag}
             isPending={isPending}
             showOntologyTerms={showOntologyTerms}
-            contentId={contentId}
             ontologyTerms={ontologyTerms}
+            onMetadataChange={onMetadataChange}
+            onRefresh={handleRefresh}
             children={children}
           />
         </CardContent>

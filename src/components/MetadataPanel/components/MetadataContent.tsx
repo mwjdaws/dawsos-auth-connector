@@ -4,21 +4,21 @@
  * 
  * Displays the content of the metadata panel including sections for
  * external source, tags, ontology terms, and content ID.
+ * Uses the unified loading and error state components.
  */
 import React from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
 import { 
   ExternalSourceSection, 
   TagsSection, 
   OntologySection, 
   ContentIdSection 
 } from "../sections";
-import { LoadingState } from "../sections/LoadingState";
+import { LoadingState, ErrorState } from "@/components/ui/shared-states";
 
 interface MetadataContentProps {
   isLoading: boolean;
   error: Error | null;
+  contentId: string;
   externalSourceUrl: string | null;
   lastCheckedAt: string | null;
   tags: any[];
@@ -29,14 +29,16 @@ interface MetadataContentProps {
   onDeleteTag: (tagId: string) => void;
   isPending: boolean;
   showOntologyTerms: boolean;
-  contentId: string;
   ontologyTerms: any[];
+  onMetadataChange?: () => void;
+  onRefresh?: () => void;
   children?: React.ReactNode;
 }
 
 export const MetadataContent: React.FC<MetadataContentProps> = ({
   isLoading,
   error,
+  contentId,
   externalSourceUrl,
   lastCheckedAt,
   tags,
@@ -47,8 +49,9 @@ export const MetadataContent: React.FC<MetadataContentProps> = ({
   onDeleteTag,
   isPending,
   showOntologyTerms,
-  contentId,
   ontologyTerms,
+  onMetadataChange,
+  onRefresh,
   children
 }) => {
   if (isLoading) {
@@ -57,10 +60,11 @@ export const MetadataContent: React.FC<MetadataContentProps> = ({
   
   if (error) {
     return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>{error.toString()}</AlertDescription>
-      </Alert>
+      <ErrorState 
+        error={error} 
+        title="Failed to load metadata" 
+        retry={onRefresh}
+      />
     );
   }
   
@@ -68,17 +72,22 @@ export const MetadataContent: React.FC<MetadataContentProps> = ({
     <>
       <div className="space-y-4">
         <ExternalSourceSection 
+          contentId={contentId}
           externalSourceUrl={externalSourceUrl} 
-          lastCheckedAt={lastCheckedAt} 
+          lastCheckedAt={lastCheckedAt}
+          editable={editable}
+          onMetadataChange={onMetadataChange}
         />
         
         <TagsSection 
           tags={tags}
+          contentId={contentId}
           editable={editable}
           newTag={newTag}
           setNewTag={setNewTag}
           onAddTag={onAddTag}
           onDeleteTag={onDeleteTag}
+          onMetadataChange={onMetadataChange}
           className="mt-4"
         />
         

@@ -2,59 +2,55 @@
 /**
  * ExternalSourceSection Component
  * 
- * Displays information about an external source including its URL and when it was last checked.
- * Provides a link to the external source and displays the last checked timestamp.
- * 
- * @example
- * ```tsx
- * <ExternalSourceSection
- *   externalSourceUrl="https://example.com/source"
- *   lastCheckedAt="2023-06-15T12:30:45Z"
- * />
- * ```
- * 
- * @remarks
- * - Returns null if no external source URL is provided
- * - Formats the lastCheckedAt date in a user-friendly format
- * - Only displays the lastCheckedAt information if available
+ * Displays and allows editing of the external source URL metadata.
+ * Supports inline editing with real-time feedback.
  */
 import React from "react";
-import { ExternalLink, Clock } from "lucide-react";
-import { format } from "date-fns";
-import { ExternalSourceSectionProps } from "../types";
+import { InlineEditableField } from "../components/InlineEditableField";
+import { useInlineMetadataEdit } from "@/hooks/metadata/useInlineMetadataEdit";
+import { formatRelativeTime } from "@/utils/date-formatting";
+
+interface ExternalSourceSectionProps {
+  contentId: string;
+  externalSourceUrl: string | null;
+  lastCheckedAt: string | null;
+  editable?: boolean;
+  className?: string;
+  onMetadataChange?: () => void;
+}
 
 export const ExternalSourceSection: React.FC<ExternalSourceSectionProps> = ({
+  contentId,
   externalSourceUrl,
   lastCheckedAt,
-  className
+  editable = false,
+  className = "",
+  onMetadataChange
 }) => {
-  if (!externalSourceUrl) return null;
+  const { updateExternalSourceUrl, isUpdating } = useInlineMetadataEdit({ 
+    contentId, 
+    onMetadataChange 
+  });
   
-  // Format the last checked date
-  const formattedLastChecked = lastCheckedAt 
-    ? format(new Date(lastCheckedAt), 'MMM d, yyyy h:mm a')
-    : null;
-
   return (
     <div className={className}>
       <h3 className="text-sm font-medium mb-2">External Source</h3>
-      <div className="mb-2">
-        <a
-          href={externalSourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm flex items-center gap-1 text-primary hover:text-primary/80 transition-colors"
-        >
-          <ExternalLink className="h-4 w-4" /> View Source
-        </a>
-      </div>
       
-      {lastCheckedAt && (
-        <div className="flex items-center text-sm text-muted-foreground">
-          <Clock className="h-3 w-3 mr-1" />
-          <span>Last checked: {formattedLastChecked}</span>
-        </div>
+      <InlineEditableField
+        value={externalSourceUrl || ""}
+        onSave={updateExternalSourceUrl}
+        placeholder="No external source"
+        editable={editable && !isUpdating}
+        className="mb-2"
+      />
+      
+      {externalSourceUrl && lastCheckedAt && (
+        <p className="text-xs text-muted-foreground">
+          Last checked {formatRelativeTime(new Date(lastCheckedAt))}
+        </p>
       )}
     </div>
   );
 };
+
+export default ExternalSourceSection;
