@@ -4,16 +4,30 @@
  * This file is maintained for backward compatibility and to avoid
  * breaking existing imports throughout the codebase.
  */
-export { handleError } from './handle';
+import { handleError as handleErrorJSX } from './handle.tsx';
 
-// We need to provide a direct implementation that doesn't depend on JSX
-// since this is a .ts file
+export { handleErrorJSX as handleError };
+
+/**
+ * Safe handler implementation that doesn't require JSX
+ */
 export function handleError(
   error: unknown,
   userMessage?: string,
   options?: any
 ): any {
-  // Just re-export the function from handle.js to avoid circular dependency
-  const { handleError: actualHandler } = require('./handle');
-  return actualHandler(error, userMessage, options);
+  try {
+    // Use the imported JSX version if available
+    return handleErrorJSX(error, userMessage, options);
+  } catch (e) {
+    // Fallback implementation for non-JSX environments
+    console.error('Error handling error:', error);
+    console.error('User message:', userMessage);
+    console.error('Options:', options);
+    return {
+      error,
+      message: userMessage || 'An error occurred',
+      handled: true
+    };
+  }
 }

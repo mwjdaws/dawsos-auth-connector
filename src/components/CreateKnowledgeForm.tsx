@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +10,7 @@ import {
 } from "@/services/api";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { nullifyUndefined } from "@/types/compat";
+import { undefinedToNull } from "@/types/compat";
 
 export function CreateKnowledgeForm() {
   const { user } = useAuth();

@@ -1,83 +1,76 @@
 
-/**
- * GraphZoomControl Component
- * 
- * A reusable component for controlling zoom level in the graph visualization.
- * This component provides a slider for zoom control and buttons for zoom in/out actions.
- */
-import React, { memo } from 'react';
-import { Slider } from '@/components/ui/slider';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
+import { ZoomIn, ZoomOut, Home } from 'lucide-react';
+import { ensureNumber } from '../compatibility';
 
 interface GraphZoomControlProps {
-  zoom: number;
-  onZoomChange: (value: number) => void;
-  onReset: () => void;
-  min?: number;
-  max?: number;
-  step?: number;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onResetZoom: () => void;
+  zoom: number | undefined;
+  minZoom?: number;
+  maxZoom?: number;
 }
 
-export const GraphZoomControl = memo(({
+export function GraphZoomControl({
+  onZoomIn,
+  onZoomOut,
+  onResetZoom,
   zoom,
-  onZoomChange,
-  onReset,
-  min = 0.5,
-  max = 5,
-  step = 0.1
-}: GraphZoomControlProps) => {
-  const handleZoomIn = () => {
-    const newZoom = Math.min(zoom + step, max);
-    onZoomChange(newZoom);
-  };
+  minZoom = 0.1,
+  maxZoom = 5
+}: GraphZoomControlProps) {
+  const [zoomPercentage, setZoomPercentage] = useState('100%');
+  
+  // Update zoom percentage display when zoom level changes
+  useEffect(() => {
+    const safeZoom = ensureNumber(zoom, 1);
+    const percentage = Math.round(safeZoom * 100);
+    setZoomPercentage(`${percentage}%`);
+  }, [zoom]);
 
-  const handleZoomOut = () => {
-    const newZoom = Math.max(zoom - step, min);
-    onZoomChange(newZoom);
-  };
+  // Determine if zoom buttons should be disabled
+  const isZoomInDisabled = zoom !== undefined && zoom >= maxZoom;
+  const isZoomOutDisabled = zoom !== undefined && zoom <= minZoom;
 
   return (
-    <div className="flex items-center space-x-2 p-2 bg-background/80 backdrop-blur-sm rounded-lg border shadow-sm">
-      <Button 
-        variant="outline" 
-        size="sm"
-        onClick={handleZoomOut}
-        disabled={zoom <= min}
-        title="Zoom out"
+    <div className="flex items-center bg-background border rounded-md shadow-sm">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={onZoomOut}
+        disabled={isZoomOutDisabled}
+        aria-label="Zoom out"
       >
         <ZoomOut className="h-4 w-4" />
       </Button>
       
-      <Slider
-        value={[zoom]}
-        min={min}
-        max={max}
-        step={step}
-        onValueChange={([value]) => onZoomChange(value)}
-        className="w-24 md:w-32"
-      />
+      <div className="px-2 text-xs font-medium text-center min-w-[50px]">
+        {zoomPercentage}
+      </div>
       
-      <Button 
-        variant="outline" 
-        size="sm"
-        onClick={handleZoomIn}
-        disabled={zoom >= max}
-        title="Zoom in"
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={onZoomIn}
+        disabled={isZoomInDisabled}
+        aria-label="Zoom in"
       >
         <ZoomIn className="h-4 w-4" />
       </Button>
       
-      <Button 
-        variant="outline" 
-        size="sm"
-        onClick={onReset}
-        title="Reset zoom"
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 ml-1 border-l"
+        onClick={onResetZoom}
+        aria-label="Reset zoom"
       >
-        <RefreshCw className="h-4 w-4" />
+        <Home className="h-4 w-4" />
       </Button>
     </div>
   );
-});
-
-GraphZoomControl.displayName = 'GraphZoomControl';
+}

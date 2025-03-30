@@ -85,3 +85,17 @@ export function ensureValidGraphData(data: Partial<GraphData> | undefined | null
       : []
   };
 }
+
+/**
+ * Safe wrapper function to ensure numbers have fallbacks
+ */
+export function ensureNumber(value: number | undefined | null, defaultValue = 0): number {
+  return (value !== undefined && value !== null) ? value : defaultValue;
+}
+
+/**
+ * Creates a safe node renderer function
+ */
+export function createSafeHighlightNodeId(highlightedNodeId: string | null | undefined): string | null {
+  return highlightedNodeId === undefined ? null : highlightedNodeId;
+}

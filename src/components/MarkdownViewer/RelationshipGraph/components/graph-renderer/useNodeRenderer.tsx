@@ -1,91 +1,89 @@
 
-/**
- * useNodeRenderer Hook
- * 
- * Custom hook for rendering nodes in the graph visualization.
- * Encapsulates the node canvas object rendering logic and appearance.
- */
 import { useCallback, useMemo } from 'react';
 import { GraphNode } from '../../types';
+import { ensureNumber } from '../../compatibility';
 
-interface UseNodeRendererProps {
+export interface UseNodeRendererProps {
   highlightedNodeId: string | null | undefined;
 }
 
 export function useNodeRenderer({ highlightedNodeId }: UseNodeRendererProps) {
-  // Memoize node and link colors to prevent recalculations
-  const colors = useMemo(() => {
-    return {
-      nodes: {
-        source: '#4299e1', // blue
-        term: '#68d391',   // green
-        highlighted: '#f56565' // red for highlighted nodes
-      }
-    };
+  // Node size calculation
+  const getNodeSize = useCallback((node: GraphNode): number => {
+    // Default node size if not specified
+    if (!node || node.val === undefined) return 7;
+    
+    // Allow for dynamic node sizing based on the val property
+    const baseSize = 5;
+    const sizeMultiplier = 2;
+    return baseSize + (node.val * sizeMultiplier);
   }, []);
-  
-  // Memoized node canvas object renderer
-  const nodeCanvasObject = useCallback((node: GraphNode & { x?: number, y?: number }, ctx: CanvasRenderingContext2D, globalScale: number) => {
-    // Ensure we have x and y coordinates (these are added by force-graph during rendering)
-    const x = typeof node.x === 'number' ? node.x : 0;
-    const y = typeof node.y === 'number' ? node.y : 0;
+
+  // Node color calculation
+  const getNodeColor = useCallback((node: GraphNode): string => {
+    // Predefined type-based colors
+    const typeColors: Record<string, string> = {
+      source: '#3b82f6', // blue
+      document: '#3b82f6', // blue
+      term: '#10b981', // green
+      'ontology-term': '#10b981', // green
+      tag: '#f59e0b', // amber
+      default: '#6b7280', // gray
+    };
+
+    // Check if the node is highlighted
+    const isHighlighted = highlightedNodeId && node.id === highlightedNodeId;
     
-    // Custom node rendering with text labels
-    const label = node.name || node.title || 'Unnamed';
-    const fontSize = 12/globalScale;
-    ctx.font = `${fontSize}px Sans-Serif`;
-    const textWidth = ctx.measureText(label).width;
-    const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2);
+    // Use node's color if specified, otherwise use type-based color
+    const baseColor = node.color || typeColors[node.type] || typeColors.default;
     
-    // Determine if this node is highlighted
-    const isHighlighted = highlightedNodeId === node.id;
+    // Highlight the node if needed
+    return isHighlighted ? '#ef4444' : baseColor;
+  }, [highlightedNodeId]);
+
+  // Node renderer function for canvas drawing
+  const nodeCanvasRenderer = useCallback((
+    node: GraphNode & { x?: number; y?: number; },
+    ctx: CanvasRenderingContext2D,
+    globalScale: number
+  ) => {
+    // Safety checks for node properties
+    if (!node) return;
+
+    // Ensure we have valid x and y coordinates
+    const x = ensureNumber(node.x, 0);
+    const y = ensureNumber(node.y, 0);
     
-    // Get node color based on type, with fallbacks
-    const nodeTypeColor = node.type && colors.nodes[node.type as keyof typeof colors.nodes];
-    
-    // Node circle - use highlighted color if this is the highlighted node
-    ctx.fillStyle = isHighlighted 
-      ? colors.nodes.highlighted 
-      : (node.color as string || nodeTypeColor || colors.nodes.source);
-    
-    const nodeSize = isHighlighted 
-      ? ((node.val || 2) * 2.5) // Make highlighted nodes bigger
-      : ((node.val || 2) * 2);
-      
+    // Calculate size and color
+    const size = getNodeSize(node);
+    const color = getNodeColor(node);
+
+    // Draw the node
     ctx.beginPath();
-    ctx.arc(x, y, nodeSize, 0, 2 * Math.PI);
+    ctx.arc(x, y, size, 0, 2 * Math.PI, false);
+    ctx.fillStyle = color;
     ctx.fill();
-    
-    // Add a stroke for highlighted nodes
-    if (isHighlighted) {
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 2/globalScale;
+
+    // Add a border if highlighted
+    if (highlightedNodeId && node.id === highlightedNodeId) {
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
       ctx.stroke();
     }
-    
-    // Only render text if we're zoomed in enough for it to be readable
-    if (globalScale > 0.7) {
-      // Text background
-      ctx.fillStyle = isHighlighted 
-        ? 'rgba(255, 240, 240, 0.9)' // Slightly red tint for highlighted nodes
-        : 'rgba(255, 255, 255, 0.8)';
-        
-      ctx.fillRect(
-        x - bckgDimensions[0] / 2,
-        y + 6,
-        bckgDimensions[0],
-        bckgDimensions[1]
-      );
-      
-      // Text
+
+    // Draw the node label if scale is adequate
+    if (globalScale > 1.5) {
+      ctx.font = '4px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = isHighlighted ? '#e53e3e' : '#222';
-      ctx.fillText(label, x, y + 6 + fontSize / 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(node.name || node.title || 'Unnamed', x, y);
     }
-  }, [highlightedNodeId, colors.nodes]);
+  }, [getNodeSize, getNodeColor, highlightedNodeId]);
 
-  return {
-    nodeCanvasObject
-  };
+  return useMemo(() => ({
+    getNodeSize,
+    getNodeColor,
+    nodeCanvasRenderer
+  }), [getNodeSize, getNodeColor, nodeCanvasRenderer]);
 }

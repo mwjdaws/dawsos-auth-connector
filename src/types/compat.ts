@@ -62,3 +62,25 @@ export function undefinedToNullSafe<T>(value: T | null | undefined): T | null {
 export function userIdCompat(userId: string | undefined): string | null {
   return userId === undefined ? null : userId;
 }
+
+/**
+ * Provides a default string value, useful for handling external data
+ */
+export function defaultString(value: string | null | undefined, defaultValue: string = ''): string {
+  return value ?? defaultValue;
+}
+
+/**
+ * Ensures a value is coerced to a string
+ */
+export function asString(value: any): string {
+  if (value === null || value === undefined) return '';
+  return String(value);
+}
+
+/**
+ * Forces a value to string or null, never undefined
+ */
+export function stringOrNull(value: string | null | undefined): string | null {
+  return value === undefined ? null : value;
+}

@@ -6,5 +6,16 @@
 export { 
   isValidContentId,
   getContentIdValidationResult,
-  type ContentValidationResult
+  type ContentIdValidationResult
 } from './contentIdValidation';
+
+// Export compatibility functions
+export {
+  ensureString,
+  nullToUndefined,
+  undefinedToNull,
+  safeCallback,
+  createCompatibleValidationResult,
+  VALIDATION_RESULTS
+} from './compatibility';
+
