@@ -27,8 +27,8 @@ export function useLinkRenderer() {
   
   // Link color accessor function
   const getLinkColor = useCallback((link: GraphLink) => {
-    const type = link.type as string;
-    return colors.links[type as keyof typeof colors.links] || colors.links.default;
+    const linkType = link.type as string;
+    return colors.links[linkType as keyof typeof colors.links] || colors.links.default;
   }, [colors.links]);
   
   // Link label accessor function

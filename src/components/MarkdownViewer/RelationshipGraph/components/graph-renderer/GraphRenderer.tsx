@@ -8,7 +8,7 @@
 import React, { useCallback, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
 // Use dynamic import to avoid direct module reference issues
 import { useNavigate } from 'react-router-dom';
-import { GraphData, GraphNode, GraphRendererRef } from '../../types';
+import { GraphData, GraphNode, GraphRendererRef, GraphLink } from '../../types';
 import { useNodeRenderer } from './useNodeRenderer';
 import { useLinkRenderer } from './useLinkRenderer';
 import { useGraphRenderStyles } from './useGraphRenderStyles';
@@ -38,7 +38,7 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
       centerOnNode: (nodeId: string) => {
         const node = graphData.nodes.find(n => n.id === nodeId);
         if (graphRef.current && node) {
-          console.log(`Centering graph on node: ${node.name}`);
+          console.log(`Centering graph on node: ${node.name || node.title}`);
           graphRef.current.centerAt(node.x, node.y, 1000);
           graphRef.current.zoom(2.5, 1000);
         }
@@ -76,7 +76,7 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
       if (highlightedNodeId && graphRef.current) {
         const node = graphData.nodes.find(n => n.id === highlightedNodeId);
         if (node) {
-          console.log(`Auto-centering on highlighted node: ${node.name}`);
+          console.log(`Auto-centering on highlighted node: ${node.name || node.title}`);
           graphRef.current.centerAt(node.x, node.y, 1000);
           graphRef.current.zoom(2.5, 1000);
         }

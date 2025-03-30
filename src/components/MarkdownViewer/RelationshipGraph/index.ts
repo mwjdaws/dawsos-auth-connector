@@ -18,5 +18,9 @@ export type {
   GraphNode,
   GraphLink,
   RelationshipGraphPanelProps,
-  GraphRendererRef
+  GraphRendererRef,
+  GraphRendererProps,
+  NodeRendererProps,
+  LinkRendererProps,
+  WithErrorHandlingOptions
 } from './types';

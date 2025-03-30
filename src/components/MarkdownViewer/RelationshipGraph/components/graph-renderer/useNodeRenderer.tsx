@@ -27,7 +27,7 @@ export function useNodeRenderer({ highlightedNodeId }: UseNodeRendererProps) {
   // Memoized node canvas object renderer
   const nodeCanvasObject = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
     // Custom node rendering with text labels
-    const label = node.name as string;
+    const label = node.name || node.title;
     const fontSize = 12/globalScale;
     ctx.font = `${fontSize}px Sans-Serif`;
     const textWidth = ctx.measureText(label).width;
@@ -39,11 +39,11 @@ export function useNodeRenderer({ highlightedNodeId }: UseNodeRendererProps) {
     // Node circle - use highlighted color if this is the highlighted node
     ctx.fillStyle = isHighlighted 
       ? colors.nodes.highlighted 
-      : (node.color as string || colors.nodes[node.type as 'source' | 'term']);
+      : (node.color as string || colors.nodes[node.type as 'source' | 'term'] || colors.nodes.source);
     
     const nodeSize = isHighlighted 
-      ? (node.val as number) * 2.5 // Make highlighted nodes bigger
-      : (node.val as number) * 2;
+      ? (node.val || 2) * 2.5 // Make highlighted nodes bigger
+      : (node.val || 2) * 2;
       
     ctx.beginPath();
     ctx.arc(node.x as number, node.y as number, nodeSize, 0, 2 * Math.PI);

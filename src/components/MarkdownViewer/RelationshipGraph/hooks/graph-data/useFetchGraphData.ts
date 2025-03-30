@@ -1,4 +1,3 @@
-
 /**
  * useFetchGraphData Hook
  * 
@@ -8,7 +7,7 @@
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { FetchResult, GraphFetchOptions } from './types';
-import { GraphData } from '../../types';
+import { GraphData, GraphNode, GraphLink } from '../../types';
 import { handleError } from '@/utils/errors';
 
 // Define error categories as an enum or union type for type safety
@@ -91,11 +90,12 @@ export function useFetchGraphData() {
     }
     
     // Prepare graph data by combining all fetched data
-    const nodes = [
+    const nodes: GraphNode[] = [
       // Knowledge source nodes
       ...(sources || []).map(source => ({
         id: source.id,
-        name: source.title,
+        title: source.title,
+        name: source.title, // Add name for backward compatibility
         type: 'source' as const,
         val: 2,
         color: '#4299e1' // blue
@@ -104,6 +104,7 @@ export function useFetchGraphData() {
       // Ontology term nodes
       ...(terms || []).map(term => ({
         id: term.id,
+        title: term.term,
         name: `${term.domain ? `${term.domain}: ` : ''}${term.term}`,
         type: 'term' as const,
         val: 1.5,
@@ -119,7 +120,7 @@ export function useFetchGraphData() {
     // Filter out links that don't have corresponding nodes
     const nodeIds = new Set(nodes.map(node => node.id));
     
-    const validLinks = [
+    const validLinks: GraphLink[] = [
       // Note links
       ...(links || []).filter(link => 
         nodeIds.has(link.source_id) && nodeIds.has(link.target_id)

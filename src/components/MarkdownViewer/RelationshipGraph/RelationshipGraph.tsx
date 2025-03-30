@@ -1,4 +1,3 @@
-
 /**
  * RelationshipGraph Component
  * 
@@ -66,7 +65,7 @@ export function RelationshipGraph({
       } else {
         // Log node types distribution for debugging
         const nodeTypes = graphData.nodes.reduce((acc, node) => {
-          acc[node.type] = (acc[node.type] || 0) + 1;
+          acc[node.type as string] = (acc[node.type as string] || 0) + 1;
           return acc;
         }, {} as Record<string, number>);
         
@@ -120,7 +119,7 @@ export function RelationshipGraph({
         const node = graphData?.nodes.find(n => n.id === nodeId);
         if (node) {
           graphRendererRef.current.centerOnNode(nodeId);
-          console.log(`Centering on node: ${node.name} (${nodeId})`);
+          console.log(`Centering on node: ${node.name || node.title} (${nodeId})`);
         }
       } catch (err) {
         console.error("Error centering on node:", err);
