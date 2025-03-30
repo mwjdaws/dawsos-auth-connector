@@ -25,3 +25,29 @@ export interface ErrorHandlingOptions {
   preventDuplicate?: boolean;         // Prevent showing duplicate toasts
   duration?: number;                  // Duration to show toast (ms)
 }
+
+/**
+ * API Error class for standardized API errors
+ */
+export class ApiError extends Error {
+  code: number;
+  
+  constructor(message: string, code: number = 500) {
+    super(message);
+    this.name = 'ApiError';
+    this.code = code;
+  }
+}
+
+/**
+ * Validation Error class for input validation errors
+ */
+export class ValidationError extends Error {
+  fieldErrors?: Record<string, string>;
+  
+  constructor(message: string, fieldErrors?: Record<string, string>) {
+    super(message);
+    this.name = 'ValidationError';
+    this.fieldErrors = fieldErrors;
+  }
+}
