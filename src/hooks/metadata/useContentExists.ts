@@ -10,12 +10,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { isValidContentId } from '@/utils/validation';
 
 /**
+ * Type definition for a valid content response from Supabase
+ */
+interface ContentResponse {
+  id: string;
+  [key: string]: any;
+}
+
+/**
  * Type guard to check if data is valid content
  * 
  * @param data - Any data to check
  * @returns Type predicate indicating if the data represents valid content
  */
-function isValidContent(data: any): data is { id: string } {
+function isValidContent(data: any): data is ContentResponse {
   return data && typeof data.id === 'string';
 }
 

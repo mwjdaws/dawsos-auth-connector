@@ -1,25 +1,41 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/errors';
 import { toast } from '@/hooks/use-toast';
-import { isValidContentId } from '@/utils/validation/contentIdValidation';
+import { isValidContentId } from '@/utils/validation';
 
+/**
+ * Interface for tag data used in mutations
+ */
 interface TagData {
   contentId: string;
   name: string;
   typeId?: string;
 }
 
+/**
+ * Interface for tag deletion parameters
+ */
 interface TagDeleteParams {
   tagId: string;
   contentId: string;
 }
 
+/**
+ * Interface for tag reordering parameters
+ */
 interface TagReorderParams {
   contentId: string;
   newOrder: { id: string; name: string }[];
 }
 
+/**
+ * Provides mutation operations for tags (add, delete, reorder)
+ * 
+ * @param contentId - Optional default content ID to use
+ * @returns Object containing mutation functions and states
+ */
 export function useTagMutations(contentId?: string) {
   const queryClient = useQueryClient();
   
@@ -92,7 +108,7 @@ export function useTagMutations(contentId?: string) {
     }
   });
   
-  // Reorder tags - Temporary workaround since there's no position column
+  // Reorder tags - Implementation for future feature
   const reorderTagsMutation = useMutation({
     mutationFn: async ({ contentId: tagContentId, newOrder }: TagReorderParams) => {
       const effectiveContentId = tagContentId || contentId;
@@ -101,19 +117,21 @@ export function useTagMutations(contentId?: string) {
         throw new Error('Invalid content ID');
       }
       
-      // Since there's no position column or tag_positions table, 
-      // we'll just log what would have been updated for now
-      console.log('Would reorder tags:', newOrder.map((tag, index) => ({
+      // Log intended changes for debugging/development
+      console.log('Tag reordering requested:', newOrder.map((tag, index) => ({
         id: tag.id,
         name: tag.name,
-        display_order: index // This would be the field to add in the future
+        desired_order: index // This would be the field to add in the future
       })));
       
-      // In a future implementation, we could:
-      // 1. Add a display_order column to the tags table
-      // 2. Or create a separate tag_positions table to store ordering information
+      /**
+       * Future implementation options:
+       * 1. Add a display_order column to the tags table
+       * 2. Create a separate tag_positions table to store ordering information
+       * 
+       * Currently, this is a client-side only reordering with no persistence.
+       */
       
-      // For now, we'll just return the data without changes
       return { contentId: effectiveContentId, newOrder };
     },
     onSuccess: () => {

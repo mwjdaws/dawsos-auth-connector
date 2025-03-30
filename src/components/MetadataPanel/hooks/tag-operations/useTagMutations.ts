@@ -1,8 +1,9 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { handleError } from '@/utils/errors';
-import { isValidContentId } from '@/utils/validation/contentIdValidation';
+import { isValidContentId } from '@/utils/validation';
 
 /**
  * Hook for tag mutation operations (add, delete, update)
@@ -77,7 +78,8 @@ export const useTagMutations = (contentId: string) => {
     },
   });
 
-  // Update tag order mutation - Mock implementation since there's no order column
+  // Update tag order mutation - Implementation for future use
+  // Currently a workaround since there's no order column in the database
   const updateTagOrderMutation = useMutation({
     mutationFn: async (tags: { id: string; position?: number }[]) => {
       if (!isValidContentId(contentId)) {
@@ -85,10 +87,15 @@ export const useTagMutations = (contentId: string) => {
       }
 
       // Log the intended changes for debugging
-      console.log('Would update tag order:', tags);
+      console.log('Tag order update requested:', tags);
       
-      // In a real implementation, you would need to add a display_order column
-      // to the tags table and update it. For now, return the tags without changes.
+      /**
+       * In a future implementation, we would need to:
+       * 1. Add a display_order column to the tags table
+       * 2. Create a batch update operation to update all tag positions at once
+       * 
+       * For now, we'll just return the tags without making database changes.
+       */
       return tags;
     },
     onSuccess: () => {

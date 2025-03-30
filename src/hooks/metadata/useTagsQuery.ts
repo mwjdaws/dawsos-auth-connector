@@ -22,9 +22,9 @@ interface Tag {
 }
 
 /**
- * Tag data with type information from the database join
+ * Raw tag data with type information from the database join
  */
-interface TagWithType {
+interface RawTagData {
   id: string;
   name: string;
   content_id: string;
@@ -32,6 +32,7 @@ interface TagWithType {
   tag_types?: {
     name: string;
   } | null;
+  [key: string]: any; // Allow for additional properties from the database
 }
 
 /**
@@ -47,9 +48,9 @@ interface UseTagsQueryOptions {
  * This is crucial for filtering out invalid data or parser errors
  * 
  * @param tag - Any object to check
- * @returns Type predicate indicating if the object is a valid TagWithType
+ * @returns Type predicate indicating if the object is a valid RawTagData
  */
-function isValidTag(tag: any): tag is TagWithType {
+function isValidTag(tag: any): tag is RawTagData {
   return (
     tag &&
     typeof tag.id === 'string' &&

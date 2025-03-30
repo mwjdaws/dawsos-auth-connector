@@ -21,6 +21,7 @@ interface TagWithType {
   tag_types?: {
     name: string;
   } | null;
+  [key: string]: any; // Allow for additional properties
 }
 
 /**
