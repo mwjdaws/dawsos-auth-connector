@@ -1,11 +1,20 @@
+
 import React, { Suspense } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { AppRoutes } from './routes';
 import { Toaster } from './components/ui/toaster';
 import { AuthProvider } from './context/AuthContext';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ErrorBoundary } from './components/ErrorBoundary';
 
-// Create a client with properly configured error handling
+/**
+ * Configure QueryClient with proper error handling
+ * 
+ * This creates a client with appropriate default settings for:
+ * - Retry limits for failed requests
+ * - Window focus refetching behavior
+ * - Standard error handling via metadata
+ */
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -25,7 +34,9 @@ const queryClient = new QueryClient({
   },
 });
 
-// Simple fallback for loading states
+/**
+ * Loading fallback component displayed during suspense states
+ */
 const LoadingFallback = () => (
   <div className="flex items-center justify-center h-screen">
     <div className="text-center">
@@ -35,7 +46,9 @@ const LoadingFallback = () => (
   </div>
 );
 
-// Error fallback component
+/**
+ * Error fallback component for top-level error boundary
+ */
 const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => (
   <div className="flex items-center justify-center h-screen">
     <div className="max-w-md p-6 bg-destructive/10 rounded-lg">
@@ -53,20 +66,27 @@ const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetError
   </div>
 );
 
-// Keep App.tsx as minimal as possible to avoid potential issues
+/**
+ * Root App component
+ * 
+ * Provides global context providers and error boundaries
+ * Keeps this component minimal to avoid potential issues at the root level
+ */
 function App() {
   return (
     <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <Suspense fallback={<LoadingFallback />}>
-            <BrowserRouter>
-              <AppRoutes />
-              <Toaster />
-            </BrowserRouter>
-          </Suspense>
-        </AuthProvider>
-      </QueryClientProvider>
+      <ErrorBoundary fallback={<ErrorFallback error={new Error("Application failed to load")} resetErrorBoundary={() => window.location.reload()} />}>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <Suspense fallback={<LoadingFallback />}>
+              <BrowserRouter>
+                <AppRoutes />
+                <Toaster />
+              </BrowserRouter>
+            </Suspense>
+          </AuthProvider>
+        </QueryClientProvider>
+      </ErrorBoundary>
     </React.StrictMode>
   );
 }

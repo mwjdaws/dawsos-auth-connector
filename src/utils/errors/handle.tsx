@@ -8,9 +8,15 @@ import React from "react";
 /**
  * Central error handling function for the application
  * 
- * @param error The error object to handle
- * @param userMessage Optional user-friendly message to display
- * @param options Additional error handling options
+ * Processes errors in a consistent way throughout the application by:
+ * - Categorizing and normalizing the error
+ * - Logging error details with context
+ * - Displaying user-friendly notifications when appropriate
+ * - Supporting action callbacks for error recovery
+ * 
+ * @param error - The error object to handle (can be any type)
+ * @param userMessage - Optional user-friendly message to display
+ * @param options - Additional error handling options
  */
 export function handleError(
   error: unknown,

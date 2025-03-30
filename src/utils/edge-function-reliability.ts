@@ -2,11 +2,11 @@
 /**
  * Edge Function Reliability Utilities
  * 
- * Provides utilities for reliable edge function invocation:
+ * Provides robust utilities for reliable edge function invocation including:
  * - Automatic retries with exponential backoff
- * - Timeout handling
- * - Error classification
- * - Fallback mechanisms
+ * - Request timeout handling
+ * - Error classification and standardized handling
+ * - Fallback mechanisms for graceful degradation
  */
 
 import { supabase } from "@/integrations/supabase/client";
@@ -14,22 +14,62 @@ import { toast } from "../hooks/use-toast";
 import { handleError } from "./errors";
 
 /**
- * Options for edge function invocation
+ * Configuration options for edge function invocation
  */
 export interface EdgeFunctionOptions {
+  /**
+   * Maximum time (in milliseconds) to wait for function execution
+   * @default 10000 (10 seconds)
+   */
   timeoutMs?: number;
+  
+  /**
+   * Maximum number of retry attempts if the function fails
+   * @default 2
+   */
   maxRetries?: number;
+  
+  /**
+   * Base delay (in milliseconds) between retry attempts
+   * This will be multiplied by 2^retryAttempt for exponential backoff
+   * @default 1000 (1 second)
+   */
   retryDelay?: number;
+  
+  /**
+   * Whether to show error toast notifications to the user
+   * @default true
+   */
   showErrorToast?: boolean;
+  
+  /**
+   * Optional fallback function to execute if all retries fail
+   * Allows graceful degradation of functionality
+   */
   fallbackFn?: () => any;
 }
 
 /**
- * Invokes a Supabase Edge Function with reliability enhancements
+ * Invokes a Supabase Edge Function with enhanced reliability features
  * 
- * @param functionName The name of the edge function to invoke
- * @param payload The payload to send to the function
- * @param options Configuration options for reliability features
+ * @param functionName - The name of the edge function to invoke
+ * @param payload - The payload to send to the function
+ * @param options - Configuration options for reliability features
+ * @returns Promise resolving to the function response data
+ * @throws Error if all attempts fail and no fallback is provided
+ * 
+ * @example
+ * ```typescript
+ * try {
+ *   const data = await invokeEdgeFunctionReliably('generate-tags', 
+ *     { text: 'Sample content' },
+ *     { maxRetries: 3 }
+ *   );
+ *   console.log('Generated tags:', data);
+ * } catch (error) {
+ *   console.error('Failed to generate tags:', error);
+ * }
+ * ```
  */
 export async function invokeEdgeFunctionReliably<T = any>(
   functionName: string,
@@ -52,7 +92,7 @@ export async function invokeEdgeFunctionReliably<T = any>(
     try {
       // Create a timeout promise
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error(`Function ${functionName} timed out after ${timeoutMs}ms`)), timeoutMs);
+        setTimeout(() => reject(new Error(`Edge function ${functionName} timed out after ${timeoutMs}ms`)), timeoutMs);
       });
 
       // Create the function call promise
@@ -81,7 +121,7 @@ export async function invokeEdgeFunctionReliably<T = any>(
         throw error;
       }
 
-      // Return the data
+      // Return the data on success
       return data as T;
     } catch (error) {
       lastError = error;

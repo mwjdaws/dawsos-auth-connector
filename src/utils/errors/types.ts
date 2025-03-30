@@ -1,103 +1,85 @@
 
+import { ReactNode } from 'react';
+
 /**
- * Options for error handling customization
+ * Error severity levels that can be used for logging
+ * - info: Informational message, not critical
+ * - warn: Warning that something might be wrong
+ * - error: Standard error severity
+ * - critical: Critical errors that need immediate attention
+ */
+export type ErrorLevel = 'info' | 'warn' | 'error' | 'critical';
+
+/**
+ * Configuration options for error handling
  */
 export interface ErrorHandlingOptions {
   /**
-   * Additional context to include with the error
+   * The logging level of the error
+   * @default 'error'
+   */
+  level?: ErrorLevel;
+  
+  /**
+   * Additional context information to log with the error
+   * Useful for debugging and providing more details about the error state
    */
   context?: Record<string, any>;
   
   /**
-   * Logging level for the error
-   */
-  level?: 'error' | 'warning' | 'info' | 'debug';
-  
-  /**
-   * Label for the action button (if any)
-   */
-  actionLabel?: string;
-  
-  /**
-   * Function to execute when the action button is clicked
-   */
-  action?: () => void | Promise<void>;
-  
-  /**
-   * Whether to show technical details in the UI
+   * Whether to include technical details in user-facing messages
+   * Should typically be false in production
+   * @default false
    */
   technical?: boolean;
   
   /**
-   * Whether to suppress UI notifications
+   * Whether to suppress user notifications
+   * When true, errors are only logged, not displayed to users
+   * @default false
    */
   silent?: boolean;
   
   /**
-   * Custom title for error notifications
+   * Custom title for the error notification
+   * @default 'An error occurred'
    */
   title?: string;
-}
-
-// Alias for backward compatibility
-export type ErrorOptions = ErrorHandlingOptions;
-
-/**
- * Base custom error class
- */
-export class BaseError extends Error {
-  code?: string | number;
   
-  constructor(message: string, code?: string | number) {
-    super(message);
-    this.name = this.constructor.name;
-    this.code = code;
-    
-    // This is needed because extending built-in classes in TypeScript can
-    // have issues with the prototype chain
-    Object.setPrototypeOf(this, BaseError.prototype);
-  }
+  /**
+   * Label for the action button in the notification
+   * If provided along with `action`, an action button will be shown
+   */
+  actionLabel?: string;
+  
+  /**
+   * Callback function to execute when the action button is clicked
+   */
+  action?: () => void;
 }
 
 /**
- * Error for validation failures
+ * Standard error format used throughout the application
+ * Ensures consistent error structure regardless of original error type
  */
-export class ValidationError extends BaseError {
-  constructor(message: string, code?: string | number) {
-    super(message, code || 'VALIDATION_ERROR');
-    Object.setPrototypeOf(this, ValidationError.prototype);
-  }
-}
-
-/**
- * Error for API-related failures
- */
-export class ApiError extends BaseError {
+export interface StandardizedError extends Error {
+  /**
+   * Unique code identifying the error type
+   */
+  code?: string;
+  
+  /**
+   * HTTP status code (if applicable)
+   */
   status?: number;
   
-  constructor(message: string, status?: number, code?: string | number) {
-    super(message, code || 'API_ERROR');
-    this.status = status;
-    Object.setPrototypeOf(this, ApiError.prototype);
-  }
-}
-
-/**
- * Error for database operations
- */
-export class DatabaseError extends BaseError {
-  constructor(message: string, code?: string | number) {
-    super(message, code || 'DATABASE_ERROR');
-    Object.setPrototypeOf(this, DatabaseError.prototype);
-  }
-}
-
-/**
- * Error for authentication issues
- */
-export class AuthError extends BaseError {
-  constructor(message: string, code?: string | number) {
-    super(message, code || 'AUTH_ERROR');
-    Object.setPrototypeOf(this, AuthError.prototype);
-  }
+  /**
+   * Whether the error is operational (expected) or programmatic (unexpected)
+   */
+  isOperational?: boolean;
+  
+  /**
+   * Original error object that was thrown
+   */
+  originalError?: unknown;
 }

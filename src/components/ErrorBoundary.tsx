@@ -13,8 +13,18 @@ interface State {
 }
 
 /**
- * A component that catches JavaScript errors anywhere in its child component tree,
- * logs those errors, and displays a fallback UI instead of the component tree that crashed.
+ * ErrorBoundary
+ * 
+ * A React class component that catches JavaScript errors anywhere in its child
+ * component tree, logs those errors, and displays a fallback UI instead of the
+ * component tree that crashed.
+ * 
+ * @example
+ * ```tsx
+ * <ErrorBoundary fallback={<ErrorMessage />}>
+ *   <MyComponent />
+ * </ErrorBoundary>
+ * ```
  */
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
@@ -22,11 +32,24 @@ export class ErrorBoundary extends Component<Props, State> {
     error: null,
   };
 
+  /**
+   * Static method called during the "render" phase when an error is thrown
+   * Updates component state so the next render will show the fallback UI
+   * 
+   * @param error - The error that was thrown
+   * @returns Updated state object
+   */
   public static getDerivedStateFromError(error: Error): State {
-    // Update state so the next render will show the fallback UI
     return { hasError: true, error };
   }
 
+  /**
+   * Lifecycle method called after an error has been thrown by a descendant component
+   * Used for side effects like logging the error
+   * 
+   * @param error - The error that was thrown
+   * @param errorInfo - Component stack trace information
+   */
   public componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // Log the error to the application's error handling system
     handleError(error, "An unexpected error occurred", {
@@ -35,6 +58,11 @@ export class ErrorBoundary extends Component<Props, State> {
     });
   }
 
+  /**
+   * Renders either the children or the fallback UI based on whether an error occurred
+   * 
+   * @returns ReactNode - Either the children or fallback UI
+   */
   public render(): ReactNode {
     const { hasError, error } = this.state;
     const { children, fallback } = this.props;
