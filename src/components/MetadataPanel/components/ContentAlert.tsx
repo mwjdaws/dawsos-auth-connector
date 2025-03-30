@@ -8,7 +8,7 @@
 import React from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Info } from "lucide-react";
-import { ContentIdValidationResult } from "@/utils/content-validation";
+import { ContentIdValidationResult } from "@/utils/validation";
 
 interface ContentAlertProps {
   contentValidationResult: ContentIdValidationResult;

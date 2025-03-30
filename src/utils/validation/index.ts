@@ -20,11 +20,13 @@ export {
   isValidContentId,
   normalizeContentId,
   getContentIdValidationResult,
+  ContentIdValidationResult,
   
   // Tag validation
   validateTag,
   validateTags,
+  ValidationResult
 };
 
-// Explicitly re-export types for TypeScript modules
-export type { ContentIdValidationResult, ValidationResult };
+// Re-export types
+export type { ValidationResult };
