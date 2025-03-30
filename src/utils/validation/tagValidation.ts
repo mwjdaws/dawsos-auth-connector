@@ -1,19 +1,31 @@
 
 /**
- * Tag validation utilities
+ * Tag Validation Utilities
+ * 
+ * Provides validation functions for tags with configurable constraints.
+ * Used to ensure data quality and consistent user experience.
  */
 
+/**
+ * Result of a tag validation operation
+ */
 export interface ValidationResult {
   isValid: boolean;
   message: string;
 }
 
+/**
+ * Configuration options for tag validation
+ */
 export interface TagValidationOptions {
   minTagLength?: number;
   maxTagLength?: number;
   maxNumTags?: number;
 }
 
+/**
+ * Default validation options
+ */
 const DEFAULT_OPTIONS: TagValidationOptions = {
   minTagLength: 2,
   maxTagLength: 30,
@@ -21,7 +33,11 @@ const DEFAULT_OPTIONS: TagValidationOptions = {
 };
 
 /**
- * Validates a single tag
+ * Validates a single tag against the provided constraints
+ * 
+ * @param tag - The tag string to validate
+ * @param options - Configuration options for validation
+ * @returns Validation result with status and message
  */
 export const validateTag = (
   tag: string,
@@ -57,7 +73,11 @@ export const validateTag = (
 };
 
 /**
- * Validates an array of tags
+ * Validates an array of tags against the provided constraints
+ * 
+ * @param tags - Array of tags to validate
+ * @param options - Configuration options for validation
+ * @returns Validation result with status and message
  */
 export const validateTags = (
   tags: string[],

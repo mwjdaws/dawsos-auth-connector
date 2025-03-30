@@ -1,10 +1,14 @@
 
 /**
- * Utility functions for content ID validation
+ * Content ID Validation Utilities
+ * 
+ * Provides validation and normalization functions for content IDs.
+ * Ensures consistent handling of content identifiers throughout the application.
  */
 
 /**
  * Enum for content ID validation result types
+ * Used to provide more granular information about the validation status
  */
 export enum ContentIdValidationResult {
   VALID = 'valid',
@@ -15,7 +19,8 @@ export enum ContentIdValidationResult {
 
 /**
  * Checks if a content ID is valid and not a temporary ID
- * @param contentId The content ID to validate
+ * 
+ * @param contentId - The content ID to validate
  * @returns True if the content ID is valid, false otherwise
  */
 export function isValidContentId(contentId: string | null | undefined): boolean {
@@ -33,7 +38,8 @@ export function isValidContentId(contentId: string | null | undefined): boolean 
 
 /**
  * Gets detailed validation result for a content ID
- * @param contentId The content ID to validate
+ * 
+ * @param contentId - The content ID to validate
  * @returns A ContentIdValidationResult enum value indicating the validation status
  */
 export function getContentIdValidationResult(contentId: string | null | undefined): ContentIdValidationResult {
@@ -49,7 +55,8 @@ export function getContentIdValidationResult(contentId: string | null | undefine
 
 /**
  * Validates the content ID and returns a normalized version
- * @param contentId The content ID to validate and normalize
+ * 
+ * @param contentId - The content ID to validate and normalize
  * @returns The normalized content ID or null if invalid
  */
 export function normalizeContentId(contentId: string | null | undefined): string | null {

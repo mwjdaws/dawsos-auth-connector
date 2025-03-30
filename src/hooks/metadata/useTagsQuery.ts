@@ -1,9 +1,18 @@
 
+/**
+ * Tag Query Hook
+ * 
+ * A specialized hook for fetching tags associated with a content item.
+ * Handles error conditions, data validation, and transformation.
+ */
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/errors';
 import { isValidContentId } from '@/utils/validation';
 
+/**
+ * Tag data structure returned from the database
+ */
 interface Tag {
   id: string;
   name: string;
@@ -12,6 +21,9 @@ interface Tag {
   type_name?: string;
 }
 
+/**
+ * Tag data with type information from the database join
+ */
 interface TagWithType {
   id: string;
   name: string;
@@ -22,6 +34,9 @@ interface TagWithType {
   } | null;
 }
 
+/**
+ * Configuration options for the useTagsQuery hook
+ */
 interface UseTagsQueryOptions {
   enabled?: boolean;
   includeTypeInfo?: boolean;
@@ -29,6 +44,10 @@ interface UseTagsQueryOptions {
 
 /**
  * Type guard to check if an object is a valid tag
+ * This is crucial for filtering out invalid data or parser errors
+ * 
+ * @param tag - Any object to check
+ * @returns Type predicate indicating if the object is a valid TagWithType
  */
 function isValidTag(tag: any): tag is TagWithType {
   return (
@@ -41,6 +60,10 @@ function isValidTag(tag: any): tag is TagWithType {
 
 /**
  * Hook to fetch tags associated with a content item
+ * 
+ * @param contentId - The ID of the content to fetch tags for
+ * @param options - Configuration options for the query
+ * @returns Query result with typed Tag array data
  */
 export function useTagsQuery(contentId: string, options?: UseTagsQueryOptions) {
   return useQuery({
@@ -67,8 +90,9 @@ export function useTagsQuery(contentId: string, options?: UseTagsQueryOptions) {
         if (!data || !Array.isArray(data)) return [];
 
         // Transform data to include type_name if type info was requested
+        // Use the isValidTag type guard to filter out any parser errors or invalid data
         return data
-          .filter(isValidTag) // Filter out any invalid data or parser errors
+          .filter(isValidTag) 
           .map(tag => {
             const baseTag: Tag = {
               id: tag.id,

@@ -1,11 +1,17 @@
 
+/**
+ * Tag Fetch Hook
+ * 
+ * A specialized hook for fetching tags with type information for the metadata panel.
+ * Includes data validation, error handling, and transformation.
+ */
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/errors';
 import { isValidContentId } from '@/utils/validation';
 
 /**
- * Type definition for tags
+ * Tag with optional type information
  */
 interface TagWithType {
   id: string;
@@ -19,6 +25,10 @@ interface TagWithType {
 
 /**
  * Type guard to check if an object is a valid tag
+ * Ensures proper type safety when working with database results
+ * 
+ * @param tag - Any object to check
+ * @returns Type predicate indicating if the object is a valid TagWithType
  */
 function isValidTag(tag: any): tag is TagWithType {
   return (
@@ -30,7 +40,10 @@ function isValidTag(tag: any): tag is TagWithType {
 }
 
 /**
- * Hook to fetch tags for a specific content ID
+ * Hook to fetch tags for a specific content ID with type information
+ * 
+ * @param contentId - The ID of the content to fetch tags for
+ * @returns Query result with transformed tag data
  */
 export const useTagFetch = (contentId: string) => {
   return useQuery({
@@ -51,8 +64,9 @@ export const useTagFetch = (contentId: string) => {
 
         if (!data || !Array.isArray(data)) return [];
 
+        // Filter out any invalid data and transform to the expected format
         return data
-          .filter(isValidTag) // Filter out any invalid data
+          .filter(isValidTag)
           .map(tag => ({
             id: tag.id,
             name: tag.name,

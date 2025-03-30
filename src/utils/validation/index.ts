@@ -1,6 +1,9 @@
 
 /**
  * Central validation utilities for the application
+ * 
+ * This module exports various validation utilities used throughout the application.
+ * It provides a centralized place for validation logic to ensure consistency.
  */
 import { validateDocumentTitle } from './documentValidation';
 import { 
@@ -17,24 +20,21 @@ import {
 } from './tagValidation';
 
 // Re-export all validation utilities
-export {
-  // Document validation
-  validateDocumentTitle,
+
+// Document validation
+export { validateDocumentTitle };
   
-  // Content ID validation
+// Content ID validation
+export { 
   isValidContentId,
   normalizeContentId,
   getContentIdValidationResult,
-  ContentIdValidationResult,
-  
-  // Tag validation functions
-  validateTag,
-  validateTags
+  ContentIdValidationResult
 };
+  
+// Tag validation functions
+export { validateTag, validateTags };
 
 // Use export type for TypeScript interfaces and types
-export type { 
-  // Tag validation types
-  ValidationResult,
-  TagValidationOptions
-};
+export type { ValidationResult, TagValidationOptions };
+
