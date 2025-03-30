@@ -9,6 +9,7 @@
  * ```tsx
  * <TagsSection
  *   tags={tags}
+ *   contentId="content-123"
  *   editable={true}
  *   newTag={newTag}
  *   setNewTag={setNewTag}
@@ -23,26 +24,37 @@ import { Button } from "@/components/ui/button";
 import { X, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tag } from '../hooks/tag-operations/types';
+import { TagList } from "../components/TagList";
+import { useTagReordering } from "@/hooks/metadata";
 
 interface TagsSectionProps {
   tags: Tag[];
+  contentId: string;
   editable?: boolean;
   newTag?: string;
   setNewTag?: (value: string) => void;
   onAddTag?: () => void;
   onDeleteTag?: (tagId: string) => void;
+  onMetadataChange?: () => void;
   className?: string;
 }
 
 export const TagsSection: React.FC<TagsSectionProps> = ({
   tags,
+  contentId,
   editable = false,
   newTag = '',
   setNewTag,
   onAddTag,
   onDeleteTag,
+  onMetadataChange,
   className
 }) => {
+  const { handleReorderTags } = useTagReordering({
+    contentId,
+    onMetadataChange
+  });
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && onAddTag && newTag?.trim()) {
       e.preventDefault();
@@ -75,31 +87,12 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
         </div>
       )}
       
-      {tags.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {tags.map((tag) => (
-            <Badge 
-              key={tag.id} 
-              variant="secondary"
-              className="flex items-center gap-1"
-            >
-              {tag.name}
-              {editable && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-4 w-4 p-0 hover:bg-transparent"
-                  onClick={() => onDeleteTag?.(tag.id)}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              )}
-            </Badge>
-          ))}
-        </div>
-      ) : (
-        <p className="text-sm text-muted-foreground">No tags</p>
-      )}
+      <TagList
+        tags={tags}
+        editable={editable}
+        onDeleteTag={onDeleteTag || (() => {})}
+        onReorderTags={handleReorderTags}
+      />
     </div>
   );
 };

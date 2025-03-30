@@ -15,6 +15,7 @@ import { GroupedTagList } from "./GroupedTagList";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import { isValidContentId } from "@/utils/content-validation";
+import { useTagsQuery, useTagMutations } from "@/hooks/metadata";
 
 /**
  * TagPanel Component
@@ -137,6 +138,12 @@ export function TagPanel({ contentId, onTagsSaved, editable = true, onMetadataCh
       return;
     }
     
+    // Convert string[] tags to Tag[] objects required by the component
+    const tagObjects = tags.map(tagName => ({
+      name: tagName,
+      id: `temp-${tagName}`
+    }));
+    
     const result = await saveTags("", tags, {
       contentId: tagContentId || contentId
     });
@@ -207,7 +214,7 @@ export function TagPanel({ contentId, onTagsSaved, editable = true, onMetadataCh
             />
             
             <TagList 
-              tags={tags}
+              tags={tags.map(tagName => ({ name: tagName, id: `temp-${tagName}` }))}
               isLoading={isLoading || isPending}
               knowledgeSourceId={tagContentId || (isValidContent ? contentId : undefined)}
               onTagClick={handleTagClick}

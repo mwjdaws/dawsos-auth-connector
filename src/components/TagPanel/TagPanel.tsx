@@ -162,6 +162,12 @@ export function TagPanel({
     </Alert>
   );
 
+  // Fix the type mismatch
+  const tagObjects = tagGeneration.tags.map(tagName => ({
+    name: tagName,
+    id: `temp-${tagName}`
+  }));
+
   return (
     <ErrorBoundary fallback={<TagPanelErrorFallback />}>
       <div className="space-y-6 w-full">
@@ -180,7 +186,7 @@ export function TagPanel({
             />
             
             <TagList 
-              tags={tagGeneration.tags}
+              tags={tagObjects}
               isLoading={tagGeneration.isLoading || isPending}
               knowledgeSourceId={tagGeneration.contentId || (isValidContent ? contentId : undefined)}
               onTagClick={handleTagClick}
