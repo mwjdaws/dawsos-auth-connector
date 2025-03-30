@@ -17,13 +17,22 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Check, X, Plus } from "lucide-react";
-import { OntologyTerm } from '@/hooks/markdown-editor/ontology-terms/types';
 import { useOntologyTerms } from '@/hooks/markdown-editor/useOntologyTerms';
 
 interface OntologySectionProps {
   sourceId: string;
   editable?: boolean;
   className?: string;
+}
+
+// Define a local interface that extends OntologyTerm with review_required
+interface SourceOntologyTerm {
+  associationId: string;
+  id: string;
+  term: string;
+  description?: string;
+  domain?: string;
+  review_required?: boolean;
 }
 
 export const OntologySection: React.FC<OntologySectionProps> = ({
@@ -39,9 +48,12 @@ export const OntologySection: React.FC<OntologySectionProps> = ({
     removeTerm
   } = useOntologyTerms(sourceId);
 
+  // Cast sourceTerms to the local interface that includes review_required
+  const typedSourceTerms = sourceTerms as SourceOntologyTerm[];
+
   // Organize terms by review status
-  const reviewRequired = sourceTerms.filter(term => term.review_required);
-  const approvedTerms = sourceTerms.filter(term => !term.review_required);
+  const reviewRequired = typedSourceTerms.filter(term => term.review_required);
+  const approvedTerms = typedSourceTerms.filter(term => !term.review_required);
 
   return (
     <div className={className}>
@@ -79,7 +91,7 @@ export const OntologySection: React.FC<OntologySectionProps> = ({
                           variant="ghost"
                           size="sm"
                           className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => removeTerm(term.id)}
+                          onClick={() => removeTerm(term.associationId)}
                           title="Remove"
                         >
                           <X className="h-4 w-4" />
@@ -108,7 +120,7 @@ export const OntologySection: React.FC<OntologySectionProps> = ({
                         variant="ghost"
                         size="sm"
                         className="h-4 w-4 p-0 ml-1 hover:bg-transparent"
-                        onClick={() => removeTerm(term.id)}
+                        onClick={() => removeTerm(term.associationId)}
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -128,7 +140,7 @@ export const OntologySection: React.FC<OntologySectionProps> = ({
               <h4 className="text-xs font-medium text-muted-foreground">Related Terms</h4>
               <div className="flex flex-wrap gap-2">
                 {relatedTerms.map((term) => (
-                  <div key={term.id} className="flex items-center gap-1">
+                  <div key={term.term_id} className="flex items-center gap-1">
                     <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
                       {term.term}
                     </Badge>
@@ -138,7 +150,7 @@ export const OntologySection: React.FC<OntologySectionProps> = ({
                         variant="ghost"
                         size="sm"
                         className="h-6 w-6 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                        onClick={() => addTerm(term.id)}
+                        onClick={() => addTerm(term.term_id)}
                         title="Add to this source"
                       >
                         <Plus className="h-4 w-4" />

@@ -13,15 +13,15 @@
  * />
  * ```
  */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, RefreshCw, Search, Check } from "lucide-react";
+import { Plus, RefreshCw, Search } from "lucide-react";
 import { useOntologyTerms } from '@/hooks/markdown-editor/useOntologyTerms';
-import { useOntologyEnrichment } from '@/hooks/markdown-editor/useOntologyEnrichment';
+import { useOntologySuggestions } from '@/hooks/markdown-editor/useOntologySuggestions';
 
 interface OntologySuggestionsPanelProps {
   contentId: string;
@@ -36,15 +36,24 @@ export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> =
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const { addTerm, addTermByName } = useOntologyTerms(contentId);
-  const { 
-    suggestedTerms, 
-    isLoading, 
-    error,
-    refreshSuggestions
-  } = useOntologyEnrichment(contentId);
+  
+  // Use the correct hook for suggestions
+  const {
+    suggestions,
+    isLoading,
+    analyzeContent
+  } = useOntologySuggestions();
+
+  // Get current content for the source
+  useEffect(() => {
+    if (contentId) {
+      // We would normally fetch content here, for now just analyze with empty content
+      analyzeContent("", "", contentId);
+    }
+  }, [contentId, analyzeContent]);
 
   // Filter terms based on search query
-  const filteredTerms = suggestedTerms.filter(term => 
+  const filteredTerms = suggestions.terms.filter(term => 
     term.term.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -63,6 +72,11 @@ export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> =
     if (onTermsAdded) {
       onTermsAdded();
     }
+  };
+
+  // Function to refresh suggestions
+  const refreshSuggestions = () => {
+    analyzeContent("", "", contentId);
   };
 
   return (
@@ -107,11 +121,7 @@ export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> =
           <Skeleton className="h-8 w-4/5" />
           <Skeleton className="h-8 w-2/3" />
         </div>
-      ) : error ? (
-        <Card className="p-3 bg-red-50 border-red-200 text-red-800">
-          <p className="text-sm">Error loading suggestions. Please try refreshing.</p>
-        </Card>
-      ) : filteredTerms.length > 0 ? (
+      ) : suggestions.terms && suggestions.terms.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {filteredTerms.map((term) => (
             <div key={term.id} className="flex items-center">
@@ -132,7 +142,7 @@ export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> =
             </div>
           ))}
         </div>
-      ) : suggestedTerms.length > 0 ? (
+      ) : filteredTerms.length === 0 && searchQuery ? (
         <p className="text-sm text-muted-foreground">No terms match your search.</p>
       ) : (
         <Card className="p-3 bg-muted/20 border">

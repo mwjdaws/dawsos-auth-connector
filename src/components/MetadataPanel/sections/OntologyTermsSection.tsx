@@ -3,7 +3,7 @@
  * OntologyTermsSection Component
  * 
  * Displays and manages ontology terms associated with a content source.
- * Uses the OntologyTermsPanel component internally to render and manage terms.
+ * Uses the OntologySection component internally to render and manage terms.
  * 
  * @example
  * ```tsx
@@ -14,12 +14,12 @@
  * ```
  * 
  * @remarks
- * - Renders the OntologyTermsPanel component with the provided sourceId
+ * - Renders the OntologySection component with the provided sourceId
  * - The editable prop controls whether terms can be added or removed
- * - Relies on the OntologyTermsPanel component for the actual rendering and functionality
+ * - Relies on the OntologySection component for the actual rendering and functionality
  */
 import React from "react";
-import { OntologyTermsPanel } from "@/components/MarkdownViewer/OntologyTermsPanel";
+import { OntologySection } from "./OntologySection";
 import { OntologyTermsSectionProps } from "../types";
 
 export const OntologyTermsSection: React.FC<OntologyTermsSectionProps> = ({ 
@@ -29,10 +29,12 @@ export const OntologyTermsSection: React.FC<OntologyTermsSectionProps> = ({
 }) => {
   return (
     <div className={className}>
-      <OntologyTermsPanel 
+      <OntologySection 
         sourceId={sourceId} 
         editable={editable} 
       />
     </div>
   );
 };
+
+export default OntologyTermsSection;

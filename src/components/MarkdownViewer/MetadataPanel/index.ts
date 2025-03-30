@@ -14,7 +14,7 @@ export {
   TagsSection,
   ContentIdSection,
   DomainSection,
-  OntologyTermsSection,
+  OntologySection,
   LoadingState
 } from '@/components/MetadataPanel/sections';
 
