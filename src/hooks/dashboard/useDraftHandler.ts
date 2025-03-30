@@ -62,5 +62,5 @@ export const useDraftHandler = ({ user }: UseDraftHandlerProps) => {
     }
   }, [user]);
 
-  return handleSaveDraft;
+  return { handleSaveDraft };
 };

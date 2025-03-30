@@ -92,5 +92,5 @@ export const usePublishHandler = ({ user }: UsePublishHandlerProps) => {
     }
   }, [user]);
 
-  return handlePublish;
+  return { handlePublish };
 };
