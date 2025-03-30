@@ -6,17 +6,13 @@ import { isValidContentId } from '@/utils/content-validation';
 
 /**
  * Hook to check if content exists in the database
- * 
- * @param contentId - The ID of the content to check
- * @returns Query result with boolean indicating existence
  */
-export function useContentExists(contentId?: string) {
-  const isValidContent = contentId ? isValidContentId(contentId) : false;
-  
-  return useQuery<boolean>({
-    queryKey: ['contentExists', contentId],
-    queryFn: () => checkContentExists(contentId!),
-    enabled: !!contentId && isValidContent,
+export function useContentExists(contentId?: string, options = {}) {
+  return useQuery({
+    queryKey: contentId ? [...queryKeys.metadata.byId(contentId), 'exists'] : null,
+    queryFn: () => contentId ? checkContentExists(contentId) : false,
+    enabled: !!contentId && isValidContentId(contentId),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    ...options
   });
 }
