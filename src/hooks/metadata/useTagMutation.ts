@@ -89,7 +89,7 @@ export function useTagMutations(contentId?: string) {
     }
   });
   
-  // Reorder tags - Modified to work without tag_positions table
+  // Reorder tags - Temporary workaround until we have a position column
   const reorderTagsMutation = useMutation({
     mutationFn: async ({ contentId: tagContentId, newOrder }: TagReorderParams) => {
       const effectiveContentId = tagContentId || contentId;
@@ -98,8 +98,8 @@ export function useTagMutations(contentId?: string) {
         throw new Error('Invalid content ID');
       }
       
-      // Since there's no tag_positions table, we'll log the intended changes
-      // In a real implementation, you would need to create the table or use another approach to store positions
+      // Since there's no tag_positions table or position column, we'll log the intended changes
+      // In a future implementation, we could add a display_order column to the tags table
       console.log('Would reorder tags:', newOrder);
       
       // For now, we'll just return the data without actually updating positions

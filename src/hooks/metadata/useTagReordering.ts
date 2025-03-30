@@ -14,7 +14,7 @@ export function useTagReordering({ contentId, onMetadataChange }: UseTagReorderi
 
   /**
    * Handles reordering tags and updating their order in the database
-   * Uses a transaction to ensure all updates succeed or fail together
+   * Currently a workaround since there's no dedicated order column
    */
   const handleReorderTags = useCallback(async (reorderedTags: Tag[]) => {
     if (!contentId || reorderedTags.length === 0) return;
@@ -22,22 +22,15 @@ export function useTagReordering({ contentId, onMetadataChange }: UseTagReorderi
     setIsReordering(true);
     
     try {
-      // In a real implementation, we would update the order field in the database
-      // For now, we'll just simulate success and update the local state
-      
-      // Uncomment this when you have an order field in your tags table
-      /*
-      const updates = reorderedTags.map((tag, index) => ({
+      // Log the intended changes for debugging
+      console.log('Would reorder tags:', reorderedTags.map((tag, index) => ({
         id: tag.id,
+        name: tag.name,
         display_order: index
-      }));
+      })));
       
-      const { error } = await supabase
-        .from('tags')
-        .upsert(updates);
-        
-      if (error) throw error;
-      */
+      // In a real implementation, we would update a display_order field in the tags table
+      // For now, we'll just simulate success and update the local state
       
       // Simulate a delay for the reordering operation
       await new Promise(resolve => setTimeout(resolve, 300));
