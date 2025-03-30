@@ -11,10 +11,11 @@
 export { HeaderSection } from './HeaderSection';
 export { ExternalSourceSection } from './ExternalSourceSection';
 export { TagsSection } from './TagsSection';
-export { OntologyTermsSection } from './OntologyTermsSection';
+export { OntologySection } from './OntologySection';
 export { ContentIdSection } from './ContentIdSection';
 export { LoadingState } from './LoadingState';
 export { DomainSection } from './DomainSection';
+export { OntologySuggestionsPanel } from './OntologySuggestionsPanel';
 
 // Aliases for backward compatibility
 export { HeaderSection as CollapsibleHeader } from './HeaderSection';

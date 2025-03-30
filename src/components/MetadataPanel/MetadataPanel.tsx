@@ -5,52 +5,6 @@
  * This is the unified entry point for displaying and editing content metadata.
  * It combines various section components to create a complete metadata panel
  * with consistent styling and behavior across the application.
- * 
- * Features:
- * - Display and edit content metadata (tags, external sources, ontology terms)
- * - Collapsible panel with refresh functionality
- * - Loading and error states
- * - Type safety with comprehensive TypeScript interfaces
- * 
- * @example
- * // Basic usage
- * <MetadataPanel 
- *   contentId="content-123" 
- *   onMetadataChange={() => {}} 
- * />
- * 
- * @example
- * // Advanced usage with options
- * <MetadataPanel 
- *   contentId="content-123" 
- *   onMetadataChange={handleMetadataChange} 
- *   isCollapsible={true}
- *   initialCollapsed={false}
- *   showOntologyTerms={true}
- *   showDomain={true}
- *   domain="Engineering"
- *   editable={true}
- *   className="my-4"
- * >
- *   <CustomSection />
- * </MetadataPanel>
- * 
- * @example
- * // Using the metadata context outside the component
- * import { useMetadataContext } from "@/components/MetadataPanel";
- * 
- * function MyComponent({ contentId }) {
- *   const metadata = useMetadataContext(contentId);
- *   
- *   // Access metadata state
- *   console.log(metadata.tags);
- *   
- *   // Perform operations
- *   metadata.handleAddTag();
- *   
- *   // Refresh metadata
- *   metadata.refreshMetadata();
- * }
  */
 
 import React from "react";
@@ -66,10 +20,9 @@ import {
   HeaderSection,
   ExternalSourceSection,
   TagsSection,
-  OntologyTermsSection,
+  OntologySection,
   ContentIdSection,
-  LoadingState,
-  DomainSection
+  LoadingState
 } from "./sections";
 
 const MetadataPanel: React.FC<MetadataPanelProps> = ({ 
@@ -209,22 +162,20 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
                 setNewTag={setNewTag}
                 onAddTag={handleAddTag}
                 onDeleteTag={handleDeleteTag}
+                className="mt-4"
               />
               
               {showOntologyTerms && contentId && (
-                <OntologyTermsSection 
+                <OntologySection
                   sourceId={contentId} 
-                  editable={isEditable} 
+                  editable={isEditable}
+                  className="mt-4" 
                 />
-              )}
-              
-              {showDomain && (
-                <DomainSection domain={domain} />
               )}
               
               {children}
               
-              <ContentIdSection contentId={contentId} />
+              <ContentIdSection contentId={contentId} className="mt-4" />
             </div>
           )}
           {isPending && (
