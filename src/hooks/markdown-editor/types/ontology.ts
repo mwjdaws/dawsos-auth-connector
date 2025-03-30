@@ -9,12 +9,15 @@ export interface OntologyTerm {
   term: string;
   description: string;
   domain?: string;
+  associationId?: string; // Added for compatibility with AttachedTermsList
 }
 
 // Related term with relationship information
 export interface RelatedTerm extends OntologyTerm {
   relationshipType: string;
   relationshipId: string;
+  term_id?: string; // Added for compatibility with RelatedTermsList
+  relation_type?: string; // Added for compatibility with RelatedTermsList
 }
 
 // Ontology suggestion from AI
@@ -44,10 +47,15 @@ export interface OntologyDomain {
   description: string;
 }
 
+// OntologySuggestions result
+export interface OntologySuggestionsResult {
+  terms: OntologySuggestion[];
+  relatedNotes: RelatedNote[];
+}
+
 // Hook result for useOntologySuggestions
 export interface UseOntologySuggestionsResult {
-  suggestions: OntologySuggestion[];
-  relatedNotes: RelatedNote[];
+  suggestions: OntologySuggestionsResult;
   isLoading: boolean;
   error: Error | null;
   refreshSuggestions: () => void;
@@ -55,4 +63,39 @@ export interface UseOntologySuggestionsResult {
   rejectSuggestion: (termId: string) => Promise<boolean>;
   applyNoteRelation: (noteId: string) => Promise<boolean>;
   rejectNoteRelation: (noteId: string) => Promise<boolean>;
+  // Added for compatibility with OntologySuggestionsPanel
+  analyzeContent: (content: string, title: string, sourceId: string) => Promise<void>;
+  applySuggestedTerm: (termId: string, sourceId: string) => Promise<boolean>;
+  rejectSuggestedTerm: (termId: string) => Promise<boolean>;
+  applyAllSuggestedTerms: (sourceId: string, minimumScore?: number) => Promise<boolean>;
+}
+
+// Hook props for useOntologyTerms
+export interface UseOntologyTermsProps {
+  contentId: string;
+}
+
+// Hook result for useOntologyTerms
+export interface UseOntologyTermsResult {
+  terms: OntologyTerm[];
+  isLoading: boolean;
+  error: Error | null;
+  refreshTerms: () => Promise<void>;
+  // Added for compatibility with OntologyTermsPanel
+  handleRefresh: () => Promise<void>;
+}
+
+// Hook props for useTermMutations
+export interface UseTermMutationsProps {
+  contentId: string;
+}
+
+// Hook result for useTermMutations
+export interface UseTermMutationsResult {
+  addTerm: (termId: string) => Promise<boolean>;
+  addTermByName: (termName: string) => Promise<boolean>;
+  isAdding: boolean;
+  isDeleting: boolean;
+  // Added for compatibility with OntologyTermsPanel
+  deleteTerm: (termId: string) => Promise<boolean>;
 }

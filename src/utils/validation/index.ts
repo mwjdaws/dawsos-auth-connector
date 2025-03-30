@@ -1,21 +1,8 @@
 
 /**
- * Validation utilities - exports for backward compatibility
+ * Re-export validation functions
  */
-
-export { 
-  isValidContentId,
-  getContentIdValidationResult,
-  type ContentIdValidationResult
-} from './contentIdValidation';
-
-// Export compatibility functions
-export {
-  ensureString,
-  nullToUndefined,
-  undefinedToNull,
-  safeCallback,
-  createCompatibleValidationResult,
-  VALIDATION_RESULTS
-} from './compatibility';
-
+export { validateDocumentTitle } from './documentValidation';
+export { isValidContentId, getContentIdValidationResult } from './contentIdValidation';
+export type { ContentIdValidationResult } from './contentIdValidation';
+export { ValidationResult } from './types';

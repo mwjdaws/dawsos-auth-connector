@@ -7,7 +7,7 @@ export { useOntologyTerms } from './useOntologyTerms';
 export { useTermMutations } from './useTermMutations';
 
 // Re-export types from markdown-editor for compatibility
-export { 
+export type { 
   OntologyTerm, 
   RelatedTerm, 
   OntologySuggestion, 

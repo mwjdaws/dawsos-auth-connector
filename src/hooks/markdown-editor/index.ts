@@ -1,6 +1,6 @@
 
 // Re-export types
-export * from './types/ontology';
+export type * from './types/ontology';
 
 // Re-export hooks
 export { useContentLoader } from './useContentLoader';

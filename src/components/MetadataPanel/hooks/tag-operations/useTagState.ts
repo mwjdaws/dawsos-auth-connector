@@ -1,12 +1,15 @@
 
 import { useState } from 'react';
-import { Tag, UseTagStateProps, UseTagStateResult } from './types';
+import { UseTagStateProps, UseTagStateResult, Tag } from './types';
 
-export function useTagState(props?: UseTagStateProps): UseTagStateResult {
-  const initialTags = props?.initialTags || [];
+/**
+ * Hook for managing tag state
+ */
+export function useTagState({ initialTags = [] }: UseTagStateProps): UseTagStateResult {
   const [tags, setTags] = useState<Tag[]>(initialTags);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [newTag, setNewTag] = useState('');
   
   return {
     tags,
@@ -14,6 +17,8 @@ export function useTagState(props?: UseTagStateProps): UseTagStateResult {
     isLoading,
     setIsLoading,
     error,
-    setError
+    setError,
+    newTag,
+    setNewTag
   };
 }

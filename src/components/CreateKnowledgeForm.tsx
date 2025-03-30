@@ -68,7 +68,7 @@ export function CreateKnowledgeForm() {
         title: formData.title,
         content: formData.content || "# New Document\n\nStart writing here...",
         user_id: user.id,
-        template_id: templateId // This is already null or a string
+        template_id: templateId || "" // Convert null to empty string for API
       });
 
       if (result) {

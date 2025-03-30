@@ -3,14 +3,13 @@ import { useState, useCallback } from 'react';
 import { useTagState } from './useTagState';
 import { useTagFetch } from './useTagFetch';
 import { useTagMutations } from './useTagMutations';
-import { UseTagOperationsProps, UseTagOperationsResult, TagPosition } from './types';
+import { UseTagOperationsProps, UseTagOperationsResult, TagPosition, Tag } from './types';
 
 /**
  * Main hook for tag operations that combines state, fetching, and mutations
  */
 export const useTagOperations = (contentId: string): UseTagOperationsResult => {
-  const { tags, setTags, isLoading, setIsLoading, error, setError } = useTagState();
-  const [newTag, setNewTag] = useState('');
+  const { tags, setTags, isLoading, setIsLoading, error, setError, newTag, setNewTag } = useTagState({});
   
   // Set up tag fetching
   const { 

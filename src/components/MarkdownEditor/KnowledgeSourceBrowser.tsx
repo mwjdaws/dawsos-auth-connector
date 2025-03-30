@@ -4,16 +4,24 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Search, Book } from 'lucide-react';
-import { KnowledgeSource } from '@/services/api/types';
-import { useKnowledgeSourcesQuery } from '@/hooks/markdown-editor/useKnowledgeSources';
 import { Skeleton } from '@/components/ui/skeleton';
-import { undefinedToNull } from '@/utils/type-compatibility';
+import { useKnowledgeSourcesQuery } from '@/hooks/markdown-editor/useKnowledgeSources';
+import { undefinedToNull, ensureString } from '@/utils/type-compatibility';
 
-interface KnowledgeSourceBrowserProps {
-  onSelectSource: (source: KnowledgeSource) => void;
+// Define the KnowledgeSource type to match what the component expects
+export interface KnowledgeSource {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  externalSourceUrl: string | null;
+  externalSourceCheckedAt: string | null;
+  externalContentHash: string | null;
+  needsExternalReview: boolean;
 }
 
-// Interface for source data with nullable fields from the API
+// Interface for source data from the API
 interface ApiSourceData {
   id: string;
   title: string;
@@ -30,6 +38,10 @@ interface ApiSourceData {
   user_id: string | null;
 }
 
+interface KnowledgeSourceBrowserProps {
+  onSelectSource: (source: KnowledgeSource) => void;
+}
+
 export function KnowledgeSourceBrowser({ onSelectSource }: KnowledgeSourceBrowserProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const { data: sources, isLoading, error } = useKnowledgeSourcesQuery(searchTerm);
@@ -38,17 +50,17 @@ export function KnowledgeSourceBrowser({ onSelectSource }: KnowledgeSourceBrowse
     setSearchTerm(e.target.value);
   };
 
-  // Safely transform API source data to KnowledgeSource format
+  // Transform API source data to KnowledgeSource format
   const handleSourceSelect = (apiSource: ApiSourceData) => {
     const source: KnowledgeSource = {
       id: apiSource.id,
       title: apiSource.title,
       content: apiSource.content,
-      createdAt: apiSource.created_at || new Date().toISOString(),
-      updatedAt: apiSource.updated_at || new Date().toISOString(),
-      externalSourceUrl: apiSource.external_source_url || null,
-      externalSourceCheckedAt: apiSource.external_source_checked_at || null,
-      externalContentHash: apiSource.external_content_hash || null,
+      created_at: apiSource.created_at || new Date().toISOString(),
+      updated_at: apiSource.updated_at || new Date().toISOString(),
+      externalSourceUrl: apiSource.external_source_url,
+      externalSourceCheckedAt: apiSource.external_source_checked_at,
+      externalContentHash: apiSource.external_content_hash,
       needsExternalReview: apiSource.is_published
     };
     
@@ -97,9 +109,9 @@ export function KnowledgeSourceBrowser({ onSelectSource }: KnowledgeSourceBrowse
                 <div className="flex items-start gap-2">
                   <Book className="h-5 w-5 shrink-0 text-muted-foreground" />
                   <div>
-                    <p className="font-medium line-clamp-1">{source.title}</p>
+                    <p className="font-medium line-clamp-1">{ensureString(source.title)}</p>
                     <p className="text-xs text-muted-foreground line-clamp-1">
-                      {source.content?.substring(0, 80)}...
+                      {ensureString(source.content).substring(0, 80)}...
                     </p>
                   </div>
                 </div>
@@ -115,3 +127,5 @@ export function KnowledgeSourceBrowser({ onSelectSource }: KnowledgeSourceBrowse
     </div>
   );
 }
+
+export default KnowledgeSourceBrowser;
