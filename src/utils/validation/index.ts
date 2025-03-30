@@ -38,9 +38,10 @@ export { validateTag, validateTags };
 // Use export type for TypeScript interfaces and types
 export type { ValidationResult, TagValidationOptions };
 
-// For backward compatibility, also include the content-validation functions
+// For backward compatibility, also include functions from content-validation
 export { 
   isValidContentId as isValidId,
   normalizeContentId as normalizeId,
   getContentIdValidationResult as getIdValidationResult
 } from './contentIdValidation';
+
