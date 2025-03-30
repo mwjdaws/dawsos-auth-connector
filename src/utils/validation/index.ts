@@ -20,6 +20,7 @@ export {
   isValidContentId,
   normalizeContentId,
   getContentIdValidationResult,
+  ContentIdValidationResult,
   
   // Tag validation
   validateTag,
@@ -27,4 +28,4 @@ export {
 };
 
 // Re-export types
-export type { ContentIdValidationResult, ValidationResult };
+export type { ValidationResult };

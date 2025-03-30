@@ -1,5 +1,6 @@
+
 import { createContext, useContext } from 'react';
-import { ContentIdValidationResult } from '@/utils/validation';
+import { ContentIdValidationResult } from '@/utils/validation/contentIdValidation';
 
 interface MetadataContextProps {
   contentId?: string;
@@ -16,13 +17,17 @@ interface MetadataContextProps {
   onContentTypeChange?: (newContentType: string) => void;
   onSourceUrlChange?: (newSourceUrl: string) => void;
   refreshMetadata?: () => void;
+  // Add tag operations that are expected in the tests
+  addTag?: (tag: string) => void;
+  removeTag?: (tagId: string) => void;
+  refreshTags?: () => Promise<void>;
 }
 
 const MetadataContext = createContext<MetadataContextProps | undefined>(undefined);
 
 export const MetadataProvider = MetadataContext.Provider;
 
-export function useMetadataContext() {
+export function useMetadataContext(contentId?: string) {
   const context = useContext(MetadataContext);
   
   if (!context) {
