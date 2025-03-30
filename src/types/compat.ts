@@ -1,47 +1,42 @@
 
 /**
- * Compatibility types for use during transition to stricter type checking
+ * Type compatibility helpers for working with null vs. undefined
  */
-
-// This type allows optional properties to be either their type OR undefined
-// Helps with 'exactOptionalPropertyTypes: true'
-export type WithOptional<T, K extends keyof T> = Omit<T, K> & {
-  [P in K]?: T[P] | undefined;
-};
-
-// Function signature that accepts undefined for optional callbacks
-export type OptionalCallback<T extends (...args: any[]) => any> = 
-  T | undefined;
-
-// Convert string | null values to string | null | undefined for parameters
-export type AllowUndefined<T> = {
-  [K in keyof T]: T[K] extends string | null ? T[K] | undefined : T[K];
-};
-
-// Convert string | undefined to string | null for compatibility with DB operations
-export type NullifyUndefined<T> = {
-  [K in keyof T]: T[K] extends string | undefined ? string | null : T[K];
-};
 
 /**
- * Helper function to convert undefined to null
- * Useful for API calls where null is expected but undefined is provided
+ * Converts undefined to null
+ * Useful for APIs that expect null values rather than undefined
  */
-export function nullifyUndefined<T>(value: T | undefined): T | null {
+export function undefinedToNull<T>(value: T | undefined): T | null {
   return value === undefined ? null : value;
 }
 
 /**
- * Helper function to default undefined to empty string
- * Useful for UI components where empty strings are more convenient than undefined
+ * Converts null to undefined
+ * Useful for APIs that expect undefined values rather than null
  */
-export function defaultUndefined<T>(value: T | undefined, defaultValue: T): T {
-  return value === undefined ? defaultValue : value;
+export function nullToUndefined<T>(value: T | null): T | undefined {
+  return value === null ? undefined : value;
 }
 
 /**
- * Helper function to ensure a value is not undefined for TypeScript strict checks
+ * Ensures a value is a string, with empty string fallback
  */
-export function ensureDefined<T>(value: T | undefined, defaultValue: T): T {
-  return value === undefined ? defaultValue : value;
+export function ensureString(value: string | null | undefined): string {
+  return value || '';
+}
+
+/**
+ * Safely invoke a callback with fallback if it's undefined
+ */
+export function safeCallback<T extends (...args: any[]) => any>(
+  callback: T | undefined | null,
+  defaultValue?: ReturnType<T>
+): T {
+  return ((...args: Parameters<T>): ReturnType<T> => {
+    if (callback) {
+      return callback(...args);
+    }
+    return defaultValue as ReturnType<T>;
+  }) as T;
 }

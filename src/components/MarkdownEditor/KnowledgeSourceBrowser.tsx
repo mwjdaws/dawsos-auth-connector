@@ -43,12 +43,12 @@ export function KnowledgeSourceBrowser({ onSelectSource }: KnowledgeSourceBrowse
       id: apiSource.id,
       title: apiSource.title,
       content: apiSource.content,
-      createdAt: apiSource.created_at || new Date().toISOString(),
-      updatedAt: apiSource.updated_at || new Date().toISOString(),
-      externalSourceUrl: apiSource.external_source_url || undefined,
-      externalSourceCheckedAt: apiSource.external_source_checked_at || undefined,
-      externalContentHash: apiSource.external_content_hash || undefined,
-      needsExternalReview: apiSource.is_published
+      created_at: apiSource.created_at || new Date().toISOString(),
+      updated_at: apiSource.updated_at || new Date().toISOString(),
+      external_source_url: apiSource.external_source_url || undefined,
+      external_source_checked_at: apiSource.external_source_checked_at || undefined,
+      external_content_hash: apiSource.external_content_hash || undefined,
+      needs_external_review: apiSource.is_published
     };
     
     onSelectSource(source);
@@ -86,7 +86,7 @@ export function KnowledgeSourceBrowser({ onSelectSource }: KnowledgeSourceBrowse
           </div>
         ) : sources && sources.length > 0 ? (
           <div className="space-y-1">
-            {sources.map((source) => (
+            {sources.map((source: ApiSourceData) => (
               <Button
                 key={source.id}
                 variant="ghost"

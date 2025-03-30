@@ -21,15 +21,15 @@ import { GraphControls } from './components/GraphControls';
 import { GraphContent } from './components/GraphContent';
 import { ErrorFallback } from './components/ErrorFallback';
 import { useRelationshipGraph } from './hooks/useRelationshipGraph';
+import { createSafeGraphProps } from './compatibility';
 import { RelationshipGraphProps } from './types';
 
 // Export the main component
-export function RelationshipGraph({ 
-  startingNodeId, 
-  width = 800, 
-  height = 600,
-  hasAttemptedRetry = false
-}: RelationshipGraphProps) {
+export function RelationshipGraph(props: RelationshipGraphProps) { 
+  // Convert props to safe values using our compatibility layer
+  const safeProps = createSafeGraphProps(props);
+  const { startingNodeId, width = 800, height = 600, hasAttemptedRetry = false } = safeProps;
+  
   // Use the custom hook to manage graph state and behavior
   const {
     graphData,
@@ -95,7 +95,7 @@ export function RelationshipGraph({
           width={width}
           height={height}
           highlightedNodeId={highlightedNodeId}
-          zoomLevel={zoomLevel}
+          zoomLevel={zoomLevel || 1}
           isPending={isPending}
           graphRendererRef={graphRendererRef}
         />

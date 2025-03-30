@@ -10,8 +10,8 @@ interface UseSafeMarkdownEditorProps {
   initialExternalSourceUrl?: string;
   documentId?: string | null;
   sourceId?: string | null;
-  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
-  onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
+  onSaveDraft?: ((id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void) | undefined;
+  onPublish?: ((id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void) | undefined;
 }
 
 // Wrapper hook that handles undefined callbacks safely

@@ -9,6 +9,7 @@ import React, { useCallback, useEffect, useImperativeHandle, forwardRef, useRef 
 // Use dynamic import to avoid direct module reference issues
 import { useNavigate } from 'react-router-dom';
 import { GraphData, GraphNode, GraphRendererRef, GraphLink } from '../../types';
+import { createNodeRenderAdapter, createLinkAccessorAdapter, safeZoom } from './graphRendererAdapter';
 import { useNodeRenderer } from './useNodeRenderer';
 import { useLinkRenderer } from './useLinkRenderer';
 import { useGraphRenderStyles } from './useGraphRenderStyles';
@@ -26,7 +27,7 @@ interface GraphRendererProps {
 
 // Component with forwardRef to expose methods to parent
 export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
-  ({ graphData, width, height, highlightedNodeId, zoom = 1 }, ref) => {
+  ({ graphData, width, height, highlightedNodeId = null, zoom = 1 }, ref) => {
     const navigate = useNavigate();
     const graphRef = useRef<any>(null);
     const styles = useGraphRenderStyles();
@@ -45,7 +46,7 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
         const node = safeGraphData.nodes.find(n => n.id === nodeId);
         if (graphRef.current && node) {
           console.log(`Centering graph on node: ${node.name || node.title}`);
-          graphRef.current.centerAt(node.x, node.y, 1000);
+          graphRef.current.centerAt(node.x || 0, node.y || 0, 1000);
           graphRef.current.zoom(2.5, 1000);
         }
       },
@@ -56,13 +57,13 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
       },
       zoomIn: () => {
         if (graphRef.current) {
-          const currentZoom = graphRef.current.zoom();
+          const currentZoom = graphRef.current.zoom() || 1;
           graphRef.current.zoom(currentZoom * 1.2, 300);
         }
       },
       zoomOut: () => {
         if (graphRef.current) {
-          const currentZoom = graphRef.current.zoom();
+          const currentZoom = graphRef.current.zoom() || 1;
           graphRef.current.zoom(currentZoom * 0.8, 300);
         }
       },
@@ -95,26 +96,36 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
         const node = safeGraphData.nodes.find(n => n.id === highlightedNodeId);
         if (node) {
           console.log(`Auto-centering on highlighted node: ${node.name || node.title}`);
-          graphRef.current.centerAt(node.x, node.y, 1000);
+          graphRef.current.centerAt(node.x || 0, node.y || 0, 1000);
           graphRef.current.zoom(2.5, 1000);
         }
       }
     }, [highlightedNodeId, safeGraphData.nodes]);
     
-    /**
-     * Handles node click events
-     * - For source nodes: Navigate to the source detail page
-     * - For term nodes: Log the term details (could be expanded to show details in UI)
-     */
-    const handleNodeClick = useCallback((node: GraphNode) => {
-      console.log('Node clicked:', node);
-      if (node.type === 'source') {
-        navigate(`/source/${node.id}`);
-      } else if (node.type === 'term') {
+    // Create adapted accessors for link colors/labels
+    const adaptedLinkLabel = createLinkAccessorAdapter(getLinkLabel);
+    const adaptedLinkColor = createLinkAccessorAdapter(getLinkColor);
+    
+    // Create adapted node click handler
+    const adaptedNodeClick = useCallback((node: any) => {
+      const safeNode: GraphNode = {
+        id: node.id || '',
+        title: node.title || node.name || 'Untitled',
+        name: node.name || node.title || 'Unnamed',
+        type: node.type || 'document',
+        ...node
+      };
+      console.log('Node clicked:', safeNode);
+      if (safeNode.type === 'source') {
+        navigate(`/source/${safeNode.id}`);
+      } else if (safeNode.type === 'term') {
         // Could show term details in a modal/sidebar
-        console.log('Term clicked:', node);
+        console.log('Term clicked:', safeNode);
       }
     }, [navigate]);
+    
+    // Create adapted node canvas object renderer
+    const adaptedNodeCanvasObject = createNodeRenderAdapter(nodeCanvasObject);
     
     // Reset graph when data changes
     useEffect(() => {
@@ -156,15 +167,15 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
             ref={graphRef}
             graphData={safeGraphData}
             nodeAutoColorBy="type"
-            nodeLabel={node => node.name || node.title || node.id}
+            nodeLabel={(node) => (node.name || node.title || node.id || '').toString()}
             linkDirectionalArrowLength={3.5}
             linkDirectionalArrowRelPos={1}
-            linkLabel={getLinkLabel}
-            linkColor={getLinkColor}
-            onNodeClick={handleNodeClick}
+            linkLabel={adaptedLinkLabel}
+            linkColor={adaptedLinkColor}
+            onNodeClick={adaptedNodeClick}
             width={width}
             height={height}
-            nodeCanvasObject={nodeCanvasObject}
+            nodeCanvasObject={adaptedNodeCanvasObject}
             cooldownTicks={100}
             minZoom={0.5}
             maxZoom={5}
@@ -172,7 +183,7 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
             d3AlphaDecay={0.02} // Slower decay for more stable graph
             d3VelocityDecay={0.3} // Increased velocity decay for smoother motion
             onEngineStop={() => console.log('Graph physics simulation completed')}
-            linkWidth={link => ((link.value as number) || 1) * 1.5}
+            linkWidth={(link) => (((link as any).value || 1) * 1.5)}
             nodeRelSize={6}
           />
         </React.Suspense>

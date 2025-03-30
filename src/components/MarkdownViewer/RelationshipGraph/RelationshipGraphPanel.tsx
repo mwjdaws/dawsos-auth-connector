@@ -7,11 +7,20 @@
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { RelationshipGraph } from './RelationshipGraph';
-import { RelationshipGraphPanelProps } from './types';
+import { ensureNodeId } from './compatibility';
 
-export function RelationshipGraphPanel({ sourceId, contentId, hasAttemptedRetry }: RelationshipGraphPanelProps) {
+export interface RelationshipGraphPanelProps {
+  sourceId?: string;
+  contentId?: string;
+  hasAttemptedRetry?: boolean;
+}
+
+export function RelationshipGraphPanel({ sourceId, contentId, hasAttemptedRetry = false }: RelationshipGraphPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  
+  // Determine the starting node ID - use sourceId if available, otherwise contentId
+  const startingNodeId = sourceId || contentId || '';
   
   // Update dimensions based on container size
   useEffect(() => {
@@ -36,7 +45,7 @@ export function RelationshipGraphPanel({ sourceId, contentId, hasAttemptedRetry 
   return (
     <div ref={containerRef} className="w-full h-[600px]">
       <RelationshipGraph 
-        startingNodeId={sourceId || contentId} 
+        startingNodeId={startingNodeId}
         width={dimensions.width} 
         height={dimensions.height}
         hasAttemptedRetry={hasAttemptedRetry}

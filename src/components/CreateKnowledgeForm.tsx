@@ -68,7 +68,7 @@ export function CreateKnowledgeForm() {
         title: formData.title,
         content: formData.content || "# New Document\n\nStart writing here...",
         user_id: user.id,
-        template_id: nullifyUndefined(templateId) // Convert undefined to null
+        template_id: templateId // This is fine because createKnowledgeSource accepts null
       });
 
       if (result) {

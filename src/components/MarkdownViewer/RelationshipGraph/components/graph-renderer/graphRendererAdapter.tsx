@@ -59,7 +59,7 @@ export function safeZoom(zoom: number | undefined): number {
  * Handle node highlight with possibly undefined values
  */
 export interface UseNodeRendererProps {
-  highlightedNodeId: string | null;
+  highlightedNodeId: string | null | undefined;
 }
 
 export function createSafeNodeRendererProps(

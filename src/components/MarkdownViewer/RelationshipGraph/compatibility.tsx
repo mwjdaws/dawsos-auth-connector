@@ -17,7 +17,7 @@ export function ensureNodeId(id: string | undefined | null): string {
  * Safe wrapper for the RelationshipGraph component props
  */
 export function createSafeGraphProps(props: {
-  startingNodeId?: string | undefined;
+  startingNodeId?: string | undefined | null;
   width?: number;
   height?: number;
   hasAttemptedRetry?: boolean;
@@ -71,7 +71,7 @@ export function createSafeNodeClickHandler(
 /**
  * Ensures GraphData is valid with proper types
  */
-export function ensureValidGraphData(data: Partial<GraphData> | undefined): GraphData {
+export function ensureValidGraphData(data: Partial<GraphData> | undefined | null): GraphData {
   if (!data) {
     return { nodes: [], links: [] };
   }

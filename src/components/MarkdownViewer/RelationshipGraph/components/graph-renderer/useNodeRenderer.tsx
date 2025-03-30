@@ -9,7 +9,7 @@ import { useCallback, useMemo } from 'react';
 import { GraphNode } from '../../types';
 
 interface UseNodeRendererProps {
-  highlightedNodeId?: string | null;
+  highlightedNodeId: string | null | undefined;
 }
 
 export function useNodeRenderer({ highlightedNodeId }: UseNodeRendererProps) {
@@ -27,7 +27,8 @@ export function useNodeRenderer({ highlightedNodeId }: UseNodeRendererProps) {
   // Memoized node canvas object renderer
   const nodeCanvasObject = useCallback((node: GraphNode & { x?: number, y?: number }, ctx: CanvasRenderingContext2D, globalScale: number) => {
     // Ensure we have x and y coordinates (these are added by force-graph during rendering)
-    if (typeof node.x !== 'number' || typeof node.y !== 'number') return;
+    const x = typeof node.x === 'number' ? node.x : 0;
+    const y = typeof node.y === 'number' ? node.y : 0;
     
     // Custom node rendering with text labels
     const label = node.name || node.title || 'Unnamed';
@@ -52,7 +53,7 @@ export function useNodeRenderer({ highlightedNodeId }: UseNodeRendererProps) {
       : ((node.val || 2) * 2);
       
     ctx.beginPath();
-    ctx.arc(node.x, node.y, nodeSize, 0, 2 * Math.PI);
+    ctx.arc(x, y, nodeSize, 0, 2 * Math.PI);
     ctx.fill();
     
     // Add a stroke for highlighted nodes
@@ -70,8 +71,8 @@ export function useNodeRenderer({ highlightedNodeId }: UseNodeRendererProps) {
         : 'rgba(255, 255, 255, 0.8)';
         
       ctx.fillRect(
-        node.x - bckgDimensions[0] / 2,
-        node.y + 6,
+        x - bckgDimensions[0] / 2,
+        y + 6,
         bckgDimensions[0],
         bckgDimensions[1]
       );
@@ -80,7 +81,7 @@ export function useNodeRenderer({ highlightedNodeId }: UseNodeRendererProps) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = isHighlighted ? '#e53e3e' : '#222';
-      ctx.fillText(label, node.x, node.y + 6 + fontSize / 2);
+      ctx.fillText(label, x, y + 6 + fontSize / 2);
     }
   }, [highlightedNodeId, colors.nodes]);
 
