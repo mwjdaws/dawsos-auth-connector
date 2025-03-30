@@ -1,15 +1,16 @@
 
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { SaveTagsResult } from "./hooks/types";
 
 interface TagSaverProps {
   tags: string[];
   contentId: string;
-  saveTags: (text: string, tags: string[], options?: any) => Promise<string | undefined>;
+  saveTags: (text: string, tags: string[], options?: any) => Promise<SaveTagsResult>;
   isProcessing: boolean;
   isRetrying: boolean;
   onTagsSaved: (contentId: string) => void;
-  disabled?: boolean; // Add disabled prop
+  disabled?: boolean;
 }
 
 export function TagSaver({ 
@@ -24,10 +25,11 @@ export function TagSaver({
   const handleSave = async () => {
     if (disabled) return;
     
-    const savedContentId = await saveTags("", tags, { contentId });
+    const result = await saveTags("", tags, { contentId });
     
-    if (savedContentId) {
-      onTagsSaved(savedContentId);
+    // Only call onTagsSaved if we have a valid string content ID
+    if (result && typeof result === 'string') {
+      onTagsSaved(result);
     }
   };
 
