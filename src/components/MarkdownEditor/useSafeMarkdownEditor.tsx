@@ -1,6 +1,6 @@
 
 import { useMarkdownEditor as useOriginalMarkdownEditor } from './useMarkdownEditor';
-import { nullifyUndefined } from '@/types/compat';
+import { undefinedToNull } from '@/types/compat';
 
 // This interface follows the original props but makes callbacks optional
 interface UseSafeMarkdownEditorProps {
@@ -33,10 +33,10 @@ export const useSafeMarkdownEditor = (props: UseSafeMarkdownEditorProps) => {
   const editorState = useOriginalMarkdownEditor({
     initialTitle: props.initialTitle || '',
     initialContent: props.initialContent || '',
-    initialTemplateId: nullifyUndefined(props.initialTemplateId),
+    initialTemplateId: undefinedToNull(props.initialTemplateId),
     initialExternalSourceUrl: props.initialExternalSourceUrl || '',
-    documentId: nullifyUndefined(props.documentId),
-    sourceId: nullifyUndefined(props.sourceId),
+    documentId: undefinedToNull(props.documentId),
+    sourceId: undefinedToNull(props.sourceId),
     onSaveDraft: handleSaveDraftWrapper,
     onPublish: handlePublishWrapper
   });

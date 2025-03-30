@@ -1,49 +1,43 @@
 
-import { Tag } from '@/types';
-
 /**
- * Props for tag operations hook
+ * Tag operations types
  */
-export interface UseTagOperationsProps {
-  contentId: string;
+
+// Tag entity returned from API
+export interface Tag {
+  id: string;
+  name: string;
+  content_id: string;
+  type_id?: string;
+  type_name?: string;
 }
 
-/**
- * Tag position for reordering
- * Making it properly exported for all components that need it
- */
+// Parameters for tag operations
+export interface TagOperationParams {
+  name: string;
+  contentId: string;
+  typeId?: string;
+}
+
+// Tag position for reordering operations
 export interface TagPosition {
   id: string;
   position: number;
 }
 
-/**
- * Parameters for adding a tag
- */
-export interface AddTagParams {
+// Props for useTagOperations hook
+export interface UseTagOperationsProps {
   contentId: string;
-  name: string;
-  typeId?: string | null; // Made nullable and optional
 }
 
-/**
- * Parameters for deleting a tag
- */
-export interface DeleteTagParams {
-  contentId: string;
-  tagId: string;
-}
-
-/**
- * Result type for tag operations hook
- */
+// Result from useTagOperations hook
 export interface UseTagOperationsResult {
   tags: Tag[];
   isLoading: boolean;
   error: Error | null;
   newTag: string;
   setNewTag: (value: string) => void;
-  handleAddTag: (typeId?: string | null) => Promise<void>;
+  handleAddTag: (typeId?: string) => Promise<void>;
   handleDeleteTag: (tagId: string) => Promise<void>;
   handleReorderTags: (tagPositions: TagPosition[]) => Promise<void>;
   handleRefresh: () => Promise<void>;
@@ -52,22 +46,58 @@ export interface UseTagOperationsResult {
   isReordering: boolean;
 }
 
-/**
- * Compatible Tag for backward compatibility
- * This helps bridge differences between Tag definitions
- */
-export function createCompatibleTag(tag: {
-  id: string;
-  name: string;
-  content_id: string | null;
-  type_id: string | null | undefined;
-  type_name?: string | null;
-}): Tag {
+// Props for useTagState hook
+export interface UseTagStateProps {
+  // Any specific initialization props
+}
+
+// Result from useTagState hook
+export interface UseTagStateResult {
+  tags: Tag[];
+  setTags: React.Dispatch<React.SetStateAction<Tag[]>>;
+  isLoading: boolean;
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  error: Error | null;
+  setError: React.Dispatch<React.SetStateAction<Error | null>>;
+}
+
+// Props for useTagFetch hook
+export interface UseTagFetchProps {
+  contentId: string;
+  setTags: React.Dispatch<React.SetStateAction<Tag[]>>;
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  setError: React.Dispatch<React.SetStateAction<Error | null>>;
+}
+
+// Result from useTagFetch hook
+export interface UseTagFetchResult {
+  fetchTags: () => Promise<Tag[]>;
+}
+
+// Props for useTagMutations hook
+export interface UseTagMutationsProps {
+  contentId: string;
+  setTags: React.Dispatch<React.SetStateAction<Tag[]>>;
+  tags: Tag[];
+}
+
+// Result from useTagMutations hook
+export interface UseTagMutationsResult {
+  addTag: (params: TagOperationParams) => Promise<boolean>;
+  deleteTag: (params: { tagId: string; contentId: string }) => Promise<boolean>;
+  reorderTags: (tagPositions: TagPosition[]) => Promise<boolean>;
+  isAddingTag: boolean;
+  isDeletingTag: boolean;
+  isReordering: boolean;
+}
+
+// Utility function to map API tag to our Tag model
+export function mapApiTagToTag(apiTag: any): Tag {
   return {
-    id: tag.id,
-    name: tag.name,
-    content_id: tag.content_id || '',
-    type_id: tag.type_id === undefined ? null : tag.type_id,
-    type_name: tag.type_name || null
+    id: apiTag.id,
+    name: apiTag.name,
+    content_id: apiTag.content_id || '',
+    type_id: apiTag.type_id || undefined,
+    type_name: apiTag.type_name || undefined
   };
 }

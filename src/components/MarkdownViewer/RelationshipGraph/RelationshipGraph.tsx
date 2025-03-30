@@ -5,11 +5,6 @@
  * The main component that renders the knowledge graph visualization.
  * This component manages data loading states and renders the appropriate
  * subcomponents based on the current state.
- * 
- * Performance optimizations:
- * - Uses React.memo for child components
- * - Better loading states with time tracking
- * - Proper error handling & recovery
  */
 import React, { useMemo } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -85,7 +80,7 @@ export function RelationshipGraph(props: RelationshipGraphProps) {
         <GraphControls
           graphData={graphData}
           onNodeFound={handleNodeFound}
-          zoom={zoomLevel}
+          zoom={zoomLevel || 1}
           onZoomChange={handleZoomChange}
           onResetZoom={handleResetZoom}
         />

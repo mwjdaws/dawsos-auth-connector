@@ -34,6 +34,9 @@ export function GraphContent({
     links: graphData?.links || []
   };
   
+  // Provide a non-null value for highlightedNodeId to satisfy the GraphRenderer prop types
+  const safeHighlightedNodeId = highlightedNodeId === undefined ? null : highlightedNodeId;
+  
   return (
     <div className="relative w-full h-full">
       <GraphRenderer 
@@ -41,7 +44,7 @@ export function GraphContent({
         graphData={safeGraphData} 
         width={width} 
         height={height}
-        highlightedNodeId={highlightedNodeId}
+        highlightedNodeId={safeHighlightedNodeId}
         zoom={zoomLevel}
       />
       

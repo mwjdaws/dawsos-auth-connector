@@ -1,3 +1,4 @@
+
 import React from "react";
 import { TagGenerator } from "./TagGenerator";
 import { TagList } from "./TagList";
@@ -34,11 +35,14 @@ export function AutomaticTagTab({
 }: AutomaticTagTabProps) {
   const isValidContent = isValidContentId(contentId);
   
-  // Fix the type mismatch for the tag objects
+  // Convert string tags to tag objects with IDs
   const tagObjects = tagGeneration.tags.map(tagName => ({
     name: tagName,
-    id: `temp-${tagName}`
+    id: `temp-${tagName.replace(/\s+/g, '-').toLowerCase()}`
   }));
+
+  // Safely determine the effective knowledge source ID
+  const effectiveContentId = tagGeneration.contentId || (isValidContent ? contentId : '');
 
   return (
     <div className="space-y-6 pt-4">
@@ -50,18 +54,18 @@ export function AutomaticTagTab({
       <TagList 
         tags={tagObjects}
         isLoading={tagGeneration.isLoading || isPending}
-        knowledgeSourceId={tagGeneration.contentId || (isValidContent ? contentId : undefined)}
+        knowledgeSourceId={effectiveContentId}
         onTagClick={handleTagClick}
       />
       
       <TagSaver
         tags={tagGeneration.tags}
-        contentId={tagGeneration.contentId || contentId}
+        contentId={effectiveContentId}
         saveTags={handleSaveTags}
         isProcessing={saveTags.isProcessing}
         isRetrying={saveTags.isRetrying}
         onTagsSaved={onTagsSaved}
-        disabled={!isValidContent}
+        disabled={!effectiveContentId}
       />
     </div>
   );

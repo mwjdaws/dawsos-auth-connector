@@ -40,3 +40,25 @@ export function safeCallback<T extends (...args: any[]) => any>(
     return defaultValue as ReturnType<T>;
   }) as T;
 }
+
+/**
+ * Ensure a value is non-null (prefers the value if not null/undefined, otherwise uses default)
+ */
+export function ensureNonNull<T>(value: T | null | undefined, defaultValue: T): T {
+  return (value !== null && value !== undefined) ? value : defaultValue;
+}
+
+/**
+ * Safely convert undefined to null for APIs that require null
+ */
+export function undefinedToNullSafe<T>(value: T | null | undefined): T | null {
+  if (value === undefined) return null;
+  return value;
+}
+
+/**
+ * Fixes the 'user_id: string | undefined' to 'string | null' conversion errors
+ */
+export function userIdCompat(userId: string | undefined): string | null {
+  return userId === undefined ? null : userId;
+}

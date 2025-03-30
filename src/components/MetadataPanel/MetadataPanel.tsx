@@ -1,9 +1,8 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { usePanelState } from "./hooks/usePanelState";
 import { useTagOperations } from "./hooks/tag-operations/useTagOperations";
-import { useOntologyTerms } from "./hooks/useOntologyTerms";
-import { useExternalSource } from "./hooks/useExternalSource";
+import { useSourceMetadata } from "./hooks/useSourceMetadata";
 import { Spinner } from "@/components/ui/spinner";
 import { ContentAlert } from "./components/ContentAlert";
 import { MetadataContent } from "./components/MetadataContent";
@@ -52,84 +51,73 @@ export function MetadataPanel({
     initialCollapsed
   });
 
-  // Safely handle null or undefined states
-  const safeContentId = contentId || '';
-  const safeMetadataChange = onMetadataChange || (() => {});
-
-  // Get tag operations
+  // Initialize tag operations
   const {
     tags,
-    isLoading: isTagsLoading,
-    error: tagsError,
+    isTagsLoading,
+    tagsError,
     newTag,
     setNewTag,
     handleAddTag,
     handleDeleteTag,
-    isAddingTag,
-    isDeletingTag,
     handleRefresh
-  } = useTagOperations(safeContentId);
+  } = useTagOperations(contentId);
 
-  // Get ontology terms
+  // Use source metadata to get external source details
   const {
-    ontologyTerms,
-    isLoading: isOntologyLoading
-  } = useOntologyTerms(safeContentId, showOntologyTerms);
+    data,
+    isLoading: isSourceLoading,
+    error: sourceError,
+    fetchSourceMetadata
+  } = useSourceMetadata({ contentId });
 
-  // Get external source info
-  const {
-    externalSourceUrl,
-    lastCheckedAt
-  } = useExternalSource(safeContentId);
+  // Extract external source information
+  const externalSourceUrl = data?.external_source_url || null;
+  const lastCheckedAt = data?.external_source_checked_at || null;
+  const needsExternalReview = data?.needs_external_review || false;
 
-  // Combined loading state
-  const isLoading = isTagsLoading || isOntologyLoading;
-  
-  // Prepare validation data
-  const isValidContent = isValidContentId(safeContentId);
-  const contentValidationResult = "Valid content ID"; // Simplified for now
+  // Check if content ID is valid
+  const isValidContent = isValidContentId(contentId);
 
-  // Handle all loading states
-  if (isLoading) {
+  // Loading state
+  if (isSourceLoading || isTagsLoading) {
     return (
-      <div className={`p-4 flex justify-center items-center ${className}`}>
-        <Spinner size="md" />
+      <div className={`flex justify-center items-center p-4 ${className}`}>
+        <Spinner className="h-6 w-6 text-primary" />
+        <span className="ml-2 text-muted-foreground">Loading metadata...</span>
       </div>
     );
   }
 
-  // Handle content validation
-  if (!isValidContent) {
-    return (
-      <div className={className}>
-        <ContentAlert contentId={safeContentId} />
-      </div>
-    );
-  }
-
-  // Show metadata content when everything is ready
   return (
     <div className={className}>
-      <MetadataContent
-        isLoading={isLoading}
-        error={tagsError as Error}
-        contentId={safeContentId}
-        externalSourceUrl={externalSourceUrl}
-        lastCheckedAt={lastCheckedAt}
-        tags={tags}
-        editable={editable}
-        newTag={newTag}
-        setNewTag={setNewTag}
-        onAddTag={handleAddTag}
-        onDeleteTag={handleDeleteTag}
-        isPending={isAddingTag || isDeletingTag}
-        showOntologyTerms={showOntologyTerms}
-        ontologyTerms={ontologyTerms}
-        onMetadataChange={safeMetadataChange}
-        onRefresh={handleRefresh}
-      >
-        {children}
-      </MetadataContent>
+      <ContentAlert 
+        contentId={contentId} 
+        isValidContent={isValidContent}
+        contentExists={contentExists}
+      />
+      
+      {isValidContent && contentExists && (
+        <MetadataContent
+          data={data}
+          contentId={contentId}
+          error={sourceError || tagsError}
+          tags={tags}
+          editable={editable}
+          newTag={newTag}
+          setNewTag={setNewTag}
+          onAddTag={handleAddTag}
+          onDeleteTag={handleDeleteTag}
+          onRefresh={handleRefresh}
+          externalSourceUrl={externalSourceUrl}
+          lastCheckedAt={lastCheckedAt}
+          needsExternalReview={needsExternalReview}
+          onMetadataChange={onMetadataChange}
+          showOntologyTerms={showOntologyTerms}
+        />
+      )}
+
+      {children}
     </div>
   );
 }

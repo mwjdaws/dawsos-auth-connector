@@ -20,7 +20,7 @@ export function RelationshipGraphPanel({ sourceId, contentId, hasAttemptedRetry 
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   
   // Determine the starting node ID - use sourceId if available, otherwise contentId
-  const startingNodeId = sourceId || contentId || '';
+  const startingNodeId = ensureNodeId(sourceId || contentId);
   
   // Update dimensions based on container size
   useEffect(() => {

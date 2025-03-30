@@ -1,68 +1,88 @@
 
-import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { LoadingState, ErrorState } from "@/components/ui/shared-states";
+import React from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
+import { ErrorState } from '@/components/common/states/ErrorState';
+import { LoadingState } from '@/components/common/states/LoadingState';
+import { EmptyState } from '@/components/common/states/EmptyState';
 
-interface TagListProps {
-  tags: { name: string; id?: string }[];
-  isLoading?: boolean;
+export interface TagItem {
+  id: string;
+  name: string;
+}
+
+export interface TagListProps {
+  tags: TagItem[];
+  isLoading: boolean;
   error?: Error | null;
-  onRetry?: () => void;
   knowledgeSourceId?: string;
+  editable?: boolean;
   onTagClick?: (tag: string) => void;
+  onDeleteTag?: (tagId: string) => void;
+  retry?: () => void;
 }
 
 export function TagList({ 
   tags, 
-  isLoading, 
-  error, 
-  onRetry,
+  isLoading,
+  error,
   knowledgeSourceId,
-  onTagClick
+  editable = false,
+  onTagClick,
+  onDeleteTag,
+  retry
 }: TagListProps) {
   if (isLoading) {
-    return <LoadingState variant="skeleton" text="Loading tags..." />;
+    return <LoadingState text="Loading tags..." />;
   }
   
   if (error) {
     return (
       <ErrorState 
         error={error} 
-        title="Failed to load tags" 
-        retry={onRetry} 
+        title="Error Loading Tags" 
+        retry={retry} 
       />
     );
   }
   
   if (!tags.length) {
     return (
-      <div className="p-4 text-center border rounded-md bg-background">
-        <p className="text-muted-foreground">No tags generated yet.</p>
-      </div>
+      <EmptyState 
+        title="No Tags Found" 
+        description="There are no tags associated with this content."
+      />
     );
   }
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-medium">Generated Tags</h3>
-      <div className="flex flex-wrap gap-2">
-        {tags.map((tag, index) => (
-          <Badge 
-            key={tag.id || index}
-            variant="secondary"
-            className="cursor-pointer hover:bg-secondary/80"
-            onClick={() => onTagClick?.(tag.name)}
-          >
-            {tag.name}
-          </Badge>
-        ))}
-      </div>
-      
-      {knowledgeSourceId && (
-        <p className="text-xs text-muted-foreground">
-          Source ID: {knowledgeSourceId}
-        </p>
-      )}
+    <div className="flex flex-wrap gap-2 items-center">
+      {tags.map((tag) => (
+        <Badge 
+          key={tag.id}
+          variant="secondary"
+          className="flex items-center gap-1 cursor-pointer"
+          onClick={() => onTagClick && onTagClick(tag.name)}
+        >
+          {tag.name}
+          
+          {editable && onDeleteTag && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-4 w-4 p-0 hover:bg-transparent"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteTag(tag.id);
+              }}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </Badge>
+      ))}
     </div>
   );
 }
