@@ -1,89 +1,88 @@
 
-import { GraphData, GraphNode, GraphLink } from '../types';
-import { ensureString, ensureNumber } from '../compatibility';
+/**
+ * Graph Utilities
+ * 
+ * This module provides utility functions for working with graph data.
+ */
+import { ensureString } from '@/utils/type-compatibility';
+import { GraphData, GraphNode, GraphLink } from '@/hooks/markdown-editor/types';
 
 /**
- * Helper function to find a node by ID
+ * Formats a graph node ID to ensure it's a valid string
  */
-export function findNodeById(nodes: GraphNode[], id: string | null | undefined): GraphNode | undefined {
-  if (!id) return undefined;
-  return nodes.find(node => node.id === id);
+export function formatNodeId(id: string | undefined | null): string {
+  return ensureString(id);
 }
 
 /**
- * Creates a default node with required properties
+ * Creates a color map based on node types
  */
-export function createDefaultNode(id: string, title: string, type: string = 'document'): GraphNode {
-  return {
-    id: ensureString(id),
-    title: ensureString(title),
-    name: ensureString(title), // Name is used for display in some renderers
-    type: ensureString(type),
-    val: 1
+export function createColorMap(nodes: GraphNode[]): Record<string, string> {
+  const colorMap: Record<string, string> = {};
+  const types = [...new Set(nodes.map(node => node.type))];
+  
+  // Default colors for common node types
+  const defaultColors: Record<string, string> = {
+    'source': '#3B82F6', // blue
+    'term': '#10B981',   // green
+    'domain': '#8B5CF6', // purple
+    'tag': '#F59E0B',    // amber
+    'default': '#6B7280' // gray
   };
+  
+  types.forEach(type => {
+    colorMap[type] = defaultColors[type] || defaultColors.default;
+  });
+  
+  return colorMap;
 }
 
 /**
- * Creates a default link between nodes
+ * Formats link labels for display
  */
-export function createDefaultLink(sourceId: string, targetId: string, type: string = 'default'): GraphLink {
+export function formatLinkLabel(link: GraphLink): string {
+  if (!link.label) return '';
+  return link.label.charAt(0).toUpperCase() + link.label.slice(1);
+}
+
+/**
+ * Generate link width based on type
+ */
+export function getLinkWidth(link: GraphLink): number {
+  switch (link.type) {
+    case 'strong':
+      return 2;
+    case 'weak':
+      return 0.5;
+    default:
+      return 1;
+  }
+}
+
+/**
+ * Safety utility to ensure graph data is valid
+ */
+export function safeGraphData(data: GraphData | null | undefined): GraphData {
+  if (!data) return { nodes: [], links: [] };
+  
+  // Ensure all nodes have valid IDs and labels
+  const validNodes = (data.nodes || []).map(node => ({
+    ...node,
+    id: ensureString(node.id),
+    label: ensureString(node.label),
+    type: ensureString(node.type)
+  }));
+  
+  // Ensure all links have valid source and target references
+  const validLinks = (data.links || []).filter(link => 
+    typeof link.source === 'string' && 
+    typeof link.target === 'string' &&
+    validNodes.some(node => node.id === link.source) &&
+    validNodes.some(node => node.id === link.target)
+  );
+  
   return {
-    source: ensureString(sourceId),
-    target: ensureString(targetId),
-    type: ensureString(type)
+    nodes: validNodes,
+    links: validLinks
   };
-}
-
-/**
- * Merges two graph data objects
- */
-export function mergeGraphData(data1: GraphData, data2: GraphData): GraphData {
-  const nodeIds = new Set<string>();
-  const linkKeys = new Set<string>();
-  const mergedNodes: GraphNode[] = [];
-  const mergedLinks: GraphLink[] = [];
-  
-  // Process nodes from data1
-  data1.nodes.forEach(node => {
-    if (!nodeIds.has(node.id)) {
-      nodeIds.add(node.id);
-      mergedNodes.push({...node});
-    }
-  });
-  
-  // Process nodes from data2
-  data2.nodes.forEach(node => {
-    if (!nodeIds.has(node.id)) {
-      nodeIds.add(node.id);
-      mergedNodes.push({...node});
-    }
-  });
-  
-  // Process links from data1
-  data1.links.forEach(link => {
-    const linkKey = `${link.source}-${link.target}-${link.type}`;
-    if (!linkKeys.has(linkKey)) {
-      linkKeys.add(linkKey);
-      mergedLinks.push({...link});
-    }
-  });
-  
-  // Process links from data2
-  data2.links.forEach(link => {
-    const linkKey = `${link.source}-${link.target}-${link.type}`;
-    if (!linkKeys.has(linkKey)) {
-      linkKeys.add(linkKey);
-      mergedLinks.push({...link});
-    }
-  });
-  
-  return { nodes: mergedNodes, links: mergedLinks };
-}
-
-/**
- * Safely formats a graph node for display
- */
-export function formatNodeLabel(node: GraphNode | undefined): string {
-  if (!node) return 'Unknown';
-  return ensureString(node.title || node.name);
 }

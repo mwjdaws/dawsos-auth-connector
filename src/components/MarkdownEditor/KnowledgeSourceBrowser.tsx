@@ -7,6 +7,7 @@ import { Search, Book } from 'lucide-react';
 import { KnowledgeSource } from '@/services/api/types';
 import { useKnowledgeSourcesQuery } from '@/hooks/markdown-editor/useKnowledgeSources';
 import { Skeleton } from '@/components/ui/skeleton';
+import { undefinedToNull } from '@/utils/type-compatibility';
 
 interface KnowledgeSourceBrowserProps {
   onSelectSource: (source: KnowledgeSource) => void;
@@ -43,12 +44,12 @@ export function KnowledgeSourceBrowser({ onSelectSource }: KnowledgeSourceBrowse
       id: apiSource.id,
       title: apiSource.title,
       content: apiSource.content,
-      created_at: apiSource.created_at || new Date().toISOString(),
-      updated_at: apiSource.updated_at || new Date().toISOString(),
-      external_source_url: apiSource.external_source_url || undefined,
-      external_source_checked_at: apiSource.external_source_checked_at || undefined,
-      external_content_hash: apiSource.external_content_hash || undefined,
-      needs_external_review: apiSource.is_published
+      createdAt: apiSource.created_at || new Date().toISOString(),
+      updatedAt: apiSource.updated_at || new Date().toISOString(),
+      externalSourceUrl: apiSource.external_source_url || null,
+      externalSourceCheckedAt: apiSource.external_source_checked_at || null,
+      externalContentHash: apiSource.external_content_hash || null,
+      needsExternalReview: apiSource.is_published
     };
     
     onSelectSource(source);

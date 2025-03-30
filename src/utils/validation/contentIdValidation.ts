@@ -1,28 +1,21 @@
 
-/**
- * Content ID validation utilities
- * Provides functions for validating knowledge content IDs
- */
-
 import { ContentIdValidationResult, ContentIdValidationResultType } from './types';
 
 /**
- * Checks if a content ID is valid
+ * Validates a content ID string to ensure it's valid for use
  */
 export function isValidContentId(contentId: string | null | undefined): boolean {
   if (!contentId) return false;
   
-  // Valid content IDs should be UUIDs
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  
-  // Exception: temporary IDs starting with 'temp-' are also valid
-  const isTempId = contentId.startsWith('temp-');
-  
-  return uuidRegex.test(contentId) || isTempId;
+  // Valid UUIDs and temporary IDs starting with 'temp-' are considered valid
+  return (
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(contentId) ||
+    contentId.startsWith('temp-')
+  );
 }
 
 /**
- * Gets detailed validation result for a content ID
+ * Performs a more detailed validation of a content ID and returns structured result
  */
 export function getContentIdValidationResult(contentId: string | null | undefined): ContentIdValidationResult {
   if (!contentId) {
@@ -32,7 +25,7 @@ export function getContentIdValidationResult(contentId: string | null | undefine
       message: 'Content ID is missing'
     };
   }
-
+  
   if (contentId.trim() === '') {
     return {
       isValid: false,
@@ -40,33 +33,28 @@ export function getContentIdValidationResult(contentId: string | null | undefine
       message: 'Content ID is empty'
     };
   }
-
+  
   if (contentId.startsWith('temp-')) {
     return {
       isValid: true,
       result: ContentIdValidationResultType.Temporary,
-      message: 'Content ID is temporary'
+      message: 'Content ID is a temporary ID'
     };
   }
-
-  // Check if it's a valid UUID
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const isValidUuid = uuidRegex.test(contentId);
-
-  if (isValidUuid) {
+  
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(contentId);
+  
+  if (isUUID) {
     return {
       isValid: true,
       result: ContentIdValidationResultType.Valid,
       message: null
     };
   }
-
+  
   return {
     isValid: false,
     result: ContentIdValidationResultType.Invalid,
-    message: 'Content ID is not a valid UUID'
+    message: 'Content ID is not a valid UUID or temporary ID'
   };
 }
-
-// Re-export the types for backward compatibility
-export type { ContentIdValidationResult, ContentIdValidationResultType } from './types';

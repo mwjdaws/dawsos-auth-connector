@@ -1,166 +1,175 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { OntologySuggestions, OntologySuggestion, RelatedNote } from './types';
+import { useAuth } from '@/hooks/useAuth';
 import { handleError } from '@/utils/errors';
-import { 
-  OntologySuggestion, 
-  RelatedNote, 
-  EnrichmentResult 
-} from './ontology-suggestions/types';
-import { 
-  analyzeContent as analyzeContentService,
-  getAppliedTerms 
-} from './ontology-suggestions/suggestionsService';
-import { 
-  applySuggestedTerm as applyTerm,
-  rejectSuggestedTerm as rejectTerm,
-  applyAllSuggestedTerms as applyAllTerms
-} from './ontology-suggestions/termOperations';
-import { 
-  applySuggestedLink as applyLink,
-  rejectSuggestedLink as rejectLink
-} from './ontology-suggestions/linkOperations';
+import { toast } from '@/hooks/use-toast';
 
-export const useOntologySuggestions = () => {
-  const [suggestions, setSuggestions] = useState<EnrichmentResult>({
-    sourceId: '',
-    terms: [],
-    notes: []
+export function useOntologySuggestions() {
+  const [suggestions, setSuggestions] = useState<OntologySuggestions>({ 
+    terms: [], 
+    relatedNotes: [] 
   });
   const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
 
-  /**
-   * Analyze content to get ontology term and related note suggestions
-   */
-  const analyzeContent = async (content: string, title: string, sourceId: string) => {
-    if (!content || content.length < 20 || !sourceId) {
-      console.log('Content too short or sourceId missing');
+  const analyzeContent = useCallback(async (
+    content: string, 
+    title: string, 
+    sourceId: string
+  ) => {
+    if (!content || !sourceId) {
       return;
     }
 
     setIsLoading(true);
-
+    
     try {
-      // Call the service to get ontology suggestions
-      const data = await analyzeContentService(content, title, sourceId);
-      
-      if (!data) {
-        setIsLoading(false);
-        return;
+      const { data, error } = await supabase.functions.invoke('analyze-content', {
+        body: { content, title, sourceId }
+      });
+
+      if (error) {
+        throw error;
       }
-      
-      // Get already applied terms to mark them as applied in the UI
-      const appliedTermIds = await getAppliedTerms(sourceId);
-      
-      // Update the suggestion terms with applied status
-      const terms = (data.terms || []).map(term => ({
-        ...term,
-        applied: appliedTermIds.has(term.id),
-        rejected: false
-      }));
-      
-      const notes = (data.notes || []).map(note => ({
-        ...note,
-        applied: false,
-        rejected: false
-      }));
-      
-      setSuggestions({
-        sourceId,
-        terms,
-        notes
+
+      setSuggestions(data || { terms: [], relatedNotes: [] });
+    } catch (err) {
+      handleError(err, "Failed to analyze content for ontology terms", {
+        context: { sourceId },
+        level: "error"
       });
       
-      return { terms, notes };
-    } catch (error) {
-      handleError(
-        error,
-        "Failed to analyze content for ontology suggestions",
-        { level: "warning", technical: true, silent: true }
-      );
+      toast({
+        title: "Error",
+        description: "Failed to generate ontology suggestions",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
-  };
-  
-  /**
-   * Apply a suggested term by creating an association between the term and the source
-   */
-  const applySuggestedTerm = async (termId: string, sourceId: string) => {
-    const { success, updatedTerms } = await applyTerm(termId, sourceId, suggestions.terms);
-    
-    if (success) {
-      setSuggestions({
-        ...suggestions,
-        terms: updatedTerms
-      });
+  }, []);
+
+  const applySuggestedTerm = useCallback(async (
+    termId: string,
+    sourceId: string
+  ) => {
+    if (!termId || !sourceId) {
+      return false;
     }
-    
-    return success;
-  };
-  
-  /**
-   * Reject a suggested term by marking it as rejected in the UI only
-   */
-  const rejectSuggestedTerm = (termId: string) => {
-    const { success, updatedTerms } = rejectTerm(termId, suggestions.terms);
-    
-    if (success) {
-      setSuggestions({
-        ...suggestions,
-        terms: updatedTerms
+
+    try {
+      const { data, error } = await supabase
+        .from('knowledge_source_ontology_terms')
+        .insert({
+          knowledge_source_id: sourceId,
+          ontology_term_id: termId,
+          created_by: user?.id || null,
+          review_required: false
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      // Update local state to mark as applied
+      setSuggestions(prev => ({
+        ...prev,
+        terms: prev.terms.map(term => 
+          term.id === termId 
+            ? { ...term, applied: true, rejected: false } 
+            : term
+        )
+      }));
+
+      toast({
+        title: "Term Applied",
+        description: "The suggested ontology term has been applied"
       });
-    }
-    
-    return success;
-  };
-  
-  /**
-   * Apply all suggested terms that match certain criteria (for admin/auto mode)
-   */
-  const applyAllSuggestedTerms = async (sourceId: string, minScore = 60) => {
-    const { success, updatedTerms } = await applyAllTerms(sourceId, suggestions.terms, minScore);
-    
-    if (success) {
-      setSuggestions({
-        ...suggestions,
-        terms: updatedTerms
+
+      return true;
+    } catch (err) {
+      handleError(err, "Failed to apply ontology term", {
+        context: { termId, sourceId },
+        level: "error"
       });
+      return false;
     }
+  }, [user?.id]);
+
+  const rejectSuggestedTerm = useCallback((termId: string) => {
+    setSuggestions(prev => ({
+      ...prev,
+      terms: prev.terms.map(term => 
+        term.id === termId 
+          ? { ...term, rejected: true, applied: false } 
+          : term
+      )
+    }));
     
-    return success;
-  };
-  
-  /**
-   * Apply a suggested link by creating a relationship between documents
-   */
-  const applySuggestedLink = async (targetId: string, sourceId: string) => {
-    const { success, updatedNotes } = await applyLink(targetId, sourceId, suggestions.notes);
-    
-    if (success) {
-      setSuggestions({
-        ...suggestions,
-        notes: updatedNotes
+    return true;
+  }, []);
+
+  const applyAllSuggestedTerms = useCallback(async (
+    sourceId: string, 
+    confidenceThreshold: number = 70
+  ) => {
+    try {
+      const highConfidenceTerms = suggestions.terms
+        .filter(term => 
+          !term.applied && 
+          !term.rejected && 
+          (term.score || 0) >= confidenceThreshold
+        );
+      
+      if (highConfidenceTerms.length === 0) {
+        toast({
+          title: "No Terms to Apply",
+          description: "There are no high-confidence terms to apply"
+        });
+        return false;
+      }
+      
+      const termEntries = highConfidenceTerms.map(term => ({
+        knowledge_source_id: sourceId,
+        ontology_term_id: term.id,
+        created_by: user?.id || null,
+        review_required: false
+      }));
+      
+      const { error } = await supabase
+        .from('knowledge_source_ontology_terms')
+        .insert(termEntries);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Update local state to mark all as applied
+      setSuggestions(prev => ({
+        ...prev,
+        terms: prev.terms.map(term => 
+          highConfidenceTerms.some(hct => hct.id === term.id)
+            ? { ...term, applied: true, rejected: false }
+            : term
+        )
+      }));
+      
+      toast({
+        title: "Terms Applied",
+        description: `Applied ${highConfidenceTerms.length} high-confidence terms`
       });
-    }
-    
-    return success;
-  };
-  
-  /**
-   * Reject a suggested link by marking it as rejected in the UI only
-   */
-  const rejectSuggestedLink = (noteId: string) => {
-    const { success, updatedNotes } = rejectLink(noteId, suggestions.notes);
-    
-    if (success) {
-      setSuggestions({
-        ...suggestions,
-        notes: updatedNotes
+      
+      return true;
+    } catch (err) {
+      handleError(err, "Failed to apply all ontology terms", {
+        context: { sourceId },
+        level: "error"
       });
+      return false;
     }
-    
-    return success;
-  };
+  }, [suggestions.terms, user?.id]);
 
   return {
     suggestions,
@@ -168,8 +177,8 @@ export const useOntologySuggestions = () => {
     analyzeContent,
     applySuggestedTerm,
     rejectSuggestedTerm,
-    applyAllSuggestedTerms,
-    applySuggestedLink,
-    rejectSuggestedLink
+    applyAllSuggestedTerms
   };
-};
+}
+
+export default useOntologySuggestions;

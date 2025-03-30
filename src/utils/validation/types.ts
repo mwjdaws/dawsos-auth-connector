@@ -23,4 +23,22 @@ export interface ContentIdValidationResult {
 export interface ValidationResult {
   isValid: boolean;
   errorMessage?: string | null;
+  message?: string | null; // Added for backward compatibility
+}
+
+// Tag validation options
+export interface TagValidationOptions {
+  allowEmpty?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  maxTags?: number;
+  allowDuplicates?: boolean;
+  pattern?: RegExp;
+}
+
+// Tag position interface for drag-and-drop reordering
+export interface TagPosition {
+  id: string;
+  position: number;
+  name: string;
 }

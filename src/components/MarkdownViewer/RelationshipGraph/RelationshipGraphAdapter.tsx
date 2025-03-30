@@ -7,7 +7,7 @@
  */
 import React from 'react';
 import { RelationshipGraph } from './RelationshipGraph';
-import { ensureString } from '@/utils/type-compatibility';
+import { ensureString } from './compatibility';
 
 interface RelationshipGraphAdapterProps {
   startingNodeId?: string;
@@ -26,7 +26,7 @@ export function RelationshipGraphAdapter({
   height = 600
 }: RelationshipGraphAdapterProps) {
   // Convert undefined to empty string instead of directly passing undefined
-  const safeNodeId = startingNodeId ? startingNodeId : '';
+  const safeNodeId = ensureString(startingNodeId);
   
   return (
     <RelationshipGraph

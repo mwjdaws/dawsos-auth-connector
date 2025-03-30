@@ -2,79 +2,83 @@
 import { ValidationResult, TagValidationOptions } from './types';
 
 /**
- * Default tag validation options
+ * Validates a list of tags against validation options
  */
-const defaultTagOptions: TagValidationOptions = {
-  minLength: 2,
-  maxLength: 50,
-  allowedChars: /^[a-zA-Z0-9\-_\s]+$/,
-  allowEmpty: false
-};
+export function validateTags(
+  tags: string[],
+  options: TagValidationOptions = {}
+): ValidationResult {
+  const {
+    allowEmpty = true,
+    minLength = 1,
+    maxLength = 50,
+    maxTags = 100,
+    allowDuplicates = false,
+    pattern
+  } = options;
 
-/**
- * Validates a single tag
- */
-export function validateTag(tag: string, options: TagValidationOptions = {}): ValidationResult {
-  const opts = { ...defaultTagOptions, ...options };
-  
-  if (!tag && !opts.allowEmpty) {
+  // Check if empty tags are allowed
+  if (!allowEmpty && tags.length === 0) {
     return {
       isValid: false,
-      message: 'Tag cannot be empty',
-      errorMessage: 'Tag cannot be empty'
+      errorMessage: 'At least one tag is required',
+      message: 'At least one tag is required'
     };
   }
-  
-  if (tag.length < opts.minLength!) {
-    return {
-      isValid: false,
-      message: `Tag must be at least ${opts.minLength} characters`,
-      errorMessage: `Tag must be at least ${opts.minLength} characters`
-    };
-  }
-  
-  if (tag.length > opts.maxLength!) {
-    return {
-      isValid: false,
-      message: `Tag cannot exceed ${opts.maxLength} characters`,
-      errorMessage: `Tag cannot exceed ${opts.maxLength} characters`
-    };
-  }
-  
-  if (!opts.allowedChars!.test(tag)) {
-    return {
-      isValid: false,
-      message: 'Tag contains invalid characters',
-      errorMessage: 'Tag contains invalid characters'
-    };
-  }
-  
-  return {
-    isValid: true,
-    message: null
-  };
-}
 
-/**
- * For backward compatibility with code that expects validateTags
- */
-export function validateTags(tags: string[], options: TagValidationOptions = {}): ValidationResult {
-  if (!tags || tags.length === 0) {
+  // Check maximum number of tags
+  if (tags.length > maxTags) {
     return {
-      isValid: true,
-      message: null
+      isValid: false,
+      errorMessage: `Maximum of ${maxTags} tags allowed`,
+      message: `Maximum of ${maxTags} tags allowed`
     };
   }
-  
-  for (const tag of tags) {
-    const result = validateTag(tag, options);
-    if (!result.isValid) {
-      return result;
+
+  // Check for duplicates
+  if (!allowDuplicates) {
+    const uniqueTags = new Set(tags);
+    if (uniqueTags.size !== tags.length) {
+      return {
+        isValid: false,
+        errorMessage: 'Duplicate tags are not allowed',
+        message: 'Duplicate tags are not allowed'
+      };
     }
   }
-  
+
+  // Validate individual tags
+  for (const tag of tags) {
+    // Check length
+    if (tag.length < minLength) {
+      return {
+        isValid: false,
+        errorMessage: `Tags must be at least ${minLength} characters`,
+        message: `Tags must be at least ${minLength} characters`
+      };
+    }
+
+    if (tag.length > maxLength) {
+      return {
+        isValid: false,
+        errorMessage: `Tags must be no more than ${maxLength} characters`,
+        message: `Tags must be no more than ${maxLength} characters`
+      };
+    }
+
+    // Check pattern if specified
+    if (pattern && !pattern.test(tag)) {
+      return {
+        isValid: false,
+        errorMessage: 'Tag contains invalid characters',
+        message: 'Tag contains invalid characters'
+      };
+    }
+  }
+
   return {
     isValid: true,
+    errorMessage: null,
     message: null
   };
 }

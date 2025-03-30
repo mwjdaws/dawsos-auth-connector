@@ -1,71 +1,75 @@
 
 /**
- * Error handling types
+ * Error handling type definitions
  */
 
 // Error severity levels
 export type ErrorLevel = 'debug' | 'info' | 'warning' | 'error' | 'critical';
 
-// Error classification
-export enum ErrorCategory {
-  NETWORK = 'network',
-  AUTH = 'authentication',
-  VALIDATION = 'validation',
-  DATABASE = 'database',
-  PERMISSION = 'permission',
-  API = 'api',
-  TIMEOUT = 'timeout',
-  SYSTEM = 'system',
-  UNKNOWN = 'unknown'
+// Standardized error object for consistent error handling
+export interface StandardizedError extends Error {
+  originalError: unknown;
+  userMessage: string;
+  timestamp: number;
+  context?: Record<string, any>;
+  code?: string;
+  source?: string;
+  technical?: boolean;
+  silent?: boolean;
+  level?: ErrorLevel;
 }
 
-// Error handling options
+// API error specific structure
+export interface ApiError extends StandardizedError {
+  statusCode?: number;
+  endpoint?: string;
+  requestId?: string;
+  responseData?: any;
+}
+
+// Validation error
+export interface ValidationError extends StandardizedError {
+  field?: string;
+  value?: any;
+  constraints?: Record<string, string>;
+}
+
+// Options for error handling
 export interface ErrorHandlingOptions {
-  // Error severity
   level?: ErrorLevel;
-  
-  // Additional context for debugging
   context?: Record<string, any>;
-  
-  // Don't show toast notification if true
   silent?: boolean;
-  
-  // Is this a technical error (for developer) or user-facing
   technical?: boolean;
-  
-  // Custom toast title
   title?: string;
-  
-  // Retry button label
   actionLabel?: string;
-  
-  // Retry action
   onRetry?: () => void;
-  
-  // Prevent showing duplicate errors
   preventDuplicate?: boolean;
-  
-  // Toast duration
   duration?: number;
 }
 
-// Standardized error object
-export interface StandardizedError {
-  // Original error object
-  originalError: unknown;
-  
-  // Error message for developers
-  message: string;
-  
-  // User-friendly message
-  userMessage: string;
-  
-  // Error code if available
-  code?: string;
-  
-  // When the error occurred
-  timestamp: Date;
-  
-  // Error context data
-  context: Record<string, any>;
+// Type guard to check if an error is a StandardizedError
+export function isStandardizedError(error: unknown): error is StandardizedError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'originalError' in error &&
+    'userMessage' in error &&
+    'timestamp' in error
+  );
+}
+
+// Type guard to check if an error is an ApiError
+export function isApiError(error: unknown): error is ApiError {
+  return (
+    isStandardizedError(error) &&
+    'statusCode' in error
+  );
+}
+
+// Type guard to check if an error is a ValidationError
+export function isValidationError(error: unknown): error is ValidationError {
+  return (
+    isStandardizedError(error) &&
+    'field' in error
+  );
 }

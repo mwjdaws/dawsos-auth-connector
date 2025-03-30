@@ -1,123 +1,129 @@
-
-import React, { useState, useTransition } from 'react';
-import { OntologyTerm, useOntologyTerms, useTermMutations } from '@/hooks/markdown-editor';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, X, Loader2 } from 'lucide-react';
+import { PlusCircle, RefreshCcw, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
+import { OntologyTerm } from '@/hooks/markdown-editor/types';
+import { useOntologyTerms } from '@/hooks/markdown-viewer/useOntologyTerms';
+import { useTermMutations } from '@/hooks/markdown-viewer/useTermMutations';
 
 interface OntologyTermsPanelProps {
-  sourceId?: string;
-  editable?: boolean;
+  contentId: string;
 }
 
-export function OntologyTermsPanel({ sourceId, editable = false }: OntologyTermsPanelProps) {
-  const [isPending, startTransition] = useTransition();
-  const [newTerm, setNewTerm] = useState('');
-  const { sourceTerms: terms, relatedTerms, isLoading } = useOntologyTerms(sourceId);
-  const { addTermByName, removeTerm, isAdding, isRemoving } = useTermMutations(sourceId);
+export const OntologyTermsPanel: React.FC<OntologyTermsPanelProps> = ({ contentId }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const { user } = useAuth();
+  const { terms, isLoading, error, handleRefresh } = useOntologyTerms(contentId);
+  const { addTerm, deleteTerm, isAdding, isDeleting } = useTermMutations(contentId);
 
-  const handleAddTerm = () => {
-    if (!newTerm.trim() || !sourceId) return;
-    
-    startTransition(() => {
-      addTermByName(newTerm).then(() => {
-        setNewTerm('');
+  const filteredTerms = terms.filter(term =>
+    term.term.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleAddTerm = async (term: OntologyTerm) => {
+    if (!contentId) {
+      toast({
+        title: "Error",
+        description: "Content ID is missing",
+        variant: "destructive",
       });
+      return;
+    }
+
+    await addTerm({
+      contentId: contentId,
+      termId: term.id,
+      createdBy: user?.id || null,
+      reviewRequired: false
     });
   };
 
-  const handleRemoveTerm = (termAssociationId: string) => {
-    if (!sourceId) return;
-    
-    startTransition(() => {
-      removeTerm(termAssociationId);
+  const handleDeleteTerm = async (termId: string) => {
+    if (!contentId) {
+      toast({
+        title: "Error",
+        description: "Content ID is missing",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await deleteTerm({
+      contentId: contentId,
+      termId: termId
     });
   };
-
-  if (isLoading) {
-    return (
-      <div className="space-y-2">
-        <h3 className="text-sm font-medium mb-2">Ontology Terms</h3>
-        <Skeleton className="h-6 w-full" />
-        <Skeleton className="h-6 w-3/4" />
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-medium mb-2">Ontology Terms</h3>
-      
-      <div className="flex flex-wrap gap-2 mb-3">
-        {terms.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No ontology terms</p>
-        ) : (
-          terms.map((term) => (
-            <Badge 
-              key={term.associationId} 
-              variant="secondary"
-              className="flex items-center gap-1"
-            >
-              {term.domain && <span className="text-xs text-muted-foreground">{term.domain}:</span>}{' '}
-              {term.term}
-              {editable && (
-                <button
-                  onClick={() => handleRemoveTerm(term.associationId!)}
-                  className="ml-1 text-muted-foreground hover:text-foreground"
-                  disabled={isRemoving}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-            </Badge>
-          ))
-        )}
-        {isPending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-      </div>
-      
-      {editable && (
-        <div className="flex gap-2 items-center">
+    <Card>
+      <CardHeader>
+        <CardTitle>Ontology Terms</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            value={newTerm}
-            onChange={(e) => setNewTerm(e.target.value)}
-            placeholder="Add ontology term..."
-            className="text-sm h-8"
-            onKeyDown={(e) => e.key === 'Enter' && handleAddTerm()}
+            placeholder="Search terms..."
+            className="pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <Button 
-            size="sm"
-            variant="ghost"
-            disabled={!newTerm.trim() || isAdding}
-            onClick={handleAddTerm}
-          >
-            {isAdding ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <PlusCircle className="h-4 w-4" />
-            )}
-          </Button>
         </div>
-      )}
-      
-      {relatedTerms.length > 0 && (
-        <div className="mt-4">
-          <h4 className="text-xs font-medium text-muted-foreground mb-2">Related Terms</h4>
-          <div className="flex flex-wrap gap-2">
-            {relatedTerms.map((term) => (
-              <Badge 
-                key={term.term_id} 
-                variant="outline"
-                className="text-xs"
-              >
-                {term.domain && <span className="text-xs text-muted-foreground">{term.domain}:</span>}{' '}
-                {term.term}
-              </Badge>
+
+        {isLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        ) : error ? (
+          <p className="text-sm text-destructive">Error: {error}</p>
+        ) : filteredTerms.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No terms found.</p>
+        ) : (
+          <div className="space-y-2">
+            {filteredTerms.map((term) => (
+              <div key={term.id} className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">{term.term}</p>
+                  <p className="text-xs text-muted-foreground">{term.domain}</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDeleteTerm(term.id)}
+                  disabled={isDeleting}
+                >
+                  Remove
+                </Button>
+              </div>
             ))}
           </div>
-        </div>
-      )}
-    </div>
+        )}
+
+        <Button
+          variant="secondary"
+          className="w-full justify-center"
+          onClick={handleRefresh}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
+              Refreshing...
+            </>
+          ) : (
+            <>
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Refresh
+            </>
+          )}
+        </Button>
+      </CardContent>
+    </Card>
   );
-}
+};
