@@ -1,109 +1,140 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/use-toast';
-import type { StandardizedError, ErrorHandlingOptions } from './types';
-import { generateErrorId } from './generateId';
-import { ToastActionElement } from "@/components/ui/toast";
-import { formatErrorMessage, formatUserErrorMessage } from './format';
-import { isDuplicateError } from './deduplication';
+import { v4 as uuidv4 } from 'uuid';
+import { toast as showToast } from '@/components/ui/use-toast';
+import { ToastAction } from '@/components/ui/toast';
+import { categorizeError, getErrorMessage } from './categorize';
+import { ErrorLevel, StandardizedError } from './types';
+import { ErrorHandlingCompatOptions } from '@/utils/compatibility';
 
-// Error severity levels
-export type ErrorSeverity = 'debug' | 'info' | 'warning' | 'error' | 'critical';
+// Global error tracking to prevent duplicates
+const recentErrors = new Map<string, number>();
 
-// Error counter to prevent flooding users with duplicate errors
-const errorCounter: Record<string, number> = {};
+// Error deduplication window (in milliseconds)
+const DEDUPLICATION_WINDOW = 5000;
+
+// Clean up old error entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, timestamp] of recentErrors.entries()) {
+    if (now - timestamp > DEDUPLICATION_WINDOW) {
+      recentErrors.delete(key);
+    }
+  }
+}, 60000); // Clean up every minute
 
 /**
- * Centralized error handling function
- * 
- * This function standardizes error handling throughout the application
- * ensuring consistent user feedback and error tracking.
- * 
- * @param error The error object or message
- * @param userMessage Optional user-friendly message
- * @param options Additional error handling options
+ * Handle errors in a standardized way throughout the application
+ * @param error The error object to handle
+ * @param userMessage Optional user-friendly message to show
+ * @param options Additional options for error handling
  */
-export const handleError = (
+export function handleError(
   error: unknown,
   userMessage?: string,
-  options?: Partial<ErrorHandlingOptions>
-) => {
-  // Default options
-  const defaultOptions: ErrorHandlingOptions = {
-    level: 'error',
-    context: {},
-    silent: false,
-    deduplicate: true
-  };
+  options: ErrorHandlingCompatOptions = {}
+): StandardizedError {
+  // Process the error
+  const standardizedError = categorizeError(error);
+  const errorId = uuidv4();
   
-  const opts = { ...defaultOptions, ...options };
+  // Get the error message
+  const message = userMessage || getErrorMessage(standardizedError);
+  const errorLevel = options.level as ErrorLevel || standardizedError.level || 'error';
   
-  // Create standardized error object
-  const standardizedError: StandardizedError = {
-    id: generateErrorId(),
-    originalError: error,
-    message: formatErrorMessage(error),
-    userMessage: userMessage || formatErrorMessage(error),
-    level: opts.level,
-    context: opts.context || {},
-    timestamp: new Date(),
-    code: error instanceof Error && 'code' in error ? (error as any).code : 'UNKNOWN'
-  };
+  // Default values for options
+  const {
+    context = {},
+    silent = false,
+    technical = false,
+    title = 'An error occurred',
+    actionLabel,
+    onRetry,
+    preventDuplicate = false,
+    duration = 5000,
+    deduplicate = false
+  } = options;
 
-  // Check if we should deduplicate this error
-  if (opts.deduplicate && isDuplicateError(standardizedError)) {
-    console.debug('Duplicate error suppressed:', standardizedError);
-    return;
+  // Generate a deduplication key if needed
+  const deduplicationKey = deduplicate ? 
+    `${standardizedError.name || 'Error'}-${message}` : errorId;
+  
+  // Check for duplicate errors
+  if (deduplicate && recentErrors.has(deduplicationKey)) {
+    console.log(`Duplicate error suppressed: ${message}`);
+    return { ...standardizedError, id: errorId, handled: true };
   }
   
-  // Log the error based on severity level
-  switch (standardizedError.level) {
-    case 'debug':
-      console.debug('Debug error:', standardizedError);
-      break;
-    case 'info':
-      console.info('Info error:', standardizedError);
-      break;
-    case 'warning':
-      console.warn('Warning:', standardizedError);
-      break;
-    case 'critical':
-      console.error('CRITICAL ERROR:', standardizedError);
-      break;
-    case 'error':
-    default:
-      console.error('Error:', standardizedError);
+  // Record this error to prevent duplicates
+  if (deduplicate) {
+    recentErrors.set(deduplicationKey, Date.now());
   }
-  
-  // If silent mode is requested, don't show toast
-  if (opts.silent) {
-    return;
+
+  // Always log the error to the console for debugging
+  if (errorLevel === 'debug') {
+    console.debug(`[DEBUG ERROR] ${message}`, standardizedError, context);
+  } else if (errorLevel === 'info') {
+    console.info(`[INFO ERROR] ${message}`, standardizedError, context);
+  } else if (errorLevel === 'warning') {
+    console.warn(`[WARNING] ${message}`, standardizedError, context);
+  } else {
+    console.error(`[ERROR] ${message}`, standardizedError, context);
   }
-  
-  // Create retry button if a retry function is provided
-  let retryElement: ToastActionElement | undefined = undefined;
-  if (opts.onRetry) {
-    retryElement = (
-      <Button 
-        variant="outline" 
-        size="sm" 
-        onClick={() => opts.onRetry?.()}
-      >
-        Retry
-      </Button>
-    );
+
+  // Display a toast notification unless silent is true
+  if (!silent) {
+    const toastVariant = errorLevel === 'error' ? 'destructive' : 
+                        errorLevel === 'warning' ? 'warning' : 'default';
+    
+    // Create the retry action if a retry handler is provided
+    const action = onRetry && actionLabel ? (
+      <ToastAction altText={actionLabel} onClick={onRetry}>
+        {actionLabel}
+      </ToastAction>
+    ) : undefined;
+    
+    // Show the toast
+    showToast({
+      title,
+      description: technical ? `${message} (${standardizedError.name})` : message,
+      variant: toastVariant as any,
+      action,
+      duration
+    });
   }
-  
-  // Show toast notification
-  toast({
-    title: standardizedError.level === 'critical' ? 'Critical Error' : 'Error',
-    description: standardizedError.userMessage,
-    variant: 'destructive',
-    action: retryElement,
-    duration: 5000
-  });
-  
-  // Return the standardized error for further processing if needed
-  return standardizedError;
-};
+
+  // Return the standardized error with additional handling info
+  return {
+    ...standardizedError,
+    id: errorId,
+    handled: true
+  };
+}
+
+/**
+ * Safe version of handleError that doesn't require JSX
+ */
+export function handleErrorSafe(
+  error: unknown,
+  userMessage?: string,
+  options?: ErrorHandlingCompatOptions
+): StandardizedError {
+  try {
+    // Use the regular handler if possible
+    return handleError(error, userMessage, options);
+  } catch (e) {
+    // Fallback error handling (no UI)
+    console.error('Error handling error:', error);
+    console.error('User message:', userMessage);
+    console.error('Options:', options);
+    
+    const standardizedError = categorizeError(error);
+    return {
+      ...standardizedError,
+      id: 'fallback-' + Math.random().toString(36).substring(2, 9),
+      handled: true
+    };
+  }
+}
+
+export default handleError;

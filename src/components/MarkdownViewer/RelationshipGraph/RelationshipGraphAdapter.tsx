@@ -7,7 +7,7 @@
  */
 import React from 'react';
 import { RelationshipGraph } from './RelationshipGraph';
-import { ensureString } from './compatibility';
+import { ensureString, ensureNumber, ensureBoolean } from '@/utils/compatibility';
 
 interface RelationshipGraphAdapterProps {
   startingNodeId?: string;
@@ -27,13 +27,18 @@ export function RelationshipGraphAdapter({
 }: RelationshipGraphAdapterProps) {
   // Convert undefined to empty string instead of directly passing undefined
   const safeNodeId = ensureString(startingNodeId);
+  const safeWidth = ensureNumber(width);
+  const safeHeight = ensureNumber(height);
+  const safeHasRetried = ensureBoolean(hasAttemptedRetry);
   
   return (
     <RelationshipGraph
       startingNodeId={safeNodeId}
-      hasAttemptedRetry={hasAttemptedRetry}
-      width={width}
-      height={height}
+      hasAttemptedRetry={safeHasRetried}
+      width={safeWidth}
+      height={safeHeight}
     />
   );
 }
+
+export default RelationshipGraphAdapter;

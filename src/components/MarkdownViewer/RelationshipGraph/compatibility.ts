@@ -1,64 +1,99 @@
 
 /**
- * Compatibility layer for RelationshipGraph
- * 
- * This module provides utility functions and types to ensure compatibility
- * between different versions of the relationship graph components.
+ * Compatibility layer for RelationshipGraph components
  */
-import { GraphData, GraphNode, GraphLink } from '@/hooks/markdown-editor/types';
-import { ensureString } from '@/utils/type-compatibility';
-
-// Ensure string values are valid
-export { ensureString };
+import { GraphNode, GraphLink, GraphRendererRef } from './types';
 
 /**
- * Ensures a graph node has all required properties with valid types
+ * Ensures a string value for node IDs, never undefined or null
  */
-export function normalizeNode(node: any): GraphNode {
+export function ensureString(value: string | null | undefined): string {
+  return value || '';
+}
+
+/**
+ * Ensures a node ID is never undefined or null
+ */
+export function ensureNodeId(nodeId: string | null | undefined): string {
+  return nodeId || '';
+}
+
+/**
+ * Ensures a number, defaulting to 0 for null or undefined
+ */
+export function ensureNumber(value: number | null | undefined): number {
+  return typeof value === 'number' ? value : 0;
+}
+
+/**
+ * Creates safe graph props to prevent undefined values
+ */
+export function createSafeGraphProps(props: any) {
   return {
-    id: ensureString(node.id),
-    label: ensureString(node.label),
-    type: ensureString(node.type),
-    color: node.color || undefined,
-    domain: node.domain || undefined
+    width: ensureNumber(props?.width) || 800,
+    height: ensureNumber(props?.height) || 600,
+    startingNodeId: ensureString(props?.startingNodeId),
+    hasAttemptedRetry: props?.hasAttemptedRetry || false
   };
 }
 
 /**
- * Ensures a graph link has all required properties with valid types
+ * A compatibility wrapper for graph link data
  */
-export function normalizeLink(link: any): GraphLink {
-  return {
-    source: ensureString(link.source),
-    target: ensureString(link.target),
-    label: link.label || undefined,
-    type: link.type || undefined
+export function adaptGraphLink(link: any): GraphLink {
+  if (!link) return {
+    id: '',
+    source: '',
+    target: '',
+    label: '',
+    type: 'default'
   };
-}
-
-/**
- * Normalizes graph data to ensure it's compatible with the graph renderer
- */
-export function normalizeGraphData(data: any): GraphData {
-  if (!data) return { nodes: [], links: [] };
   
   return {
-    nodes: Array.isArray(data.nodes) ? data.nodes.map(normalizeNode) : [],
-    links: Array.isArray(data.links) ? data.links.map(normalizeLink) : []
+    id: ensureString(link.id),
+    source: typeof link.source === 'object' ? ensureString(link.source.id) : ensureString(link.source),
+    target: typeof link.target === 'object' ? ensureString(link.target.id) : ensureString(link.target),
+    label: ensureString(link.label),
+    type: ensureString(link.type) || 'default'
   };
 }
 
 /**
- * Prop compatibility types for the relationship graph
+ * Adapts node data to ensure type safety
  */
-export interface UseRelationshipGraphProps {
-  startingNodeId: string;
-  hasAttemptedRetry?: boolean;
-  width?: number;
-  height?: number;
+export function adaptGraphNode(node: any): GraphNode {
+  if (!node) return {
+    id: '',
+    title: '',
+    color: '#cccccc',
+    size: 1,
+    type: 'default'
+  };
+  
+  return {
+    id: ensureString(node.id),
+    title: ensureString(node.title || node.name),
+    color: ensureString(node.color) || '#cccccc',
+    size: ensureNumber(node.size) || 1,
+    type: ensureString(node.type) || 'default'
+  };
 }
 
-export interface GraphRendererRef {
-  zoomToFit: () => void;
-  getGraphData: () => GraphData;
+/**
+ * GraphRenderer reference compatibility wrapper
+ */
+export function createGraphRendererRefBridge(): React.RefObject<GraphRendererRef> {
+  return {
+    current: {
+      zoomToFit: () => {},
+      getGraphData: () => ({ nodes: [], links: [] })
+    }
+  };
+}
+
+/**
+ * Create a TooltipContent with type safety
+ */
+export function createTooltipContent(content: React.ReactNode) {
+  return content;
 }
