@@ -52,3 +52,31 @@ export interface TagPosition {
   id: string;
   position: number;
 }
+
+/**
+ * Generic tag interface with nullable fields for database compatibility
+ */
+export interface TagBase {
+  id: string;
+  name: string;
+  content_id: string | null;
+  type_id: string | null;
+  type_name?: string | null;
+}
+
+/**
+ * Tag interface for UI components
+ */
+export interface Tag {
+  id: string;
+  name: string;
+  content_id: string;
+  type_id?: string | null;
+  type_name?: string | null;
+}
+
+/**
+ * Legacy compatibility bridge for Tag types
+ * @deprecated Use Tag or TagBase directly
+ */
+export type TagCompatible = Tag | TagBase;

@@ -1,67 +1,72 @@
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Tag, UseTagFetchOptions, UseTagFetchResult } from './types';
 import { isValidContentId } from '@/utils/validation/contentIdValidation';
+import { Tag, UseTagFetchProps } from './types';
 
-/**
- * Hook for fetching tags for a content item
- */
-export const useTagFetch = ({
-  contentId,
-  setTags,
-  setIsLoading,
-  setError
-}: UseTagFetchOptions): UseTagFetchResult => {
+export function useTagFetch({ 
+  contentId, 
+  setTags, 
+  setIsLoading, 
+  setError 
+}: UseTagFetchProps) {
   const [loading, setLoading] = useState(false);
   const [error, setErrorState] = useState<Error | null>(null);
-
-  /**
-   * Fetch tags from the API
-   */
-  const fetchTags = useCallback(async (): Promise<Tag[]> => {
-    if (!isValidContentId(contentId)) {
-      setTags([]);
+  
+  // Set internal loading state while providing external state control
+  const updateLoading = (state: boolean) => {
+    setLoading(state);
+    if (setIsLoading) setIsLoading(state);
+  };
+  
+  // Set internal error state while providing external state control
+  const updateError = (err: Error | null) => {
+    setErrorState(err);
+    if (setError) setError(err);
+  };
+  
+  const fetchTags = async (): Promise<Tag[]> => {
+    if (!contentId || !isValidContentId(contentId)) {
       return [];
     }
-
-    if (setIsLoading) setIsLoading(true);
-    else setLoading(true);
+    
+    updateLoading(true);
+    updateError(null);
     
     try {
       const { data, error } = await supabase
         .from('tags')
-        .select('id, name, content_id, type_id')
-        .eq('content_id', contentId)
-        .order('id');
-
-      if (error) throw new Error(error.message);
-
-      // Map to the Tag interface
-      const tags: Tag[] = data.map(item => ({
-        id: item.id,
-        name: item.name,
-        content_id: item.content_id,
-        type_id: item.type_id,
-        type_name: null // We're not joining the type name here
+        .select('id, name, content_id, type_id, tag_types:type_id (name)')
+        .eq('content_id', contentId);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Convert to Tags and ensure all fields are properly typed
+      const mappedTags = (data || []).map(tag => ({
+        id: tag.id,
+        name: tag.name,
+        content_id: tag.content_id || contentId, // Use contentId as fallback
+        type_id: tag.type_id,
+        type_name: tag.tag_types ? tag.tag_types.name : null
       }));
-
-      setTags(tags);
-      return tags;
+      
+      setTags(mappedTags as Tag[]);
+      return mappedTags as Tag[];
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to fetch tags');
-      if (setError) setError(error);
-      else setErrorState(error);
+      const error = err instanceof Error ? err : new Error('Unknown error fetching tags');
+      updateError(error);
+      console.error('Error fetching tags:', error);
       return [];
     } finally {
-      if (setIsLoading) setIsLoading(false);
-      else setLoading(false);
+      updateLoading(false);
     }
-  }, [contentId, setTags, setIsLoading, setError]);
-
+  };
+  
   return {
     fetchTags,
     isLoading: loading,
     error
   };
-};
+}

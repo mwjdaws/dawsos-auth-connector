@@ -32,7 +32,7 @@ export function CreateKnowledgeForm() {
       content: template.content,
       title: prev.title || template.name 
     }));
-    setTemplateId(template.id);
+    setTemplateId(template.id || null); // Ensure null fallback for templateId
     
     toast({
       title: "Template Applied",
@@ -67,7 +67,7 @@ export function CreateKnowledgeForm() {
         title: formData.title,
         content: formData.content || "# New Document\n\nStart writing here...",
         user_id: user.id,
-        template_id: templateId // This is already null or string type
+        template_id: templateId
       });
 
       if (result) {

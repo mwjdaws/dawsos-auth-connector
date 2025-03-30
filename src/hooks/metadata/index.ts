@@ -1,12 +1,10 @@
 
-// Re-export all metadata hooks for easier imports
+// Export metadata-related hooks
 export * from './useTagsQuery';
-export * from './useTagMutation';
 export * from './useContentExists';
-export * from './useInlineMetadataEdit';
 export * from './useMetadataQuery';
-export * from './useOntologyTermMutation';
-export * from './useRealtimeUpdates';
-export * from './useSourceMetadataMutation';
 export * from './useTagMutation';
 export * from './useTagReordering';
+
+// Bridge for backward compatibility
+export { useAddTagMutation as useTagMutations } from './useTagMutation';

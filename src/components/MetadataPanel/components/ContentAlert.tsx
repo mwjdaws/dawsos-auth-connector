@@ -1,53 +1,55 @@
 
 import React from 'react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { InfoIcon, AlertTriangleIcon } from 'lucide-react';
-import { ContentIdValidationResultType } from '@/utils/validation/types';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { InfoCircledIcon } from "@radix-ui/react-icons";
+import { getContentIdValidationResult, ContentIdValidationResultType } from "@/utils/validation/contentIdValidation";
 
 interface ContentAlertProps {
-  validationResult: ContentIdValidationResultType;
-  contentExists?: boolean;
+  contentId: string;
+  className?: string;
 }
 
-export const ContentAlert: React.FC<ContentAlertProps> = ({ 
-  validationResult,
-  contentExists = true 
-}) => {
-  if (validationResult === ContentIdValidationResultType.VALID) {
-    return null;
-  }
-
-  if (validationResult === ContentIdValidationResultType.TEMPORARY) {
+export const ContentAlert: React.FC<ContentAlertProps> = ({ contentId, className }) => {
+  const validationResult = getContentIdValidationResult(contentId);
+  
+  if (validationResult.resultType === ContentIdValidationResultType.TEMPORARY) {
     return (
-      <Alert className="mb-4">
-        <InfoIcon className="h-4 w-4" />
+      <Alert variant="warning" className={className}>
+        <InfoCircledIcon className="h-4 w-4" />
         <AlertTitle>Temporary Content</AlertTitle>
         <AlertDescription>
-          This is a temporary content item. Changes will be lost unless you save it.
+          This content has a temporary ID and might not be permanently stored.
+          Save or publish to create a permanent record.
         </AlertDescription>
       </Alert>
     );
   }
-
-  if (validationResult === ContentIdValidationResultType.MISSING) {
+  
+  if (validationResult.resultType === ContentIdValidationResultType.INVALID) {
     return (
-      <Alert variant="destructive" className="mb-4">
-        <AlertTriangleIcon className="h-4 w-4" />
+      <Alert variant="destructive" className={className}>
+        <InfoCircledIcon className="h-4 w-4" />
+        <AlertTitle>Invalid Content ID</AlertTitle>
+        <AlertDescription>
+          The content ID is invalid. Some features may not work correctly.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+  
+  if (validationResult.resultType === ContentIdValidationResultType.MISSING) {
+    return (
+      <Alert variant="destructive" className={className}>
+        <InfoCircledIcon className="h-4 w-4" />
         <AlertTitle>Missing Content ID</AlertTitle>
         <AlertDescription>
-          No content ID provided. Metadata editing is disabled.
+          The content ID is missing. Some features may not work correctly.
         </AlertDescription>
       </Alert>
     );
   }
-
-  return (
-    <Alert variant="destructive" className="mb-4">
-      <AlertTriangleIcon className="h-4 w-4" />
-      <AlertTitle>Invalid Content ID</AlertTitle>
-      <AlertDescription>
-        The content ID provided is invalid. Metadata editing is disabled.
-      </AlertDescription>
-    </Alert>
-  );
+  
+  return null;
 };
+
+export default ContentAlert;

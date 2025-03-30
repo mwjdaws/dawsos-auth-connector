@@ -1,6 +1,6 @@
 
 /**
- * Tag model interface
+ * Tag type for UI operations
  */
 export interface Tag {
   id: string;
@@ -11,59 +11,41 @@ export interface Tag {
 }
 
 /**
- * Tag state hook result interface
+ * Bridge for database compatibility
+ */
+export interface TagDB {
+  id: string;
+  name: string;
+  content_id: string | null;
+  type_id: string | null;
+  type_name?: string | null;
+}
+
+/**
+ * Tag position for reordering
+ */
+export interface TagPosition {
+  id: string;
+  position: number;
+}
+
+/**
+ * Tag state hook result
  */
 export interface UseTagStateResult {
   tags: Tag[];
   setTags: React.Dispatch<React.SetStateAction<Tag[]>>;
-  isLoading?: boolean;
-  error?: Error | null;
-  setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>;
-  setError?: React.Dispatch<React.SetStateAction<Error | null>>;
 }
 
 /**
- * Tag fetch options
+ * Tag operations hook params
  */
-export interface UseTagFetchOptions {
+export interface UseTagOperationsProps {
   contentId: string;
-  setTags: React.Dispatch<React.SetStateAction<Tag[]>>;
-  setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>;
-  setError?: React.Dispatch<React.SetStateAction<Error | null>>;
 }
 
 /**
- * Tag fetch result interface
- */
-export interface UseTagFetchResult {
-  fetchTags: () => Promise<Tag[]>;
-  isLoading: boolean;
-  error: Error | null;
-}
-
-/**
- * Tag mutation options interface
- */
-export interface UseTagMutationsProps {
-  contentId: string;
-  setTags: React.Dispatch<React.SetStateAction<Tag[]>>;
-  tags?: Tag[];
-}
-
-/**
- * Tag mutation result interface
- */
-export interface UseTagMutationsResult {
-  addTag: (params: { name: string; contentId: string; type_id?: string | null }) => Promise<Tag | null>;
-  deleteTag: (params: { tagId: string; contentId: string }) => Promise<boolean>;
-  reorderTags: (tagPositions: { id: string; position: number }[]) => Promise<boolean>;
-  isAddingTag: boolean;
-  isDeletingTag: boolean;
-  isReordering: boolean;
-}
-
-/**
- * Result of the useTagOperations hook
+ * Tag operations hook result
  */
 export interface UseTagOperationsResult {
   tags: Tag[];
@@ -73,8 +55,39 @@ export interface UseTagOperationsResult {
   setNewTag: (value: string) => void;
   handleAddTag: () => Promise<void>;
   handleDeleteTag: (tagId: string) => Promise<void>;
-  handleReorderTags: (tagPositions: { id: string; position: number }[]) => Promise<void>;
+  handleReorderTags: (tagPositions: TagPosition[]) => Promise<void>;
   handleRefresh: () => Promise<void>;
+  isAddingTag: boolean;
+  isDeletingTag: boolean;
+  isReordering: boolean;
+}
+
+/**
+ * Tag fetch hook params
+ */
+export interface UseTagFetchProps {
+  contentId: string;
+  setTags: React.Dispatch<React.SetStateAction<Tag[]>>;
+  setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>;
+  setError?: React.Dispatch<React.SetStateAction<Error | null>>;
+}
+
+/**
+ * Tag mutations hook props
+ */
+export interface UseTagMutationsProps {
+  contentId: string;
+  setTags: React.Dispatch<React.SetStateAction<Tag[]>>;
+  tags: Tag[];
+}
+
+/**
+ * Tag mutations hook result
+ */
+export interface UseTagMutationsResult {
+  addTag: (params: { name: string; contentId: string; typeId?: string }) => Promise<boolean>;
+  deleteTag: (params: { tagId: string; contentId: string }) => Promise<boolean>;
+  reorderTags: (positions: TagPosition[]) => Promise<boolean>;
   isAddingTag: boolean;
   isDeletingTag: boolean;
   isReordering: boolean;

@@ -1,121 +1,137 @@
-/**
- * MetadataPanel Component
- * 
- * This is the unified entry point for displaying and editing content metadata.
- * It combines various section components to create a complete metadata panel
- * with consistent styling and behavior across the application.
- */
 
-import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { HeaderSection } from "./sections";
+import React, { useState, useEffect } from "react";
+import { usePanelState } from "./hooks/usePanelState";
+import { useTagOperations } from "./hooks/tag-operations/useTagOperations";
+import { useOntologyTerms } from "./hooks/useOntologyTerms";
+import { useExternalSource } from "./hooks/useExternalSource";
+import { Spinner } from "@/components/ui/spinner";
 import { ContentAlert } from "./components/ContentAlert";
-import MetadataContent from "./components/MetadataContent"; 
-import { useMetadataPanel } from "./hooks/useMetadataPanel";
-import { MetadataPanelProps } from "./types";
-import { getContentIdValidationResult } from "@/utils/validation/contentIdValidation";
+import { MetadataContent } from "./components/MetadataContent";
+import { isValidContentId } from "@/utils/validation/contentIdValidation";
 
-const MetadataPanel: React.FC<MetadataPanelProps> = ({ 
-  contentId = "",
+export interface MetadataPanelProps {
+  contentId: string;
+  editable?: boolean;
+  onMetadataChange?: (() => void) | undefined;
+  isCollapsible?: boolean;
+  initialCollapsed?: boolean;
+  showOntologyTerms?: boolean;
+  showDomain?: boolean;
+  domain?: string | null;
+  className?: string;
+  children?: React.ReactNode;
+}
+
+/**
+ * Metadata Panel Component
+ * 
+ * Displays metadata for a knowledge source including tags, ontology terms, 
+ * and external source information with editing capabilities.
+ */
+export function MetadataPanel({
+  contentId,
+  editable = true,
   onMetadataChange,
   isCollapsible = false,
   initialCollapsed = false,
   showOntologyTerms = true,
   showDomain = false,
   domain = null,
-  editable,
   className = "",
   children
-}) => {
-  // Get content data from our custom hook
+}: MetadataPanelProps) {
   const {
-    contentExists,
-    isValidContent,
-    contentValidationResult,
-    data,
-    tags,
-    ontologyTerms,
-    isLoading,
-    error,
-    handleRefresh,
-    newTag,
-    setNewTag,
-    handleAddTag,
-    handleDeleteTag,
     isCollapsed,
-    setIsCollapsed
-  } = useMetadataPanel({
+    setIsCollapsed,
+    contentExists,
+    handleMetadataChange
+  } = usePanelState({
     contentId,
     onMetadataChange,
     isCollapsible,
     initialCollapsed
   });
+
+  // Safely handle null or undefined states
+  const safeContentId = contentId || '';
+  const safeMetadataChange = onMetadataChange || (() => {});
+
+  // Get tag operations
+  const {
+    tags,
+    isLoading: isTagsLoading,
+    error: tagsError,
+    newTag,
+    setNewTag,
+    handleAddTag,
+    handleDeleteTag,
+    isAddingTag,
+    isDeletingTag,
+    handleRefresh
+  } = useTagOperations(safeContentId);
+
+  // Get ontology terms
+  const {
+    ontologyTerms,
+    isLoading: isOntologyLoading
+  } = useOntologyTerms(safeContentId, showOntologyTerms);
+
+  // Get external source info
+  const {
+    externalSourceUrl,
+    lastCheckedAt
+  } = useExternalSource(safeContentId);
+
+  // Combined loading state
+  const isLoading = isTagsLoading || isOntologyLoading;
   
-  // Determine if content is editable (use prop or fallback to editable prop)
-  const isEditable = editable !== undefined ? editable : false;
-  
-  // Extract metadata values
-  const externalSourceUrl = data?.external_source_url || null;
-  const needsExternalReview = data?.needs_external_review || false;
-  const lastCheckedAt = data?.external_source_checked_at || null;
+  // Prepare validation data
+  const isValidContent = isValidContentId(safeContentId);
+  const contentValidationResult = "Valid content ID"; // Simplified for now
 
-  // Determine card border styling based on review status
-  const cardBorderClass = needsExternalReview
-    ? "border-yellow-400 dark:border-yellow-600"
-    : "";
-
-  // Ensure tag array always exists and is the right type
-  const tagsArray = Array.isArray(tags) ? tags : [];
-  const ontologyTermsArray = Array.isArray(ontologyTerms) ? ontologyTerms : [];
-
-  if (!isValidContent || !contentExists) {
+  // Handle all loading states
+  if (isLoading) {
     return (
-      <Card className="w-full">
-        <CardContent className="pt-4">
-          <ContentAlert 
-            validationResult={getContentIdValidationResult(contentId)} 
-          />
-        </CardContent>
-      </Card>
+      <div className={`p-4 flex justify-center items-center ${className}`}>
+        <Spinner size="md" />
+      </div>
     );
   }
 
+  // Handle content validation
+  if (!isValidContent) {
+    return (
+      <div className={className}>
+        <ContentAlert contentId={safeContentId} />
+      </div>
+    );
+  }
+
+  // Show metadata content when everything is ready
   return (
-    <Card className={`${cardBorderClass} ${className}`}>
-      <HeaderSection 
-        needsExternalReview={needsExternalReview}
-        handleRefresh={handleRefresh}
+    <div className={className}>
+      <MetadataContent
         isLoading={isLoading}
-        isCollapsible={isCollapsible}
-        isCollapsed={isCollapsed}
-        setIsCollapsed={setIsCollapsed}
-      />
-      
-      {(!isCollapsible || !isCollapsed) && (
-        <CardContent className="pt-4">
-          <MetadataContent
-            isLoading={isLoading}
-            error={error instanceof Error ? error : new Error(String(error))}
-            contentId={contentId}
-            externalSourceUrl={externalSourceUrl}
-            lastCheckedAt={lastCheckedAt}
-            tags={tagsArray}
-            editable={isEditable}
-            newTag={newTag}
-            setNewTag={setNewTag}
-            onAddTag={handleAddTag}
-            onDeleteTag={handleDeleteTag}
-            isPending={false}
-            showOntologyTerms={showOntologyTerms}
-            ontologyTerms={ontologyTermsArray}
-            onMetadataChange={onMetadataChange}
-            onRefresh={handleRefresh}
-            children={children}
-          />
-        </CardContent>
-      )}
-    </Card>
+        error={tagsError as Error}
+        contentId={safeContentId}
+        externalSourceUrl={externalSourceUrl}
+        lastCheckedAt={lastCheckedAt}
+        tags={tags}
+        editable={editable}
+        newTag={newTag}
+        setNewTag={setNewTag}
+        onAddTag={handleAddTag}
+        onDeleteTag={handleDeleteTag}
+        isPending={isAddingTag || isDeletingTag}
+        showOntologyTerms={showOntologyTerms}
+        ontologyTerms={ontologyTerms}
+        onMetadataChange={safeMetadataChange}
+        onRefresh={handleRefresh}
+      >
+        {children}
+      </MetadataContent>
+    </div>
   );
-};
+}
 
 export default MetadataPanel;

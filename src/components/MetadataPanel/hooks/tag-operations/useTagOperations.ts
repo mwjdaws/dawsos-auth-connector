@@ -3,7 +3,7 @@ import { useState, useCallback } from 'react';
 import { useTagState } from './useTagState';
 import { useTagFetch } from './useTagFetch';
 import { useTagMutations } from './useTagMutations';
-import type { Tag, UseTagOperationsResult } from './types';
+import { UseTagOperationsProps, UseTagOperationsResult, TagPosition } from './types';
 
 /**
  * Main hook for tag operations that combines state, fetching, and mutations
@@ -11,15 +11,17 @@ import type { Tag, UseTagOperationsResult } from './types';
 export const useTagOperations = (contentId: string): UseTagOperationsResult => {
   const { tags, setTags } = useTagState();
   const [newTag, setNewTag] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   
   // Set up tag fetching
   const { 
-    fetchTags, 
-    isLoading, 
-    error 
+    fetchTags,
   } = useTagFetch({ 
     contentId, 
-    setTags 
+    setTags,
+    setIsLoading,
+    setError
   });
   
   // Set up tag mutations
@@ -30,10 +32,10 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
     isAddingTag, 
     isDeletingTag, 
     isReordering 
-  } = useTagMutations({ 
-    contentId, 
-    setTags, 
-    tags 
+  } = useTagMutations({
+    contentId,
+    setTags,
+    tags
   });
   
   // Fetch tags on initial load
@@ -61,7 +63,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
   };
   
   // Handle reordering tags
-  const handleReorderTags = async (tagPositions: { id: string; position: number }[]) => {
+  const handleReorderTags = async (tagPositions: TagPosition[]) => {
     await reorderTags(tagPositions);
   };
   

@@ -1,60 +1,33 @@
 
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { isValidContentId } from '@/utils/validation';
+import { isValidContentId } from '@/utils/validation/contentIdValidation';
 
-/**
- * Hook to check if a content ID exists in the database
- */
-export function useContentExists(contentId?: string) {
-  const [exists, setExists] = useState<boolean>(false);
-  const [isValidId, setIsValidId] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<Error | null>(null);
+export interface UseContentExistsProps {
+  contentId?: string;
+  enabled?: boolean;
+}
 
-  useEffect(() => {
-    const checkContentExists = async () => {
-      if (!contentId) {
-        setExists(false);
-        setIsValidId(false);
-        setIsLoading(false);
-        return;
+export function useContentExists({ contentId, enabled = true }: UseContentExistsProps) {
+  return useQuery({
+    queryKey: contentId ? ['content', 'exists', contentId] : null,
+    queryFn: async () => {
+      if (!contentId || !isValidContentId(contentId)) {
+        return false;
       }
-
-      // First check if ID is valid format
-      const isValid = isValidContentId(contentId);
-      setIsValidId(isValid);
-
-      if (!isValid) {
-        setExists(false);
-        setIsLoading(false);
-        return;
+      
+      const { count, error } = await supabase
+        .from('knowledge_sources')
+        .select('id', { count: 'exact', head: true })
+        .eq('id', contentId);
+      
+      if (error) {
+        console.error('Error checking if content exists:', error);
+        return false;
       }
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const { data, error } = await supabase
-          .from('knowledge_sources')
-          .select('id')
-          .eq('id', contentId)
-          .maybeSingle();
-
-        if (error) throw error;
-        
-        setExists(!!data);
-        setIsLoading(false);
-      } catch (err) {
-        console.error('Error checking if content exists:', err);
-        setError(err instanceof Error ? err : new Error('Unknown error'));
-        setExists(false);
-        setIsLoading(false);
-      }
-    };
-
-    checkContentExists();
-  }, [contentId]);
-
-  return { exists, isValidId, isLoading, error };
+      
+      return count > 0;
+    },
+    enabled: enabled && !!contentId && isValidContentId(contentId)
+  });
 }

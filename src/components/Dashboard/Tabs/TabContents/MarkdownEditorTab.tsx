@@ -14,6 +14,15 @@ export function MarkdownEditorTab({
   onSaveDraft,
   onPublish
 }: MarkdownEditorTabProps) {
+  // Bridge for externalSourceUrl compatibility
+  const handleSaveDraft = (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string = "") => {
+    onSaveDraft(id, title, content, templateId, externalSourceUrl);
+  };
+
+  const handlePublish = (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string = "") => {
+    onPublish(id, title, content, templateId, externalSourceUrl);
+  };
+
   return (
     <>
       <h2 className="text-xl font-semibold mb-4">Markdown Editor</h2>
@@ -24,8 +33,8 @@ export function MarkdownEditorTab({
           initialTemplateId={null}
           initialExternalSourceUrl=""
           sourceId={contentId !== `temp-${Date.now()}` ? contentId : null}
-          onSaveDraft={onSaveDraft}
-          onPublish={onPublish}
+          onSaveDraft={handleSaveDraft}
+          onPublish={handlePublish}
         />
       </Suspense>
     </>
