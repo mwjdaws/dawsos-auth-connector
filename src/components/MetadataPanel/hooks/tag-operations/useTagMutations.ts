@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -30,7 +29,7 @@ export const useTagMutations = (contentId: string) => {
         .select();
 
       if (error) throw error;
-      return data[0];
+      return data?.[0] || null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tags', contentId] });

@@ -7,9 +7,14 @@ import { ContentIdValidationResult } from '@/utils/validation';
 interface ContentAlertProps {
   contentId: string;
   validationResult: ContentIdValidationResult;
+  contentExists?: boolean;
 }
 
-export const ContentAlert: React.FC<ContentAlertProps> = ({ contentId, validationResult }) => {
+export const ContentAlert: React.FC<ContentAlertProps> = ({ 
+  contentId, 
+  validationResult,
+  contentExists 
+}) => {
   if (validationResult === ContentIdValidationResult.VALID) {
     return null;
   }
@@ -33,6 +38,18 @@ export const ContentAlert: React.FC<ContentAlertProps> = ({ contentId, validatio
         <AlertTitle>Missing Content ID</AlertTitle>
         <AlertDescription>
           No content ID was provided. Metadata operations are disabled.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!contentExists) {
+    return (
+      <Alert variant="destructive" className="mb-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Content Not Found</AlertTitle>
+        <AlertDescription>
+          The content with ID {contentId} does not exist in the database.
         </AlertDescription>
       </Alert>
     );

@@ -42,6 +42,8 @@ export function useTagsQuery(contentId: string, options?: UseTagsQueryOptions) {
 
         if (error) throw error;
 
+        if (!data) return [];
+
         // Transform data to include type_name if type info was requested
         return data.map(tag => {
           const baseTag: Tag = {

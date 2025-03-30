@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react';
-import { validateTags, ValidationResult } from '@/utils/validation';
+import { validateTags, ValidationResult, TagValidationOptions } from '@/utils/validation';
 
 export const useTagValidator = (minTagLength = 2, maxTagLength = 30, maxNumTags = 20) => {
   const [validationResult, setValidationResult] = useState<ValidationResult>({
@@ -10,7 +10,12 @@ export const useTagValidator = (minTagLength = 2, maxTagLength = 30, maxNumTags 
 
   const validate = useCallback(
     (tags: string[]): boolean => {
-      const result = validateTags(tags, { minTagLength, maxTagLength, maxNumTags });
+      const options: TagValidationOptions = { 
+        minTagLength, 
+        maxTagLength, 
+        maxNumTags 
+      };
+      const result = validateTags(tags, options);
       setValidationResult(result);
       return result.isValid;
     },

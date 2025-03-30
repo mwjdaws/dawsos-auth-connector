@@ -9,7 +9,7 @@ import {
   getContentIdValidationResult, 
   ContentIdValidationResult 
 } from './contentIdValidation';
-import { validateTag, validateTags, ValidationResult } from './tagValidation';
+import { validateTag, validateTags, ValidationResult, TagValidationOptions } from './tagValidation';
 
 // Re-export all validation utilities
 export {
@@ -24,7 +24,8 @@ export {
   
   // Tag validation
   validateTag,
-  validateTags
+  validateTags,
+  TagValidationOptions
 };
 
 // Also re-export types explicitly for TypeScript modules

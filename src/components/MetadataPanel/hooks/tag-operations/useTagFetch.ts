@@ -24,6 +24,8 @@ export const useTagFetch = (contentId: string) => {
 
         if (error) throw error;
 
+        if (!data) return [];
+
         return data.map(tag => ({
           id: tag.id,
           name: tag.name,

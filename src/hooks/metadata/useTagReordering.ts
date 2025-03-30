@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Tag } from '@/components/MetadataPanel/hooks/tag-operations/types';
 import { handleError } from '@/utils/errors';
+import { isValidContentId } from '@/utils/validation';
 
 interface UseTagReorderingProps {
   contentId: string;
@@ -17,7 +18,7 @@ export function useTagReordering({ contentId, onMetadataChange }: UseTagReorderi
    * Currently a workaround since there's no dedicated order column
    */
   const handleReorderTags = useCallback(async (reorderedTags: Tag[]) => {
-    if (!contentId || reorderedTags.length === 0) return;
+    if (!contentId || reorderedTags.length === 0 || !isValidContentId(contentId)) return;
     
     setIsReordering(true);
     

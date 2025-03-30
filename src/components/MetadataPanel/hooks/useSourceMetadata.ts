@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isValidContentId } from '@/utils/validation';
@@ -32,18 +31,15 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
     setError(null);
     
     try {
-      // Fetch source metadata
       const result = await supabase
         .from("knowledge_sources")
         .select("external_source_url, needs_external_review, external_source_checked_at")
         .eq("id", contentId)
-        .maybeSingle(); // Use maybeSingle instead of single to avoid errors when no rows are returned
+        .maybeSingle();
       
-      // Defensive check for valid response format
       if (typeof result === 'object' && result !== null && 'data' in result) {
         const { data: sourceData, error: sourceError } = result;
         
-        // Handle error but exclude "no rows returned" as it's not a real error for us
         if (sourceError && sourceError.code !== 'PGRST116') {
           throw sourceError;
         }
@@ -61,7 +57,6 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
         return metadata;
       }
       
-      // Default return if response format is unexpected
       const defaultData = {
         external_source_url: null,
         needs_external_review: false,
@@ -74,7 +69,6 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
     } catch (err: any) {
       console.error("Error fetching source metadata:", err);
       
-      // Use standardized error handling
       handleError(err, "Error fetching source metadata", {
         context: { contentId },
         level: "error"
@@ -94,7 +88,6 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
     }
   };
 
-  // Load metadata on mount if contentId is available
   useEffect(() => {
     if (contentId && isValidContentId(contentId)) {
       fetchSourceMetadata();
