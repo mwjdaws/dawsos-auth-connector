@@ -38,6 +38,7 @@ export function ManualTagCreator({ contentId, onTagCreated, className }: ManualT
   const [tagTypes, setTagTypes] = useState<TagType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingTypes, setIsFetchingTypes] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch available tag types on component mount
   useEffect(() => {
@@ -63,6 +64,7 @@ export function ManualTagCreator({ contentId, onTagCreated, className }: ManualT
         }
       } catch (error) {
         console.error("ManualTagCreator: Error fetching tag types:", error);
+        setError("Failed to load tag types");
         toast({
           title: "Error",
           description: "Failed to load tag types",
@@ -97,14 +99,41 @@ export function ManualTagCreator({ contentId, onTagCreated, className }: ManualT
     }
 
     setIsLoading(true);
+    setError(null);
+    
     try {
+      console.log("Creating tag with type_id:", selectedTypeId);
+      
+      // Check for duplicate tag
+      const { data: existingTags, error: checkError } = await supabase
+        .from("tags")
+        .select("id")
+        .eq("name", tagName.trim().toLowerCase())
+        .eq("content_id", contentId);
+      
+      if (checkError) throw checkError;
+      
+      if (existingTags && existingTags.length > 0) {
+        toast({
+          title: "Duplicate Tag",
+          description: "This tag already exists for this content",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Create the new tag with explicit type_id
+      const tagData = {
+        name: tagName.trim().toLowerCase(),
+        content_id: contentId,
+        type_id: selectedTypeId
+      };
+      
+      console.log("Creating tag with data:", tagData);
+      
       const { data, error } = await supabase
         .from("tags")
-        .insert({
-          name: tagName.trim(),
-          content_id: contentId,
-          type_id: selectedTypeId
-        })
+        .insert(tagData)
         .select();
 
       if (error) throw error;
@@ -123,6 +152,7 @@ export function ManualTagCreator({ contentId, onTagCreated, className }: ManualT
       }
     } catch (error: any) {
       console.error("Error creating tag:", error);
+      setError(error.message || "Failed to create tag");
       toast({
         title: "Error",
         description: error.message || "Failed to create tag",
@@ -136,6 +166,9 @@ export function ManualTagCreator({ contentId, onTagCreated, className }: ManualT
   return (
     <div className={`flex flex-col space-y-2 ${className}`}>
       <div className="text-sm font-medium mb-1">Add Manual Tag</div>
+      {error && (
+        <div className="text-sm text-red-500 mb-2">{error}</div>
+      )}
       <div className="flex items-center space-x-2">
         <Input
           value={tagName}

@@ -1,174 +1,258 @@
 
 import { useState, useEffect } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { TagPill } from "./TagPill";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import { isValidContentId } from "@/utils/content-validation";
-
-interface TagType {
-  id: string;
-  name: string;
-}
+import RefreshIcon from "@/components/DebugPanel/RefreshIcon";
+import { Button } from "@/components/ui/button";
 
 interface Tag {
   id: string;
   name: string;
-  type_id: string | null;
-}
-
-interface GroupedTag extends Tag {
-  type_name: string;
-}
-
-interface GroupedTagsMap {
-  [typeName: string]: Tag[];
+  content_id: string;
+  type_id?: string | null;
+  type_name?: string;
 }
 
 interface GroupedTagListProps {
   contentId: string;
+  onTagClick?: (tagName: string) => void;
   refreshTrigger?: number;
-  onTagClick?: (tag: string) => void;
 }
 
-export function GroupedTagList({ contentId, refreshTrigger = 0, onTagClick }: GroupedTagListProps) {
-  const [groupedTags, setGroupedTags] = useState<GroupedTagsMap>({});
-  const [ungroupedTags, setUngroupedTags] = useState<Tag[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+/**
+ * Component that displays tags grouped by their type
+ */
+export function GroupedTagList({
+  contentId,
+  onTagClick,
+  refreshTrigger = 0
+}: GroupedTagListProps) {
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [tagTypes, setTagTypes] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const fetchTagsWithTypes = async () => {
-      // Validate content ID before attempting to fetch tags
-      if (!isValidContentId(contentId)) {
-        console.log("Invalid or temporary contentId, skipping tag fetch:", contentId);
-        setIsLoading(false);
-        return;
-      }
-
+    const fetchTagsAndTypes = async () => {
+      if (!contentId) return;
+      
       setIsLoading(true);
+      setError(null);
+      
       try {
-        console.log("Fetching tags for content ID:", contentId);
+        // First, get all tag types for lookup
+        const { data: types, error: typesError } = await supabase
+          .from('tag_types')
+          .select('id, name');
+          
+        if (typesError) throw typesError;
         
-        // First, fetch all tag types to ensure we have type information even if no tags exist for a type
-        const { data: typeData, error: typeError } = await supabase
-          .from("tag_types")
-          .select("id, name");
-
-        if (typeError) throw typeError;
-
-        const tagTypes: Record<string, string> = {};
-        (typeData || []).forEach((type) => {
-          tagTypes[type.id] = type.name;
-        });
-
-        // Then fetch all tags for this content
-        const { data: tagData, error: tagError } = await supabase
-          .from("tags")
-          .select("id, name, type_id")
-          .eq("content_id", contentId);
-
-        if (tagError) throw tagError;
-
-        console.log(`Fetched ${tagData?.length || 0} tags for content ID: ${contentId}`);
-
-        // Group tags by their type
-        const grouped: GroupedTagsMap = {};
-        const ungrouped: Tag[] = [];
-
-        (tagData || []).forEach((tag) => {
-          if (tag.type_id && tagTypes[tag.type_id]) {
-            const typeName = tagTypes[tag.type_id];
-            if (!grouped[typeName]) {
-              grouped[typeName] = [];
-            }
-            grouped[typeName].push(tag);
-          } else {
-            ungrouped.push(tag);
-          }
-        });
-
-        setGroupedTags(grouped);
-        setUngroupedTags(ungrouped);
-      } catch (error) {
-        console.error("Error fetching tags with types:", error);
+        // Create a lookup map for type names
+        const typeMap: Record<string, string> = {};
+        if (types) {
+          types.forEach(type => {
+            typeMap[type.id] = type.name;
+          });
+        }
+        setTagTypes(typeMap);
+        
+        // Fetch tags with joined tag types
+        const { data, error } = await supabase
+          .from('tags')
+          .select(`
+            id, 
+            name, 
+            content_id, 
+            type_id
+          `)
+          .eq('content_id', contentId);
+        
+        if (error) throw error;
+        
+        if (data) {
+          // Process tags to include type name
+          const processedTags = data.map(tag => ({
+            ...tag,
+            type_name: tag.type_id ? typeMap[tag.type_id] : 'Untyped'
+          }));
+          
+          setTags(processedTags);
+        }
+      } catch (err) {
+        console.error("Error fetching grouped tags:", err);
+        setError(err instanceof Error ? err : new Error('Failed to load tags'));
         toast({
           title: "Error",
           description: "Failed to load tags",
-          variant: "destructive",
+          variant: "destructive"
         });
       } finally {
         setIsLoading(false);
       }
     };
-
-    fetchTagsWithTypes();
+    
+    fetchTagsAndTypes();
   }, [contentId, refreshTrigger]);
-
+  
+  const handleRefresh = () => {
+    // This will trigger the useEffect to reload tags
+    setIsLoading(true);
+    
+    setTimeout(() => {
+      // Use the same fetch function as in useEffect
+      const fetchTagsAndTypes = async () => {
+        if (!contentId) return;
+        
+        try {
+          // First, get all tag types for lookup
+          const { data: types, error: typesError } = await supabase
+            .from('tag_types')
+            .select('id, name');
+            
+          if (typesError) throw typesError;
+          
+          // Create a lookup map for type names
+          const typeMap: Record<string, string> = {};
+          if (types) {
+            types.forEach(type => {
+              typeMap[type.id] = type.name;
+            });
+          }
+          setTagTypes(typeMap);
+          
+          // Fetch tags with joined tag types
+          const { data, error } = await supabase
+            .from('tags')
+            .select(`
+              id, 
+              name, 
+              content_id, 
+              type_id
+            `)
+            .eq('content_id', contentId);
+          
+          if (error) throw error;
+          
+          if (data) {
+            // Process tags to include type name
+            const processedTags = data.map(tag => ({
+              ...tag,
+              type_name: tag.type_id ? typeMap[tag.type_id] : 'Untyped'
+            }));
+            
+            setTags(processedTags);
+          }
+        } catch (err) {
+          console.error("Error refreshing grouped tags:", err);
+          setError(err instanceof Error ? err : new Error('Failed to refresh tags'));
+          toast({
+            title: "Error",
+            description: "Failed to refresh tags",
+            variant: "destructive"
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      fetchTagsAndTypes();
+    }, 300);
+  };
+  
+  // Group tags by their type for display
+  const groupedTags: Record<string, Tag[]> = {};
+  
+  tags.forEach(tag => {
+    const typeName = tag.type_id && tagTypes[tag.type_id] 
+      ? tagTypes[tag.type_id] 
+      : 'Untyped';
+      
+    if (!groupedTags[typeName]) {
+      groupedTags[typeName] = [];
+    }
+    
+    groupedTags[typeName].push(tag);
+  });
+  
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-4 w-32" />
         <div className="flex flex-wrap gap-2">
-          <Skeleton className="h-8 w-20 rounded-xl" />
-          <Skeleton className="h-8 w-16 rounded-xl" />
-          <Skeleton className="h-8 w-24 rounded-xl" />
-        </div>
-        <Skeleton className="h-4 w-24 mt-4" />
-        <div className="flex flex-wrap gap-2">
-          <Skeleton className="h-8 w-20 rounded-xl" />
-          <Skeleton className="h-8 w-16 rounded-xl" />
+          <Skeleton className="h-6 w-16" />
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-6 w-20" />
         </div>
       </div>
     );
   }
-
-  // Check if we have any tags to display
-  const hasGroupedTags = Object.keys(groupedTags).length > 0;
-  const hasUngroupedTags = ungroupedTags.length > 0;
   
-  if (!hasGroupedTags && !hasUngroupedTags) {
+  if (error) {
     return (
-      <div className="text-sm text-muted-foreground mt-2">
-        No tags available for this content.
-      </div>
+      <Card className="p-4 text-center">
+        <p className="text-sm text-red-500">Failed to load tags</p>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          className="mt-2"
+        >
+          Try Again
+        </Button>
+      </Card>
     );
   }
-
+  
+  if (Object.keys(groupedTags).length === 0) {
+    return (
+      <Card className="p-4 text-center">
+        <p className="text-sm text-muted-foreground">No tags found for this content</p>
+        {contentId && contentId.startsWith('temp-') && (
+          <p className="text-xs text-muted-foreground mt-1">
+            This is a temporary content ID. Save content to enable tag management.
+          </p>
+        )}
+      </Card>
+    );
+  }
+  
   return (
     <div className="space-y-6">
-      {/* Grouped Tags */}
-      {Object.entries(groupedTags).map(([typeName, tags]) => (
+      <div className="flex justify-between items-center">
+        <p className="text-sm">Tags for content ID: <span className="font-mono text-xs">{contentId}</span></p>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isLoading}
+        >
+          <RefreshIcon loading={isLoading} className="mr-1" />
+          Refresh
+        </Button>
+      </div>
+      
+      {Object.entries(groupedTags).map(([typeName, typeTags]) => (
         <div key={typeName} className="space-y-2">
-          <h3 className="text-sm font-medium capitalize">{typeName}</h3>
+          <h4 className="text-sm font-medium">{typeName}</h4>
           <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <TagPill
+            {typeTags.map(tag => (
+              <Badge
                 key={tag.id}
-                tag={tag.name}
-                onClick={onTagClick}
-                variant="primary"
-              />
+                variant="secondary"
+                className="cursor-pointer hover:bg-secondary/80"
+                onClick={() => onTagClick?.(tag.name)}
+              >
+                {tag.name}
+              </Badge>
             ))}
           </div>
         </div>
       ))}
-
-      {/* Ungrouped Tags */}
-      {hasUngroupedTags && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium">Other Tags</h3>
-          <div className="flex flex-wrap gap-2">
-            {ungroupedTags.map((tag) => (
-              <TagPill
-                key={tag.id}
-                tag={tag.name}
-                onClick={onTagClick}
-                variant="secondary"
-              />
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
+
+export default GroupedTagList;

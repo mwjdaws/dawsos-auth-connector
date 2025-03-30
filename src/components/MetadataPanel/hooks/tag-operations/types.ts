@@ -6,6 +6,12 @@ export interface Tag {
   name: string;
   content_id: string;
   type_id?: string | null;
+  type_name?: string;  // Added for displaying tag type name
+}
+
+export interface TagType {
+  id: string;
+  name: string;
 }
 
 export interface TagOperationsProps {

@@ -1,35 +1,33 @@
 
-import { useState } from "react";
+import { useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
+import { Tag, UseTagFetchResult } from './types';
 import { handleError } from "@/utils/errors";
-import { isValidContentId } from "@/utils/content-validation";
-import { Tag, TagOperationsProps, UseTagFetchResult } from "./types";
+
+interface UseTagFetchProps {
+  contentId: string;
+}
 
 /**
- * Hook responsible for fetching tags from the database for a specific content ID.
+ * Hook for fetching tags from the database with proper error handling
+ * and loading state management.
  * 
- * Features:
- * - Loading state management
- * - Error handling with structured error reporting
- * - Content ID validation
- * - Consistent response formatting
- * 
- * @param param0 - Object with contentId extracted from TagOperationsProps
- * @returns Object containing fetchTags function, loading state, and error state
+ * @param props - Configuration props including contentId
+ * @returns Object with fetchTags function, loading state, and error state
  */
-export function useTagFetch({ contentId }: Pick<TagOperationsProps, "contentId">): UseTagFetchResult {
+export function useTagFetch({ contentId }: UseTagFetchProps): UseTagFetchResult {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<null | Error | any>(null);
-
+  const [error, setError] = useState<Error | null>(null);
+  
   /**
-   * Fetches tags associated with the provided content ID
+   * Fetches tags for the specified content from the database,
+   * including their type information if available
    * 
-   * @returns Promise resolving to an array of Tag objects
+   * @returns Promise resolving to array of Tag objects
    */
   const fetchTags = async (): Promise<Tag[]> => {
-    // Validate content ID before attempting to fetch
-    if (!isValidContentId(contentId)) {
-      console.log("Invalid contentId for fetching tags:", contentId);
+    if (!contentId) {
+      console.warn('No contentId provided to fetchTags');
       return [];
     }
     
@@ -37,42 +35,47 @@ export function useTagFetch({ contentId }: Pick<TagOperationsProps, "contentId">
     setError(null);
     
     try {
-      console.log("Fetching tags for contentId:", contentId);
+      console.log(`Fetching tags for content ID: ${contentId}`);
       
-      const result = await supabase
-        .from("tags")
-        .select("*")
-        .eq("content_id", contentId);
+      // Fetch tags with join to tag_types to get type names
+      const { data, error } = await supabase
+        .from('tags')
+        .select(`
+          id, 
+          name, 
+          content_id, 
+          type_id,
+          tag_types(name)
+        `)
+        .eq('content_id', contentId);
       
-      // Defensive check for valid response format
-      if (typeof result === 'object' && result !== null && 'data' in result) {
-        const { data: tagData, error: tagError } = result;
-        
-        if (tagError) {
-          setError(tagError);
-          throw tagError;
-        }
-        
-        console.log("Tags fetched:", tagData);
-        setIsLoading(false);
-        return tagData || [];
-      }
+      if (error) throw error;
       
-      // Default return if response format is unexpected
-      setIsLoading(false);
-      return [];
-    } catch (err: any) {
-      console.error("Error fetching tags:", err);
-      setIsLoading(false);
-      setError(err);
+      // Process the joined data to flatten the structure
+      const processedTags: Tag[] = data.map(tag => ({
+        id: tag.id,
+        name: tag.name,
+        content_id: tag.content_id,
+        type_id: tag.type_id,
+        type_name: tag.tag_types?.name
+      }));
+      
+      console.log(`Found ${processedTags.length} tags for content ID: ${contentId}`);
+      
+      return processedTags;
+    } catch (error: any) {
+      console.error('Error fetching tags:', error);
       
       // Use standardized error handling
-      handleError(err, "Error fetching tags", {
+      handleError(error, "Failed to fetch tags", {
         context: { contentId },
         level: "error"
       });
       
-      return []; // Return empty array to prevent UI errors
+      setError(error instanceof Error ? error : new Error(error.message || "Unknown error"));
+      return [];
+    } finally {
+      setIsLoading(false);
     }
   };
 

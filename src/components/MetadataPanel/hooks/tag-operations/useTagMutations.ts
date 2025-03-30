@@ -47,8 +47,26 @@ export function useTagMutations(
     }
 
     try {
+      // Check for existing tag with same name and content_id to avoid duplicates
+      const { data: existingTags, error: checkError } = await supabase
+        .from("tags")
+        .select("id")
+        .eq("name", newTag.trim().toLowerCase())
+        .eq("content_id", contentId);
+      
+      if (checkError) throw checkError;
+      
+      if (existingTags && existingTags.length > 0) {
+        toast({
+          title: "Duplicate Tag",
+          description: "This tag already exists for this content",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const newTagData = {
-        name: newTag.trim(),
+        name: newTag.trim().toLowerCase(),
         content_id: contentId,
         type_id: typeId || null // Support for tag types
       };
