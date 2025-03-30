@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { isValidContentId } from '@/utils/validation';
+import { queryKeys } from '@/utils/query-keys';
 
 export interface OntologyTerm {
   id: string;

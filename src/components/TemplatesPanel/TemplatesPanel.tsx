@@ -10,21 +10,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
-// Define TemplateListCardProps interface for clarity
-interface TemplateListCardProps {
-  templates: KnowledgeTemplate[];
-  loading: boolean;
-  pagination: {
-    page: number;
-    pageSize: number;
-    totalPages: number;
-    count: number;
-  };
-  onPageChange: (page: number) => void;
-  onSelectTemplate: (template: KnowledgeTemplate) => void;
-  selectedTemplateId?: string | null;
-}
-
 export function TemplatesPanel() {
   const [templates, setTemplates] = useState<KnowledgeTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -155,8 +140,12 @@ export function TemplatesPanel() {
         templates={paginatedTemplates}
         loading={loading}
         pagination={pagination}
-        onPageChange={handlePageChange}
-        onSelectTemplate={handleTemplateSelect}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        handlePageChange={handlePageChange}
+        handleTemplateSelect={handleTemplateSelect}
+        filterType={filterType}
+        onFilterChange={handleFilterChange}
         selectedTemplateId={selectedTemplate?.id}
       />
     </div>

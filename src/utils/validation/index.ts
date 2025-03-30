@@ -8,7 +8,7 @@ import {
   normalizeContentId, 
   getContentIdValidationResult, 
   ContentIdValidationResult 
-} from '@/utils/content-validation';
+} from './contentIdValidation';
 import { validateTag, validateTags, ValidationResult } from './tagValidation';
 
 // Re-export all validation utilities
