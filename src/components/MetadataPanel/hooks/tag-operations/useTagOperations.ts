@@ -5,6 +5,16 @@ import { useTagState } from "./useTagState";
 import { useTagFetch } from "./useTagFetch";
 import { useTagMutations } from "./useTagMutations";
 
+/**
+ * A composable hook that combines tag state management, fetching, and mutations
+ * into a single unified API for tag operations within the MetadataPanel.
+ * 
+ * This hook follows the composition pattern, where multiple specialized hooks
+ * are combined to create a more powerful hook with a unified interface.
+ * 
+ * @param props - TagOperationsProps containing contentId and other tag configuration
+ * @returns Combined tag operations API with state, fetching and mutation capabilities
+ */
 export function useTagOperations(props: TagOperationsProps) {
   const { contentId } = props;
   

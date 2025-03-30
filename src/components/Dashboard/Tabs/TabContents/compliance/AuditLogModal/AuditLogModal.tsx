@@ -13,6 +13,17 @@ import { fetchAuditLogs, ExternalLinkAudit } from "@/services/supabase/audit-log
 import { AuditLogsTable } from "./AuditLogsTable";
 import { LoadingState, ErrorState, EmptyState } from "./AuditModalStates";
 
+/**
+ * AuditLogModal Component
+ * 
+ * Displays a modal with audit history for external source validations.
+ * Shows when checks were performed, their results, and any issues discovered.
+ * 
+ * @param isOpen - Whether the modal is currently open
+ * @param onClose - Function to call when modal is closed
+ * @param sourceId - ID of the knowledge source to show audit logs for
+ * @param sourceName - Display name of the knowledge source
+ */
 interface AuditLogModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -25,12 +36,16 @@ export function AuditLogModal({ isOpen, onClose, sourceId, sourceName }: AuditLo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Load audit logs when modal opens
   useEffect(() => {
     if (isOpen && sourceId) {
       loadAuditLogs();
     }
   }, [isOpen, sourceId]);
 
+  /**
+   * Fetches audit logs for the specified source
+   */
   const loadAuditLogs = async () => {
     try {
       setLoading(true);

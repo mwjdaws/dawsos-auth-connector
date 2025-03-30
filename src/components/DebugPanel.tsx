@@ -10,6 +10,18 @@ import { invokeEdgeFunctionReliably } from '@/utils/edge-function-reliability';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 
+/**
+ * DebugPanel Component
+ * 
+ * A diagnostic component that allows developers and administrators to:
+ * - View database entries from key tables
+ * - Check edge function health and responses
+ * - Validate database table structures
+ * - Monitor system status with real-time updates
+ * 
+ * This panel respects Row Level Security (RLS) policies and only shows
+ * data the current user has permission to access.
+ */
 export const DebugPanel = () => {
   const [documents, setDocuments] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
@@ -21,6 +33,10 @@ export const DebugPanel = () => {
   const [edgeFunctionResults, setEdgeFunctionResults] = useState<Record<string, any>>({});
   const { user } = useAuth();
 
+  /**
+   * Fetches knowledge sources data from the database
+   * This function respects RLS policies
+   */
   const fetchDocuments = async () => {
     setIsLoading(true);
     setError(null);
@@ -49,6 +65,10 @@ export const DebugPanel = () => {
     }
   };
 
+  /**
+   * Fetches knowledge templates data from the database
+   * This function respects RLS policies
+   */
   const fetchTemplates = async () => {
     setIsLoading(true);
     setError(null);
@@ -77,6 +97,10 @@ export const DebugPanel = () => {
     }
   };
 
+  /**
+   * Fetches knowledge source versions data with related source info
+   * This function respects RLS policies
+   */
   const fetchVersions = async () => {
     setIsLoading(true);
     setError(null);
@@ -105,6 +129,13 @@ export const DebugPanel = () => {
     }
   };
 
+  /**
+   * Tests an edge function by invoking it and handling the response
+   * 
+   * @param functionName - Name of the edge function to test
+   * @param payload - Data to pass to the edge function
+   * @returns Promise with the function result
+   */
   const checkEdgeFunction = async (functionName: string, payload: any = {}) => {
     setEdgeFunctionStatus(prev => ({ ...prev, [functionName]: 'loading' }));
     try {
@@ -131,6 +162,10 @@ export const DebugPanel = () => {
     }
   };
 
+  /**
+   * Validates database table references against a known list
+   * Used for ensuring all expected tables exist in the database
+   */
   const validateTableReferences = async () => {
     setIsLoading(true);
     setError(null);
@@ -185,6 +220,7 @@ export const DebugPanel = () => {
     }
   };
 
+  // Load the appropriate data when the active tab changes
   useEffect(() => {
     if (activeTab === 'sources') {
       fetchDocuments();
@@ -197,6 +233,10 @@ export const DebugPanel = () => {
     }
   }, [activeTab]);
 
+  /**
+   * Handles the refresh button click based on the active tab
+   * Fetches fresh data from the database and edge functions
+   */
   const handleRefresh = () => {
     if (activeTab === 'sources') {
       fetchDocuments();
@@ -220,6 +260,12 @@ export const DebugPanel = () => {
     }
   };
 
+  /**
+   * Renders a status badge with appropriate styling based on status
+   * 
+   * @param status - Current status to display
+   * @returns JSX element with styled badge
+   */
   const renderStatusBadge = (status: 'ok' | 'error' | 'loading' | undefined) => {
     switch (status) {
       case 'ok':
@@ -233,6 +279,10 @@ export const DebugPanel = () => {
     }
   };
 
+  /**
+   * Renders the edge function test results in the diagnostics tab
+   * Shows health status and detailed response data
+   */
   const renderEdgeFunctionResults = () => {
     return (
       <div className="space-y-4">
@@ -359,7 +409,17 @@ export const DebugPanel = () => {
             onClick={handleRefresh} 
             disabled={isLoading}
           >
-            {isLoading ? 'Loading...' : 'Refresh Data'}
+            {isLoading ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh Data
+              </>
+            )}
           </Button>
         </div>
         
