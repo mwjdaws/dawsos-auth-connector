@@ -22,6 +22,7 @@ export function MarkdownEditorTab({
           initialTitle="Draft Document"
           initialContent="# Start writing your content here"
           initialTemplateId={null}
+          initialExternalSourceUrl=""
           sourceId={contentId !== `temp-${Date.now()}` ? contentId : undefined}
           onSaveDraft={onSaveDraft}
           onPublish={onPublish}

@@ -1,4 +1,5 @@
 
+// Export all tab content components
 export { TagGeneratorTab } from './TagGeneratorTab';
 export { MetadataTab } from './MetadataTab';
 export { MarkdownEditorTab } from './MarkdownEditorTab';
