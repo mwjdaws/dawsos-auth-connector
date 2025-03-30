@@ -2,7 +2,7 @@
 import { fetchOntologySuggestions } from './ontology-enrichment/edgeFunctionService';
 import { saveEnrichmentMetadata, createOntologyLinks } from './ontology-enrichment/enrichmentUtils';
 import { EnrichmentOptions } from './ontology-enrichment/types';
-import { handleError } from '@/utils/error-handling';
+import { handleError } from '@/utils/errors';
 
 export const useOntologyEnrichment = () => {
   /**

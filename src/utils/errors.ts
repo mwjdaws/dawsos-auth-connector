@@ -122,3 +122,9 @@ export function extractApiErrorDetails(error: unknown): string {
       ? error
       : 'Unknown error occurred';
 }
+
+// Re-export other error handling utilities for backward compatibility
+export * from './errors/types';
+export * from './errors/categorize';
+export * from './errors/handle';
+export * from './errors/wrappers';

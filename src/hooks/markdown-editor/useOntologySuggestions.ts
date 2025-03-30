@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { handleError } from '@/utils/error-handling';
+import { handleError } from '@/utils/errors';
 import { 
   OntologySuggestion, 
   RelatedNote, 

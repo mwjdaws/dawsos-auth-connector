@@ -1,6 +1,6 @@
 
 import { useCallback } from "react";
-import { handleError } from "@/utils/error-handling";
+import { handleError } from "@/utils/errors";
 import { ValidationError } from "@/utils/errors/types";
 
 /**
