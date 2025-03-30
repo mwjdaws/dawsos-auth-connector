@@ -1,6 +1,6 @@
 
-import { toast } from '@/hooks/use-toast';
-import { ToastAction } from '@/components/ui/toast';
+import { toast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { ErrorHandlingOptions } from './types';
 import { categorizeError } from './categorize';
 
