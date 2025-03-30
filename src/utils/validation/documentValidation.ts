@@ -1,44 +1,49 @@
 
+/**
+ * Document validation utilities
+ */
 import { ValidationResult } from './types';
+
+const MIN_TITLE_LENGTH = 3;
+const MAX_TITLE_LENGTH = 120;
 
 /**
  * Validates a document title
- * @deprecated Use validateDocument instead
+ * @param title The title to validate
+ * @returns A validation result
  */
 export function validateDocumentTitle(title: string): ValidationResult {
-  return validateDocument(title);
-}
+  // Check if title is empty
+  if (!title.trim()) {
+    return {
+      isValid: false,
+      errorMessage: 'Title is required',
+      message: 'Title is required' // For backward compatibility
+    };
+  }
 
-/**
- * Validates a document
- */
-export function validateDocument(title: string): ValidationResult {
-  if (!title || title.trim() === '') {
+  // Check if title is too short
+  if (title.trim().length < MIN_TITLE_LENGTH) {
     return {
       isValid: false,
-      message: 'Document title is required',
-      errorMessage: 'Document title is required'
+      errorMessage: `Title must be at least ${MIN_TITLE_LENGTH} characters`,
+      message: `Title must be at least ${MIN_TITLE_LENGTH} characters` // For backward compatibility
     };
   }
-  
-  if (title.length < 3) {
+
+  // Check if title is too long
+  if (title.trim().length > MAX_TITLE_LENGTH) {
     return {
       isValid: false,
-      message: 'Document title must be at least 3 characters',
-      errorMessage: 'Document title must be at least 3 characters'
+      errorMessage: `Title must be no more than ${MAX_TITLE_LENGTH} characters`,
+      message: `Title must be no more than ${MAX_TITLE_LENGTH} characters` // For backward compatibility
     };
   }
-  
-  if (title.length > 255) {
-    return {
-      isValid: false,
-      message: 'Document title cannot exceed 255 characters',
-      errorMessage: 'Document title cannot exceed 255 characters'
-    };
-  }
-  
+
+  // Title is valid
   return {
     isValid: true,
-    message: null
+    errorMessage: null,
+    message: null // For backward compatibility
   };
 }

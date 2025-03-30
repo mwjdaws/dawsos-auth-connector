@@ -7,4 +7,4 @@ export * from './useTagMutation';
 export * from './useTagReordering';
 
 // Bridge for backward compatibility
-export { useAddTagMutation as useTagMutations } from './useTagMutation';
+export { useTagMutations as useAddTagMutation } from './useTagMutation';

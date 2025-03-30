@@ -1,53 +1,53 @@
 
 /**
- * @deprecated This file is deprecated. Use validation utilities from @/utils/validation/ directory instead.
- * We've moved validation utilities to a more organized structure to improve maintenance.
+ * Validation utilities
  */
+import { ValidationResult, ContentIdValidationResult, ContentIdValidationResultType } from './validation/types';
+export { ValidationResult, ContentIdValidationResult };
 
 /**
- * Validates a document title
- * @param title Title to validate
- * @returns Object containing validation result and any error message
+ * Validates if a string is a valid content ID
+ * @param contentId The content ID to validate
+ * @returns True if the content ID is valid
  */
-export const validateDocumentTitle = (title: string): { 
-  isValid: boolean; 
-  errorMessage: string | null;
-} => {
-  // Check for empty title
-  if (!title || !title.trim()) {
+export function isValidContentId(contentId?: string | null): boolean {
+  if (!contentId) return false;
+  
+  // Check if it's a UUID format
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuid = uuidPattern.test(contentId);
+  
+  // Check if it's a temporary ID format (starts with temp-)
+  const isTempId = contentId.startsWith('temp-');
+  
+  return isUuid || isTempId;
+}
+
+/**
+ * Gets a validation result for a content ID
+ * @param contentId The content ID to validate
+ * @returns A validation result object
+ */
+export function getContentIdValidationResult(contentId?: string | null): ContentIdValidationResult {
+  if (!contentId) {
     return {
       isValid: false,
-      errorMessage: "Please enter a title before saving"
+      errorMessage: 'Content ID is required',
+      type: 'empty'
     };
   }
-
-  // Check for minimum length
-  if (title.trim().length < 3) {
+  
+  if (!isValidContentId(contentId)) {
     return {
       isValid: false,
-      errorMessage: "Title must be at least 3 characters long"
+      errorMessage: 'Invalid content ID format',
+      type: 'invalid'
     };
   }
-
-  // Check for maximum length
-  if (title.trim().length > 100) {
-    return {
-      isValid: false,
-      errorMessage: "Title cannot exceed 100 characters"
-    };
-  }
-
-  // Check for invalid characters
-  const invalidCharsRegex = /[<>{}[\]\\^~|]/;
-  if (invalidCharsRegex.test(title)) {
-    return {
-      isValid: false,
-      errorMessage: "Title contains invalid characters"
-    };
-  }
-
+  
   return {
     isValid: true,
-    errorMessage: null
+    errorMessage: null,
+    type: 'valid'
   };
-};
+}

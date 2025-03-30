@@ -1,23 +1,14 @@
 
-import { SetStateAction, Dispatch } from 'react';
+/**
+ * Tag operations types
+ */
 
 export interface Tag {
   id: string;
   name: string;
   content_id: string;
-  type_id: string;
-  type_name?: string;
-}
-
-export interface AddTagParams {
-  name: string;
-  contentId: string;
-  typeId?: string;
-}
-
-export interface TagOperationParams {
-  tagId: string;
-  contentId: string;
+  type_id?: string | null;
+  type_name?: string | null;
 }
 
 export interface TagPosition {
@@ -25,23 +16,21 @@ export interface TagPosition {
   position: number;
 }
 
-// State Hook Props/Results
 export interface UseTagStateProps {
   initialTags?: Tag[];
 }
 
 export interface UseTagStateResult {
   tags: Tag[];
-  setTags: Dispatch<SetStateAction<Tag[]>>;
+  setTags: (tags: Tag[]) => void;
   isLoading: boolean;
-  setIsLoading: Dispatch<SetStateAction<boolean>>;
+  setIsLoading: (isLoading: boolean) => void;
   error: Error | null;
-  setError: Dispatch<SetStateAction<Error | null>>;
+  setError: (error: Error | null) => void;
   newTag: string;
-  setNewTag: Dispatch<SetStateAction<string>>;
+  setNewTag: (value: string) => void;
 }
 
-// Fetch Hook Props/Results
 export interface UseTagFetchProps {
   contentId: string;
   setTags: (tags: Tag[]) => void;
@@ -50,29 +39,38 @@ export interface UseTagFetchProps {
 }
 
 export interface UseTagFetchResult {
-  tags: Tag[];
   fetchTags: () => Promise<Tag[]>;
   isLoading: boolean;
   error: Error | null;
+  tags?: Tag[]; // Added for compatibility
 }
 
-// Mutations Hook Props/Results
 export interface UseTagMutationsProps {
   contentId: string;
   setTags: (tags: Tag[]) => void;
   tags: Tag[];
 }
 
+export interface AddTagParams {
+  name: string;
+  contentId: string;
+  typeId?: string | null;
+}
+
+export interface DeleteTagParams {
+  tagId: string;
+  contentId: string;
+}
+
 export interface UseTagMutationsResult {
-  addTag: (params: AddTagParams) => Promise<Tag | null>;
-  deleteTag: (params: TagOperationParams) => Promise<void>;
-  reorderTags: (positions: TagPosition[]) => Promise<void>;
+  addTag: (params: AddTagParams) => Promise<boolean>;
+  deleteTag: (params: DeleteTagParams) => Promise<boolean>;
+  reorderTags: (positions: TagPosition[]) => Promise<boolean>;
   isAddingTag: boolean;
   isDeletingTag: boolean;
   isReordering: boolean;
 }
 
-// Main Operations Hook
 export interface UseTagOperationsProps {
   contentId: string;
 }
@@ -90,4 +88,20 @@ export interface UseTagOperationsResult {
   isAddingTag: boolean;
   isDeletingTag: boolean;
   isReordering: boolean;
+  // Added for backward compatibility
+  isTagsLoading?: boolean; 
+  tagsError?: Error | null;
+}
+
+// Utility function to map API tags to internal Tag type
+export function mapApiTagToTag(apiTag: any): Tag {
+  return {
+    id: typeof apiTag.id === 'string' ? apiTag.id : '',
+    name: typeof apiTag.name === 'string' ? apiTag.name : '',
+    content_id: typeof apiTag.content_id === 'string' ? apiTag.content_id : '',
+    type_id: typeof apiTag.type_id === 'string' ? apiTag.type_id : null,
+    type_name: apiTag.tag_types && typeof apiTag.tag_types.name === 'string' 
+      ? apiTag.tag_types.name 
+      : null
+  };
 }

@@ -9,6 +9,8 @@ export interface GraphNode {
   title: string;
   name: string;
   type: string;
+  size?: number; // Added size property
+  color?: string; // Added color property
   // Allow for force-graph specific properties
   [key: string]: any;
 }
@@ -69,6 +71,7 @@ export interface GraphZoomControlProps {
   onReset: () => void;
   min: number;
   max: number;
+  percent?: number; // Added optional percent field
 }
 
 // Type for tooltip content

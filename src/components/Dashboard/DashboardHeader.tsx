@@ -40,7 +40,7 @@ export function DashboardHeader({
       handleError(error, "Failed to refresh tag statistics. Please try again.", {
         title: "Refresh Error",
         actionLabel: "Try Again",
-        action: refreshTagStats
+        onRetry: refreshTagStats
       });
     } finally {
       setIsRefreshingStats(false);

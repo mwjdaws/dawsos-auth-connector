@@ -31,4 +31,8 @@ export interface TagValidationOptions {
   allowSpecialChars?: boolean;
   required?: boolean;
   uniqueInList?: string[];
+  allowEmpty?: boolean;
+  maxTags?: number;
+  allowDuplicates?: boolean;
+  pattern?: RegExp;
 }

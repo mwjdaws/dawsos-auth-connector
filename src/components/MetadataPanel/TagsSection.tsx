@@ -34,8 +34,13 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
   className = ""
 }) => {
   // Updated to handle tag reordering with the correct types
-  const handleReorderTags = async (reorderedTags: TagPosition[]) => {
-    // Implementation to be added when tag reordering is needed
+  const handleReorderTags = async (updatedTags: Tag[]) => {
+    // Convert to TagPosition type
+    const reorderedTags: TagPosition[] = updatedTags.map((tag, index) => ({
+      id: tag.id,
+      position: index
+    }));
+    
     console.log("Reordering tags:", reorderedTags);
     
     if (onMetadataChange) {
