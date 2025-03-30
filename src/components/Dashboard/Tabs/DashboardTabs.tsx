@@ -1,25 +1,15 @@
-
-import { ReactNode, useTransition, Suspense, lazy } from "react";
+import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
-import { TagPanel, MarkdownPanel } from "@/components";
-import MetadataPanel from "@/components/MetadataPanel";
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
-import { TagCards } from "@/components/TagPanel/TagCards";
-import TemplatesPanel from "@/components/TemplatesPanel";
-import { RelationshipGraphTab } from "./TabContents";
-import { useAuth } from "@/hooks/useAuth";
 import { LoadingIndicator } from "./LoadingIndicator";
-import { useDashboardTabs } from "@/hooks/dashboard";
 
 interface DashboardTabsProps {
   activeTab: string;
   contentId: string;
   onTabChange: (value: string) => void;
-  onTagGenerationComplete: (newContentId: string) => void;
-  onMetadataChange: () => void;
-  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null) => void;
-  onPublish?: (id: string, title: string, content: string, templateId: string | null) => void;
+  onTagGenerationComplete?: (contentId: string) => void;
+  onMetadataChange?: () => void;
+  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
+  onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
 }
 
 export function DashboardTabs({
@@ -31,123 +21,38 @@ export function DashboardTabs({
   onSaveDraft,
   onPublish
 }: DashboardTabsProps) {
-  const [isPending, startTransition] = useTransition();
-  const { user } = useAuth();
-  const { handleTabChange } = useDashboardTabs({ 
-    onTabChange, 
-    startTransition 
-  });
-
-  const sampleMarkdown = `# Sample Markdown
-  
-This is an example of markdown content with metadata displayed above.
-
-## Features
-- Renders markdown content
-- Displays metadata like tags and ontology terms
-- Supports additional custom metadata fields
-  
-> This is a blockquote that demonstrates markdown rendering capabilities.
-
-### Code Example
-\`\`\`typescript
-const greeting = "Hello World";
-console.log(greeting);
-\`\`\`
-`;
-
-  const sampleMetadata = {
-    tags: ["markdown", "documentation", "example"],
-    ontology_terms: ["content", "metadata", "rendering"],
-    author: "Lovable AI",
-    created_at: new Date().toLocaleDateString()
-  };
-
   return (
-    <>
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-6">
-        <TabsList>
-          <TabsTrigger value="tag-generator">Tag Generator</TabsTrigger>
-          <TabsTrigger value="markdown-viewer">Markdown Viewer</TabsTrigger>
-          <TabsTrigger value="markdown-editor">Markdown Editor</TabsTrigger>
-          <TabsTrigger value="metadata">Metadata</TabsTrigger>
-          <TabsTrigger value="templates">Templates</TabsTrigger>
-          <TabsTrigger value="relationships">Knowledge Graph</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="tag-generator" className="mt-4">
-          <div className="bg-card border rounded-lg p-6 shadow-sm">
-            <h2 className="text-xl font-semibold mb-4">Tag Generator</h2>
-            <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
-              <TagPanel 
-                contentId={contentId} 
-                onTagsSaved={onTagGenerationComplete} 
-              />
-            </Suspense>
-            
-            <h2 className="text-xl font-semibold mb-4 mt-8">Recent Tags</h2>
-            <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
-              <TagCards />
-            </Suspense>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="markdown-viewer" className="mt-4">
-          <div className="bg-card border rounded-lg p-6 shadow-sm">
-            <h2 className="text-xl font-semibold mb-4">Markdown Viewer</h2>
-            <Suspense fallback={<Skeleton className="h-[300px] w-full rounded-lg" />}>
-              <MarkdownPanel 
-                content={sampleMarkdown} 
-                metadata={sampleMetadata} 
-              />
-            </Suspense>
-          </div>
-        </TabsContent>
+    <Tabs
+      value={activeTab}
+      onValueChange={onTabChange}
+      className="w-full"
+    >
+      <TabsList className="grid grid-cols-3 mb-6">
+        <TabsTrigger value="tag-generator">Tag Generator</TabsTrigger>
+        <TabsTrigger value="metadata">Metadata</TabsTrigger>
+        <TabsTrigger value="editor">Editor</TabsTrigger>
+      </TabsList>
 
-        <TabsContent value="markdown-editor" className="mt-4">
-          <div className="bg-card border rounded-lg p-6 shadow-sm">
-            <h2 className="text-xl font-semibold mb-4">Markdown Editor</h2>
-            <Suspense fallback={<Skeleton className="h-[300px] w-full rounded-lg" />}>
-              <MarkdownEditor 
-                initialTitle="Draft Document"
-                initialContent={sampleMarkdown}
-                initialTemplateId={null}
-                sourceId={contentId !== `temp-${Date.now()}` ? contentId : undefined}
-                onSaveDraft={onSaveDraft}
-                onPublish={onPublish}
-              />
-            </Suspense>
-          </div>
-        </TabsContent>
+      <TabsContent value="tag-generator">
+        <div className="space-y-4">
+          {/* Tag Generator content will be implemented here */}
+          <p>Tag Generator content for content ID: {contentId}</p>
+        </div>
+      </TabsContent>
 
-        <TabsContent value="metadata" className="mt-4">
-          <div className="bg-card border rounded-lg p-6 shadow-sm">
-            <h2 className="text-xl font-semibold mb-4">Content Metadata</h2>
-            <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-lg" />}>
-              <MetadataPanel 
-                contentId={contentId}
-                onMetadataChange={onMetadataChange}
-              />
-            </Suspense>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="templates" className="mt-4">
-          <div className="bg-card border rounded-lg p-6 shadow-sm">
-            <h2 className="text-xl font-semibold mb-4">Knowledge Templates</h2>
-            <Suspense fallback={<Skeleton className="h-[300px] w-full rounded-lg" />}>
-              <TemplatesPanel />
-            </Suspense>
-          </div>
-        </TabsContent>
+      <TabsContent value="metadata">
+        <div className="space-y-4">
+          {/* Metadata content will be implemented here */}
+          <p>Metadata content for content ID: {contentId}</p>
+        </div>
+      </TabsContent>
 
-        <TabsContent value="relationships" className="mt-4">
-          <Suspense fallback={<Skeleton className="h-[500px] w-full rounded-lg" />}>
-            <RelationshipGraphTab contentId={contentId} />
-          </Suspense>
-        </TabsContent>
-      </Tabs>
-      {isPending && <LoadingIndicator />}
-    </>
+      <TabsContent value="editor">
+        <div className="space-y-4">
+          {/* Editor content will be implemented here */}
+          <p>Editor content for content ID: {contentId}</p>
+        </div>
+      </TabsContent>
+    </Tabs>
   );
 }
