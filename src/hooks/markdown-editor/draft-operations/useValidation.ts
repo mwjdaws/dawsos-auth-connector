@@ -1,23 +1,28 @@
 
 import { validateDocumentTitle } from '@/utils/validation';
 
-interface ValidationResult {
+/**
+ * Interface for validation results
+ */
+export interface ValidationResult {
   isValid: boolean;
-  message: string;
+  errorMessage: string | null;
 }
 
 /**
- * Hook for document validation operations
+ * Hook for validation operations
  */
 export const useValidation = () => {
-  /**
-   * Validate a document before saving
-   */
-  const validateDocumentForSave = (title: string): ValidationResult => {
-    return validateDocumentTitle(title);
+  const validateTitle = (title: string): ValidationResult => {
+    const result = validateDocumentTitle(title);
+    
+    return {
+      isValid: result.isValid,
+      errorMessage: result.isValid ? null : result.message
+    };
   };
   
   return {
-    validateDocumentForSave
+    validateTitle
   };
 };

@@ -1,54 +1,38 @@
 
-/**
- * Document validation utilities
- * 
- * Functions for validating document properties like titles, ensuring
- * they meet the application's requirements.
- */
-
-import type { ValidationResult } from './tagValidation';
+import { ValidationResult } from './tagValidation';
 
 /**
  * Validates a document title
- * @param title Title to validate
- * @returns Object containing validation result and error message
+ * 
+ * @param title The document title to validate
+ * @returns ValidationResult with isValid and message
  */
-export const validateDocumentTitle = (title: string): ValidationResult => {
-  // Check for empty title
-  if (!title || !title.trim()) {
+export function validateDocumentTitle(title: string): ValidationResult {
+  if (!title || typeof title !== 'string') {
     return {
       isValid: false,
-      message: "Please enter a title before saving"
+      message: "Title is required"
     };
   }
-
-  // Check for minimum length
-  if (title.trim().length < 3) {
+  
+  const titleTrimmed = title.trim();
+  
+  if (titleTrimmed.length < 3) {
     return {
       isValid: false,
       message: "Title must be at least 3 characters long"
     };
   }
-
-  // Check for maximum length
-  if (title.trim().length > 100) {
+  
+  if (titleTrimmed.length > 255) {
     return {
       isValid: false,
-      message: "Title cannot exceed 100 characters"
+      message: "Title must be no more than 255 characters long"
     };
   }
-
-  // Check for invalid characters
-  const invalidCharsRegex = /[<>{}[\]\\^~|]/;
-  if (invalidCharsRegex.test(title)) {
-    return {
-      isValid: false,
-      message: "Title contains invalid characters"
-    };
-  }
-
+  
   return {
     isValid: true,
-    message: ""
+    message: null
   };
-};
+}

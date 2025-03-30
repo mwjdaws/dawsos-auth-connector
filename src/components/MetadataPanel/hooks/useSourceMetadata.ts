@@ -46,7 +46,7 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
         }
         
         console.log("Source metadata fetched:", sourceData);
-        const metadata = sourceData || {
+        const metadata: SourceMetadata = sourceData || {
           external_source_url: null,
           needs_external_review: false,
           external_source_checked_at: null

@@ -1,127 +1,180 @@
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import { handleError } from '@/utils/errors';
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import { isValidContentId } from '@/utils/validation';
+import { Tag } from "../../types";
+import { handleError } from "@/utils/errors";
 
-/**
- * Hook for tag mutation operations (add, delete, update)
- */
-export const useTagMutations = (contentId: string) => {
-  const queryClient = useQueryClient();
+export interface UseTagMutationsProps {
+  contentId: string;
+  onMetadataChange?: () => void;
+}
 
-  // Add tag mutation
-  const addTagMutation = useMutation({
-    mutationFn: async ({ name, typeId }: { name: string; typeId?: string }) => {
-      if (!isValidContentId(contentId)) {
-        throw new Error('Invalid content ID');
+export const useTagMutations = ({ contentId, onMetadataChange }: UseTagMutationsProps) => {
+  const [isAdding, setIsAdding] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleAddTag = async (name: string, typeId?: string | null): Promise<Tag | null> => {
+    if (!name.trim()) {
+      toast({
+        title: "Error",
+        description: "Tag name cannot be empty",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    if (!contentId || !isValidContentId(contentId)) {
+      toast({
+        title: "Error",
+        description: "Invalid content ID",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    setIsAdding(true);
+
+    try {
+      // Check if tag already exists
+      const { data: existingTags, error: checkError } = await supabase
+        .from("tags")
+        .select("id")
+        .eq("content_id", contentId)
+        .eq("name", name.trim().toLowerCase());
+
+      if (checkError) throw checkError;
+
+      if (existingTags && existingTags.length > 0) {
+        toast({
+          title: "Warning",
+          description: "This tag already exists for this content",
+          variant: "warning",
+        });
+        setIsAdding(false);
+        return null;
       }
 
+      // Insert new tag
       const { data, error } = await supabase
-        .from('tags')
-        .insert([
-          {
-            name: name.trim().toLowerCase(),
-            content_id: contentId,
-            type_id: typeId || null,
-          },
-        ])
+        .from("tags")
+        .insert({
+          name: name.trim().toLowerCase(),
+          content_id: contentId,
+          type_id: typeId || null
+        })
         .select();
 
       if (error) throw error;
-      return data?.[0] || null;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
-      toast({
-        title: 'Tag added',
-        description: 'Tag has been added successfully',
-      });
-    },
-    onError: (error: Error) => {
-      handleError(error, 'Failed to add tag');
-      toast({
-        title: 'Failed to add tag',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
 
-  // Delete tag mutation
-  const deleteTagMutation = useMutation({
-    mutationFn: async (tagId: string) => {
-      if (!isValidContentId(contentId)) {
-        throw new Error('Invalid content ID');
+      if (!data || data.length === 0) {
+        throw new Error("No data returned after tag insertion");
       }
 
-      const { error } = await supabase.from('tags').delete().eq('id', tagId);
+      const newTag: Tag = {
+        id: data[0].id,
+        name: data[0].name,
+        content_id: data[0].content_id,
+        type_id: data[0].type_id || null,
+        type_name: null // We don't have type name in the response
+      };
+
+      toast({
+        title: "Success",
+        description: "Tag added successfully",
+      });
+
+      if (onMetadataChange) {
+        onMetadataChange();
+      }
+
+      return newTag;
+    } catch (err) {
+      console.error("Error adding tag:", err);
+      
+      handleError(
+        err instanceof Error ? err : new Error('Failed to add tag'), 
+        "Error adding tag", 
+        { context: { contentId, name } }
+      );
+      
+      toast({
+        title: "Error",
+        description: "Failed to add tag",
+        variant: "destructive",
+      });
+      
+      return null;
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const handleDeleteTag = async (tagId: string): Promise<boolean> => {
+    if (!tagId) {
+      toast({
+        title: "Error",
+        description: "Invalid tag ID",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!contentId || !isValidContentId(contentId)) {
+      toast({
+        title: "Error",
+        description: "Invalid content ID",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      const { error } = await supabase
+        .from("tags")
+        .delete()
+        .eq("id", tagId);
 
       if (error) throw error;
-      return tagId;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
-      toast({
-        title: 'Tag deleted',
-        description: 'Tag has been removed successfully',
-      });
-    },
-    onError: (error: Error) => {
-      handleError(error, 'Failed to delete tag');
-      toast({
-        title: 'Failed to delete tag',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
 
-  // Update tag order mutation - Implementation for future use
-  // Currently a workaround since there's no order column in the database
-  const updateTagOrderMutation = useMutation({
-    mutationFn: async (tags: { id: string; position?: number }[]) => {
-      if (!isValidContentId(contentId)) {
-        throw new Error('Invalid content ID');
+      toast({
+        title: "Success",
+        description: "Tag deleted successfully",
+      });
+
+      if (onMetadataChange) {
+        onMetadataChange();
       }
 
-      // Log the intended changes for debugging
-      console.log('Tag order update requested:', tags);
+      return true;
+    } catch (err) {
+      console.error("Error deleting tag:", err);
       
-      /**
-       * In a future implementation, we would need to:
-       * 1. Add a display_order column to the tags table
-       * 2. Create a batch update operation to update all tag positions at once
-       * 
-       * For now, we'll just return the tags without making database changes.
-       */
-      return tags;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
+      handleError(
+        err instanceof Error ? err : new Error('Failed to delete tag'), 
+        "Error deleting tag", 
+        { context: { contentId, tagId } }
+      );
+      
       toast({
-        title: 'Tags reordered',
-        description: 'Tag order has been updated successfully',
+        title: "Error",
+        description: "Failed to delete tag",
+        variant: "destructive",
       });
-    },
-    onError: (error: Error) => {
-      handleError(error, 'Failed to update tag order');
-      toast({
-        title: 'Failed to update tag order',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+      
+      return false;
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return {
-    addTagMutation,
-    deleteTagMutation,
-    updateTagOrderMutation,
-    isPending:
-      addTagMutation.isPending ||
-      deleteTagMutation.isPending ||
-      updateTagOrderMutation.isPending,
+    handleAddTag,
+    handleDeleteTag,
+    isAdding,
+    isDeleting
   };
 };
