@@ -1,9 +1,14 @@
 
 import React from 'react';
 import { Input } from '@/components/ui/input';
-import TemplateSelector from './TemplateSelector';
+import { useAuth } from '@/hooks/useAuth';
 import { KnowledgeTemplate } from '@/services/api/types';
-import { ExternalLink } from 'lucide-react';
+import { ArchiveRestore, Link, Unlink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { UseTemplate } from '@/components/TemplateEditor';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
+import TemplateSelector from './TemplateSelector';
 
 interface EditorHeaderProps {
   title: string;
@@ -13,7 +18,7 @@ interface EditorHeaderProps {
   setExternalSourceUrl: (url: string) => void;
   templates: KnowledgeTemplate[];
   isLoadingTemplates: boolean;
-  onTemplateChange: (value: string) => void;
+  onTemplateChange: (templateId: string) => void;
 }
 
 const EditorHeader: React.FC<EditorHeaderProps> = ({
@@ -24,24 +29,38 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
   setExternalSourceUrl,
   templates,
   isLoadingTemplates,
-  onTemplateChange
+  onTemplateChange,
 }) => {
+  const { user } = useAuth();
+
+  const handleApplyTemplate = (content: string) => {
+    // This function will be called when a template is applied
+    // For now, we'll just set the title to indicate that a template was applied
+    setTitle(title ? `${title} (From Template)` : 'New Document (From Template)');
+  };
+  
+  const handleClearExternalSource = () => {
+    if (confirm('Are you sure you want to remove the external source link?')) {
+      setExternalSourceUrl('');
+    }
+  };
+
   return (
-    <div className="mb-4 space-y-4">
-      <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4 items-start">
-        <div className="w-full md:w-2/3">
-          <label htmlFor="title" className="block text-sm font-medium mb-1">
-            Title
-          </label>
-          <Input
-            id="title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Enter a title"
-            className="w-full"
-          />
-        </div>
-        <div className="w-full md:w-1/3">
+    <div className="space-y-4 w-full">
+      <div className="flex flex-col space-y-2">
+        <Label htmlFor="document-title">Document Title</Label>
+        <Input
+          id="document-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Enter document title"
+          className="w-full"
+          aria-label="Document title"
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-4 items-end">
+        <div className="flex-1 min-w-[250px]">
           <TemplateSelector
             templateId={templateId}
             templates={templates}
@@ -49,21 +68,35 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
             onChange={onTemplateChange}
           />
         </div>
+        
+        {user && templateId && (
+          <UseTemplate 
+            templateId={templateId} 
+            onApply={handleApplyTemplate}
+            label="Reload From Template"
+            variant="outline"
+            size="sm"
+          />
+        )}
       </div>
-      
-      <div className="w-full">
-        <label htmlFor="externalSource" className="flex items-center gap-1 text-sm font-medium mb-1">
-          <ExternalLink className="h-4 w-4" /> External Source URL
-        </label>
-        <Input
-          id="externalSource"
-          value={externalSourceUrl}
-          onChange={(e) => setExternalSourceUrl(e.target.value)}
-          placeholder="https://example.com/reference-document"
-          className="w-full"
-          type="url"
-        />
-      </div>
+
+      {externalSourceUrl && (
+        <div className="flex items-center space-x-2 p-2 bg-blue-50 rounded border border-blue-100">
+          <Link size={16} className="text-blue-600" />
+          <span className="text-sm text-blue-800 flex-1 truncate">
+            External source: {externalSourceUrl}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearExternalSource}
+            className="h-8 w-8 p-0"
+            title="Unlink external source"
+          >
+            <Unlink size={14} className="text-blue-600" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
