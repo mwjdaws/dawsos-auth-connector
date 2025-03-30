@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { isValidContentId } from '@/utils/validation/contentIdValidation';
+import { isValidContentId } from '@/utils/validation';
 import { handleError } from "@/utils/errors";
 import { SourceMetadata } from "../types";
 

@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useTransition, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
-import { isValidContentId } from "@/utils/validation/contentIdValidation";
+import { isValidContentId } from "@/utils/validation";
 import { handleError } from "@/utils/errors";
 import { supabase } from "@/integrations/supabase/client";
 

@@ -14,7 +14,12 @@ export const usePublishValidation = () => {
    * Validate a document before publishing
    */
   const validateForPublish = (title: string): ValidationResult => {
-    return validateDocumentTitle(title);
+    const result = validateDocumentTitle(title);
+    
+    return {
+      isValid: result.isValid,
+      errorMessage: result.isValid ? null : result.message
+    };
   };
   
   return {
