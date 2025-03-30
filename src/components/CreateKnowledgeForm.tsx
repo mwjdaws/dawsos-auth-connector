@@ -67,7 +67,7 @@ export function CreateKnowledgeForm() {
         title: formData.title,
         content: formData.content || "# New Document\n\nStart writing here...",
         user_id: user.id,
-        template_id: templateId
+        template_id: templateId // This can be null, which is fine
       });
 
       if (result) {

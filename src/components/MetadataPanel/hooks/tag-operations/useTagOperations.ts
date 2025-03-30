@@ -1,58 +1,77 @@
 
-import { isValidContentId } from "@/utils/validation/contentIdValidation";
-import { useTagState } from "./useTagState";
-import { useTagFetch } from "./useTagFetch";
-import { useTagMutations } from "./useTagMutations";
-import { Tag, TagOperationsProps, TagPosition } from "./types";
+import { useState } from 'react';
+import { isValidContentId } from '@/utils/validation/contentIdValidation';
+import type { Tag } from '@/types';
+import { useTagState } from './useTagState';
+import { useTagFetch } from './useTagFetch';
+import { useTagMutations } from './useTagMutations';
 
-export const useTagOperations = (contentId: string, props?: Omit<TagOperationsProps, 'contentId'>) => {
-  // Combine the contentId with any additional props
-  const fullProps: TagOperationsProps = { contentId, ...props };
-
-  // Get state management for tags
-  const tagState = useTagState();
+export const useTagOperations = (contentId: string) => {
+  const isValid = isValidContentId(contentId);
+  const [newTag, setNewTag] = useState('');
   
-  // Setup tag fetching
-  const tagFetch = useTagFetch({ contentId });
+  // Use the tag state hook
+  const {
+    tags,
+    setTags,
+    isLoading,
+    setIsLoading,
+    error,
+    setError
+  } = useTagState();
   
-  // Setup tag mutations
-  const tagMutations = useTagMutations({ contentId });
-
-  // Handle refreshing tag data
-  const handleRefresh = async () => {
-    if (isValidContentId(contentId)) {
-      const tags = await tagFetch.fetchTags();
-      tagState.setTags(tags);
-    }
+  // Use the tag fetch hook
+  const { fetchTags, refreshTags } = useTagFetch({
+    contentId,
+    setTags,
+    setIsLoading,
+    setError
+  });
+  
+  // Use tag mutations hook
+  const {
+    addTag,
+    deleteTag,
+    reorderTags,
+    isAddingTag,
+    isDeletingTag,
+    isReordering
+  } = useTagMutations({
+    contentId,
+    tags,
+    setTags,
+    setError
+  });
+  
+  const handleAddTag = () => {
+    if (!newTag.trim() || !isValid) return;
+    
+    addTag({
+      name: newTag
+    });
+    
+    setNewTag('');
   };
-
-  // Update tag order (positions)
-  const handleUpdateTagOrder = async (tags: TagPosition[]) => {
-    console.log("Updating tag order:", tags);
-    // Reordering implementation would go here
-    return true;
+  
+  const handleDeleteTag = (tagId: string) => {
+    if (!isValid) return;
+    
+    deleteTag({ tagId });
   };
-
+  
   return {
-    // State
-    tags: tagState.tags,
-    setTags: tagState.setTags,
-    newTag: tagState.newTag,
-    setNewTag: tagState.setNewTag,
-    
-    // Data fetching
-    fetchTags: tagFetch.fetchTags,
-    isLoading: tagFetch.isLoading,
-    error: tagFetch.error,
-    
-    // Operations
-    handleAddTag: tagMutations.handleAddTag,
-    handleDeleteTag: tagMutations.handleDeleteTag,
-    handleUpdateTagOrder,
-    handleRefresh,
-    
-    // Mutation states
-    isAdding: tagMutations.isAdding,
-    isDeleting: tagMutations.isDeleting
+    newTag,
+    setNewTag,
+    tags,
+    isLoading,
+    error,
+    isAddingTag,
+    isDeletingTag,
+    isReordering,
+    fetchTags,
+    refreshTags,
+    handleAddTag,
+    handleDeleteTag,
+    reorderTags
   };
 };

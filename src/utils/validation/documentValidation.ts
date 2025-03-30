@@ -2,41 +2,29 @@
 import { ValidationResult } from './types';
 
 /**
- * Validates a document title
- * @param title Title to validate
- * @returns Object containing validation result and error message
+ * Validate a document title
+ * @param title The title to validate
+ * @returns ValidationResult with validity and message
  */
 export function validateDocumentTitle(title: string): ValidationResult {
-  // Check for empty title
-  if (!title || !title.trim()) {
+  if (!title || title.trim() === '') {
     return {
       isValid: false,
-      message: "Please enter a title before saving"
+      message: 'Title is required'
     };
   }
 
-  // Check for minimum length
-  if (title.trim().length < 3) {
+  if (title.length < 3) {
     return {
       isValid: false,
-      message: "Title must be at least 3 characters long"
+      message: 'Title must be at least 3 characters long'
     };
   }
 
-  // Check for maximum length
-  if (title.trim().length > 100) {
+  if (title.length > 200) {
     return {
       isValid: false,
-      message: "Title cannot exceed 100 characters"
-    };
-  }
-
-  // Check for invalid characters
-  const invalidCharsRegex = /[<>{}[\]\\^~|]/;
-  if (invalidCharsRegex.test(title)) {
-    return {
-      isValid: false,
-      message: "Title contains invalid characters"
+      message: 'Title must be less than 200 characters'
     };
   }
 
@@ -44,4 +32,13 @@ export function validateDocumentTitle(title: string): ValidationResult {
     isValid: true,
     message: null
   };
+}
+
+/**
+ * Validate a document for saving
+ * @param title The document title
+ * @returns ValidationResult with validity and message
+ */
+export function validateDocumentForSave(title: string): ValidationResult {
+  return validateDocumentTitle(title);
 }

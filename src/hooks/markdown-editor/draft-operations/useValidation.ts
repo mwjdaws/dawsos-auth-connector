@@ -1,5 +1,5 @@
 
-import { validateDocumentTitle } from '@/utils/validation/documentValidation';
+import { validateDocumentTitle, validateDocumentForSave } from '@/utils/validation/documentValidation';
 import type { ValidationResult } from '@/utils/validation/types';
 
 /**
@@ -16,12 +16,12 @@ export const useValidation = () => {
   /**
    * Validate a document before saving
    */
-  const validateDocumentForSave = (title: string): ValidationResult => {
-    return validateDocumentTitle(title);
+  const validateDocumentForSaving = (title: string): ValidationResult => {
+    return validateDocumentForSave(title);
   };
   
   return {
     validateTitle,
-    validateDocumentForSave
+    validateDocumentForSave: validateDocumentForSaving
   };
 };

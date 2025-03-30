@@ -1,61 +1,66 @@
 
-import { ValidationResult } from './types';
-import { TagValidationOptions } from './index';
+import { ValidationResult, TagValidationOptions } from './types';
+
+const DEFAULT_OPTIONS: TagValidationOptions = {
+  allowEmpty: false,
+  maxTags: 50,
+  minLength: 1,
+  maxLength: 50
+};
 
 /**
- * Validates a list of tags
+ * Validate tags
  * @param tags Array of tag strings to validate
- * @param options Optional validation configuration
- * @returns Object containing validation result and error message
+ * @param options Optional validation options
+ * @returns ValidationResult with validity and message
  */
-export function validateTags(tags: string[], options: TagValidationOptions = {}): ValidationResult {
-  const {
-    allowEmpty = true,
-    maxTags = 50,
-    minLength = 2,
-    maxLength = 30
-  } = options;
+export function validateTags(tags: string[], options?: TagValidationOptions): ValidationResult {
+  const opts = { ...DEFAULT_OPTIONS, ...options };
 
-  // Check if tags are required but empty
-  if (!allowEmpty && (!tags || tags.length === 0)) {
+  if (!tags || !Array.isArray(tags)) {
     return {
       isValid: false,
-      message: "At least one tag is required"
+      message: 'Tags must be an array'
     };
   }
 
-  // Check if too many tags
-  if (tags.length > maxTags) {
+  if (!opts.allowEmpty && tags.length === 0) {
     return {
       isValid: false,
-      message: `Cannot have more than ${maxTags} tags`
+      message: 'At least one tag is required'
     };
   }
 
-  // Check each tag's length and format
-  const invalidTags = tags.filter(tag => {
-    if (!tag || tag.trim().length < minLength) return true;
-    if (tag.trim().length > maxLength) return true;
-    
-    // Special characters validation
-    const invalidCharsRegex = /[^\w\s-]/; // Allow letters, numbers, spaces, hyphens
-    return invalidCharsRegex.test(tag);
-  });
-
-  if (invalidTags.length > 0) {
+  if (opts.maxTags && tags.length > opts.maxTags) {
     return {
       isValid: false,
-      message: "Some tags have invalid format or length"
+      message: `Maximum of ${opts.maxTags} tags allowed`
     };
   }
 
-  // Check for duplicate tags (case insensitive)
-  const lowerTags = tags.map(t => t.toLowerCase());
-  if (new Set(lowerTags).size !== lowerTags.length) {
-    return {
-      isValid: false,
-      message: "Duplicate tags are not allowed"
-    };
+  // Check individual tags
+  for (const tag of tags) {
+    if (!tag || typeof tag !== 'string') {
+      return {
+        isValid: false,
+        message: 'All tags must be valid strings'
+      };
+    }
+
+    const trimmedTag = tag.trim();
+    if (opts.minLength && trimmedTag.length < opts.minLength) {
+      return {
+        isValid: false,
+        message: `Tags must be at least ${opts.minLength} characters long`
+      };
+    }
+
+    if (opts.maxLength && trimmedTag.length > opts.maxLength) {
+      return {
+        isValid: false,
+        message: `Tags must be less than ${opts.maxLength} characters long`
+      };
+    }
   }
 
   return {

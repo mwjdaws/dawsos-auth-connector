@@ -1,15 +1,12 @@
 
-/**
- * TagsSection Component
- * 
- * Displays and manages tags associated with a content source.
- * Uses the DraggableTagList component for tag drag-and-drop reordering.
- */
-import React from "react";
-import { TagInput } from "@/components/MarkdownViewer/TagInput";
-import { TagList } from "../components/TagList";
-import { Tag } from "../hooks/tag-operations/types";
-import { useTagReordering } from "@/hooks/metadata/useTagReordering";
+import React, { useState } from 'react';
+import { PlusCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import DraggableTagList from '../components/DraggableTagList';
+import { Tag } from '@/types';
+import { TagPosition } from '@/utils/validation/types';
+import { useTagReordering } from '@/hooks/metadata/useTagReordering';
 
 export interface TagsSectionProps {
   tags: Tag[];
@@ -19,11 +16,11 @@ export interface TagsSectionProps {
   setNewTag: (value: string) => void;
   onAddTag: () => void;
   onDeleteTag: (tagId: string) => void;
-  onMetadataChange?: () => void;
+  onMetadataChange: () => void;
   className?: string;
 }
 
-export const TagsSection: React.FC<TagsSectionProps> = ({
+export function TagsSection({
   tags,
   contentId,
   editable,
@@ -32,34 +29,64 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
   onAddTag,
   onDeleteTag,
   onMetadataChange,
-  className = ""
-}) => {
-  const { handleReorderTags, isReordering } = useTagReordering({
+  className
+}: TagsSectionProps) {
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  
+  // Use the tag reordering hook
+  const { reorderTags, isReordering } = useTagReordering({
     contentId,
     onMetadataChange
   });
+
+  // Handle tag reordering
+  const handleReorderTags = async (reorderedTags: TagPosition[]) => {
+    if (!editable || !contentId) return;
+    
+    await reorderTags(reorderedTags);
+  };
   
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && newTag.trim()) {
+      e.preventDefault();
+      onAddTag();
+    }
+  };
+
   return (
     <div className={className}>
       <h3 className="text-sm font-medium mb-2">Tags</h3>
       
-      <TagList
+      <DraggableTagList
         tags={tags}
-        editable={editable && !isReordering}
-        onDeleteTag={onDeleteTag}
-        onReorderTags={handleReorderTags}
+        onTagClick={() => {}}
+        onTagDelete={editable ? onDeleteTag : undefined}
+        onTagsReordered={editable ? handleReorderTags : undefined}
+        isReordering={isReordering}
       />
       
       {editable && (
-        <div className="mt-2">
-          <TagInput 
-            onAddTag={onAddTag} 
-            newTag={newTag} 
-            setNewTag={setNewTag} 
-            aria-label="Add a new tag"
+        <div className={`flex items-center gap-2 mt-2 ${isInputFocused ? 'opacity-100' : 'opacity-80'}`}>
+          <Input
+            value={newTag}
+            onChange={(e) => setNewTag(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={() => setIsInputFocused(false)}
+            placeholder="Add a tag..."
+            className="h-8 text-sm"
           />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onAddTag}
+            disabled={!newTag.trim()}
+            className="h-8 w-8 p-0"
+          >
+            <PlusCircle className="h-4 w-4" />
+          </Button>
         </div>
       )}
     </div>
   );
-};
+}

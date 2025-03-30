@@ -1,137 +1,109 @@
 
 import React from 'react';
-import { toast } from '@/hooks/use-toast';
-import { Repeat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
+import type { StandardizedError, ErrorHandlingOptions } from './types';
 import { generateErrorId } from './generateId';
-import { ErrorLevel, ErrorHandlingOptions } from './types';
-import { categorizeError } from './categorize';
-import { formatErrorMessage } from './format';
-import { ErrorDeduplication } from './deduplication';
+import { ToastActionElement } from "@/components/ui/toast";
+import { formatErrorMessage, formatUserErrorMessage } from './format';
+import { isDuplicateError } from './deduplication';
 
-// Set up a deduplication system to prevent duplicate errors
-const errorDeduplication = new ErrorDeduplication(60000); // 1 minute default expiry
+// Error severity levels
+export type ErrorSeverity = 'debug' | 'info' | 'warning' | 'error' | 'critical';
+
+// Error counter to prevent flooding users with duplicate errors
+const errorCounter: Record<string, number> = {};
 
 /**
- * Central error handling function for the application
+ * Centralized error handling function
  * 
- * This function standardizes error handling across the app:
- * - Categorizes errors by type
- * - Prevents duplicate error messages (deduplication)
- * - Formats error messages for human readability 
- * - Shows toast notifications (unless silent mode requested)
- * - Supports retry functionality with custom retry actions
- * - Logs errors with contextual information
+ * This function standardizes error handling throughout the application
+ * ensuring consistent user feedback and error tracking.
  * 
- * @param error The error object
- * @param title Optional custom title for the error
- * @param options Additional options for error handling
+ * @param error The error object or message
+ * @param userMessage Optional user-friendly message
+ * @param options Additional error handling options
  */
-export function handleError(
+export const handleError = (
   error: unknown,
-  title?: string,
+  userMessage?: string,
   options?: Partial<ErrorHandlingOptions>
-): void {
-  // Handle case when error is undefined
-  if (!error) {
-    console.warn('handleError called with undefined error');
-    return;
-  }
-
+) => {
   // Default options
-  const {
-    silent = false,
-    level = 'error',
-    context = {},
-    preventDuplicate = true,
-  } = options || {};
+  const defaultOptions: ErrorHandlingOptions = {
+    level: 'error',
+    context: {},
+    silent: false,
+    deduplicate: true
+  };
+  
+  const opts = { ...defaultOptions, ...options };
+  
+  // Create standardized error object
+  const standardizedError: StandardizedError = {
+    id: generateErrorId(),
+    originalError: error,
+    message: formatErrorMessage(error),
+    userMessage: userMessage || formatErrorMessage(error),
+    level: opts.level,
+    context: opts.context || {},
+    timestamp: new Date(),
+    code: error instanceof Error && 'code' in error ? (error as any).code : 'UNKNOWN'
+  };
 
-  // Get error details
-  const { message, stack, code, statusCode } = categorizeError(error);
-  const errorTitle = title || 'An error occurred';
-  
-  // Format the error message for display
-  const formattedMessage = formatErrorMessage(message);
-  
-  // Generate a stable error ID for deduplication
-  const errorId = generateErrorId(formattedMessage);
-  
-  // Check for duplicates if enabled
-  if (preventDuplicate && errorDeduplication.isDuplicate(errorId)) {
+  // Check if we should deduplicate this error
+  if (opts.deduplicate && isDuplicateError(standardizedError)) {
+    console.debug('Duplicate error suppressed:', standardizedError);
     return;
   }
   
-  // Mark this error as seen to prevent duplicates
-  errorDeduplication.markAsSeen(errorId);
+  // Log the error based on severity level
+  switch (standardizedError.level) {
+    case 'debug':
+      console.debug('Debug error:', standardizedError);
+      break;
+    case 'info':
+      console.info('Info error:', standardizedError);
+      break;
+    case 'warning':
+      console.warn('Warning:', standardizedError);
+      break;
+    case 'critical':
+      console.error('CRITICAL ERROR:', standardizedError);
+      break;
+    case 'error':
+    default:
+      console.error('Error:', standardizedError);
+  }
   
-  // Log error to console with context and stack
-  console[level === 'debug' ? 'debug' : level === 'info' ? 'info' : level === 'warning' ? 'warn' : 'error'](
-    `[${level.toUpperCase()}] ${errorTitle}: ${formattedMessage}`,
-    {
-      context,
-      code,
-      statusCode,
-      errorId,
-      stack 
-    }
-  );
+  // If silent mode is requested, don't show toast
+  if (opts.silent) {
+    return;
+  }
   
-  // Show toast notification if not in silent mode
-  if (!silent) {
-    // Create a retry action if a retry function is provided
-    const retryAction = options?.onRetry ? (
+  // Create retry button if a retry function is provided
+  let retryElement: ToastActionElement | undefined = undefined;
+  if (opts.onRetry) {
+    retryElement = (
       <Button 
         variant="outline" 
         size="sm" 
-        onClick={() => {
-          if (options?.onRetry) options.onRetry();
-        }}
+        onClick={() => opts.onRetry?.()}
       >
-        <Repeat className="mr-2 h-4 w-4" />
         Retry
       </Button>
-    ) : undefined;
-    
-    // Show toast with appropriate variant based on error level
-    toast({
-      title: errorTitle,
-      description: formattedMessage,
-      variant: level === 'error' ? 'destructive' : level === 'warning' ? 'default' : 'default',
-      action: retryAction,
-      duration: 5000,
-    });
+    );
   }
-}
-
-/**
- * Helper function to create a retry action for a caught error
- * 
- * @param fn The original function that failed
- * @param errorHandler Function to handle error if retry also fails
- * @returns A function that will retry the operation
- */
-export function createRetryAction<T>(
-  fn: () => Promise<T>,
-  errorHandler?: (error: unknown) => void
-): () => Promise<T | undefined> {
-  return async () => {
-    try {
-      return await fn();
-    } catch (retryError) {
-      if (errorHandler) {
-        errorHandler(retryError);
-      } else {
-        handleError(
-          retryError, 
-          'Retry Failed', 
-          { 
-            level: 'error',
-            context: { action: 'retry' },
-            preventDuplicate: false  // Show retry failures even if similar
-          }
-        );
-      }
-      return undefined;
-    }
-  };
-}
+  
+  // Show toast notification
+  toast({
+    title: standardizedError.level === 'critical' ? 'Critical Error' : 'Error',
+    description: standardizedError.userMessage,
+    variant: 'destructive',
+    action: retryElement,
+    duration: 5000
+  });
+  
+  // Return the standardized error for further processing if needed
+  return standardizedError;
+};
