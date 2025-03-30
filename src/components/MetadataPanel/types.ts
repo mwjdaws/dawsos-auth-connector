@@ -1,68 +1,41 @@
 
-import { OntologyTerm } from '@/hooks/markdown-editor/ontology-terms/types';
-import { ReactNode } from 'react';
-
-export interface Tag {
-  name: string;
-  id?: string;
-  content_id?: string;
-}
+import { User } from '@supabase/supabase-js';
 
 export interface MetadataPanelProps {
   contentId: string;
   onMetadataChange?: () => void;
-  isCollapsible?: boolean;
-  initialCollapsed?: boolean;
+  className?: string;
+  editable?: boolean;
   showOntologyTerms?: boolean;
   showDomain?: boolean;
-  domain?: string | null;
-  editable?: boolean;
-  className?: string;
-  children?: ReactNode;
+  isCollapsible?: boolean;
+  initialCollapsed?: boolean;
+  domain?: string;
+  children?: React.ReactNode;
 }
 
-export interface HeaderSectionProps extends BaseSectionProps {
-  needsExternalReview: boolean;
-  handleRefresh: () => void;
-  isLoading: boolean;
-  isCollapsible: boolean;
-  isCollapsed: boolean;
-  setIsCollapsed: (isCollapsed: boolean) => void;
+export interface Tag {
+  id: string;
+  name: string;
+  content_id: string;
+  type_id?: string;
+  type_name?: string;
 }
 
-export interface ExternalSourceSectionProps extends BaseSectionProps {
-  externalSourceUrl?: string;
-  lastCheckedAt?: string;
+export interface OntologyTerm {
+  id: string;
+  name: string;
+  description?: string;
+  domainId?: string;
+  domainName?: string;
 }
 
-export interface DomainSectionProps extends BaseSectionProps {
-  domain: string | null;
-}
-
-export interface ContentIdSectionProps extends BaseSectionProps {
-  contentId: string;
-}
-
-export interface OntologyTermsSectionProps extends BaseSectionProps {
-  sourceId: string;
-  editable: boolean;
-}
-
-export interface BaseSectionProps {
-  className?: string;
-}
-
-export interface MetadataContextState {
-  contentId: string;
+export interface SourceMetadata {
   title?: string;
-  tags: any[];
-  domains: string[];
-  externalSource?: string;
-  ontologyTerms: OntologyTerm[];
-  loading: boolean;
-  error: string | null;
-  setTags: (tags: any[]) => void;
-  addTag: (tag: string) => void;
-  removeTag: (tag: string) => void;
-  refreshTags: () => void;
+  description?: string;
+  author?: string;
+  publishedDate?: string;
+  lastUpdated?: string;
+  sourceUrl?: string;
+  [key: string]: any;
 }

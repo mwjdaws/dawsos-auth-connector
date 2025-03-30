@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react';
-import { validateTags, type ValidationResult } from '@/utils/validation';
+import { validateTags, ValidationResult } from '@/utils/validation';
 
 interface TagValidationResult {
   isValid: boolean;

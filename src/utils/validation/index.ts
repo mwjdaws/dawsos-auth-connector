@@ -25,7 +25,5 @@ export {
   // Tag validation
   validateTag,
   validateTags,
+  ValidationResult
 };
-
-// Re-export types
-export type { ValidationResult };

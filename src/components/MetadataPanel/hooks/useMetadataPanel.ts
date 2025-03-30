@@ -1,15 +1,13 @@
-
 // Import necessary hooks
 import { useState, useEffect } from 'react';
 import { useSourceMetadata } from './useSourceMetadata';
 import { useTagOperations } from './tag-operations/useTagOperations';
-import { User } from '@supabase/supabase-js';
 import { usePanelState } from './usePanelState';
 import { usePanelContent } from './usePanelContent';
 import { MetadataPanelProps } from '../types';
 
 export const useMetadataPanel = (props: MetadataPanelProps) => {
-  const { contentId, user, onMetadataChange } = props;
+  const { contentId, onMetadataChange } = props;
   
   // Use the tag operations hook
   const tagOperations = useTagOperations(contentId);
@@ -53,7 +51,6 @@ export const useMetadataPanel = (props: MetadataPanelProps) => {
     ...panelContent,
     
     // Other props
-    contentId,
-    user
+    contentId
   };
 };

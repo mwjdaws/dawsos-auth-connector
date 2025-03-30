@@ -1,68 +1,74 @@
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { handleError } from '@/utils/errors';
-import { queryKeys } from '@/utils/query-keys';
-import { isValidContentId } from '@/utils/validation';
-import { Tag } from './types';
 import { toast } from '@/hooks/use-toast';
+import { handleError } from '@/utils/errors';
+import { isValidContentId } from '@/utils/validation';
 
-export const useTagMutations = (contentId?: string) => {
+/**
+ * Hook to handle tag mutations (add, delete, reorder)
+ */
+export const useTagMutations = (contentId: string) => {
   const queryClient = useQueryClient();
-  const isValid = contentId ? isValidContentId(contentId) : false;
+  const [isPending, setIsPending] = useState(false);
 
-  const { mutate: addTag, isPending: isAddingTag } = useMutation({
-    mutationFn: async (tagName: string) => {
-      if (!contentId || !isValid) {
+  // Add tag mutation
+  const addTagMutation = useMutation({
+    mutationFn: async (newTag: { name: string; type_id?: string }) => {
+      if (!isValidContentId(contentId)) {
         throw new Error('Invalid content ID');
       }
 
-      if (!tagName.trim()) {
-        throw new Error('Tag name cannot be empty');
-      }
+      // Get the current highest position
+      const { data: existingTags, error: fetchError } = await supabase
+        .from('tags')
+        .select('position')
+        .eq('content_id', contentId)
+        .order('position', { ascending: false })
+        .limit(1);
+
+      if (fetchError) throw fetchError;
+
+      const nextPosition = existingTags.length > 0 ? (existingTags[0].position || 0) + 1 : 0;
 
       const { data, error } = await supabase
         .from('tags')
         .insert([
-          { content_id: contentId, name: tagName.trim().toLowerCase() }
+          {
+            name: newTag.name,
+            content_id: contentId,
+            type_id: newTag.type_id,
+            position: nextPosition,
+          },
         ])
-        .select()
-        .single();
+        .select();
 
-      if (error) {
-        throw error;
-      }
-
-      return data as Tag;
+      if (error) throw error;
+      return data[0];
+    },
+    onMutate: () => {
+      setIsPending(true);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: queryKeys.tags.byContentId(contentId!)
-      });
-      
+      queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
       toast({
-        title: "Success",
-        description: "Tag added successfully",
+        title: 'Tag Added',
+        variant: 'default',
       });
     },
     onError: (error) => {
-      handleError(error, 'Failed to add tag', {
-        context: { contentId },
-        level: 'error'
-      });
-      
-      // Display toast separately
-      toast({
-        title: "Error",
-        description: "Failed to add tag",
-        variant: "destructive"
-      });
-    }
+      handleError(error, 'Failed to add tag');
+    },
+    onSettled: () => {
+      setIsPending(false);
+    },
   });
 
-  const { mutate: deleteTag, isPending: isDeletingTag } = useMutation({
+  // Delete tag mutation
+  const deleteTagMutation = useMutation({
     mutationFn: async (tagId: string) => {
-      if (!contentId || !isValid) {
+      if (!isValidContentId(contentId)) {
         throw new Error('Invalid content ID');
       }
 
@@ -72,41 +78,68 @@ export const useTagMutations = (contentId?: string) => {
         .eq('id', tagId)
         .eq('content_id', contentId);
 
-      if (error) {
-        throw error;
-      }
-
+      if (error) throw error;
       return tagId;
     },
+    onMutate: () => {
+      setIsPending(true);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: queryKeys.tags.byContentId(contentId!)
-      });
-      
+      queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
       toast({
-        title: "Success",
-        description: "Tag deleted successfully",
+        title: 'Tag Removed',
+        variant: 'default',
       });
     },
     onError: (error) => {
-      handleError(error, 'Failed to delete tag', {
-        context: { contentId },
-        level: 'error'
-      });
-      
-      // Display toast separately
+      handleError(error, 'Failed to remove tag');
+    },
+    onSettled: () => {
+      setIsPending(false);
+    },
+  });
+
+  // Update tag order mutation
+  const updateTagOrderMutation = useMutation({
+    mutationFn: async (tags: { id: string; position: number }[]) => {
+      if (!isValidContentId(contentId)) {
+        throw new Error('Invalid content ID');
+      }
+
+      // Update each tag's position
+      const promises = tags.map(({ id, position }) =>
+        supabase
+          .from('tags')
+          .update({ position })
+          .eq('id', id)
+          .eq('content_id', contentId)
+      );
+
+      await Promise.all(promises);
+      return tags;
+    },
+    onMutate: () => {
+      setIsPending(true);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
       toast({
-        title: "Error",
-        description: "Failed to delete tag",
-        variant: "destructive"
+        title: 'Tag Order Updated',
+        variant: 'default',
       });
-    }
+    },
+    onError: (error) => {
+      handleError(error, 'Failed to update tag order');
+    },
+    onSettled: () => {
+      setIsPending(false);
+    },
   });
 
   return {
-    addTag,
-    deleteTag,
-    isAddingTag,
-    isDeletingTag
+    addTagMutation,
+    deleteTagMutation,
+    updateTagOrderMutation,
+    isPending,
   };
 };

@@ -1,59 +1,67 @@
 
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { queryKeys } from '@/utils/query-keys';
+import { handleError } from '@/utils/errors';
 import { isValidContentId } from '@/utils/validation';
 
-interface UseOntologyTermsQueryOptions {
-  enabled?: boolean;
-}
-
 /**
- * Hook for fetching ontology terms associated with content
- * 
- * @param contentId - The ID of the content to fetch terms for
- * @param options - Additional query options
- * @returns Query result with terms data
+ * Fetch ontology terms associated with a content item
  */
-export function useOntologyTermsQuery(contentId?: string, options?: UseOntologyTermsQueryOptions) {
-  const isValidContent = contentId ? isValidContentId(contentId) : false;
-  
+export function useOntologyTermsQuery(contentId: string) {
+  const [error, setError] = useState<Error | null>(null);
+
+  // Reset error when content ID changes
+  useEffect(() => {
+    setError(null);
+  }, [contentId]);
+
   return useQuery({
-    queryKey: contentId ? ['ontologyTerms', contentId] : ['ontologyTerms', 'all'],
+    queryKey: ['ontologyTerms', contentId],
     queryFn: async () => {
-      if (!contentId || !isValidContent) {
-        return [];
+      if (!isValidContentId(contentId)) {
+        throw new Error('Invalid content ID');
       }
 
-      const { data, error } = await supabase
-        .from('knowledge_source_ontology_terms')
-        .select(`
-          id,
-          ontology_term_id,
-          review_required,
-          ontology_terms:ontology_term_id(
+      try {
+        const { data, error } = await supabase
+          .from('ontology_content_terms')
+          .select(`
             id,
-            term,
-            domain,
-            description
-          )
-        `)
-        .eq('knowledge_source_id', contentId);
+            content_id,
+            term_id,
+            ontology_terms (
+              id,
+              name,
+              description,
+              domain_id,
+              ontology_domains (name)
+            )
+          `)
+          .eq('content_id', contentId);
 
-      if (error) {
+        if (error) throw error;
+
+        return data.map(item => ({
+          id: item.id,
+          contentId: item.content_id,
+          termId: item.term_id,
+          term: {
+            id: item.ontology_terms.id,
+            name: item.ontology_terms.name,
+            description: item.ontology_terms.description,
+            domainId: item.ontology_terms.domain_id,
+            domainName: item.ontology_terms.ontology_domains?.name
+          }
+        }));
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Failed to fetch ontology terms');
+        setError(error);
+        handleError(error, 'Failed to fetch ontology terms');
         throw error;
       }
-
-      return data.map(item => ({
-        id: item.id,
-        termId: item.ontology_term_id,
-        reviewRequired: item.review_required,
-        term: item.ontology_terms?.term,
-        domain: item.ontology_terms?.domain,
-        description: item.ontology_terms?.description
-      }));
     },
-    enabled: !!contentId && isValidContent && (options?.enabled !== false),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: isValidContentId(contentId),
+    staleTime: 30000 // 30 seconds
   });
 }

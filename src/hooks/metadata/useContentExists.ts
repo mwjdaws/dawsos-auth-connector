@@ -1,43 +1,56 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { handleError } from '@/utils/errors';
-import { queryKeys } from '@/utils/query-keys';
 import { isValidContentId } from '@/utils/validation';
 
 /**
- * Hook to check if a specific content ID exists in the database
+ * Hook to check if content with the given ID exists in the database
  */
-export function useContentExists(contentId?: string) {
-  const isValidId = contentId ? isValidContentId(contentId) : false;
-  
-  return useQuery({
-    queryKey: contentId ? ['contentExists', contentId] : ['contentExists', 'invalid'],
-    queryFn: async () => {
-      try {
-        if (!contentId || !isValidId) {
-          return false;
+export function useContentExists(contentId: string) {
+  const [exists, setExists] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function checkContentExists() {
+      if (!isValidContentId(contentId)) {
+        if (isMounted) {
+          setExists(false);
+          setIsLoading(false);
         }
-        
-        const { count, error } = await supabase
-          .from('knowledge_sources')
-          .select('id', { count: 'exact', head: true })
-          .eq('id', contentId);
-          
-        if (error) {
-          throw error;
-        }
-        
-        return count !== null && count > 0;
-      } catch (error) {
-        handleError(error, "Failed to check if content exists", {
-          context: { contentId },
-          level: "error"
-        });
-        return false;
+        return;
       }
-    },
-    enabled: isValidId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('knowledge_content')
+          .select('id')
+          .eq('id', contentId)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (isMounted) {
+          setExists(!!data);
+          setIsLoading(false);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'An unknown error occurred');
+          setIsLoading(false);
+        }
+      }
+    }
+
+    checkContentExists();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [contentId]);
+
+  return { exists, isLoading, error };
 }

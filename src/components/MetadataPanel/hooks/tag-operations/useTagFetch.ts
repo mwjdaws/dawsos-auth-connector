@@ -2,48 +2,42 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/errors';
-import { queryKeys } from '@/utils/query-keys';
 import { isValidContentId } from '@/utils/validation';
-import { Tag } from './types';
 
-export const useTagFetch = (contentId?: string) => {
-  const isValid = contentId ? isValidContentId(contentId) : false;
-
-  const { data: tags, isLoading, error, refetch } = useQuery<Tag[]>({
-    queryKey: contentId ? queryKeys.tags.byContentId(contentId) : ['tags', 'invalid'],
+/**
+ * Hook to fetch tags for a specific content ID
+ */
+export const useTagFetch = (contentId: string) => {
+  return useQuery({
+    queryKey: ['tags', contentId],
     queryFn: async () => {
-      try {
-        if (!contentId || !isValid) {
-          return [];
-        }
+      if (!isValidContentId(contentId)) {
+        throw new Error('Invalid content ID');
+      }
 
+      try {
         const { data, error } = await supabase
           .from('tags')
-          .select('*')
+          .select('id, name, type_id, tag_types(name), content_id')
           .eq('content_id', contentId)
-          .order('created_at', { ascending: true });
+          .order('position', { ascending: true });
 
-        if (error) {
-          throw error;
-        }
+        if (error) throw error;
 
-        return data as Tag[];
+        return data.map(tag => ({
+          id: tag.id,
+          name: tag.name,
+          content_id: tag.content_id,
+          type_id: tag.type_id,
+          type_name: tag.tag_types?.name
+        }));
       } catch (err) {
-        handleError(err, 'Failed to fetch tags', {
-          context: { contentId },
-          level: 'error'
-        });
-        throw err;
+        const error = err instanceof Error ? err : new Error('Failed to fetch tags');
+        handleError(error, 'Failed to fetch tags');
+        throw error;
       }
     },
-    enabled: isValid,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: isValidContentId(contentId),
+    staleTime: 60000 // 1 minute
   });
-
-  return {
-    tags: tags || [],
-    isLoading,
-    error,
-    refetch
-  };
 };
