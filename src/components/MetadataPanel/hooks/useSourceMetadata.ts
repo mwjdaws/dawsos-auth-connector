@@ -46,10 +46,12 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
         }
         
         console.log("Source metadata fetched:", sourceData);
-        const metadata: SourceMetadata = sourceData || {
-          external_source_url: null,
-          needs_external_review: false,
-          external_source_checked_at: null
+        
+        // Create a properly typed metadata object
+        const metadata: SourceMetadata = {
+          external_source_url: sourceData?.external_source_url || null,
+          needs_external_review: sourceData?.needs_external_review || false,
+          external_source_checked_at: sourceData?.external_source_checked_at || null
         };
         
         setData(metadata);
@@ -58,7 +60,7 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
         return metadata;
       }
       
-      const defaultData = {
+      const defaultData: SourceMetadata = {
         external_source_url: null,
         needs_external_review: false,
         external_source_checked_at: null
@@ -83,9 +85,9 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
 
   const updateSourceMetadataState = (sourceData: SourceMetadata | null) => {
     if (sourceData) {
-      setExternalSourceUrl(sourceData.external_source_url || null);
-      setNeedsExternalReview(sourceData.needs_external_review || false);
-      setLastCheckedAt(sourceData.external_source_checked_at || null);
+      setExternalSourceUrl(sourceData.external_source_url);
+      setNeedsExternalReview(sourceData.needs_external_review);
+      setLastCheckedAt(sourceData.external_source_checked_at);
     }
   };
 

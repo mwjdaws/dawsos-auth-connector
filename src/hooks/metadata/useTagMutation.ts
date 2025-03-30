@@ -1,88 +1,92 @@
 
-/**
- * Hook for tag mutations
- * 
- * Provides functions to add, update, and delete tags.
- */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { handleError } from '@/utils/errors';
 import { isValidContentId } from '@/utils/validation';
 
-export function useTagMutations(initialContentId?: string) {
+// Add tag mutation
+export function useAddTagMutation() {
   const queryClient = useQueryClient();
 
-  // Add tag mutation
-  const addTag = useMutation({
+  return useMutation({
     mutationFn: async ({ 
-      contentId = initialContentId, 
-      name, 
+      contentId, 
+      name,
       typeId 
     }: { 
       contentId?: string; 
-      name: string; 
+      name: string;
       typeId?: string;
     }) => {
-      if (!contentId) {
-        throw new Error('Content ID is required');
-      }
-      
-      if (!isValidContentId(contentId)) {
-        throw new Error('Invalid content ID');
+      if (!contentId || !name.trim() || !isValidContentId(contentId)) {
+        throw new Error('Invalid content ID or tag name');
       }
 
       const { data, error } = await supabase
         .from('tags')
-        .insert([
-          {
-            content_id: contentId,
-            name: name.trim().toLowerCase(),
-            type_id: typeId || null
-          }
-        ])
+        .insert([{ 
+          name: name.trim().toLowerCase(), 
+          content_id: contentId,
+          type_id: typeId 
+        }])
         .select();
 
       if (error) throw error;
-      return data?.[0];
+      
+      if (!data || data.length === 0) {
+        throw new Error('Failed to add tag');
+      }
+
+      return data[0];
     },
     onSuccess: (_, variables) => {
-      const contentId = variables.contentId || initialContentId;
-      if (contentId) {
-        queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
+      // Invalidate tags query to trigger refetch
+      if (variables.contentId) {
+        queryClient.invalidateQueries({ 
+          queryKey: ['tags', variables.contentId] 
+        });
       }
+
       toast({
-        title: "Success",
-        description: "Tag has been added",
+        title: 'Tag Added',
+        description: `Added tag "${variables.name}"`,
       });
     },
-    onError: (error) => {
-      handleError(error, 'Failed to add tag');
+    onError: (error, variables) => {
+      console.error('Error adding tag:', error, variables);
+      
+      handleError(error, 'Failed to add tag', {
+        context: { 
+          contentId: variables.contentId,
+          tagName: variables.name 
+        },
+        level: 'error'
+      });
+
       toast({
-        title: "Error",
-        description: error instanceof Error 
-          ? error.message 
-          : 'Failed to add tag',
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to add tag',
+        variant: 'destructive',
       });
     }
   });
+}
 
-  // Delete tag mutation
-  const deleteTag = useMutation({
+// Delete tag mutation
+export function useDeleteTagMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
     mutationFn: async ({ 
       tagId, 
-      contentId = initialContentId 
+      contentId 
     }: { 
       tagId: string; 
       contentId?: string;
     }) => {
-      if (!contentId) {
-        throw new Error('Content ID is required');
-      }
-      
-      if (!isValidContentId(contentId)) {
-        throw new Error('Invalid content ID');
+      if (!tagId) {
+        throw new Error('Tag ID is required');
       }
 
       const { error } = await supabase
@@ -91,94 +95,38 @@ export function useTagMutations(initialContentId?: string) {
         .eq('id', tagId);
 
       if (error) throw error;
+
       return { tagId, contentId };
     },
-    onSuccess: ({ contentId }) => {
-      if (contentId) {
-        queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
+    onSuccess: (result) => {
+      // Invalidate tags query to trigger refetch if we have a contentId
+      if (result.contentId) {
+        queryClient.invalidateQueries({ 
+          queryKey: ['tags', result.contentId] 
+        });
       }
+
       toast({
-        title: "Success",
-        description: "Tag has been deleted",
+        title: 'Tag Deleted',
+        description: 'Tag was successfully removed',
       });
     },
-    onError: (error) => {
-      handleError(error, 'Failed to delete tag');
-      toast({
-        title: "Error",
-        description: error instanceof Error 
-          ? error.message 
-          : 'Failed to delete tag',
-        variant: "destructive",
-      });
-    }
-  });
-
-  // Update tag mutation
-  const updateTag = useMutation({
-    mutationFn: async ({ 
-      tagId, 
-      name, 
-      typeId,
-      contentId = initialContentId 
-    }: { 
-      tagId: string; 
-      name?: string; 
-      typeId?: string;
-      contentId?: string;
-    }) => {
-      if (!contentId) {
-        throw new Error('Content ID is required');
-      }
+    onError: (error, variables) => {
+      console.error('Error deleting tag:', error, variables);
       
-      if (!isValidContentId(contentId)) {
-        throw new Error('Invalid content ID');
-      }
-
-      const updates: Record<string, any> = {};
-      if (name !== undefined) updates.name = name.trim().toLowerCase();
-      if (typeId !== undefined) updates.type_id = typeId;
-
-      if (Object.keys(updates).length === 0) {
-        throw new Error('No updates provided');
-      }
-
-      const { data, error } = await supabase
-        .from('tags')
-        .update(updates)
-        .eq('id', tagId)
-        .select();
-
-      if (error) throw error;
-      return { tag: data?.[0], contentId };
-    },
-    onSuccess: ({ contentId }) => {
-      if (contentId) {
-        queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
-      }
-      toast({
-        title: "Success",
-        description: "Tag has been updated",
+      handleError(error, 'Failed to delete tag', {
+        context: { 
+          tagId: variables.tagId,
+          contentId: variables.contentId
+        },
+        level: 'error'
       });
-    },
-    onError: (error) => {
-      handleError(error, 'Failed to update tag');
+
       toast({
-        title: "Error",
-        description: error instanceof Error 
-          ? error.message 
-          : 'Failed to update tag',
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to delete tag',
+        variant: 'destructive',
       });
     }
   });
-
-  return {
-    addTag,
-    deleteTag,
-    updateTag,
-    isAddingTag: addTag.isPending,
-    isDeletingTag: deleteTag.isPending,
-    isUpdatingTag: updateTag.isPending
-  };
 }

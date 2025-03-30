@@ -1,69 +1,83 @@
 
-/**
- * Hook for reordering tags
- * 
- * Provides functionality to reorder tags and update their order in the database.
- */
-import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { handleError } from '@/utils/errors';
 import { isValidContentId } from '@/utils/validation';
 
-interface UseTagReorderingOptions {
+interface TagPosition {
+  id: string;
+  position: number;
+}
+
+interface UseTagReorderingProps {
   contentId: string;
   onMetadataChange?: () => void;
 }
 
-export function useTagReordering({ contentId, onMetadataChange }: UseTagReorderingOptions) {
-  const [isReordering, setIsReordering] = useState(false);
-
-  const handleReorderTags = async (reorderedTags: { id: string; position: number }[]) => {
-    if (!isValidContentId(contentId)) {
-      toast({
-        title: "Invalid content",
-        description: "Cannot reorder tags for invalid content",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsReordering(true);
-
-    try {
-      // For now, there's no position/order column in the database
-      // This is a placeholder for when that functionality is added
+export function useTagReordering({
+  contentId,
+  onMetadataChange
+}: UseTagReorderingProps) {
+  const queryClient = useQueryClient();
+  
+  const { mutate: reorderTagsMutation, isPending: isReordering } = useMutation({
+    mutationFn: async (tagPositions: TagPosition[]) => {
+      if (!contentId || !isValidContentId(contentId)) {
+        throw new Error('Invalid content ID');
+      }
       
-      // Simulate a successful update with a delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      if (!tagPositions.length) {
+        return { success: true };
+      }
       
-      console.log('Tags reordered:', reorderedTags);
+      try {
+        // In a real implementation, this would update the positions in the database
+        // For this example, we'll just simulate success
+        console.log('Reordering tags:', tagPositions);
+        
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        return { success: true };
+      } catch (error) {
+        console.error('Error reordering tags:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      // Invalidate tags query to trigger refetch
+      queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
       
-      // Call onMetadataChange if provided
       if (onMetadataChange) {
         onMetadataChange();
       }
       
       toast({
-        title: "Success",
-        description: "Tag order has been updated",
+        title: 'Tags Reordered',
+        description: 'Tags were successfully reordered',
       });
-    } catch (error) {
-      handleError(
-        error instanceof Error ? error : new Error('Failed to reorder tags'),
-        'Could not update tag order'
-      );
+    },
+    onError: (error) => {
+      console.error('Error reordering tags:', error);
+      
+      handleError(error, 'Failed to reorder tags', {
+        context: { contentId },
+        level: 'error'
+      });
       
       toast({
-        title: "Error",
-        description: "Failed to update tag order",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to reorder tags',
+        variant: 'destructive',
       });
-    } finally {
-      setIsReordering(false);
     }
+  });
+  
+  const handleReorderTags = async (tagPositions: TagPosition[]) => {
+    reorderTagsMutation(tagPositions);
   };
-
+  
   return {
     handleReorderTags,
     isReordering

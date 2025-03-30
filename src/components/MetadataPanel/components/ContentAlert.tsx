@@ -1,42 +1,39 @@
-import React from 'react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Info } from 'lucide-react';
-import { ContentIdValidationResult } from '@/utils/validation/contentIdValidation';
+
+import React from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ExclamationTriangleIcon, InformationCircleIcon } from "@radix-ui/react-icons";
+import { ContentIdValidationResult } from "@/utils/validation";
 
 interface ContentAlertProps {
   contentId: string;
   validationResult: ContentIdValidationResult;
-  contentExists?: boolean;
+  contentExists: boolean;
 }
 
-export const ContentAlert: React.FC<ContentAlertProps> = ({ 
-  contentId, 
+export const ContentAlert: React.FC<ContentAlertProps> = ({
+  contentId,
   validationResult,
-  contentExists 
+  contentExists
 }) => {
-  if (validationResult === ContentIdValidationResult.VALID) {
-    return null;
-  }
-
-  if (validationResult === ContentIdValidationResult.TEMPORARY) {
+  if (!contentId) {
     return (
-      <Alert variant="warning" className="mb-4">
-        <Info className="h-4 w-4" />
-        <AlertTitle>Temporary Content</AlertTitle>
+      <Alert variant="destructive">
+        <ExclamationTriangleIcon className="h-4 w-4" />
+        <AlertTitle>No Content ID</AlertTitle>
         <AlertDescription>
-          This content has a temporary ID ({contentId}). It will be assigned a permanent ID when saved.
+          No content ID was provided. Please specify a valid content ID.
         </AlertDescription>
       </Alert>
     );
   }
 
-  if (validationResult === ContentIdValidationResult.MISSING) {
+  if (!validationResult.isValid) {
     return (
-      <Alert variant="destructive" className="mb-4">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Missing Content ID</AlertTitle>
+      <Alert variant="destructive">
+        <ExclamationTriangleIcon className="h-4 w-4" />
+        <AlertTitle>Invalid Content ID</AlertTitle>
         <AlertDescription>
-          No content ID was provided. Metadata operations are disabled.
+          {validationResult.message || "The provided content ID is not valid."}
         </AlertDescription>
       </Alert>
     );
@@ -44,23 +41,15 @@ export const ContentAlert: React.FC<ContentAlertProps> = ({
 
   if (!contentExists) {
     return (
-      <Alert variant="destructive" className="mb-4">
-        <AlertCircle className="h-4 w-4" />
+      <Alert>
+        <InformationCircleIcon className="h-4 w-4" />
         <AlertTitle>Content Not Found</AlertTitle>
         <AlertDescription>
-          The content with ID {contentId} does not exist in the database.
+          Content with ID "{contentId}" does not exist in the database.
         </AlertDescription>
       </Alert>
     );
   }
 
-  return (
-    <Alert variant="destructive" className="mb-4">
-      <AlertCircle className="h-4 w-4" />
-      <AlertTitle>Invalid Content ID</AlertTitle>
-      <AlertDescription>
-        The content ID ({contentId}) is invalid. Metadata operations are disabled.
-      </AlertDescription>
-    </Alert>
-  );
+  return null;
 };

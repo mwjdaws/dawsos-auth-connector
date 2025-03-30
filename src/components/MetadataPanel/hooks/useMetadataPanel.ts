@@ -1,3 +1,4 @@
+
 // Import necessary hooks
 import { useState, useEffect, useMemo } from 'react';
 import { useSourceMetadata } from './useSourceMetadata';
@@ -76,8 +77,9 @@ export const useMetadataPanel = (props: MetadataPanelProps) => {
   }, [contentId, sourceMetadata, tagOperations, panelState, ontologyTerms]);
   
   return {
-    // Source metadata
-    ...sourceMetadata,
+    // Consolidate everything into a single object
+    ...sourceMetadata,  
+    handleRefresh: panelContentResult.handleRefresh,
     
     // Tag operations
     tags: tagOperations.tags,
@@ -89,12 +91,16 @@ export const useMetadataPanel = (props: MetadataPanelProps) => {
     handleDeleteTag: tagOperations.handleDeleteTag,
     handleUpdateTagOrder: tagOperations.handleUpdateTagOrder,
     
-    // Panel state and content
+    // Panel state
     ...panelState,
-    ...panelContentResult,
     
-    // Other data
+    // Panel content results
     ontologyTerms,
-    contentId
+    contentId,
+    
+    // Include validation results
+    contentExists: panelContentResult.contentExists,
+    isValidContent: panelContentResult.isValidContent,
+    contentValidationResult: panelContentResult.contentValidationResult,
   };
 };

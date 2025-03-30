@@ -1,3 +1,4 @@
+
 /**
  * MetadataPanel Component
  * 
@@ -13,7 +14,7 @@ import { ContentAlert } from "./components/ContentAlert";
 import MetadataContent from "./components/MetadataContent"; 
 import { useMetadataPanel } from "./hooks/useMetadataPanel";
 import { MetadataPanelProps } from "./types";
-import { ContentIdValidationResult } from "@/utils/validation/contentIdValidation";
+import { getContentIdValidationResult } from "@/utils/validation";
 
 const MetadataPanel: React.FC<MetadataPanelProps> = ({ 
   contentId = "",
@@ -55,9 +56,9 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   const isEditable = editable !== undefined ? editable : false;
   
   // Extract metadata values
-  const externalSourceUrl = metadata?.external_source_url;
-  const needsExternalReview = metadata?.needs_external_review;
-  const lastCheckedAt = metadata?.external_source_checked_at;
+  const externalSourceUrl = metadata?.external_source_url || null;
+  const needsExternalReview = metadata?.needs_external_review || false;
+  const lastCheckedAt = metadata?.external_source_checked_at || null;
 
   // Determine card border styling based on review status
   const cardBorderClass = needsExternalReview
@@ -74,7 +75,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
         <CardContent className="pt-4">
           <ContentAlert 
             contentId={contentId}
-            validationResult={contentValidationResult as ContentIdValidationResult} 
+            validationResult={getContentIdValidationResult(contentId)} 
             contentExists={contentExists} 
           />
         </CardContent>
