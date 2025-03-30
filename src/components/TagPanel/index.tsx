@@ -1,47 +1,26 @@
+
 import React, { useState, useTransition, useEffect } from "react";
-import { TagGenerator } from "./TagGenerator";
-import { TagList } from "./TagList";
-import { TagSaver } from "./TagSaver";
-import { useSaveTags } from "./hooks/useSaveTags";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { TagPanelErrorFallback } from "./TagPanelErrorFallback";
 import { useTagGeneration } from "@/hooks/tagGeneration";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { useSaveTags } from "./hooks/useSaveTags";
 import { ManualTagCreator } from "./ManualTagCreator";
 import { GroupedTagList } from "./GroupedTagList";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
-import { isValidContentId } from "@/utils/content-validation";
+import { isValidContentId } from "@/utils/validation";
 import { useTagsQuery, useTagMutations } from "@/hooks/metadata";
+import { AutomaticTagTab } from "./AutomaticTagTab";
+import { ManualTagTab } from "./ManualTagTab";
+import { TemporaryContentAlert } from "./TemporaryContentAlert";
 
 /**
  * TagPanel Component
  *
  * Renders the UI for manually adding and displaying tags on a knowledge source.
  * Supports grouped rendering by tag type and integration with Supabase for CRUD.
- *
- * ## Props
- * @param {string} contentId - The ID of the note or knowledge source
- * @param {boolean} editable - Whether the tag input is editable
- * @param {Function} onMetadataChange - Callback triggered after tag updates
- *
- * ## Behavior
- * - Tags are stored in the `tags` table with associated `content_id` and `type_id`
- * - Grouping is handled by `GroupedTagList` based on `tag_types.name`
- * - Input is trimmed, lowercased, and validated before insert
- * - Duplicate tags for the same note are prevented
- *
- * ## Example
- * ```tsx
- * <TagPanel
- *   contentId="abc123"
- *   editable
- *   onMetadataChange={refresh}
- * />
- * ```
  */
 
 interface TagPanelProps {
@@ -72,22 +51,26 @@ export function TagPanel({ contentId, onTagsSaved, editable = true, onMetadataCh
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState<"automatic" | "manual">("automatic");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [newTag, setNewTag] = useState("");
   
   const isValidContent = isValidContentId(contentId);
   
-  // Debug logging for component state
-  useEffect(() => {
-    console.log("[TagPanel] Current state:", {
-      contentId,
-      tagContentId,
-      isValidContentId: isValidContent,
-      tags: tags.length > 0 ? `${tags.length} tags` : "no tags",
-      isLoading,
-      isPending,
-      isProcessing,
-      isRetrying
-    });
-  }, [contentId, tagContentId, tags, isLoading, isPending, isProcessing, isRetrying, isValidContent]);
+  // Fetch existing tags for the content
+  const { 
+    data: existingTags = [], 
+    isLoading: isLoadingTags 
+  } = useTagsQuery(contentId, { 
+    enabled: isValidContent,
+    includeTypeInfo: true
+  });
+  
+  // Tag mutation hooks
+  const {
+    addTag,
+    deleteTag,
+    isAddingTag,
+    isDeletingTag
+  } = useTagMutations(contentId);
   
   // Force refresh when contentId changes to ensure correct display
   useEffect(() => {
@@ -98,15 +81,13 @@ export function TagPanel({ contentId, onTagsSaved, editable = true, onMetadataCh
   const processTagGeneration = (text: string) => {
     if (text && text.trim()) {
       setContent(text);
-      console.log("[TagPanel] Generating tags for text:", text.substring(0, 50) + "...");
       
       startTransition(() => {
         handleGenerateTags(text)
           .then(newContentId => {
             if (newContentId) {
-              console.log("[TagPanel] Generation complete, new contentId:", newContentId);
               setContentId(newContentId);
-              setRefreshTrigger(prev => prev + 1); // Force refresh
+              setRefreshTrigger(prev => prev + 1);
             } else {
               console.error("[TagPanel] No contentId returned from tag generation");
             }
@@ -120,46 +101,27 @@ export function TagPanel({ contentId, onTagsSaved, editable = true, onMetadataCh
             });
           });
       });
-    } else {
-      console.warn("[TagPanel] Attempted to generate tags with empty text");
     }
   };
   
-  // Handle save tags with improved error handling and Promise resolution
+  // Handle save tags with improved error handling
   const handleSaveTags = async () => {
-    console.log("[TagPanel] Saving tags:", {
-      tagCount: tags.length,
-      contentId: tagContentId || contentId,
-      isProcessing
-    });
-    
     if (!tags.length) {
-      console.warn("[TagPanel] Attempted to save empty tags array");
       return;
     }
-    
-    // Convert string[] tags to Tag[] objects required by the component
-    const tagObjects = tags.map(tagName => ({
-      name: tagName,
-      id: `temp-${tagName}`
-    }));
     
     const result = await saveTags("", tags, {
       contentId: tagContentId || contentId
     });
     
-    console.log("[TagPanel] Save result:", result);
-    
     if (result && typeof result === 'string') {
-      console.log("[TagPanel] Tags saved, calling onTagsSaved with:", result);
       onTagsSaved(result);
       
-      // Also call onMetadataChange if provided
       if (onMetadataChange) {
         onMetadataChange();
       }
       
-      setRefreshTrigger(prev => prev + 1); // Force refresh after save
+      setRefreshTrigger(prev => prev + 1);
     }
   };
   
@@ -172,11 +134,45 @@ export function TagPanel({ contentId, onTagsSaved, editable = true, onMetadataCh
     navigate(`/search?tag=${encodeURIComponent(tag)}`);
   };
 
+  // Handle adding a new manual tag
+  const handleAddManualTag = () => {
+    if (!newTag.trim() || !isValidContent) return;
+    
+    addTag({ 
+      contentId, 
+      name: newTag.trim() 
+    });
+    
+    setNewTag("");
+    setRefreshTrigger(prev => prev + 1);
+    
+    // Call onMetadataChange if provided
+    if (onMetadataChange) {
+      onMetadataChange();
+    }
+  };
+
+  // Handle deleting a tag
+  const handleDeleteTag = (tagId: string) => {
+    if (!isValidContent) return;
+    
+    deleteTag({ 
+      tagId, 
+      contentId 
+    });
+    
+    setRefreshTrigger(prev => prev + 1);
+    
+    // Call onMetadataChange if provided
+    if (onMetadataChange) {
+      onMetadataChange();
+    }
+  };
+
   // Trigger a refresh of the grouped tag list
   const handleTagCreated = () => {
     setRefreshTrigger(prev => prev + 1);
     
-    // Call onMetadataChange if provided
     if (onMetadataChange) {
       onMetadataChange();
     }
@@ -186,20 +182,11 @@ export function TagPanel({ contentId, onTagsSaved, editable = true, onMetadataCh
       description: "Tag created and added to the content",
     });
   };
-
-  const renderTemporaryContentAlert = () => (
-    <Alert className="border-yellow-400 dark:border-yellow-600 mb-4">
-      <Info className="h-4 w-4" />
-      <AlertDescription>
-        Save the note before adding tags. This is a temporary note.
-      </AlertDescription>
-    </Alert>
-  );
   
   return (
     <ErrorBoundary fallback={<TagPanelErrorFallback />}>
       <div className="space-y-6 w-full">
-        {!isValidContent && renderTemporaryContentAlert()}
+        {!isValidContent && <TemporaryContentAlert />}
         
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "automatic" | "manual")} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -207,48 +194,42 @@ export function TagPanel({ contentId, onTagsSaved, editable = true, onMetadataCh
             <TabsTrigger value="manual">Manual Tags</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="automatic" className="space-y-6 pt-4">
-            <TagGenerator 
-              isLoading={isLoading || isPending}
-              onGenerateTags={processTagGeneration}
-            />
-            
-            <TagList 
-              tags={tags.map(tagName => ({ name: tagName, id: `temp-${tagName}` }))}
-              isLoading={isLoading || isPending}
-              knowledgeSourceId={tagContentId || (isValidContent ? contentId : undefined)}
-              onTagClick={handleTagClick}
-            />
-            
-            <TagSaver
-              tags={tags}
-              contentId={tagContentId || contentId}
-              saveTags={saveTags}
-              isProcessing={isProcessing}
-              isRetrying={isRetrying}
+          <TabsContent value="automatic">
+            <AutomaticTagTab
+              contentId={contentId}
+              tagGeneration={{
+                tags,
+                isLoading,
+                contentId: tagContentId
+              }}
+              isPending={isPending}
+              handleTagClick={handleTagClick}
+              processTagGeneration={processTagGeneration}
+              handleSaveTags={handleSaveTags}
+              saveTags={{
+                isProcessing,
+                isRetrying
+              }}
               onTagsSaved={onTagsSaved}
-              disabled={!isValidContent}
             />
           </TabsContent>
           
-          <TabsContent value="manual" className="space-y-6 pt-4">
-            <ManualTagCreator 
-              contentId={contentId} 
-              onTagCreated={handleTagCreated}
-              editable={editable && isValidContent}
+          <TabsContent value="manual">
+            <ManualTagTab
+              contentId={contentId}
+              existingTags={existingTags}
+              isLoadingTags={isLoadingTags}
+              newTag={newTag}
+              setNewTag={setNewTag}
+              handleAddManualTag={handleAddManualTag}
+              handleDeleteTag={handleDeleteTag}
+              isAddingTag={isAddingTag}
+              isDeletingTag={isDeletingTag}
+              isValidContent={isValidContent}
+              editable={editable}
+              refreshTrigger={refreshTrigger}
+              handleTagClick={handleTagClick}
             />
-            
-            <Separator className="my-4" />
-            
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium">Tags for this Content</h3>
-              <GroupedTagList 
-                contentId={contentId}
-                refreshTrigger={refreshTrigger}
-                onTagClick={handleTagClick}
-                disabled={!isValidContent}
-              />
-            </div>
           </TabsContent>
         </Tabs>
       </div>
