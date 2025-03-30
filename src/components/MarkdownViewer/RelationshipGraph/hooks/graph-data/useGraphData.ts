@@ -107,10 +107,9 @@ export function useGraphData(startingNodeId?: string) {
   // Safe wrapper for the fetch function that handles errors properly
   const fetchGraphDataSafely = useCallback(() => {
     fetchAttempts.current = 0;
-    withErrorHandling(
-      fetchGraphData,
-      "Failed to refresh graph data"
-    );
+    withErrorHandling(fetchGraphData, {
+      errorMessage: "Failed to refresh graph data"
+    });
   }, [fetchGraphData]);
   
   return {

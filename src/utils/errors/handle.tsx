@@ -37,8 +37,11 @@ export function handleError(
     action
   } = options;
   
+  // Map 'warning' to 'warn' for console methods
+  const consoleLevel = level === 'warning' ? 'warn' : level;
+  
   // Log the error with context for debugging
-  console[level]('[Error Handler]', {
+  console[consoleLevel as 'log' | 'info' | 'warn' | 'error']('[Error Handler]', {
     message: typedError.message,
     originalError: error,
     userMessage,

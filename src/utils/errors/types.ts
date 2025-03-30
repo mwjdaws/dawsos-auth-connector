@@ -7,8 +7,9 @@ import { ReactNode } from 'react';
  * - warn: Warning that something might be wrong
  * - error: Standard error severity
  * - critical: Critical errors that need immediate attention
+ * - warning: Alias for warn (maintained for backward compatibility)
  */
-export type ErrorLevel = 'info' | 'warn' | 'error' | 'critical';
+export type ErrorLevel = 'info' | 'warn' | 'warning' | 'error' | 'critical';
 
 /**
  * Configuration options for error handling
@@ -82,4 +83,40 @@ export interface StandardizedError extends Error {
    * Original error object that was thrown
    */
   originalError?: unknown;
+}
+
+/**
+ * API Error class for representing errors from API calls
+ */
+export class ApiError extends Error implements StandardizedError {
+  code?: string;
+  status?: number;
+  isOperational: boolean;
+  originalError?: unknown;
+
+  constructor(message: string, status?: number, code?: string, originalError?: unknown) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+    this.isOperational = true;
+    this.originalError = originalError;
+  }
+}
+
+/**
+ * Validation Error class for representing data validation errors
+ */
+export class ValidationError extends Error implements StandardizedError {
+  code: string;
+  isOperational: boolean;
+  originalError?: unknown;
+
+  constructor(message: string, originalError?: unknown) {
+    super(message);
+    this.name = 'ValidationError';
+    this.code = 'VALIDATION_ERROR';
+    this.isOperational = true;
+    this.originalError = originalError;
+  }
 }
