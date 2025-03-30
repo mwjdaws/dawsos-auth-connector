@@ -9,6 +9,7 @@ export function validateContentId(contentId?: string | null): ContentIdValidatio
     return {
       isValid: false,
       result: ContentIdValidationResultType.Missing,
+      resultType: ContentIdValidationResultType.Missing, // For backward compatibility
       message: 'Content ID is missing'
     };
   }
@@ -17,7 +18,17 @@ export function validateContentId(contentId?: string | null): ContentIdValidatio
     return {
       isValid: false,
       result: ContentIdValidationResultType.Empty,
+      resultType: ContentIdValidationResultType.Empty, // For backward compatibility
       message: 'Content ID is empty'
+    };
+  }
+  
+  if (contentId.startsWith('temp-')) {
+    return {
+      isValid: true,
+      result: ContentIdValidationResultType.Temporary,
+      resultType: ContentIdValidationResultType.Temporary, // For backward compatibility
+      message: 'Content ID is temporary'
     };
   }
   
@@ -25,6 +36,7 @@ export function validateContentId(contentId?: string | null): ContentIdValidatio
     return {
       isValid: false,
       result: ContentIdValidationResultType.Invalid,
+      resultType: ContentIdValidationResultType.Invalid, // For backward compatibility
       message: 'Content ID is too short'
     };
   }
@@ -32,13 +44,13 @@ export function validateContentId(contentId?: string | null): ContentIdValidatio
   return {
     isValid: true,
     result: ContentIdValidationResultType.Valid,
+    resultType: ContentIdValidationResultType.Valid, // For backward compatibility
     message: null
   };
 }
 
 /**
  * Simple check if content ID is valid
- * @deprecated Use validateContentId instead for richer validation information
  */
 export function isValidContentId(contentId?: string | null): boolean {
   return validateContentId(contentId).isValid;

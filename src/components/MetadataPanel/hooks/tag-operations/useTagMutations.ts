@@ -1,7 +1,8 @@
 
 import { useState, useCallback } from 'react';
-import { useAddTagMutation } from '@/hooks/metadata/useTagMutation';
-import { Tag, UseTagMutationsProps, UseTagMutationsResult, TagPosition } from './types';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { AddTagParams, Tag, TagOperationParams, TagPosition, UseTagMutationsProps, UseTagMutationsResult } from './types';
 
 export function useTagMutations({
   contentId,
@@ -12,113 +13,127 @@ export function useTagMutations({
   const [isDeletingTag, setIsDeletingTag] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
   
-  // Use the hook provided by the application
-  const { mutateAsync: mutateTag } = useAddTagMutation();
-  
-  // Add tag mutation
-  const addTag = useCallback(async ({ 
-    name, 
-    contentId, 
-    typeId 
-  }: { 
-    name: string; 
-    contentId: string; 
-    typeId?: string 
-  }): Promise<Tag | null> => {
-    if (!name.trim() || !contentId) {
+  // Add a new tag
+  const addTag = useCallback(async ({ name, contentId: tagContentId, typeId }: AddTagParams): Promise<Tag | null> => {
+    if (!name.trim() || !tagContentId) {
       return null;
     }
     
     try {
       setIsAddingTag(true);
       
-      const newApiTag = await mutateTag({ 
-        name, 
-        contentId,
-        typeId: typeId || null
-      });
+      const { data, error } = await supabase
+        .from('tags')
+        .insert([{
+          name: name.trim().toLowerCase(),
+          content_id: tagContentId,
+          type_id: typeId || null
+        }])
+        .select();
       
-      if (!newApiTag) {
+      if (error) {
+        throw error;
+      }
+      
+      if (!data || data.length === 0) {
         return null;
       }
       
       const newTag: Tag = {
-        id: newApiTag.id,
-        name: newApiTag.name,
-        content_id: newApiTag.content_id || contentId,
-        type_id: newApiTag.type_id
+        id: data[0].id,
+        name: data[0].name,
+        content_id: data[0].content_id || '', // Handle null for backward compatibility
+        type_id: data[0].type_id
       };
       
-      setTags(prevTags => [...prevTags, newTag]);
+      // Update the local tags state
+      setTags([...tags, newTag]);
+      
+      toast({
+        title: 'Tag added',
+        description: `Added tag "${name}"`,
+      });
       
       return newTag;
-    } catch (error) {
-      console.error('Error adding tag:', error);
+    } catch (err) {
+      console.error('Error adding tag:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to add tag',
+        variant: 'destructive',
+      });
       return null;
     } finally {
       setIsAddingTag(false);
     }
-  }, [contentId, mutateTag, setTags]);
+  }, [tags, setTags]);
   
-  // Delete tag mutation
-  const deleteTag = useCallback(async ({ 
-    tagId, 
-    contentId 
-  }: { 
-    tagId: string; 
-    contentId: string 
-  }): Promise<boolean> => {
-    if (!tagId || !contentId) {
-      return false;
+  // Delete a tag
+  const deleteTag = useCallback(async ({ tagId, contentId: tagContentId }: TagOperationParams): Promise<void> => {
+    if (!tagId || !tagContentId) {
+      return;
     }
     
     try {
       setIsDeletingTag(true);
       
-      // Remove from local state immediately for optimistic UI
-      setTags(prevTags => prevTags.filter(tag => tag.id !== tagId));
+      const { error } = await supabase
+        .from('tags')
+        .delete()
+        .eq('id', tagId);
       
-      // TODO: Replace with actual API call when available
-      await new Promise(resolve => setTimeout(resolve, 300));
+      if (error) {
+        throw error;
+      }
       
-      return true;
-    } catch (error) {
-      console.error('Error deleting tag:', error);
-      return false;
+      // Update the local tags state
+      setTags(tags.filter(tag => tag.id !== tagId));
+      
+      toast({
+        title: 'Tag deleted',
+        description: 'Tag was successfully removed',
+      });
+    } catch (err) {
+      console.error('Error deleting tag:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete tag',
+        variant: 'destructive',
+      });
     } finally {
       setIsDeletingTag(false);
     }
-  }, [setTags]);
+  }, [tags, setTags]);
   
-  // Reorder tags mutation
-  const reorderTags = useCallback(async (tagPositions: TagPosition[]): Promise<boolean> => {
-    if (!tagPositions.length) {
-      return false;
-    }
-    
+  // Reorder tags
+  const reorderTags = useCallback(async (positions: TagPosition[]): Promise<void> => {
     try {
       setIsReordering(true);
       
-      // Map positions to current tags to create new ordered array
-      const orderedTags = tagPositions
-        .map(pos => {
-          const tag = tags.find(t => t.id === pos.id);
-          return tag ? { ...tag, position: pos.position } : null;
-        })
-        .filter((tag): tag is Tag & { position: number } => tag !== null)
-        .sort((a, b) => a.position - b.position)
-        .map(({ position, ...tag }) => tag); // Remove temporary position property
+      // For now, just update the local state based on position
+      // A more complete implementation would persist this to the database
+      const positionMap = new Map<string, number>();
+      positions.forEach(pos => positionMap.set(pos.id, pos.position));
       
-      // Update local state
-      setTags(orderedTags);
+      const sortedTags = [...tags].sort((a, b) => {
+        const posA = positionMap.get(a.id) || 0;
+        const posB = positionMap.get(b.id) || 0;
+        return posA - posB;
+      });
       
-      // TODO: Replace with actual API call when available
-      await new Promise(resolve => setTimeout(resolve, 300));
+      setTags(sortedTags);
       
-      return true;
-    } catch (error) {
-      console.error('Error reordering tags:', error);
-      return false;
+      toast({
+        title: 'Tags reordered',
+        description: 'Tag order updated successfully',
+      });
+    } catch (err) {
+      console.error('Error reordering tags:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to reorder tags',
+        variant: 'destructive',
+      });
     } finally {
       setIsReordering(false);
     }

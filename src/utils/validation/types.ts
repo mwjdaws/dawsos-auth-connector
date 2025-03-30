@@ -15,12 +15,15 @@ export enum ContentIdValidationResultType {
   Valid = 'valid',
   Invalid = 'invalid',
   Missing = 'missing',
-  Empty = 'empty'
+  Empty = 'empty',
+  Temporary = 'temporary'
 }
 
 export interface ContentIdValidationResult {
   isValid: boolean;
   result: ContentIdValidationResultType;
+  // For compatibility with older code
+  resultType?: ContentIdValidationResultType;
   message: string | null;
 }
 
@@ -32,4 +35,12 @@ export interface TagValidationOptions {
   minLength?: number;
   allowedChars?: RegExp;
   allowEmpty?: boolean;
+}
+
+/**
+ * Tag position for reordering
+ */
+export interface TagPosition {
+  id: string;
+  position: number;
 }

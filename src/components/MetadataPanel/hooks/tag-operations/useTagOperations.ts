@@ -42,12 +42,13 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
   }, [fetchTags]);
   
   // Handle adding a tag
-  const handleAddTag = async () => {
+  const handleAddTag = async (typeId?: string | null) => {
     if (!newTag.trim()) return;
     
     const result = await addTag({ 
       name: newTag, 
-      contentId 
+      contentId,
+      typeId: typeId || undefined
     });
     
     if (result) {

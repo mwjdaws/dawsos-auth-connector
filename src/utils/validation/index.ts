@@ -1,9 +1,13 @@
 
-// Export all validation utilities from this barrel file
-export * from './types';
-export * from './contentIdValidation';
-export * from './documentValidation';
-export * from './tagValidation';
+/**
+ * Validation utility functions
+ */
 
-// Backward compatibility bridges
+// Re-export from contentIdValidation for backward compatibility
 export { isValidContentId } from './contentIdValidation';
+export { validateContentId, getContentIdValidationResult } from './contentIdValidation';
+export { validateTag, validateTags } from './tagValidation';
+export { validateDocument, validateDocumentTitle } from './documentValidation';
+
+// Re-export types
+export * from './types';

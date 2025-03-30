@@ -25,8 +25,8 @@ interface MetadataContentProps {
   editable: boolean;
   newTag: string;
   setNewTag: (value: string) => void;
-  onAddTag: () => void;
-  onDeleteTag: (tagId: string) => void;
+  onAddTag: () => Promise<void>;
+  onDeleteTag: (tagId: string) => Promise<void>;
   isPending: boolean;
   showOntologyTerms: boolean;
   ontologyTerms: any[];
@@ -59,14 +59,29 @@ export const MetadataContent: React.FC<MetadataContentProps> = ({
   }
   
   if (error) {
+    const safeRetry = onRefresh ? () => onRefresh() : undefined;
+    
     return (
       <ErrorState 
         error={error} 
         title="Failed to load metadata" 
-        retry={onRefresh}
+        retry={safeRetry}
       />
     );
   }
+  
+  // For compatibility with different function signatures
+  const handleAddTag = async () => {
+    if (onAddTag) {
+      await onAddTag();
+    }
+  };
+  
+  const handleDeleteTag = async (tagId: string) => {
+    if (onDeleteTag) {
+      await onDeleteTag(tagId);
+    }
+  };
   
   return (
     <>
@@ -76,7 +91,7 @@ export const MetadataContent: React.FC<MetadataContentProps> = ({
           externalSourceUrl={externalSourceUrl} 
           lastCheckedAt={lastCheckedAt}
           editable={editable}
-          onMetadataChange={onMetadataChange}
+          onMetadataChange={onMetadataChange ? () => onMetadataChange() : undefined}
         />
         
         <TagsSection 
@@ -85,9 +100,9 @@ export const MetadataContent: React.FC<MetadataContentProps> = ({
           editable={editable}
           newTag={newTag}
           setNewTag={setNewTag}
-          onAddTag={onAddTag}
-          onDeleteTag={onDeleteTag}
-          onMetadataChange={onMetadataChange}
+          onAddTag={handleAddTag}
+          onDeleteTag={handleDeleteTag}
+          onMetadataChange={onMetadataChange ? () => onMetadataChange() : undefined}
           className="mt-4"
         />
         
@@ -95,7 +110,7 @@ export const MetadataContent: React.FC<MetadataContentProps> = ({
           <OntologySection
             sourceId={contentId} 
             terms={ontologyTerms}
-            editable={editable}
+            editable={editable ? true : false}
             className="mt-4" 
           />
         )}

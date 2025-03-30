@@ -14,7 +14,8 @@ export function useTagFetch({
   const [localLoading, setLocalLoading] = useState(false);
   const [localError, setLocalError] = useState<Error | null>(null);
   
-  const { fetchTags: fetchTagsFromApi } = useTagsQuery(contentId);
+  // Direct query hook for backward compatibility
+  const tagsQuery = useTagsQuery(contentId);
   
   const fetchTags = useCallback(async (): Promise<Tag[]> => {
     if (!contentId) {
@@ -25,11 +26,23 @@ export function useTagFetch({
       setIsLoading(true);
       setLocalLoading(true);
       
-      const apiTags = await fetchTagsFromApi();
-      const formattedTags = apiTags.map(mapApiTagToTag);
+      // Use the fetchTags method from the query when available
+      if (tagsQuery.fetchTags) {
+        const apiTags = await tagsQuery.fetchTags();
+        const formattedTags = apiTags.map(mapApiTagToTag);
+        setTags(formattedTags);
+        return formattedTags;
+      }
       
-      setTags(formattedTags);
-      return formattedTags;
+      // Fallback to using the data from the query
+      if (tagsQuery.data) {
+        const formattedTags = tagsQuery.data.map(mapApiTagToTag);
+        setTags(formattedTags);
+        return formattedTags;
+      }
+      
+      // If all else fails, return empty array
+      return [];
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to fetch tags');
       setError(error);
@@ -39,7 +52,7 @@ export function useTagFetch({
       setIsLoading(false);
       setLocalLoading(false);
     }
-  }, [contentId, fetchTagsFromApi, setTags, setIsLoading, setError]);
+  }, [contentId, tagsQuery, setTags, setIsLoading, setError]);
   
   return {
     fetchTags,

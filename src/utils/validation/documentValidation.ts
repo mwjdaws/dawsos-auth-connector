@@ -2,37 +2,43 @@
 import { ValidationResult } from './types';
 
 /**
- * Validates a document's required fields
+ * Validates a document title
+ * @deprecated Use validateDocument instead
  */
-export function validateDocument(title: string, content?: string): ValidationResult {
-  const result: ValidationResult = {
-    isValid: true,
-    message: null,
-    errorMessage: null
-  };
-  
-  // Title validation
-  if (!title || !title.trim()) {
-    result.isValid = false;
-    result.message = 'Title is required';
-    result.errorMessage = result.message;
-    return result;
-  }
-  
-  // Content validation (if required)
-  if (content === undefined || content === null) {
-    result.isValid = false;
-    result.message = 'Content is required';
-    result.errorMessage = result.message;
-    return result;
-  }
-  
-  return result;
+export function validateDocumentTitle(title: string): ValidationResult {
+  return validateDocument(title);
 }
 
 /**
- * Validates a document for saving
+ * Validates a document
  */
-export function validateDocumentForSave(title: string): ValidationResult {
-  return validateDocument(title);
+export function validateDocument(title: string): ValidationResult {
+  if (!title || title.trim() === '') {
+    return {
+      isValid: false,
+      message: 'Document title is required',
+      errorMessage: 'Document title is required'
+    };
+  }
+  
+  if (title.length < 3) {
+    return {
+      isValid: false,
+      message: 'Document title must be at least 3 characters',
+      errorMessage: 'Document title must be at least 3 characters'
+    };
+  }
+  
+  if (title.length > 255) {
+    return {
+      isValid: false,
+      message: 'Document title cannot exceed 255 characters',
+      errorMessage: 'Document title cannot exceed 255 characters'
+    };
+  }
+  
+  return {
+    isValid: true,
+    message: null
+  };
 }

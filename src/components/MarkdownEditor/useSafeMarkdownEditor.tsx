@@ -17,17 +17,17 @@ interface UseSafeMarkdownEditorProps {
 // Wrapper hook that handles undefined callbacks safely
 export const useSafeMarkdownEditor = (props: UseSafeMarkdownEditorProps) => {
   // Create safe wrapper handlers that check if callbacks exist
-  const handleSaveDraftWrapper = props.onSaveDraft 
-    ? (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => {
-        props.onSaveDraft?.(id, title, content, templateId, externalSourceUrl);
-      }
-    : undefined;
-    
-  const handlePublishWrapper = props.onPublish
-    ? (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => {
-        props.onPublish?.(id, title, content, templateId, externalSourceUrl);
-      }
-    : undefined;
+  const handleSaveDraftWrapper = (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => {
+    if (props.onSaveDraft) {
+      props.onSaveDraft(id, title, content, templateId, externalSourceUrl);
+    }
+  };
+  
+  const handlePublishWrapper = (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => {
+    if (props.onPublish) {
+      props.onPublish(id, title, content, templateId, externalSourceUrl);
+    }
+  };
   
   // Call the original hook with the wrapped handlers
   const editorState = useOriginalMarkdownEditor({
