@@ -1,167 +1,204 @@
 
-/**
- * OntologySection Component
- * 
- * Displays and manages ontology terms associated with a content source.
- * Provides UI for viewing, approving, and rejecting ontology terms.
- * 
- * @example
- * ```tsx
- * <OntologySection
- *   sourceId="ks-123456"
- *   editable={true}
- * />
- * ```
- */
-import React from "react";
+import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, X, Plus } from "lucide-react";
-import { useOntologyTerms } from '@/hooks/markdown-editor/useOntologyTerms';
+import { Input } from "@/components/ui/input";
+import { Plus, X } from "lucide-react";
+import { OntologyTerm } from "@/utils/api-utils";
+import { useQueryClient, useMutation } from "@tanstack/react-query"; 
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { queryKeys } from "@/utils/query-keys";
 
 interface OntologySectionProps {
   sourceId: string;
+  terms?: OntologyTerm[];
   editable?: boolean;
   className?: string;
 }
 
-// Define a local interface that extends OntologyTerm with review_required
-interface SourceOntologyTerm {
-  associationId: string;
-  id: string;
-  term: string;
-  description?: string;
-  domain?: string;
-  review_required?: boolean;
-}
-
 export const OntologySection: React.FC<OntologySectionProps> = ({
   sourceId,
+  terms = [],
   editable = false,
   className
 }) => {
-  const {
-    sourceTerms,
-    relatedTerms,
-    isLoading,
-    addTerm,
-    removeTerm
-  } = useOntologyTerms(sourceId);
-
-  // Cast sourceTerms to the local interface that includes review_required
-  const typedSourceTerms = sourceTerms as SourceOntologyTerm[];
-
-  // Organize terms by review status
-  const reviewRequired = typedSourceTerms.filter(term => term.review_required);
-  const approvedTerms = typedSourceTerms.filter(term => !term.review_required);
+  const [newTerm, setNewTerm] = useState("");
+  const queryClient = useQueryClient();
+  
+  // Add term mutation
+  const addTermMutation = useMutation({
+    mutationFn: async (termName: string) => {
+      if (!termName.trim()) throw new Error("Term name is required");
+      
+      // Check if term already exists
+      const { data: existingTerms, error: searchError } = await supabase
+        .from('ontology_terms')
+        .select('id, term')
+        .ilike('term', termName.trim());
+        
+      if (searchError) throw searchError;
+      
+      let termId;
+      
+      // If term exists, use it, otherwise create a new one
+      if (existingTerms && existingTerms.length > 0) {
+        termId = existingTerms[0].id;
+      } else {
+        // Create new ontology term
+        const { data: newTermData, error: createError } = await supabase
+          .from('ontology_terms')
+          .insert({ term: termName.trim() })
+          .select();
+          
+        if (createError) throw createError;
+        termId = newTermData?.[0]?.id;
+      }
+      
+      if (!termId) throw new Error("Failed to create or find term");
+      
+      // Associate term with knowledge source
+      const { data, error } = await supabase
+        .from('knowledge_source_ontology_terms')
+        .insert({
+          knowledge_source_id: sourceId,
+          ontology_term_id: termId,
+          review_required: false
+        })
+        .select(`
+          id,
+          ontology_term_id,
+          review_required,
+          ontology_terms:ontology_term_id (
+            id,
+            term,
+            description,
+            domain
+          )
+        `);
+        
+      if (error) {
+        // Check if it's a unique constraint violation (term already associated)
+        if (error.code === '23505') {
+          throw new Error("This term is already associated with this content");
+        }
+        throw error;
+      }
+      
+      return data?.[0];
+    },
+    onSuccess: () => {
+      setNewTerm("");
+      // Invalidate queries to refresh the UI
+      queryClient.invalidateQueries({ queryKey: queryKeys.ontologyTerms.byContentId(sourceId) });
+      toast({
+        title: "Term Added",
+        description: "Ontology term has been added successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error Adding Term",
+        description: error.message || "Failed to add ontology term",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Remove term mutation
+  const removeTermMutation = useMutation({
+    mutationFn: async (associationId: string) => {
+      const { error } = await supabase
+        .from('knowledge_source_ontology_terms')
+        .delete()
+        .eq('id', associationId);
+        
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      // Invalidate queries to refresh the UI
+      queryClient.invalidateQueries({ queryKey: queryKeys.ontologyTerms.byContentId(sourceId) });
+      toast({
+        title: "Term Removed",
+        description: "Ontology term has been removed successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error Removing Term",
+        description: error.message || "Failed to remove ontology term",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  const handleAddTerm = () => {
+    if (!newTerm.trim()) return;
+    addTermMutation.mutate(newTerm);
+  };
+  
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && newTerm.trim()) {
+      e.preventDefault();
+      handleAddTerm();
+    }
+  };
+  
+  const handleRemoveTerm = (associationId: string) => {
+    removeTermMutation.mutate(associationId);
+  };
 
   return (
     <div className={className}>
       <h3 className="text-sm font-medium mb-2">Ontology Terms</h3>
       
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading terms...</p>
-      ) : (
-        <div className="space-y-4">
-          {reviewRequired.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-xs font-medium text-amber-600">Needs Review</h4>
-              <div className="flex flex-wrap gap-2">
-                {reviewRequired.map((term) => (
-                  <div key={term.id} className="flex items-center gap-1">
-                    <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200">
-                      {term.term}
-                    </Badge>
-                    
-                    {editable && (
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-green-500 hover:text-green-700 hover:bg-green-50"
-                          onClick={() => {
-                            // Approve term logic (would need to be implemented)
-                            console.log("Approve term:", term.id);
-                          }}
-                          title="Approve"
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => removeTerm(term.associationId)}
-                          title="Remove"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+      {editable && (
+        <div className="flex gap-2 mb-3">
+          <Input
+            placeholder="Add ontology term..."
+            value={newTerm}
+            onChange={(e) => setNewTerm(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="flex-1"
+            disabled={addTermMutation.isPending}
+          />
           
-          {approvedTerms.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-xs font-medium text-green-600">Approved</h4>
-              <div className="flex flex-wrap gap-2">
-                {approvedTerms.map((term) => (
-                  <Badge 
-                    key={term.id}
-                    variant="outline"
-                    className="bg-green-50 text-green-800 border-green-200"
-                  >
-                    {term.term}
-                    {editable && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 ml-1 hover:bg-transparent"
-                        onClick={() => removeTerm(term.associationId)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {sourceTerms.length === 0 && (
-            <p className="text-sm text-muted-foreground">No ontology terms attached</p>
-          )}
-          
-          {relatedTerms.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-xs font-medium text-muted-foreground">Related Terms</h4>
-              <div className="flex flex-wrap gap-2">
-                {relatedTerms.map((term) => (
-                  <div key={term.term_id} className="flex items-center gap-1">
-                    <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
-                      {term.term}
-                    </Badge>
-                    
-                    {editable && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                        onClick={() => addTerm(term.term_id)}
-                        title="Add to this source"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <Button 
+            size="sm" 
+            onClick={handleAddTerm}
+            disabled={!newTerm.trim() || addTermMutation.isPending}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add
+          </Button>
         </div>
+      )}
+      
+      {terms.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {terms.map((term) => (
+            <Badge 
+              key={term.id} 
+              variant={term.review_required ? "outline" : "secondary"}
+              className={`flex items-center gap-1 ${term.review_required ? 'border-yellow-400' : ''}`}
+            >
+              {term.term}
+              {editable && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                  onClick={() => handleRemoveTerm(term.id)}
+                  disabled={removeTermMutation.isPending}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </Badge>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">No ontology terms</p>
       )}
     </div>
   );

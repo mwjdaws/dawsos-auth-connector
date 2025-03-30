@@ -1,35 +1,31 @@
 
-/**
- * LoadingState Component
- * 
- * Displays a loading state with skeleton UI elements for the metadata panel.
- * Used when metadata content is being fetched or processed.
- * 
- * @example
- * ```tsx
- * <LoadingState />
- * ```
- * 
- * @example
- * ```tsx
- * <LoadingState className="my-4" />
- * ```
- * 
- * @remarks
- * - Provides visual feedback during loading operations
- * - Uses Skeleton components with varying widths for a more natural appearance
- * - Can be styled with optional className prop
- */
 import React from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BaseSectionProps } from "../types";
 
-export const LoadingState: React.FC<BaseSectionProps> = ({ className }) => {
+export function LoadingState() {
   return (
-    <div className={`space-y-2 ${className || ''}`}>
-      <Skeleton className="h-4 w-full" />
-      <Skeleton className="h-4 w-3/4" />
-      <Skeleton className="h-4 w-1/2" />
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-[200px]" />
+        <Skeleton className="h-8 w-full" />
+      </div>
+      
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-[120px]" />
+        <div className="flex flex-wrap gap-2">
+          <Skeleton className="h-6 w-16 rounded-full" />
+          <Skeleton className="h-6 w-20 rounded-full" />
+          <Skeleton className="h-6 w-12 rounded-full" />
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-[150px]" />
+        <div className="flex flex-wrap gap-2">
+          <Skeleton className="h-6 w-24 rounded-full" />
+          <Skeleton className="h-6 w-32 rounded-full" />
+        </div>
+      </div>
     </div>
   );
-};
+}

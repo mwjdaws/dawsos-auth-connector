@@ -7,12 +7,10 @@
  * with consistent styling and behavior across the application.
  */
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Info } from "lucide-react";
-import { MetadataPanelProps } from "./types";
-import { useMetadataPanel } from "./hooks/useMetadataPanel";
 import { ContentIdValidationResult, getContentIdValidationResult } from "@/utils/content-validation";
 
 // Import all sections from the unified sections directory
@@ -24,6 +22,23 @@ import {
   ContentIdSection,
   LoadingState
 } from "./sections";
+
+// Import React Query hooks
+import { useMetadataQuery, useTagsQuery, useTagMutations, useOntologyTermsQuery, useContentExists } from "@/hooks/metadata";
+import { useAuth } from "@/hooks/useAuth";
+
+export interface MetadataPanelProps {
+  contentId?: string;
+  onMetadataChange?: () => void;
+  isCollapsible?: boolean;
+  initialCollapsed?: boolean;
+  showOntologyTerms?: boolean;
+  showDomain?: boolean;
+  domain?: string | null;
+  editable?: boolean;
+  className?: string;
+  children?: React.ReactNode;
+}
 
 const MetadataPanel: React.FC<MetadataPanelProps> = ({ 
   contentId,
@@ -37,42 +52,98 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   className = "",
   children
 }) => {
+  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
+  const [newTag, setNewTag] = useState("");
+  
+  const { user } = useAuth();
   const contentValidationResult = getContentIdValidationResult(contentId);
   const isValidContent = contentValidationResult === ContentIdValidationResult.VALID;
   
+  // Query hooks
+  const { 
+    data: metadata, 
+    isLoading: isLoadingMetadata, 
+    error: metadataError,
+    refetch: refetchMetadata
+  } = useMetadataQuery(isValidContent ? contentId : undefined);
+  
+  const { 
+    data: tags = [], 
+    isLoading: isLoadingTags,
+    error: tagsError,
+    refetch: refetchTags
+  } = useTagsQuery(isValidContent ? contentId : undefined);
+  
   const {
-    tags,
-    isLoading,
-    error,
-    isPending,
-    newTag,
-    setNewTag,
-    user,
-    externalSourceUrl,
-    needsExternalReview,
-    lastCheckedAt,
-    isCollapsed,
-    setIsCollapsed,
-    handleRefresh,
-    handleAddTag,
-    handleDeleteTag,
-    contentExists
-  } = useMetadataPanel(
-    isValidContent ? contentId : undefined, 
-    onMetadataChange, 
-    isCollapsible, 
-    initialCollapsed
+    data: ontologyTerms = [],
+    isLoading: isLoadingOntology,
+    error: ontologyError,
+    refetch: refetchOntology
+  } = useOntologyTermsQuery(
+    isValidContent && showOntologyTerms ? contentId : undefined,
+    { enabled: showOntologyTerms }
   );
-
+  
+  const { data: contentExists = false } = useContentExists(isValidContent ? contentId : undefined);
+  
+  // Mutation hooks
+  const { addTag, deleteTag, isAddingTag, isDeletingTag } = useTagMutations();
+  
+  // Handle tag operations
+  const handleAddTag = () => {
+    if (!contentId || !newTag.trim()) return;
+    
+    addTag({
+      contentId,
+      name: newTag,
+    });
+    
+    setNewTag("");
+    
+    if (onMetadataChange) {
+      onMetadataChange();
+    }
+  };
+  
+  const handleDeleteTag = (tagId: string) => {
+    if (!contentId) return;
+    
+    deleteTag({
+      tagId,
+      contentId,
+    });
+    
+    if (onMetadataChange) {
+      onMetadataChange();
+    }
+  };
+  
+  // Handle refresh
+  const handleRefresh = () => {
+    refetchMetadata();
+    refetchTags();
+    if (showOntologyTerms) {
+      refetchOntology();
+    }
+    
+    if (onMetadataChange) {
+      onMetadataChange();
+    }
+  };
+  
   // Determine if content is editable (use prop or fallback to user presence)
-  // Also ensure it's not editable if the content ID is temporary/invalid
   const isEditable = (editable !== undefined ? editable : !!user) && isValidContent && contentExists;
-
-  // Determine card border styling based on review status
-  const cardBorderClass = needsExternalReview
-    ? "border-yellow-400 dark:border-yellow-600"
-    : "";
-
+  
+  // Loading and error states
+  const isLoading = isLoadingMetadata || isLoadingTags || isLoadingOntology;
+  const error = metadataError || tagsError || ontologyError;
+  const isPending = isAddingTag || isDeletingTag;
+  
+  // Extract metadata values
+  const externalSourceUrl = metadata?.external_source_url;
+  const needsExternalReview = metadata?.needs_external_review;
+  const lastCheckedAt = metadata?.external_source_checked_at;
+  
   // Function to render the appropriate alert message based on content ID validation result
   const renderContentAlert = () => {
     switch (contentValidationResult) {
@@ -117,6 +188,11 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
         return null;
     }
   };
+
+  // Determine card border styling based on review status
+  const cardBorderClass = needsExternalReview
+    ? "border-yellow-400 dark:border-yellow-600"
+    : "";
 
   if (!isValidContent || !contentExists) {
     return (
@@ -168,6 +244,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
               {showOntologyTerms && contentId && (
                 <OntologySection
                   sourceId={contentId} 
+                  terms={ontologyTerms}
                   editable={isEditable}
                   className="mt-4" 
                 />
