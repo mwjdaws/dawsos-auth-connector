@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Save } from 'lucide-react';
+import { CardFooter } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
 
 interface TemplateEditorFooterProps {
   onCancel?: () => void;
@@ -10,26 +10,33 @@ interface TemplateEditorFooterProps {
   saving: boolean;
 }
 
-const TemplateEditorFooter: React.FC<TemplateEditorFooterProps> = ({
+const TemplateEditorFooter: React.FC<TemplateEditorFooterProps> = ({ 
   onCancel,
   onSave,
   saving
 }) => {
   return (
     <CardFooter className="flex justify-between">
-      <Button
-        variant="outline"
-        onClick={onCancel}
-      >
-        Cancel
-      </Button>
-      <Button
+      {onCancel && (
+        <Button 
+          variant="outline" 
+          onClick={onCancel}
+          disabled={saving}
+        >
+          Cancel
+        </Button>
+      )}
+      <Button 
         onClick={onSave}
         disabled={saving}
-        className="flex items-center gap-2"
+        className="ml-auto"
       >
-        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-        Save Template
+        {saving ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Saving...
+          </>
+        ) : 'Save Template'}
       </Button>
     </CardFooter>
   );
