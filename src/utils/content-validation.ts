@@ -1,5 +1,10 @@
 
 /**
+ * @deprecated This file is deprecated. Use validation utilities from @/utils/validation/contentIdValidation.ts instead.
+ * Import from @/utils/validation for the most up-to-date validation utilities.
+ */
+
+/**
  * Utility functions for content ID validation
  */
 

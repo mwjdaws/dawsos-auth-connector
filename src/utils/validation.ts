@@ -1,5 +1,10 @@
 
 /**
+ * @deprecated This file is deprecated. Use validation utilities from @/utils/validation/ directory instead.
+ * We've moved validation utilities to a more organized structure to improve maintenance.
+ */
+
+/**
  * Validates a document title
  * @param title Title to validate
  * @returns Object containing validation result and any error message

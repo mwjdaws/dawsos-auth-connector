@@ -44,4 +44,3 @@ export {
   normalizeContentId as normalizeId,
   getContentIdValidationResult as getIdValidationResult
 } from './contentIdValidation';
-
