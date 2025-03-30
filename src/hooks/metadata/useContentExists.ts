@@ -25,8 +25,9 @@ export function useContentExists(contentId: string) {
 
       try {
         setIsLoading(true);
+        // Use knowledge_sources table which exists in the Supabase schema
         const { data, error } = await supabase
-          .from('knowledge_content')
+          .from('knowledge_sources')
           .select('id')
           .eq('id', contentId)
           .maybeSingle();

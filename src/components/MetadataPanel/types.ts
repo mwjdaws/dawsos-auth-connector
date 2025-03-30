@@ -50,13 +50,16 @@ export interface HeaderSectionProps {
   isCollapsible?: boolean;
   isCollapsed?: boolean;
   setIsCollapsed?: (value: boolean) => void;
+  className?: string;
 }
 
 export interface OntologyTermsSectionProps {
   ontologyTerms: OntologyTerm[];
   editable?: boolean;
   contentId?: string;
+  sourceId?: string;
   onMetadataChange?: () => void;
+  className?: string;
 }
 
 export interface ContentValidationResult {

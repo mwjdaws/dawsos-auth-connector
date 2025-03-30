@@ -1,18 +1,12 @@
 
-/**
- * Metadata Management Hooks
- * 
- * This module provides hooks for working with metadata in the application.
- */
-
-// Tag related hooks
-export { useTagReordering } from './useTagReordering';
-export { useInlineMetadataEdit } from './useInlineMetadataEdit';
-export { useTagsQuery } from './useTagsQuery';
-export { useTagMutations, useAddTagMutation, useDeleteTagMutation } from './useTagMutation';
-export { useMetadataQuery } from './useMetadataQuery';
-export { useContentExists } from './useContentExists';
-export { useOntologyTermsQuery } from './useOntologyTermsQuery';
-
-// Add types if needed
-export type { Tag } from '@/components/MetadataPanel/hooks/tag-operations/types';
+// Re-export all metadata hooks for easier imports
+export * from './useTagsQuery';
+export * from './useTagMutation';
+export * from './useContentExists';
+export * from './useInlineMetadataEdit';
+export * from './useMetadataQuery';
+export * from './useOntologyTermMutation';
+export * from './useRealtimeUpdates';
+export * from './useSourceMetadataMutation';
+export * from './useTagMutation';
+export * from './useTagReordering';

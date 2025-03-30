@@ -24,34 +24,34 @@ export function useOntologyTermsQuery(contentId: string) {
       }
 
       try {
+        // Replace with the knowledge_source_ontology_terms table which exists in the schema
         const { data, error } = await supabase
-          .from('ontology_content_terms')
+          .from('knowledge_source_ontology_terms')
           .select(`
             id,
-            content_id,
-            term_id,
-            ontology_terms (
+            knowledge_source_id,
+            ontology_term_id,
+            ontology_terms:ontology_term_id (
               id,
-              name,
+              term:term,
               description,
-              domain_id,
-              ontology_domains (name)
+              domain
             )
           `)
-          .eq('content_id', contentId);
+          .eq('knowledge_source_id', contentId);
 
         if (error) throw error;
 
         return data.map(item => ({
           id: item.id,
-          contentId: item.content_id,
-          termId: item.term_id,
+          contentId: item.knowledge_source_id,
+          termId: item.ontology_term_id,
           term: {
             id: item.ontology_terms.id,
-            name: item.ontology_terms.name,
+            name: item.ontology_terms.term,
             description: item.ontology_terms.description,
-            domainId: item.ontology_terms.domain_id,
-            domainName: item.ontology_terms.ontology_domains?.name
+            domainId: null,
+            domainName: item.ontology_terms.domain
           }
         }));
       } catch (err) {

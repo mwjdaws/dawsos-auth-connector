@@ -4,15 +4,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTagValidator } from './useTagValidator';
 import { handleError } from '@/utils/errors';
 import { toast } from '@/hooks/use-toast';
-import { SaveTagsResult, SaveTagsOptions } from './types';
+import { SaveTagsResult, SaveTagsOptions, PreviousData } from './types';
 
 export const useSaveTags = (initialContentId?: string) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [previousData, setPreviousData] = useState<PreviousData | null>(null);
   const tagValidator = useTagValidator();
 
-  const saveTags = async (text: string, tags: string[], options?: SaveTagsOptions): Promise<SaveTagsResult> => {
+  const saveTags = async (
+    text: string, 
+    tags: string[], 
+    options?: SaveTagsOptions
+  ): Promise<SaveTagsResult> => {
     const contentId = options?.contentId || initialContentId;
     
     if (!contentId) {
@@ -37,6 +42,13 @@ export const useSaveTags = (initialContentId?: string) => {
 
     setIsSaving(true);
     setIsProcessing(true);
+    
+    // Store data for potential retry
+    setPreviousData({
+      options: options || {},
+      tags,
+      result: { success: false }
+    });
 
     try {
       // First, delete all existing tags for this content
@@ -69,8 +81,15 @@ export const useSaveTags = (initialContentId?: string) => {
         title: "Success",
         description: `${tags.length} tags have been saved successfully.`,
       });
+      
+      // Update previous data with successful result
+      setPreviousData({
+        options: options || {},
+        tags,
+        result: contentId
+      });
 
-      return { success: true, contentId };
+      return contentId;
     } catch (error) {
       handleError(error, "Failed to save tags", {
         context: { contentId, tags },
@@ -83,10 +102,26 @@ export const useSaveTags = (initialContentId?: string) => {
     }
   };
 
+  const retryLastSave = async (): Promise<SaveTagsResult> => {
+    if (!previousData) {
+      return { success: false, message: "No previous save attempt to retry" };
+    }
+    
+    setIsRetrying(true);
+    
+    try {
+      return await saveTags('', previousData.tags, previousData.options);
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
   return {
     saveTags,
+    retryLastSave,
     isSaving,
     isProcessing,
-    isRetrying
+    isRetrying,
+    previousData
   };
 };

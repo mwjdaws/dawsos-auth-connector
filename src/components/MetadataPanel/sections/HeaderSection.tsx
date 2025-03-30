@@ -4,23 +4,6 @@
  * 
  * Renders the header section of the MetadataPanel with title, refresh button, and optional
  * collapse/expand functionality. Also displays a visual indicator when content needs review.
- * 
- * @example
- * ```tsx
- * <HeaderSection
- *   needsExternalReview={true}
- *   handleRefresh={() => fetchMetadata()}
- *   isLoading={isLoading}
- *   isCollapsible={true}
- *   isCollapsed={isCollapsed}
- *   setIsCollapsed={setIsCollapsed}
- * />
- * ```
- * 
- * @remarks
- * - The refresh button shows a spinner animation when isLoading is true
- * - When needsExternalReview is true, displays a warning indicator
- * - Only shows collapse/expand controls when isCollapsible is true
  */
 import React from "react";
 import { Button } from "@/components/ui/button";
@@ -35,10 +18,10 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   isCollapsible = false,
   isCollapsed = false,
   setIsCollapsed,
-  className
+  className = ""
 }) => {
   return (
-    <CardHeader className={`flex flex-row items-center justify-between pb-2 ${className || ''}`}>
+    <CardHeader className={`flex flex-row items-center justify-between pb-2 ${className}`}>
       <div className="flex items-center gap-2">
         <CardTitle>Content Metadata</CardTitle>
         {needsExternalReview && (

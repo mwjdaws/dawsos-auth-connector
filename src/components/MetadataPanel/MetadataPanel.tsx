@@ -7,13 +7,14 @@
  * with consistent styling and behavior across the application.
  */
 
-import React, { useState } from "react";
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { HeaderSection } from "./sections";
 import ContentAlert from "./components/ContentAlert";
 import MetadataContent from "./components/MetadataContent"; 
 import { useMetadataPanel } from "./hooks/useMetadataPanel";
 import { MetadataPanelProps } from "./types";
+import { ContentIdValidationResult } from "@/utils/validation";
 
 const MetadataPanel: React.FC<MetadataPanelProps> = ({ 
   contentId = "",
@@ -73,7 +74,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
       <Card className={className}>
         <CardContent className="pt-4">
           <ContentAlert 
-            contentValidationResult={contentValidationResult} 
+            contentValidationResult={contentValidationResult as ContentIdValidationResult} 
             contentExists={contentExists} 
           />
         </CardContent>
