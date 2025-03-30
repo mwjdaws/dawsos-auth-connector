@@ -1,79 +1,63 @@
 
 /**
- * Content Existence Check Hook
+ * Hook to check if content exists
  * 
- * A hook that verifies if content with a given ID exists in the database.
- * Implements proper type guards and validation.
+ * This hook queries the database to verify if a content ID exists.
+ * It's useful for validation before performing operations on content.
  */
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { handleError } from '@/utils/errors';
 import { isValidContentId } from '@/utils/validation';
 
-/**
- * Type definition for a valid content response from Supabase
- */
-interface ContentResponse {
-  id: string;
-  [key: string]: any;
-}
-
-/**
- * Type guard to check if data is valid content
- * 
- * @param data - Any data to check
- * @returns Type predicate indicating if the data represents valid content
- */
-function isValidContent(data: any): data is ContentResponse {
-  return data && typeof data.id === 'string';
-}
-
-/**
- * Hook to check if content with the given ID exists in the database
- * 
- * @param contentId - The ID to check for existence
- * @returns Object containing existence status, loading state, and any error
- */
 export function useContentExists(contentId: string) {
   const [exists, setExists] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    // Reset state when contentId changes
+    setExists(null);
+    setError(null);
+    
+    // Skip check for invalid IDs
+    if (!isValidContentId(contentId)) {
+      setExists(false);
+      return;
+    }
+
     let isMounted = true;
+    setIsLoading(true);
 
-    async function checkContentExists() {
-      if (!isValidContentId(contentId)) {
-        if (isMounted) {
-          setExists(false);
-          setIsLoading(false);
-        }
-        return;
-      }
-
+    const checkIfExists = async () => {
       try {
-        setIsLoading(true);
-        // Use knowledge_sources table which exists in the Supabase schema
         const { data, error } = await supabase
           .from('knowledge_sources')
           .select('id')
           .eq('id', contentId)
           .maybeSingle();
 
+        if (!isMounted) return;
+        
         if (error) throw error;
-
-        if (isMounted) {
-          setExists(data !== null && isValidContent(data));
-          setIsLoading(false);
-        }
+        
+        // If data is found, the content exists
+        setExists(!!data);
       } catch (err) {
+        if (!isMounted) return;
+        
+        const errorObj = err instanceof Error ? err : new Error('Failed to check if content exists');
+        setError(errorObj);
+        handleError(errorObj, 'Failed to check content existence');
+        setExists(false);
+      } finally {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : 'An unknown error occurred');
           setIsLoading(false);
         }
       }
-    }
+    };
 
-    checkContentExists();
+    checkIfExists();
 
     return () => {
       isMounted = false;

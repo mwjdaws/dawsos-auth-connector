@@ -1,18 +1,24 @@
 
 /**
+ * Document validation utilities
+ * 
+ * Functions for validating document properties like titles, ensuring
+ * they meet the application's requirements.
+ */
+
+import type { ValidationResult } from './tagValidation';
+
+/**
  * Validates a document title
  * @param title Title to validate
- * @returns Object containing validation result and any error message
+ * @returns Object containing validation result and error message
  */
-export const validateDocumentTitle = (title: string): { 
-  isValid: boolean; 
-  errorMessage: string | null;
-} => {
+export const validateDocumentTitle = (title: string): ValidationResult => {
   // Check for empty title
   if (!title || !title.trim()) {
     return {
       isValid: false,
-      errorMessage: "Please enter a title before saving"
+      message: "Please enter a title before saving"
     };
   }
 
@@ -20,7 +26,7 @@ export const validateDocumentTitle = (title: string): {
   if (title.trim().length < 3) {
     return {
       isValid: false,
-      errorMessage: "Title must be at least 3 characters long"
+      message: "Title must be at least 3 characters long"
     };
   }
 
@@ -28,7 +34,7 @@ export const validateDocumentTitle = (title: string): {
   if (title.trim().length > 100) {
     return {
       isValid: false,
-      errorMessage: "Title cannot exceed 100 characters"
+      message: "Title cannot exceed 100 characters"
     };
   }
 
@@ -37,12 +43,12 @@ export const validateDocumentTitle = (title: string): {
   if (invalidCharsRegex.test(title)) {
     return {
       isValid: false,
-      errorMessage: "Title contains invalid characters"
+      message: "Title contains invalid characters"
     };
   }
 
   return {
     isValid: true,
-    errorMessage: null
+    message: ""
   };
 };

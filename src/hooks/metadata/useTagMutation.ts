@@ -1,163 +1,184 @@
 
+/**
+ * Hook for tag mutations
+ * 
+ * Provides functions to add, update, and delete tags.
+ */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { handleError } from '@/utils/errors';
 import { toast } from '@/hooks/use-toast';
+import { handleError } from '@/utils/errors';
 import { isValidContentId } from '@/utils/validation';
 
-/**
- * Interface for tag data used in mutations
- */
-interface TagData {
-  contentId: string;
-  name: string;
-  typeId?: string;
-}
-
-/**
- * Interface for tag deletion parameters
- */
-interface TagDeleteParams {
-  tagId: string;
-  contentId: string;
-}
-
-/**
- * Interface for tag reordering parameters
- */
-interface TagReorderParams {
-  contentId: string;
-  newOrder: { id: string; name: string }[];
-}
-
-/**
- * Provides mutation operations for tags (add, delete, reorder)
- * 
- * @param contentId - Optional default content ID to use
- * @returns Object containing mutation functions and states
- */
-export function useTagMutations(contentId?: string) {
+export function useTagMutations(initialContentId?: string) {
   const queryClient = useQueryClient();
-  
-  // Add a new tag
-  const addTagMutation = useMutation({
-    mutationFn: async ({ name, contentId: tagContentId, typeId }: TagData) => {
-      const effectiveContentId = tagContentId || contentId;
-      
-      if (!effectiveContentId || !isValidContentId(effectiveContentId)) {
-        throw new Error('Invalid content ID');
+
+  // Add tag mutation
+  const addTag = useMutation({
+    mutationFn: async ({ 
+      contentId = initialContentId, 
+      name, 
+      typeId 
+    }: { 
+      contentId?: string; 
+      name: string; 
+      typeId?: string;
+    }) => {
+      if (!contentId) {
+        throw new Error('Content ID is required');
       }
       
+      if (!isValidContentId(contentId)) {
+        throw new Error('Invalid content ID');
+      }
+
       const { data, error } = await supabase
         .from('tags')
-        .insert({
-          name: name.trim().toLowerCase(),
-          content_id: effectiveContentId,
-          type_id: typeId
-        })
-        .select()
-        .single();
-        
+        .insert([
+          {
+            content_id: contentId,
+            name: name.trim().toLowerCase(),
+            type_id: typeId || null
+          }
+        ])
+        .select();
+
       if (error) throw error;
-      return data;
+      return data?.[0];
     },
-    onSuccess: () => {
-      // Invalidate relevant queries
+    onSuccess: (_, variables) => {
+      const contentId = variables.contentId || initialContentId;
       if (contentId) {
         queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
       }
       toast({
-        title: "Tag Added",
-        description: "The tag was successfully added",
+        title: "Success",
+        description: "Tag has been added",
       });
     },
     onError: (error) => {
       handleError(error, 'Failed to add tag');
+      toast({
+        title: "Error",
+        description: error instanceof Error 
+          ? error.message 
+          : 'Failed to add tag',
+        variant: "destructive",
+      });
     }
   });
-  
-  // Delete a tag
-  const deleteTagMutation = useMutation({
-    mutationFn: async ({ tagId, contentId: tagContentId }: TagDeleteParams) => {
-      const effectiveContentId = tagContentId || contentId;
-      
-      if (!effectiveContentId || !isValidContentId(effectiveContentId)) {
-        throw new Error('Invalid content ID');
+
+  // Delete tag mutation
+  const deleteTag = useMutation({
+    mutationFn: async ({ 
+      tagId, 
+      contentId = initialContentId 
+    }: { 
+      tagId: string; 
+      contentId?: string;
+    }) => {
+      if (!contentId) {
+        throw new Error('Content ID is required');
       }
       
+      if (!isValidContentId(contentId)) {
+        throw new Error('Invalid content ID');
+      }
+
       const { error } = await supabase
         .from('tags')
         .delete()
         .eq('id', tagId);
-        
+
       if (error) throw error;
-      return { tagId };
+      return { tagId, contentId };
     },
-    onSuccess: () => {
-      // Invalidate relevant queries
+    onSuccess: ({ contentId }) => {
       if (contentId) {
         queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
       }
       toast({
-        title: "Tag Removed",
-        description: "The tag was successfully removed",
+        title: "Success",
+        description: "Tag has been deleted",
       });
     },
     onError: (error) => {
-      handleError(error, 'Failed to remove tag');
+      handleError(error, 'Failed to delete tag');
+      toast({
+        title: "Error",
+        description: error instanceof Error 
+          ? error.message 
+          : 'Failed to delete tag',
+        variant: "destructive",
+      });
     }
   });
-  
-  // Reorder tags - Implementation for future feature
-  const reorderTagsMutation = useMutation({
-    mutationFn: async ({ contentId: tagContentId, newOrder }: TagReorderParams) => {
-      const effectiveContentId = tagContentId || contentId;
+
+  // Update tag mutation
+  const updateTag = useMutation({
+    mutationFn: async ({ 
+      tagId, 
+      name, 
+      typeId,
+      contentId = initialContentId 
+    }: { 
+      tagId: string; 
+      name?: string; 
+      typeId?: string;
+      contentId?: string;
+    }) => {
+      if (!contentId) {
+        throw new Error('Content ID is required');
+      }
       
-      if (!effectiveContentId || !isValidContentId(effectiveContentId)) {
+      if (!isValidContentId(contentId)) {
         throw new Error('Invalid content ID');
       }
-      
-      // Log intended changes for debugging/development
-      console.log('Tag reordering requested:', newOrder.map((tag, index) => ({
-        id: tag.id,
-        name: tag.name,
-        desired_order: index // This would be the field to add in the future
-      })));
-      
-      /**
-       * Future implementation options:
-       * 1. Add a display_order column to the tags table
-       * 2. Create a separate tag_positions table to store ordering information
-       * 
-       * Currently, this is a client-side only reordering with no persistence.
-       */
-      
-      return { contentId: effectiveContentId, newOrder };
+
+      const updates: Record<string, any> = {};
+      if (name !== undefined) updates.name = name.trim().toLowerCase();
+      if (typeId !== undefined) updates.type_id = typeId;
+
+      if (Object.keys(updates).length === 0) {
+        throw new Error('No updates provided');
+      }
+
+      const { data, error } = await supabase
+        .from('tags')
+        .update(updates)
+        .eq('id', tagId)
+        .select();
+
+      if (error) throw error;
+      return { tag: data?.[0], contentId };
     },
-    onSuccess: () => {
-      // Invalidate relevant queries
+    onSuccess: ({ contentId }) => {
       if (contentId) {
         queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
       }
       toast({
-        title: "Tags Reordered",
-        description: "Tag order was successfully updated",
+        title: "Success",
+        description: "Tag has been updated",
       });
     },
     onError: (error) => {
-      handleError(error, 'Failed to reorder tags');
+      handleError(error, 'Failed to update tag');
+      toast({
+        title: "Error",
+        description: error instanceof Error 
+          ? error.message 
+          : 'Failed to update tag',
+        variant: "destructive",
+      });
     }
   });
-  
+
   return {
-    addTag: addTagMutation.mutate,
-    deleteTag: deleteTagMutation.mutate,
-    reorderTags: reorderTagsMutation.mutate,
-    isAddingTag: addTagMutation.isPending,
-    isDeletingTag: deleteTagMutation.isPending,
-    isReorderingTags: reorderTagsMutation.isPending,
-    addTagError: addTagMutation.error,
-    deleteTagError: deleteTagMutation.error,
-    reorderTagsError: reorderTagsMutation.error
+    addTag,
+    deleteTag,
+    updateTag,
+    isAddingTag: addTag.isPending,
+    isDeletingTag: deleteTag.isPending,
+    isUpdatingTag: updateTag.isPending
   };
 }

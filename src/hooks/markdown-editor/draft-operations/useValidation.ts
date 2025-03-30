@@ -3,7 +3,7 @@ import { validateDocumentTitle } from '@/utils/validation';
 
 interface ValidationResult {
   isValid: boolean;
-  errorMessage?: string;
+  message: string;
 }
 
 /**

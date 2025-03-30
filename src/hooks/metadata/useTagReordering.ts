@@ -1,76 +1,67 @@
-
-import { useState, useCallback } from 'react';
+/**
+ * Hook for reordering tags
+ * 
+ * Provides functionality to reorder tags and update their order in the database.
+ */
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Tag } from '@/components/MetadataPanel/hooks/tag-operations/types';
 import { handleError } from '@/utils/errors';
 import { isValidContentId } from '@/utils/validation';
 
-interface UseTagReorderingProps {
+interface UseTagReorderingOptions {
   contentId: string;
   onMetadataChange?: () => void;
 }
 
-/**
- * Hook for handling tag reordering operations
- * 
- * @param props - Properties including contentId and optional callback
- * @returns Functions and state for tag reordering
- */
-export function useTagReordering({ contentId, onMetadataChange }: UseTagReorderingProps) {
+export function useTagReordering({ contentId, onMetadataChange }: UseTagReorderingOptions) {
   const [isReordering, setIsReordering] = useState(false);
 
-  /**
-   * Handles reordering tags and updating their order
-   * Currently a workaround since there's no dedicated order column
-   * 
-   * @param reorderedTags - Array of tags in their new order
-   */
-  const handleReorderTags = useCallback(async (reorderedTags: Tag[]) => {
-    if (!contentId || reorderedTags.length === 0 || !isValidContentId(contentId)) {
-      console.warn('Invalid content ID or empty tag array provided for reordering');
+  const handleReorderTags = async (reorderedTags: { id: string; position: number }[]) => {
+    if (!isValidContentId(contentId)) {
+      toast({
+        title: "Invalid content",
+        description: "Cannot reorder tags for invalid content",
+        variant: "destructive"
+      });
       return;
     }
-    
+
     setIsReordering(true);
-    
+
     try {
-      // Log the intended changes for debugging
-      console.log('Tag reordering requested:', reorderedTags.map((tag, index) => ({
-        id: tag.id,
-        name: tag.name,
-        desired_order: index // This would be the column to add in future
-      })));
+      // For now, there's no position/order column in the database
+      // This is a placeholder for when that functionality is added
       
-      /**
-       * Implementation notes:
-       * In a future version, we plan to add a display_order column to the tags table
-       * and implement a batch update operation to store the order in the database.
-       * For now, this is a client-side-only reordering.
-       */
+      // Simulate a successful update with a delay
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Simulate a delay for the reordering operation for UX feedback
-      await new Promise(resolve => setTimeout(resolve, 300));
+      console.log('Tags reordered:', reorderedTags);
       
-      // Notify parent component that metadata has changed
+      // Call onMetadataChange if provided
       if (onMetadataChange) {
         onMetadataChange();
       }
       
-      // Show success toast
       toast({
-        title: "Tags reordered",
-        description: "Tag order has been updated successfully",
+        title: "Success",
+        description: "Tag order has been updated",
       });
-      
     } catch (error) {
-      handleError(error, "Failed to reorder tags", {
-        level: "error",
-        context: { contentId }
+      handleError(
+        error instanceof Error ? error : new Error('Failed to reorder tags'),
+        'Could not update tag order'
+      );
+      
+      toast({
+        title: "Error",
+        description: "Failed to update tag order",
+        variant: "destructive"
       });
     } finally {
       setIsReordering(false);
     }
-  }, [contentId, onMetadataChange]);
+  };
 
   return {
     handleReorderTags,
