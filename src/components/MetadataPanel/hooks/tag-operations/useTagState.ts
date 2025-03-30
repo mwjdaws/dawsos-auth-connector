@@ -1,15 +1,17 @@
 
-import { useState } from "react";
-import { Tag, UseTagStateResult } from "./types";
+import { useState } from 'react';
+import type { Tag } from '@/types';
 
-export function useTagState(): UseTagStateResult {
+export interface UseTagStateResult {
+  tags: Tag[];
+  setTags: React.Dispatch<React.SetStateAction<Tag[]>>;
+}
+
+export const useTagState = (): UseTagStateResult => {
   const [tags, setTags] = useState<Tag[]>([]);
-  const [newTag, setNewTag] = useState("");
 
   return {
     tags,
-    setTags,
-    newTag,
-    setNewTag
+    setTags
   };
-}
+};

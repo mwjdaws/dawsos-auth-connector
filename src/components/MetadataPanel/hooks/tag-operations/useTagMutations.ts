@@ -1,112 +1,118 @@
 
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
-import { isValidContentId } from "@/utils/validation/contentIdValidation";
-import { handleError } from "@/utils/errors";
-import { Tag, UseTagMutationsResult } from "./types";
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { isValidContentId } from '@/utils/validation/contentIdValidation';
+import { TagPosition } from '@/utils/validation/types';
+import type { Tag } from '@/types';
 
-export interface UseTagMutationsProps {
+interface UseTagMutationsProps {
   contentId: string;
 }
 
+export interface UseTagMutationsResult {
+  addTag: (params: { name: string; contentId?: string }) => Promise<void>;
+  deleteTag: (params: { tagId: string; contentId?: string }) => Promise<void>;
+  reorderTags: (positions: TagPosition[]) => Promise<void>;
+  isAddingTag: boolean;
+  isDeletingTag: boolean;
+  isReordering: boolean;
+}
+
 export const useTagMutations = ({ contentId }: UseTagMutationsProps): UseTagMutationsResult => {
-  const [isAdding, setIsAdding] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isAddingTag, setIsAddingTag] = useState(false);
+  const [isDeletingTag, setIsDeletingTag] = useState(false);
+  const [isReordering, setIsReordering] = useState(false);
 
-  const handleAddTag = async (typeId?: string | null): Promise<void> => {
-    if (!contentId || !isValidContentId(contentId)) {
-      console.error("Invalid content ID for adding tag:", contentId);
-      toast({
-        title: "Error",
-        description: "Cannot add tag: Invalid content ID",
-        variant: "destructive"
-      });
+  const addTag = async ({ name, contentId: overrideContentId }: { name: string; contentId?: string }): Promise<void> => {
+    const effectiveContentId = overrideContentId || contentId;
+    
+    if (!isValidContentId(effectiveContentId) || !name.trim()) {
       return;
     }
-
-    setIsAdding(true);
+    
     try {
-      // Get the current tags for this content
-      const { data: existingTags, error: fetchError } = await supabase
-        .from("tags")
-        .select("name")
-        .eq("content_id", contentId);
-
-      if (fetchError) throw fetchError;
-
-      // Insert the new tag
-      const { error: insertError } = await supabase
-        .from("tags")
+      setIsAddingTag(true);
+      
+      // Add tag to database
+      const { data, error } = await supabase
+        .from('tags')
         .insert({
-          name: "New Tag",
-          content_id: contentId,
-          type_id: typeId || null
-        });
-
-      if (insertError) throw insertError;
-
-      toast({
-        title: "Tag Added",
-        description: "The tag was added successfully"
-      });
-    } catch (err: any) {
-      console.error("Error adding tag:", err);
-      handleError(err, "Failed to add tag", {
-        context: { contentId },
-        level: "error"
-      });
+          name: name.trim(), 
+          content_id: effectiveContentId
+        })
+        .select()
+        .single();
       
-      toast({
-        title: "Error",
-        description: "Failed to add tag",
-        variant: "destructive"
-      });
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+    } catch (err) {
+      console.error('Error adding tag:', err);
+      throw err;
     } finally {
-      setIsAdding(false);
+      setIsAddingTag(false);
     }
   };
-
-  const handleDeleteTag = async (tagId: string): Promise<void> => {
-    if (!tagId) {
-      console.error("No tag ID provided for deletion");
+  
+  const deleteTag = async ({ tagId, contentId: overrideContentId }: { tagId: string; contentId?: string }): Promise<void> => {
+    const effectiveContentId = overrideContentId || contentId;
+    
+    if (!isValidContentId(effectiveContentId) || !tagId) {
       return;
     }
-
-    setIsDeleting(true);
+    
     try {
-      const { error } = await supabase
-        .from("tags")
-        .delete()
-        .eq("id", tagId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Tag Deleted",
-        description: "The tag was deleted successfully"
-      });
-    } catch (err: any) {
-      console.error("Error deleting tag:", err);
-      handleError(err, "Failed to delete tag", {
-        context: { tagId, contentId },
-        level: "error"
-      });
+      setIsDeletingTag(true);
       
-      toast({
-        title: "Error",
-        description: "Failed to delete tag",
-        variant: "destructive"
-      });
+      // Delete tag from database
+      const { error } = await supabase
+        .from('tags')
+        .delete()
+        .eq('id', tagId)
+        .eq('content_id', effectiveContentId);
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+    } catch (err) {
+      console.error('Error deleting tag:', err);
+      throw err;
     } finally {
-      setIsDeleting(false);
+      setIsDeletingTag(false);
     }
   };
+  
+  const reorderTags = async (positions: TagPosition[]): Promise<void> => {
+    if (!isValidContentId(contentId) || !positions.length) {
+      return;
+    }
+    
+    try {
+      setIsReordering(true);
 
+      // In a real implementation, this would update tag positions in the database
+      // For now, this is a stub implementation
+      console.log('Reordering tags:', positions);
+      
+      // Simulate a delay to show loading state
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+    } catch (err) {
+      console.error('Error reordering tags:', err);
+      throw err;
+    } finally {
+      setIsReordering(false);
+    }
+  };
+  
   return {
-    handleAddTag,
-    handleDeleteTag,
-    isAdding,
-    isDeleting
+    addTag,
+    deleteTag,
+    reorderTags,
+    isAddingTag,
+    isDeletingTag,
+    isReordering
   };
 };

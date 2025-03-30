@@ -50,6 +50,15 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     handleSourceSelection
   } = useKnowledgeSources();
   
+  // Modified to handle optional callbacks safely
+  const handleSaveDraftWrapped = onSaveDraft ? ((id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => {
+    onSaveDraft(id, title, content, templateId, externalSourceUrl);
+  }) : undefined;
+  
+  const handlePublishWrapped = onPublish ? ((id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => {
+    onPublish(id, title, content, templateId, externalSourceUrl);
+  }) : undefined;
+  
   const {
     title,
     setTitle,
@@ -75,8 +84,8 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     initialExternalSourceUrl,
     documentId,
     sourceId,
-    onSaveDraft,
-    onPublish
+    onSaveDraft: handleSaveDraftWrapped,
+    onPublish: handlePublishWrapped
   });
 
   const toggleFullscreen = () => {

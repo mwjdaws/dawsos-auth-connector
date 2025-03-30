@@ -48,7 +48,16 @@ export default function ComplianceTab() {
       
       if (error) throw error;
       
-      setReviewItems(data || []);
+      // Safely transform the data to the correct type 
+      const transformedData: ExternalReviewItem[] = (data || []).map(item => ({
+        id: item.id,
+        title: item.title,
+        external_source_url: item.external_source_url,
+        external_source_checked_at: item.external_source_checked_at,
+        needs_external_review: item.needs_external_review === null ? false : item.needs_external_review
+      }));
+      
+      setReviewItems(transformedData);
 
       // Fetch latest audit logs for these items
       if (data && data.length > 0) {

@@ -2,64 +2,53 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { isValidContentId } from '@/utils/validation/contentIdValidation';
-import { Tag } from './types';
+import type { Tag } from '@/types';
 
-export function useTagFetch(contentId: string) {
+export interface UseTagFetchResult {
+  fetchTags: () => Promise<Tag[]>;
+  isLoading: boolean;
+  error: Error | null;
+}
+
+export const useTagFetch = (contentId: string): UseTagFetchResult => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  /**
-   * Fetch tags for a specific content ID
-   */
   const fetchTags = async (): Promise<Tag[]> => {
     if (!isValidContentId(contentId)) {
       return [];
     }
 
-    setIsLoading(true);
-    setError(null);
-
     try {
-      // Fetch tags with type info if available
+      setIsLoading(true);
+      setError(null);
+
       const { data, error: fetchError } = await supabase
         .from('tags')
-        .select(`
-          id,
-          name,
-          content_id,
-          type_id,
-          tag_types (
-            id,
-            name
-          )
-        `)
-        .eq('content_id', contentId);
+        .select('id, name, content_id, type_id, type_name')
+        .eq('content_id', contentId)
+        .order('name');
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        throw new Error(fetchError.message);
+      }
 
-      // Transform the data to include type_name
-      const tagsWithTypes = (data || []).map(tag => ({
-        id: tag.id,
-        name: tag.name,
-        content_id: tag.content_id,
-        type_id: tag.type_id,
-        type_name: tag.tag_types ? tag.tag_types.name : null
+      // Convert database data to Tag objects, ensuring null values are handled
+      const tags: Tag[] = (data || []).map(item => ({
+        id: item.id,
+        name: item.name,
+        content_id: item.content_id || contentId, // Use contentId as fallback
+        type_id: item.type_id,
+        type_name: item.type_name
       }));
 
-      // Cast the type to satisfy the TypeScript compiler and fix null vs undefined issues
-      const typedTags: Tag[] = tagsWithTypes.map(tag => ({
-        id: tag.id,
-        name: tag.name,
-        content_id: tag.content_id || contentId, // Fallback to current contentId if null
-        type_id: tag.type_id,
-        type_name: tag.type_name
-      }));
-      
-      return typedTags;
+      return tags;
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to fetch tags');
-      setError(error);
-      console.error('Error fetching tags:', error);
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : 'Failed to fetch tags';
+      setError(new Error(errorMessage));
+      console.error('Error fetching tags:', err);
       return [];
     } finally {
       setIsLoading(false);
@@ -71,4 +60,4 @@ export function useTagFetch(contentId: string) {
     isLoading,
     error
   };
-}
+};

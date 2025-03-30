@@ -1,55 +1,49 @@
 
-import React from "react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, Info } from "lucide-react";
-import type { ContentIdValidationResult } from "@/utils/validation/contentIdValidation";
+import React from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { InfoCircledIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import { ContentIdValidationResultType } from '@/utils/validation/types';
 
 interface ContentAlertProps {
-  contentId: string;
-  validationResult: ContentIdValidationResult;
-  contentExists: boolean;
+  validationResult: ContentIdValidationResultType;
 }
 
-export const ContentAlert: React.FC<ContentAlertProps> = ({
-  contentId,
-  validationResult,
-  contentExists
-}) => {
-  if (!contentId) {
+export const ContentAlert: React.FC<ContentAlertProps> = ({ validationResult }) => {
+  if (validationResult === ContentIdValidationResultType.VALID) {
+    return null;
+  }
+
+  if (validationResult === ContentIdValidationResultType.TEMPORARY) {
     return (
-      <Alert variant="destructive">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>No Content ID</AlertTitle>
+      <Alert className="mb-4">
+        <InfoCircledIcon className="h-4 w-4" />
+        <AlertTitle>Temporary Content</AlertTitle>
         <AlertDescription>
-          No content ID was provided. Please specify a valid content ID.
+          This is a temporary content item. Changes will be lost unless you save it.
         </AlertDescription>
       </Alert>
     );
   }
 
-  if (!validationResult.isValid) {
+  if (validationResult === ContentIdValidationResultType.MISSING) {
     return (
-      <Alert variant="destructive">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Invalid Content ID</AlertTitle>
+      <Alert variant="destructive" className="mb-4">
+        <ExclamationTriangleIcon className="h-4 w-4" />
+        <AlertTitle>Missing Content ID</AlertTitle>
         <AlertDescription>
-          {validationResult.message || "The provided content ID is not valid."}
+          No content ID provided. Metadata editing is disabled.
         </AlertDescription>
       </Alert>
     );
   }
 
-  if (!contentExists) {
-    return (
-      <Alert>
-        <Info className="h-4 w-4" />
-        <AlertTitle>Content Not Found</AlertTitle>
-        <AlertDescription>
-          Content with ID "{contentId}" does not exist in the database.
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  return null;
+  return (
+    <Alert variant="destructive" className="mb-4">
+      <ExclamationTriangleIcon className="h-4 w-4" />
+      <AlertTitle>Invalid Content ID</AlertTitle>
+      <AlertDescription>
+        The content ID provided is invalid. Metadata editing is disabled.
+      </AlertDescription>
+    </Alert>
+  );
 };

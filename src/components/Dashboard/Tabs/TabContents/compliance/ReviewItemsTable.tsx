@@ -109,7 +109,7 @@ export function ReviewItemsTable({
                   <div className="flex flex-col">
                     {renderAuditStatusBadge(latestAudits[item.id])}
                     <span className="text-xs text-gray-500 mt-1">
-                      {formatDate(latestAudits[item.id].checked_at)}
+                      {formatDate(latestAudits[item.id]?.checked_at || null)}
                     </span>
                   </div>
                 ) : (
