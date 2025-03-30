@@ -3,6 +3,7 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+// Import MarkdownPreview directly from its source file
 import MarkdownPreview from '@/components/MarkdownEditor/MarkdownPreview';
 
 interface TemplateContentEditorProps {

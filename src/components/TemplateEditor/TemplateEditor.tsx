@@ -9,6 +9,8 @@ import { KnowledgeTemplate } from '@/services/api/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+
+// Import components directly rather than through index to avoid potential circular dependencies
 import TemplateEditorHeader from './TemplateEditorHeader';
 import TemplateNameField from './TemplateNameField';
 import TemplateGlobalToggle from './TemplateGlobalToggle';

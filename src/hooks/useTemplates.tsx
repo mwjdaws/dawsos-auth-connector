@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
+// Import directly from the fetchers file instead of through a barrel export
 import { fetchKnowledgeTemplates } from '@/services/api/templates/knowledgeTemplateFetchers';
 import { KnowledgeTemplate } from '@/services/api/types';
 

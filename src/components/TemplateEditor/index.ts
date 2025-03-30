@@ -1,29 +1,19 @@
 
-// Direct export of all components from their files
-// This pattern avoids circular dependencies
+// Direct export of named components to avoid circular dependencies
 import TemplateEditor from './TemplateEditor';
-import { JsonEditor } from './JsonEditor';
-import UseTemplate from './UseTemplate';
-import TemplateBrowser from './TemplateBrowser';
-import CreateTemplateForm from './CreateTemplateForm';
-import TemplateNameField from './TemplateNameField';
-import TemplateGlobalToggle from './TemplateGlobalToggle';
-import TemplateContentEditor from './TemplateContentEditor';
-import TemplateJsonFields from './TemplateJsonFields';
-import TemplateEditorHeader from './TemplateEditorHeader';
-import TemplateEditorFooter from './TemplateEditorFooter';
 
-export { 
-  TemplateEditor, 
-  JsonEditor, 
-  UseTemplate, 
-  TemplateBrowser, 
-  CreateTemplateForm,
-  TemplateNameField,
-  TemplateGlobalToggle,
-  TemplateContentEditor,
-  TemplateJsonFields,
-  TemplateEditorHeader,
-  TemplateEditorFooter
-};
+// Export each component individually
+export { default as TemplateEditor } from './TemplateEditor';
+export { JsonEditor } from './JsonEditor';
+export { default as UseTemplate } from './UseTemplate';
+export { default as TemplateBrowser } from './TemplateBrowser';
+export { default as CreateTemplateForm } from './CreateTemplateForm';
+export { default as TemplateNameField } from './TemplateNameField';
+export { default as TemplateGlobalToggle } from './TemplateGlobalToggle';
+export { default as TemplateContentEditor } from './TemplateContentEditor';
+export { default as TemplateJsonFields } from './TemplateJsonFields';
+export { default as TemplateEditorHeader } from './TemplateEditorHeader';
+export { default as TemplateEditorFooter } from './TemplateEditorFooter';
+
+// Default export
 export default TemplateEditor;
