@@ -1,5 +1,4 @@
 
-// This file wraps the useAuth hook from the AuthContext with proper transition handling
 import { useAuth as useAuthFromContext } from "@/context/AuthContext";
 import { useTransition } from "react";
 
