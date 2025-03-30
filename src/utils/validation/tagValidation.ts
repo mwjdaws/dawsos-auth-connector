@@ -1,80 +1,65 @@
 
 /**
- * Types and validation functions for tag operations
+ * Result of a validation operation
  */
-
 export interface ValidationResult {
   isValid: boolean;
   message: string | null;
 }
 
 export interface TagValidationOptions {
-  minLength?: number;
   maxLength?: number;
-  maxTags?: number;
+  minLength?: number;
   allowDuplicates?: boolean;
-  allowedPatterns?: RegExp[];
-  disallowedPatterns?: RegExp[];
+  allowSpaces?: boolean;
+  blockedChars?: string[];
 }
 
-const DEFAULT_OPTIONS: TagValidationOptions = {
-  minLength: 2,
-  maxLength: 50,
-  maxTags: 20,
-  allowDuplicates: false
-};
-
 /**
- * Validates a single tag
- * 
- * @param tag The tag to validate
- * @param options Validation options
- * @returns ValidationResult with isValid and message
+ * Validates a single tag against the specified options
  */
 export function validateTag(tag: string, options?: TagValidationOptions): ValidationResult {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
-  
   if (!tag || typeof tag !== 'string') {
     return {
       isValid: false,
-      message: "Tag cannot be empty"
+      message: "Tag is required"
     };
   }
   
   const trimmedTag = tag.trim();
+  const opts = {
+    maxLength: options?.maxLength || 50,
+    minLength: options?.minLength || 1,
+    allowSpaces: options?.allowSpaces || false,
+    blockedChars: options?.blockedChars || ['#', '%', '&', '{', '}', '\\', '<', '>', '*', '?', '/', '$', '!', "'", '"', ':', '@']
+  };
   
-  if (trimmedTag.length < (opts.minLength || 2)) {
+  if (trimmedTag.length < opts.minLength) {
     return {
       isValid: false,
-      message: `Tag must be at least ${opts.minLength || 2} characters long`
+      message: `Tag must be at least ${opts.minLength} character${opts.minLength !== 1 ? 's' : ''} long`
     };
   }
   
-  if (trimmedTag.length > (opts.maxLength || 50)) {
+  if (trimmedTag.length > opts.maxLength) {
     return {
       isValid: false,
-      message: `Tag must be no more than ${opts.maxLength || 50} characters long`
+      message: `Tag must be no more than ${opts.maxLength} characters long`
     };
   }
   
-  // Check against allowed patterns
-  if (opts.allowedPatterns && opts.allowedPatterns.length > 0) {
-    const matchesAnyPattern = opts.allowedPatterns.some(pattern => pattern.test(trimmedTag));
-    if (!matchesAnyPattern) {
-      return {
-        isValid: false,
-        message: "Tag contains disallowed characters"
-      };
-    }
+  if (!opts.allowSpaces && trimmedTag.includes(' ')) {
+    return {
+      isValid: false,
+      message: "Tag cannot contain spaces"
+    };
   }
   
-  // Check against disallowed patterns
-  if (opts.disallowedPatterns && opts.disallowedPatterns.length > 0) {
-    const matchesAnyPattern = opts.disallowedPatterns.some(pattern => pattern.test(trimmedTag));
-    if (matchesAnyPattern) {
+  for (const char of opts.blockedChars) {
+    if (trimmedTag.includes(char)) {
       return {
         isValid: false,
-        message: "Tag contains disallowed characters"
+        message: `Tag cannot contain the character '${char}'`
       };
     }
   }
@@ -86,15 +71,9 @@ export function validateTag(tag: string, options?: TagValidationOptions): Valida
 }
 
 /**
- * Validates an array of tags
- * 
- * @param tags Array of tags to validate
- * @param options Validation options
- * @returns ValidationResult with isValid and message
+ * Validates an array of tags against the specified options
  */
 export function validateTags(tags: string[], options?: TagValidationOptions): ValidationResult {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
-  
   if (!Array.isArray(tags)) {
     return {
       isValid: false,
@@ -102,23 +81,9 @@ export function validateTags(tags: string[], options?: TagValidationOptions): Va
     };
   }
   
-  if (tags.length === 0) {
-    return {
-      isValid: true,
-      message: null
-    };
-  }
-  
-  if (tags.length > (opts.maxTags || 20)) {
-    return {
-      isValid: false,
-      message: `Cannot have more than ${opts.maxTags || 20} tags`
-    };
-  }
-  
-  // Check for duplicates
-  if (!opts.allowDuplicates) {
-    const uniqueTags = new Set(tags.map(tag => tag.trim().toLowerCase()));
+  // Check for duplicates unless explicitly allowed
+  if (options?.allowDuplicates !== true) {
+    const uniqueTags = new Set(tags.map(tag => tag.toLowerCase().trim()));
     if (uniqueTags.size !== tags.length) {
       return {
         isValid: false,
@@ -127,9 +92,9 @@ export function validateTags(tags: string[], options?: TagValidationOptions): Va
     }
   }
   
-  // Validate each individual tag
+  // Validate each tag individually
   for (const tag of tags) {
-    const result = validateTag(tag, opts);
+    const result = validateTag(tag, options);
     if (!result.isValid) {
       return result;
     }

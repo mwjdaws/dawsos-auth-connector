@@ -1,9 +1,9 @@
 
-import { isValidContentId } from "@/utils/validation";
+import { isValidContentId } from "@/utils/validation/contentIdValidation";
 import { useTagState } from "./useTagState";
 import { useTagFetch } from "./useTagFetch";
 import { useTagMutations } from "./useTagMutations";
-import { Tag, TagOperationsProps } from "./types";
+import { Tag, TagOperationsProps, TagPosition } from "./types";
 
 export const useTagOperations = (contentId: string, props?: Omit<TagOperationsProps, 'contentId'>) => {
   // Combine the contentId with any additional props
@@ -27,7 +27,7 @@ export const useTagOperations = (contentId: string, props?: Omit<TagOperationsPr
   };
 
   // Update tag order (positions)
-  const handleUpdateTagOrder = async (tags: Tag[]) => {
+  const handleUpdateTagOrder = async (tags: TagPosition[]) => {
     console.log("Updating tag order:", tags);
     // Reordering implementation would go here
     return true;

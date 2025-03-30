@@ -5,13 +5,18 @@ export interface Tag {
   id: string;
   name: string;
   content_id: string;
-  type_id?: string | null;
-  type_name?: string;  // Added for displaying tag type name
+  type_id: string | null;
+  type_name?: string | null;
 }
 
 export interface TagType {
   id: string;
   name: string;
+}
+
+export interface TagPosition {
+  id: string;
+  position: number;
 }
 
 export interface TagOperationsProps {
@@ -34,6 +39,8 @@ export interface UseTagFetchResult {
 }
 
 export interface UseTagMutationsResult {
-  handleAddTag: (typeId?: string) => Promise<void>;
+  handleAddTag: (typeId?: string | null) => Promise<void>;
   handleDeleteTag: (tagId: string) => Promise<void>;
+  isAdding: boolean;
+  isDeleting: boolean;
 }

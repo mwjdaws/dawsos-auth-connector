@@ -8,7 +8,7 @@
 import React from "react";
 import { TagInput } from "@/components/MarkdownViewer/TagInput";
 import { TagList } from "./components/TagList";
-import { Tag } from "./hooks/tag-operations/types";
+import { Tag, TagPosition } from "./hooks/tag-operations/types";
 
 export interface TagsSectionProps {
   tags: Tag[];
@@ -16,8 +16,8 @@ export interface TagsSectionProps {
   editable: boolean;
   newTag: string;
   setNewTag: (value: string) => void;
-  onAddTag: () => void;
-  onDeleteTag: (tagId: string) => void;
+  onAddTag: (typeId?: string | null) => Promise<void>;
+  onDeleteTag: (tagId: string) => Promise<void>;
   onMetadataChange?: () => void;
   className?: string;
 }
@@ -34,7 +34,7 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
   className = ""
 }) => {
   // Updated to handle tag reordering with the correct types
-  const handleReorderTags = async (reorderedTags: Tag[]) => {
+  const handleReorderTags = async (reorderedTags: TagPosition[]) => {
     // Implementation to be added when tag reordering is needed
     console.log("Reordering tags:", reorderedTags);
     
@@ -57,7 +57,7 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
       {editable && (
         <div className="mt-2">
           <TagInput 
-            onAddTag={onAddTag} 
+            onAddTag={() => onAddTag(null)} 
             newTag={newTag} 
             setNewTag={setNewTag} 
             aria-label="Add a new tag"

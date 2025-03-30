@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { isValidContentId } from "@/utils/validation";
+import { isValidContentId } from "@/utils/validation/contentIdValidation";
 import { Tag, UseTagFetchResult } from "./types";
 import { handleError } from "@/utils/errors";
 
@@ -34,7 +34,7 @@ export const useTagFetch = ({ contentId }: UseTagFetchProps): UseTagFetchResult 
 
       setIsLoading(false);
 
-      // Transform the data to include type_name
+      // Transform the data to match our Tag interface
       return (tagData || []).map(tag => ({
         id: tag.id,
         name: tag.name,

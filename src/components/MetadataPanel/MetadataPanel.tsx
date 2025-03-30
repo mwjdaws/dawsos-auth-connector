@@ -14,7 +14,7 @@ import { ContentAlert } from "./components/ContentAlert";
 import MetadataContent from "./components/MetadataContent"; 
 import { useMetadataPanel } from "./hooks/useMetadataPanel";
 import { MetadataPanelProps } from "./types";
-import { getContentIdValidationResult } from "@/utils/validation";
+import { getContentIdValidationResult } from "@/utils/validation/contentIdValidation";
 
 const MetadataPanel: React.FC<MetadataPanelProps> = ({ 
   contentId = "",
@@ -33,7 +33,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     contentExists,
     isValidContent,
     contentValidationResult,
-    metadata,
+    data,
     tags,
     ontologyTerms,
     isLoading,
@@ -56,9 +56,9 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   const isEditable = editable !== undefined ? editable : false;
   
   // Extract metadata values
-  const externalSourceUrl = metadata?.external_source_url || null;
-  const needsExternalReview = metadata?.needs_external_review || false;
-  const lastCheckedAt = metadata?.external_source_checked_at || null;
+  const externalSourceUrl = data?.external_source_url || null;
+  const needsExternalReview = data?.needs_external_review || false;
+  const lastCheckedAt = data?.external_source_checked_at || null;
 
   // Determine card border styling based on review status
   const cardBorderClass = needsExternalReview
