@@ -9,10 +9,8 @@ import { UseTagOperationsProps, UseTagOperationsResult, TagPosition } from './ty
  * Main hook for tag operations that combines state, fetching, and mutations
  */
 export const useTagOperations = (contentId: string): UseTagOperationsResult => {
-  const { tags, setTags } = useTagState();
+  const { tags, setTags, isLoading, setIsLoading, error, setError } = useTagState();
   const [newTag, setNewTag] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
   
   // Set up tag fetching
   const { 

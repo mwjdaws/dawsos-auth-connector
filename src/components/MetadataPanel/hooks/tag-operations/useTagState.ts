@@ -1,12 +1,19 @@
 
 import { useState } from 'react';
-import { Tag } from './types';
+import { Tag, UseTagStateProps, UseTagStateResult } from './types';
 
-export function useTagState() {
-  const [tags, setTags] = useState<Tag[]>([]);
+export function useTagState(props?: UseTagStateProps): UseTagStateResult {
+  const initialTags = props?.initialTags || [];
+  const [tags, setTags] = useState<Tag[]>(initialTags);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<Error | null>(null);
   
   return {
     tags,
-    setTags
+    setTags,
+    isLoading,
+    setIsLoading,
+    error,
+    setError
   };
 }

@@ -11,6 +11,7 @@ import {
 } from "@/services/api";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { nullifyUndefined } from "@/types/compat";
 
 export function CreateKnowledgeForm() {
   const { user } = useAuth();
@@ -67,7 +68,7 @@ export function CreateKnowledgeForm() {
         title: formData.title,
         content: formData.content || "# New Document\n\nStart writing here...",
         user_id: user.id,
-        template_id: templateId
+        template_id: nullifyUndefined(templateId) // Convert undefined to null
       });
 
       if (result) {

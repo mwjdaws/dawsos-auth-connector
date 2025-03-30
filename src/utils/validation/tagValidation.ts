@@ -2,92 +2,73 @@
 import { ValidationResult, TagValidationOptions } from './types';
 
 /**
- * Tag validation utility
+ * Validates a single tag
  */
-class TagValidator {
-  /**
-   * Validates a single tag
-   */
-  validateTag(tag: string, options: TagValidationOptions = {}): ValidationResult {
-    const result: ValidationResult = {
-      isValid: true,
-      message: null
-    };
-    
-    // Minimum length check
-    const minLength = options.minLength || 2;
-    if (tag.length < minLength) {
-      result.isValid = false;
-      result.message = `Tag must be at least ${minLength} characters`;
-      result.errorMessage = result.message; // For backward compatibility
-      return result;
-    }
-    
-    // Maximum length check
-    const maxLength = options.maxLength || 50;
-    if (tag.length > maxLength) {
-      result.isValid = false;
-      result.message = `Tag cannot exceed ${maxLength} characters`;
-      result.errorMessage = result.message; // For backward compatibility
-      return result;
-    }
-    
-    // Success
-    return result;
-  }
+export function validateTag(tag: string, options?: TagValidationOptions): ValidationResult {
+  const defaultOptions: Required<TagValidationOptions> = {
+    maxLength: 50,
+    minLength: 1,
+    allowedChars: /^[a-zA-Z0-9\-_\s]+$/,
+    allowEmpty: false
+  };
   
-  /**
-   * Validates a list of tags
-   */
-  validateTagList(tags: string[], options: TagValidationOptions = {}): ValidationResult {
-    const result: ValidationResult = {
-      isValid: true,
-      message: null
-    };
-    
-    // Empty check
-    if (!tags.length && !options.allowEmpty) {
-      result.isValid = false;
-      result.message = 'At least one tag is required';
-      result.errorMessage = result.message; // For backward compatibility
-      return result;
-    }
-    
-    // Max tags check
-    const maxTags = options.maxTags || 30;
-    if (tags.length > maxTags) {
-      result.isValid = false;
-      result.message = `Maximum ${maxTags} tags allowed`;
-      result.errorMessage = result.message; // For backward compatibility
-      return result;
-    }
-    
-    // Individual tag validation
-    for (const tag of tags) {
-      const tagResult = this.validateTag(tag, options);
-      if (!tagResult.isValid) {
-        return tagResult;
-      }
-    }
-    
-    // Success
-    return result;
-  }
+  const opts = { ...defaultOptions, ...options };
   
-  // Bridge for backward compatibility
-  validate(tags: string[], options?: TagValidationOptions): boolean {
-    const result = this.validateTagList(tags, options);
-    return result.isValid;
-  }
-  
-  // Property for backward compatibility
-  get validationResult(): ValidationResult {
-    return {
-      isValid: true,
-      message: null,
-      errorMessage: null
+  // Handle empty tags
+  if (!tag.trim()) {
+    if (opts.allowEmpty) {
+      return { isValid: true, message: null };
+    }
+    return { 
+      isValid: false, 
+      message: 'Tag cannot be empty',
+      errorMessage: 'Tag cannot be empty'
     };
   }
+  
+  // Check length
+  if (tag.length > opts.maxLength) {
+    return { 
+      isValid: false, 
+      message: `Tag must be ${opts.maxLength} characters or less`,
+      errorMessage: `Tag must be ${opts.maxLength} characters or less`
+    };
+  }
+  
+  if (tag.length < opts.minLength) {
+    return { 
+      isValid: false, 
+      message: `Tag must be at least ${opts.minLength} characters`,
+      errorMessage: `Tag must be at least ${opts.minLength} characters`
+    };
+  }
+  
+  // Check allowed characters
+  if (!opts.allowedChars.test(tag)) {
+    return { 
+      isValid: false, 
+      message: 'Tag contains invalid characters',
+      errorMessage: 'Tag contains invalid characters'
+    };
+  }
+  
+  return { isValid: true, message: null };
 }
 
-export const useTagValidator = () => new TagValidator();
+/**
+ * Validates a list of tags
+ */
+export function validateTagList(tags: string[], options?: TagValidationOptions): ValidationResult {
+  if (!tags.length) {
+    return { isValid: true, message: null };
+  }
+  
+  for (const tag of tags) {
+    const result = validateTag(tag, options);
+    if (!result.isValid) {
+      return result;
+    }
+  }
+  
+  return { isValid: true, message: null };
+}

@@ -4,7 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 // Import hooks directly from their source files
 import { useTemplates } from '@/hooks/useTemplates';
-import { useMarkdownEditor } from './useMarkdownEditor';
+import { useSafeMarkdownEditor } from './useSafeMarkdownEditor';
 import { useKnowledgeSources } from '@/hooks/markdown-editor/useKnowledgeSources';
 // Direct component imports
 import EditorHeader from './EditorHeader';
@@ -50,15 +50,6 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     handleSourceSelection
   } = useKnowledgeSources();
   
-  // Modified to handle optional callbacks safely
-  const handleSaveDraftWrapped = onSaveDraft ? ((id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => {
-    onSaveDraft(id, title, content, templateId, externalSourceUrl);
-  }) : undefined;
-  
-  const handlePublishWrapped = onPublish ? ((id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => {
-    onPublish(id, title, content, templateId, externalSourceUrl);
-  }) : undefined;
-  
   const {
     title,
     setTitle,
@@ -77,15 +68,15 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     handlePublish,
     handleTemplateChange,
     setTemplateId
-  } = useMarkdownEditor({
+  } = useSafeMarkdownEditor({
     initialTitle,
     initialContent,
     initialTemplateId,
     initialExternalSourceUrl,
     documentId,
     sourceId,
-    onSaveDraft: handleSaveDraftWrapped,
-    onPublish: handlePublishWrapped
+    onSaveDraft,
+    onPublish
   });
 
   const toggleFullscreen = () => {

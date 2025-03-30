@@ -2,54 +2,51 @@
 import { ContentIdValidationResult, ContentIdValidationResultType } from './types';
 
 /**
- * Validates if a content ID is valid
+ * Validates a content ID
  */
-export function isValidContentId(contentId?: string | null): boolean {
-  if (!contentId) return false;
-  
-  // Consider valid if:
-  // 1. UUID format
-  // 2. Temporary ID format (temp-123456789)
-  return (
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contentId) ||
-    /^temp-\d+$/.test(contentId)
-  );
-}
-
-/**
- * Gets detailed validation result for a content ID
- */
-export function getContentIdValidationResult(contentId?: string | null): ContentIdValidationResult {
-  if (!contentId) {
+export function validateContentId(contentId?: string | null): ContentIdValidationResult {
+  if (contentId === undefined || contentId === null) {
     return {
       isValid: false,
-      message: "Content ID is missing",
-      resultType: ContentIdValidationResultType.MISSING
+      result: ContentIdValidationResultType.Missing,
+      message: 'Content ID is missing'
     };
   }
   
-  if (/^temp-\d+$/.test(contentId)) {
+  if (contentId.trim() === '') {
     return {
-      isValid: true,
-      message: "Content ID is temporary",
-      resultType: ContentIdValidationResultType.TEMPORARY
+      isValid: false,
+      result: ContentIdValidationResultType.Empty,
+      message: 'Content ID is empty'
     };
   }
   
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contentId)) {
+  if (contentId.length < 3) {
     return {
-      isValid: true,
-      message: null,
-      resultType: ContentIdValidationResultType.VALID
+      isValid: false,
+      result: ContentIdValidationResultType.Invalid,
+      message: 'Content ID is too short'
     };
   }
   
   return {
-    isValid: false,
-    message: "Content ID is invalid",
-    resultType: ContentIdValidationResultType.INVALID
+    isValid: true,
+    result: ContentIdValidationResultType.Valid,
+    message: null
   };
 }
 
-// Bridge for backward compatibility
-export const ContentIdValidationResult = ContentIdValidationResultType;
+/**
+ * Simple check if content ID is valid
+ * @deprecated Use validateContentId instead for richer validation information
+ */
+export function isValidContentId(contentId?: string | null): boolean {
+  return validateContentId(contentId).isValid;
+}
+
+/**
+ * Get structured validation result for a content ID
+ */
+export function getContentIdValidationResult(contentId?: string | null): ContentIdValidationResult {
+  return validateContentId(contentId);
+}

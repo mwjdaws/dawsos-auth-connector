@@ -12,12 +12,46 @@ interface KnowledgeSourceBrowserProps {
   onSelectSource: (source: KnowledgeSource) => void;
 }
 
+// Interface for source data with nullable fields from the API
+interface ApiSourceData {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string | null;
+  created_by: string | null;
+  external_content_hash: string | null;
+  external_source_checked_at: string | null;
+  external_source_url: string | null;
+  is_published: boolean;
+  published_at: string | null;
+  template_id: string | null;
+  updated_at: string | null;
+  user_id: string | null;
+}
+
 export function KnowledgeSourceBrowser({ onSelectSource }: KnowledgeSourceBrowserProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const { data: sources, isLoading, error } = useKnowledgeSourcesQuery(searchTerm);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+  };
+
+  // Safely transform API source data to KnowledgeSource format
+  const handleSourceSelect = (apiSource: ApiSourceData) => {
+    const source: KnowledgeSource = {
+      id: apiSource.id,
+      title: apiSource.title,
+      content: apiSource.content,
+      createdAt: apiSource.created_at || new Date().toISOString(),
+      updatedAt: apiSource.updated_at || new Date().toISOString(),
+      externalSourceUrl: apiSource.external_source_url || undefined,
+      externalSourceCheckedAt: apiSource.external_source_checked_at || undefined,
+      externalContentHash: apiSource.external_content_hash || undefined,
+      needsExternalReview: apiSource.is_published
+    };
+    
+    onSelectSource(source);
   };
 
   return (
@@ -57,7 +91,7 @@ export function KnowledgeSourceBrowser({ onSelectSource }: KnowledgeSourceBrowse
                 key={source.id}
                 variant="ghost"
                 className="w-full justify-start text-left h-auto py-3"
-                onClick={() => onSelectSource(source)}
+                onClick={() => handleSourceSelect(source)}
               >
                 <div className="flex items-start gap-2">
                   <Book className="h-5 w-5 shrink-0 text-muted-foreground" />
