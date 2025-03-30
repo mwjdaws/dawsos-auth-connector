@@ -1,73 +1,61 @@
 
 /**
- * Type compatibility layer for validation
- * This file provides bridge functions and types to ensure compatibility
- * between different versions of the validation system
+ * Compatibility utilities for validation operations
+ * 
+ * This file provides compatibility layers for validation operations
+ * to handle differences in expected return types.
  */
 
-import { 
-  ValidationResult, 
-  ContentIdValidationResult, 
-  ContentIdValidationResultType 
-} from './types';
+import { ValidationResult, ContentIdValidationResult, ContentIdValidationResultType } from './types';
 
 /**
- * Ensure a string is not null - useful for handling null/undefined conflicts
+ * Ensure a value is a string
  */
 export function ensureString(value: string | null | undefined): string {
-  return value || '';
+  return value ?? '';
 }
 
 /**
- * Ensure null values are converted to undefined and vice versa
- * This helps bridge the gap between APIs expecting null vs undefined
+ * Convert null to undefined
  */
 export function nullToUndefined<T>(value: T | null): T | undefined {
   return value === null ? undefined : value;
 }
 
+/**
+ * Convert undefined to null
+ */
 export function undefinedToNull<T>(value: T | undefined): T | null {
   return value === undefined ? null : value;
 }
 
 /**
- * Handle optional callback compatibility
+ * Execute a callback safely, handling potential undefined values
  */
 export function safeCallback<T extends (...args: any[]) => any>(
-  callback: T | undefined | null,
-  defaultValue?: ReturnType<T>
-): T {
-  return ((...args: Parameters<T>): ReturnType<T> => {
-    if (callback) {
-      return callback(...args);
-    }
-    return defaultValue as ReturnType<T>;
-  }) as T;
+  callback: T | undefined,
+  ...args: Parameters<T>
+): ReturnType<T> | undefined {
+  return callback ? callback(...args) : undefined;
 }
 
+// Standard validation result options
+export const VALIDATION_RESULTS = {
+  VALID: { isValid: true, errorMessage: null },
+  INVALID: { isValid: false, errorMessage: 'Invalid input' },
+  MISSING: { isValid: false, errorMessage: 'Required field is missing' },
+  TOO_LONG: { isValid: false, errorMessage: 'Input exceeds maximum length' }
+};
+
 /**
- * Create a version of ContentIdValidationResult compatible with older code
+ * Create a compatible validation result
  */
 export function createCompatibleValidationResult(
-  isValid: boolean,
-  resultType: ContentIdValidationResultType,
-  message: string | null
-): ContentIdValidationResult {
-  return {
-    isValid,
-    result: resultType,
-    resultType: resultType, // For backward compatibility
-    message
+  isValid: boolean, 
+  errorMessage?: string | null
+): { isValid: boolean; errorMessage: string | null } {
+  return { 
+    isValid, 
+    errorMessage: errorMessage || null
   };
 }
-
-/**
- * ContentIdValidationResult constants for backward compatibility
- */
-export const VALIDATION_RESULTS = {
-  VALID: ContentIdValidationResultType.Valid,
-  INVALID: ContentIdValidationResultType.Invalid,
-  MISSING: ContentIdValidationResultType.Missing,
-  EMPTY: ContentIdValidationResultType.Empty,
-  TEMPORARY: ContentIdValidationResultType.Temporary
-};

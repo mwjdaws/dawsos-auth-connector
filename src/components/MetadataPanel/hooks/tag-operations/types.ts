@@ -23,6 +23,12 @@ export interface TagOperationParams {
   tagId?: string;
 }
 
+export interface AddTagParams {
+  name: string;
+  contentId: string;
+  typeId?: string;
+}
+
 export interface UseTagOperationsProps {
   contentId: string;
   initialTags?: Tag[];
@@ -37,10 +43,14 @@ export interface UseTagOperationsResult {
   handleAddTag: (typeId?: string | null) => Promise<void>;
   handleDeleteTag: (tagId: string) => Promise<void>;
   handleRefresh: () => void;
+  handleUpdateTagOrder?: (tags: Tag[]) => Promise<void>;
 }
 
 export interface UseTagFetchProps {
   contentId: string;
+  setTags?: (tags: Tag[]) => void;
+  setIsLoading?: (isLoading: boolean) => void;
+  setError?: (error: Error | null) => void;
 }
 
 export interface UseTagFetchResult {
@@ -60,19 +70,25 @@ export interface UseTagStateResult {
   setTags: (tags: Tag[]) => void;
   newTag: string;
   setNewTag: (value: string) => void;
+  isLoading?: boolean;
+  setIsLoading?: (isLoading: boolean) => void;
+  error?: Error | null;
+  setError?: (error: Error | null) => void;
 }
 
 export interface UseTagMutationsProps {
   contentId: string;
+  tags?: Tag[];
+  setTags?: (tags: Tag[]) => void;
 }
 
 export interface UseTagMutationsResult {
   addTag: (params: TagOperationParams) => Promise<boolean>;
   deleteTag: (params: { tagId: string; contentId: string }) => Promise<boolean>;
-  updateTagOrder: (tagPositions: TagPosition[]) => Promise<boolean>;
+  updateTagOrder?: (tagPositions: TagPosition[]) => Promise<boolean>;
   isAddingTag: boolean;
   isDeletingTag: boolean;
-  isUpdatingOrder: boolean;
+  isUpdatingOrder?: boolean;
   error: Error | null;
 }
 

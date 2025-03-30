@@ -7,7 +7,7 @@
 import React from 'react';
 import { GraphSearch } from './GraphSearch';
 import { GraphZoomControl } from './GraphZoomControl';
-import { GraphData } from '../types';
+import { GraphData, GraphSearchProps, GraphZoomControlProps } from './graph-renderer/GraphRendererTypes';
 
 interface GraphControlsProps {
   graphData: GraphData;

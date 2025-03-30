@@ -1,16 +1,9 @@
 
 /**
- * Generic validation result interface
+ * Validation utility types
  */
-export interface ValidationResult {
-  isValid: boolean;
-  message: string | null;
-  errorMessage?: string | null;
-}
 
-/**
- * Content ID validation result
- */
+// Content ID validation result type
 export enum ContentIdValidationResultType {
   Valid = 'valid',
   Invalid = 'invalid',
@@ -19,28 +12,15 @@ export enum ContentIdValidationResultType {
   Temporary = 'temporary'
 }
 
+// Content ID validation result interface
 export interface ContentIdValidationResult {
   isValid: boolean;
   result: ContentIdValidationResultType;
-  // For compatibility with older code
-  resultType?: ContentIdValidationResultType;
   message: string | null;
 }
 
-/**
- * Tag validation options
- */
-export interface TagValidationOptions {
-  maxLength?: number;
-  minLength?: number;
-  allowedChars?: RegExp;
-  allowEmpty?: boolean;
-}
-
-/**
- * Tag position for reordering
- */
-export interface TagPosition {
-  id: string;
-  position: number;
+// Basic validation result
+export interface ValidationResult {
+  isValid: boolean;
+  errorMessage?: string | null;
 }

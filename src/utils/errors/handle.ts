@@ -4,14 +4,14 @@
  * This file is maintained for backward compatibility and to avoid
  * breaking existing imports throughout the codebase.
  */
-import { handleError as handleErrorJSX } from './handle.tsx';
+import { handleError as handleErrorJSX } from './handle.jsx';
 
 export { handleErrorJSX as handleError };
 
 /**
  * Safe handler implementation that doesn't require JSX
  */
-export function handleError(
+export function handleErrorSafe(
   error: unknown,
   userMessage?: string,
   options?: any

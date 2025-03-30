@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import {
 } from "@/services/api";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { undefinedToNull } from "@/types/compat";
+import { undefinedToNull } from "@/utils/type-compatibility";
 
 export function CreateKnowledgeForm() {
   const { user } = useAuth();
@@ -67,7 +68,7 @@ export function CreateKnowledgeForm() {
         title: formData.title,
         content: formData.content || "# New Document\n\nStart writing here...",
         user_id: user.id,
-        template_id: templateId // This is fine because createKnowledgeSource accepts null
+        template_id: templateId // This is already null or a string
       });
 
       if (result) {

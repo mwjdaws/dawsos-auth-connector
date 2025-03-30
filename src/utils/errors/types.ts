@@ -1,53 +1,71 @@
 
 /**
- * Error handling types for the application
+ * Error handling types
  */
 
-// Error category/severity level
-export type ErrorLevel = 'debug' | 'info' | 'warning' | 'error';
+// Error severity levels
+export type ErrorLevel = 'debug' | 'info' | 'warning' | 'error' | 'critical';
 
-// Standardized error interface
-export interface StandardizedError extends Error {
-  code?: string;        // Error code for categorization
-  status?: number;      // HTTP status code if applicable
-  originalError?: any;  // Original error object before standardization
+// Error classification
+export enum ErrorCategory {
+  NETWORK = 'network',
+  AUTH = 'authentication',
+  VALIDATION = 'validation',
+  DATABASE = 'database',
+  PERMISSION = 'permission',
+  API = 'api',
+  TIMEOUT = 'timeout',
+  SYSTEM = 'system',
+  UNKNOWN = 'unknown'
 }
 
-// Options for error handling
+// Error handling options
 export interface ErrorHandlingOptions {
-  level?: ErrorLevel;                 // Severity level
-  context?: Record<string, any>;      // Additional context for debugging
-  silent?: boolean;                   // Suppress UI notifications
-  technical?: boolean;                // Show technical details in UI
-  title?: string;                     // Custom title for notifications
-  actionLabel?: string;               // Label for action button
-  action?: () => void;                // Action to be performed
-  preventDuplicate?: boolean;         // Prevent showing duplicate toasts
-  duration?: number;                  // Duration to show toast (ms)
+  // Error severity
+  level?: ErrorLevel;
+  
+  // Additional context for debugging
+  context?: Record<string, any>;
+  
+  // Don't show toast notification if true
+  silent?: boolean;
+  
+  // Is this a technical error (for developer) or user-facing
+  technical?: boolean;
+  
+  // Custom toast title
+  title?: string;
+  
+  // Retry button label
+  actionLabel?: string;
+  
+  // Retry action
+  onRetry?: () => void;
+  
+  // Prevent showing duplicate errors
+  preventDuplicate?: boolean;
+  
+  // Toast duration
+  duration?: number;
 }
 
-/**
- * API Error class for standardized API errors
- */
-export class ApiError extends Error {
-  code: number;
+// Standardized error object
+export interface StandardizedError {
+  // Original error object
+  originalError: unknown;
   
-  constructor(message: string, code: number = 500) {
-    super(message);
-    this.name = 'ApiError';
-    this.code = code;
-  }
-}
-
-/**
- * Validation Error class for input validation errors
- */
-export class ValidationError extends Error {
-  fieldErrors?: Record<string, string>;
+  // Error message for developers
+  message: string;
   
-  constructor(message: string, fieldErrors?: Record<string, string>) {
-    super(message);
-    this.name = 'ValidationError';
-    this.fieldErrors = fieldErrors;
-  }
+  // User-friendly message
+  userMessage: string;
+  
+  // Error code if available
+  code?: string;
+  
+  // When the error occurred
+  timestamp: Date;
+  
+  // Error context data
+  context: Record<string, any>;
 }
