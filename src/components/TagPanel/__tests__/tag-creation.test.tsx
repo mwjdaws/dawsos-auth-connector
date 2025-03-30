@@ -1,6 +1,6 @@
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { TagPanel } from '@/components/TagPanel';
 import { supabase } from '@/integrations/supabase/client';
 import { MemoryRouter } from 'react-router-dom';
