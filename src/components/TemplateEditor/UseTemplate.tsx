@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, FileText } from 'lucide-react';
-import { fetchKnowledgeTemplateById } from '@/services/api/templates';
+import { fetchKnowledgeTemplateById } from '@/services/api/templates/knowledgeTemplateFetchers';
 import { useToast } from '@/hooks/use-toast';
 
 interface UseTemplateProps {
