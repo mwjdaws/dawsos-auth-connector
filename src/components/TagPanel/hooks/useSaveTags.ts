@@ -5,18 +5,28 @@ import { useTagValidator } from './useTagValidator';
 import { handleError } from '@/utils/errors';
 import { toast } from '@/hooks/use-toast';
 
-export const useSaveTags = (contentId: string) => {
+export interface SaveTagsResult {
+  success: boolean;
+  contentId?: string;
+  message?: string;
+}
+
+export const useSaveTags = (initialContentId?: string) => {
   const [isSaving, setIsSaving] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const tagValidator = useTagValidator();
 
-  const saveTags = async (tags: string[]): Promise<boolean> => {
+  const saveTags = async (text: string, tags: string[], options?: { contentId?: string }): Promise<SaveTagsResult> => {
+    const contentId = options?.contentId || initialContentId;
+    
     if (!contentId) {
       toast({
         title: "Error",
         description: "No content ID provided",
         variant: "destructive",
       });
-      return false;
+      return { success: false, message: "No content ID provided" };
     }
 
     // Validate tags before saving
@@ -27,10 +37,11 @@ export const useSaveTags = (contentId: string) => {
         description: tagValidator.validationResult.message,
         variant: "destructive",
       });
-      return false;
+      return { success: false, message: tagValidator.validationResult.message };
     }
 
     setIsSaving(true);
+    setIsProcessing(true);
 
     try {
       // First, delete all existing tags for this content
@@ -64,20 +75,23 @@ export const useSaveTags = (contentId: string) => {
         description: `${tags.length} tags have been saved successfully.`,
       });
 
-      return true;
+      return { success: true, contentId };
     } catch (error) {
       handleError(error, "Failed to save tags", {
         context: { contentId, tags },
         level: "error"
       });
-      return false;
+      return { success: false, message: "Failed to save tags" };
     } finally {
       setIsSaving(false);
+      setIsProcessing(false);
     }
   };
 
   return {
     saveTags,
     isSaving,
+    isProcessing,
+    isRetrying
   };
 };

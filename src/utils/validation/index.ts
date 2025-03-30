@@ -7,9 +7,9 @@ import {
   isValidContentId, 
   normalizeContentId, 
   getContentIdValidationResult, 
-  ContentIdValidationResult 
+  type ContentIdValidationResult 
 } from './contentIdValidation';
-import { validateTag, validateTags, ValidationResult } from './tagValidation';
+import { validateTag, validateTags, type ValidationResult } from './tagValidation';
 
 // Re-export all validation utilities
 export {
@@ -20,10 +20,11 @@ export {
   isValidContentId,
   normalizeContentId,
   getContentIdValidationResult,
-  ContentIdValidationResult,
   
   // Tag validation
   validateTag,
   validateTags,
-  ValidationResult
 };
+
+// Re-export types
+export type { ContentIdValidationResult, ValidationResult };
