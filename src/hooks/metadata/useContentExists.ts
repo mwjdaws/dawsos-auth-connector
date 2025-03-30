@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { isValidContentId } from '@/utils/validation/contentIdValidation';
+import { isValidContentId } from '@/utils/validation';
 
 /**
  * Type guard to check if data is valid content
@@ -42,7 +42,7 @@ export function useContentExists(contentId: string) {
         if (error) throw error;
 
         if (isMounted) {
-          setExists(isValidContent(data));
+          setExists(data !== null && isValidContent(data));
           setIsLoading(false);
         }
       } catch (err) {

@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/errors';
-import { isValidContentId } from '@/utils/validation/contentIdValidation';
+import { isValidContentId } from '@/utils/validation';
 
 interface Tag {
   id: string;
@@ -12,7 +12,11 @@ interface Tag {
   type_name?: string;
 }
 
-interface TagWithType extends Tag {
+interface TagWithType {
+  id: string;
+  name: string;
+  content_id: string;
+  type_id?: string | null;
   tag_types?: {
     name: string;
   } | null;
@@ -60,11 +64,11 @@ export function useTagsQuery(contentId: string, options?: UseTagsQueryOptions) {
 
         if (error) throw error;
 
-        if (!data) return [];
+        if (!data || !Array.isArray(data)) return [];
 
         // Transform data to include type_name if type info was requested
         return data
-          .filter(isValidTag) // Filter out any invalid tags
+          .filter(isValidTag) // Filter out any invalid data or parser errors
           .map(tag => {
             const baseTag: Tag = {
               id: tag.id,

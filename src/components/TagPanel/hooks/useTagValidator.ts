@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react';
-import { validateTags } from '@/utils/validation/tagValidation';
+import { validateTags } from '@/utils/validation';
 import type { ValidationResult, TagValidationOptions } from '@/utils/validation';
 
 export const useTagValidator = (minTagLength = 2, maxTagLength = 30, maxNumTags = 20) => {

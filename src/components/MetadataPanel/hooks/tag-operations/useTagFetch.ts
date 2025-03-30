@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/errors';
-import { isValidContentId } from '@/utils/validation/contentIdValidation';
+import { isValidContentId } from '@/utils/validation';
 
 /**
  * Type definition for tags
@@ -45,14 +45,14 @@ export const useTagFetch = (contentId: string) => {
           .from('tags')
           .select('id, name, type_id, tag_types(name), content_id')
           .eq('content_id', contentId)
-          .order('name', { ascending: true });  // Using name instead of position as position doesn't exist
+          .order('name', { ascending: true });
 
         if (error) throw error;
 
-        if (!data) return [];
+        if (!data || !Array.isArray(data)) return [];
 
         return data
-          .filter(isValidTag) // Filter out any invalid tags
+          .filter(isValidTag) // Filter out any invalid data
           .map(tag => ({
             id: tag.id,
             name: tag.name,
