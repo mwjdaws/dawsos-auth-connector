@@ -1,4 +1,3 @@
-
 /**
  * MetadataPanel Component
  * 
@@ -14,7 +13,7 @@ import { ContentAlert } from "./components/ContentAlert";
 import MetadataContent from "./components/MetadataContent"; 
 import { useMetadataPanel } from "./hooks/useMetadataPanel";
 import { MetadataPanelProps } from "./types";
-import { ContentIdValidationResult } from "@/utils/validation";
+import { ContentIdValidationResult } from "@/utils/validation/contentIdValidation";
 
 const MetadataPanel: React.FC<MetadataPanelProps> = ({ 
   contentId = "",

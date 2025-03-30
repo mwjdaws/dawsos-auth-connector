@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { isValidContentId } from '@/utils/validation';
+import { isValidContentId } from '@/utils/validation/contentIdValidation';
 
 /**
  * Hook to check if content with the given ID exists in the database

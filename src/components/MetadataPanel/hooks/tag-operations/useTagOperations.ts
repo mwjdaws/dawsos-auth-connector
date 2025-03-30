@@ -1,11 +1,10 @@
-
 import { useState, useCallback } from 'react';
 import { useTagFetch } from './useTagFetch';
 import { useTagMutations } from './useTagMutations';
 import { useTagState } from './useTagState';
 import { toast } from '@/hooks/use-toast';
 import { handleError } from '@/utils/errors';
-import { isValidContentId } from '@/utils/validation';
+import { isValidContentId } from '@/utils/validation/contentIdValidation';
 
 /**
  * Hook that combines tag fetching, state management, and mutations

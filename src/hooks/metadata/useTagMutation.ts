@@ -1,9 +1,8 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/errors';
 import { toast } from '@/hooks/use-toast';
-import { isValidContentId } from '@/utils/validation';
+import { isValidContentId } from '@/utils/validation/contentIdValidation';
 
 interface TagData {
   contentId: string;

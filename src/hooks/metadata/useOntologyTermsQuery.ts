@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/errors';
-import { isValidContentId } from '@/utils/validation';
+import { isValidContentId } from '@/utils/validation/contentIdValidation';
 
 /**
  * Fetch ontology terms associated with a content item

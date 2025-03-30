@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { handleError } from '@/utils/errors';
-import { isValidContentId } from '@/utils/validation';
+import { isValidContentId } from '@/utils/validation/contentIdValidation';
 
 /**
  * Hook for tag mutation operations (add, delete, update)

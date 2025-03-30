@@ -1,9 +1,8 @@
-
 import React from "react";
 import { TagGenerator } from "./TagGenerator";
 import { TagList } from "./TagList";
 import { TagSaver } from "./TagSaver";
-import { isValidContentId } from "@/utils/validation";
+import { isValidContentId } from "@/utils/validation/contentIdValidation";
 
 interface AutomaticTagTabProps {
   contentId: string;

@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, Info } from 'lucide-react';
-import { ContentIdValidationResult } from '@/utils/validation';
+import { ContentIdValidationResult } from '@/utils/validation/contentIdValidation';
 
 interface ContentAlertProps {
   contentId: string;
