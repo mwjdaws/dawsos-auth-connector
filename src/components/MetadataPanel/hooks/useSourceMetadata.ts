@@ -1,23 +1,21 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { isValidContentId } from "@/utils/content-validation";
+import { isValidContentId } from "@/utils/validation";
 import { handleError } from "@/utils/errors";
+import { SourceMetadata } from "../types";
 
 export interface UseSourceMetadataProps {
   contentId?: string;
-}
-
-export interface SourceMetadata {
-  external_source_url: string | null;
-  needs_external_review: boolean;
-  external_source_checked_at: string | null;
 }
 
 export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
   const [externalSourceUrl, setExternalSourceUrl] = useState<string | null>(null);
   const [needsExternalReview, setNeedsExternalReview] = useState<boolean>(false);
   const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<any>(null);
+  const [data, setData] = useState<SourceMetadata | null>(null);
 
   const fetchSourceMetadata = async (): Promise<SourceMetadata | null> => {
     if (!contentId) {
@@ -29,6 +27,9 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
       console.log("Invalid contentId for fetching source metadata:", contentId);
       return null;
     }
+    
+    setIsLoading(true);
+    setError(null);
     
     try {
       // Fetch source metadata
@@ -48,19 +49,28 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
         }
         
         console.log("Source metadata fetched:", sourceData);
-        return sourceData || {
+        const metadata = sourceData || {
           external_source_url: null,
           needs_external_review: false,
           external_source_checked_at: null
         };
+        
+        setData(metadata);
+        updateSourceMetadataState(metadata);
+        setIsLoading(false);
+        return metadata;
       }
       
       // Default return if response format is unexpected
-      return {
+      const defaultData = {
         external_source_url: null,
         needs_external_review: false,
         external_source_checked_at: null
       };
+      
+      setData(defaultData);
+      setIsLoading(false);
+      return defaultData;
     } catch (err: any) {
       console.error("Error fetching source metadata:", err);
       
@@ -70,17 +80,26 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
         level: "error"
       });
       
-      throw err;
+      setError(err);
+      setIsLoading(false);
+      return null;
     }
   };
 
   const updateSourceMetadataState = (sourceData: SourceMetadata | null) => {
     if (sourceData) {
-      setExternalSourceUrl(sourceData.external_source_url);
+      setExternalSourceUrl(sourceData.external_source_url || null);
       setNeedsExternalReview(sourceData.needs_external_review || false);
-      setLastCheckedAt(sourceData.external_source_checked_at);
+      setLastCheckedAt(sourceData.external_source_checked_at || null);
     }
   };
+
+  // Load metadata on mount if contentId is available
+  useEffect(() => {
+    if (contentId && isValidContentId(contentId)) {
+      fetchSourceMetadata();
+    }
+  }, [contentId]);
 
   return {
     externalSourceUrl,
@@ -90,6 +109,9 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
     lastCheckedAt,
     setLastCheckedAt,
     fetchSourceMetadata,
-    updateSourceMetadataState
+    updateSourceMetadataState,
+    isLoading,
+    error,
+    data
   };
 };

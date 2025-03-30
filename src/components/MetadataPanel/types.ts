@@ -37,5 +37,41 @@ export interface SourceMetadata {
   publishedDate?: string;
   lastUpdated?: string;
   sourceUrl?: string;
+  external_source_url?: string | null;
+  needs_external_review?: boolean;
+  external_source_checked_at?: string | null;
   [key: string]: any;
+}
+
+export interface HeaderSectionProps {
+  needsExternalReview?: boolean;
+  handleRefresh?: () => void;
+  isLoading?: boolean;
+  isCollapsible?: boolean;
+  isCollapsed?: boolean;
+  setIsCollapsed?: (value: boolean) => void;
+}
+
+export interface OntologyTermsSectionProps {
+  ontologyTerms: OntologyTerm[];
+  editable?: boolean;
+  contentId?: string;
+  onMetadataChange?: () => void;
+}
+
+export interface ContentValidationResult {
+  isValid: boolean;
+  contentExists: boolean;
+  message?: string;
+}
+
+export interface MetadataContextState {
+  contentId: string;
+  isLoading: boolean;
+  error: any;
+  tags: Tag[];
+  ontologyTerms: OntologyTerm[];
+  metadata: SourceMetadata | null;
+  editable: boolean;
+  handleRefresh: () => void;
 }

@@ -20,7 +20,7 @@ export const useTagFetch = (contentId: string) => {
           .from('tags')
           .select('id, name, type_id, tag_types(name), content_id')
           .eq('content_id', contentId)
-          .order('position', { ascending: true });
+          .order('name', { ascending: true });  // Using name instead of position as position doesn't exist
 
         if (error) throw error;
 

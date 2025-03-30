@@ -1,13 +1,12 @@
 // Import necessary hooks
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSourceMetadata } from './useSourceMetadata';
 import { useTagOperations } from './tag-operations/useTagOperations';
 import { usePanelState } from './usePanelState';
-import { usePanelContent } from './usePanelContent';
-import { MetadataPanelProps } from '../types';
+import { MetadataPanelProps, SourceMetadata, Tag, OntologyTerm } from '../types';
 
 export const useMetadataPanel = (props: MetadataPanelProps) => {
-  const { contentId, onMetadataChange } = props;
+  const { contentId, onMetadataChange, isCollapsible, initialCollapsed } = props;
   
   // Use the tag operations hook
   const tagOperations = useTagOperations(contentId);
@@ -15,15 +14,33 @@ export const useMetadataPanel = (props: MetadataPanelProps) => {
   // Use source metadata hook
   const sourceMetadata = useSourceMetadata({ contentId });
   
-  // Panel state and content
-  const panelState = usePanelState({ contentId });
-  const panelContent = usePanelContent({ 
+  // Panel state
+  const panelState = usePanelState({ 
     contentId, 
-    isLoading: sourceMetadata.isLoading,
-    error: sourceMetadata.error,
-    data: sourceMetadata.data,
-    validationResult: panelState.validationResult
+    onMetadataChange,
+    isCollapsible,
+    initialCollapsed
   });
+
+  // Ontology terms (mock for now, would typically come from another hook)
+  const [ontologyTerms, setOntologyTerms] = useState<OntologyTerm[]>([]);
+  
+  // Prepare validation result for panel content
+  const validationResult = useMemo(() => ({
+    contentExists: panelState.contentExists,
+    isValid: !!contentId && typeof contentId === 'string'
+  }), [contentId, panelState.contentExists]);
+  
+  // Create panel content
+  const panelContent = useMemo(() => ({
+    contentId,
+    isLoading: sourceMetadata.isLoading || tagOperations.isLoading,
+    error: sourceMetadata.error || tagOperations.error,
+    data: sourceMetadata.data,
+    validationResult,
+    tags: tagOperations.tags,
+    ontologyTerms
+  }), [contentId, sourceMetadata, tagOperations, validationResult, ontologyTerms]);
   
   // Call onMetadataChange when data changes
   useEffect(() => {
@@ -31,6 +48,32 @@ export const useMetadataPanel = (props: MetadataPanelProps) => {
       onMetadataChange();
     }
   }, [sourceMetadata.data, onMetadataChange]);
+  
+  // Load content when necessary
+  useEffect(() => {
+    // Any initialization logic would go here
+  }, [contentId]);
+  
+  // The derived panel content from usePanelContent
+  const panelContentResult = useMemo(() => {
+    const exists = panelState.contentExists;
+    const isValid = !!contentId && typeof contentId === 'string';
+    
+    return {
+      contentExists: exists,
+      isValidContent: isValid,
+      contentValidationResult: isValid ? 'valid' : 'invalid',
+      metadata: sourceMetadata.data,
+      tags: tagOperations.tags,
+      ontologyTerms,
+      isLoading: sourceMetadata.isLoading || tagOperations.isLoading,
+      error: sourceMetadata.error || tagOperations.error,
+      handleRefresh: () => {
+        sourceMetadata.fetchSourceMetadata();
+        tagOperations.handleRefresh();
+      }
+    };
+  }, [contentId, sourceMetadata, tagOperations, panelState, ontologyTerms]);
   
   return {
     // Source metadata
@@ -48,9 +91,10 @@ export const useMetadataPanel = (props: MetadataPanelProps) => {
     
     // Panel state and content
     ...panelState,
-    ...panelContent,
+    ...panelContentResult,
     
-    // Other props
+    // Other data
+    ontologyTerms,
     contentId
   };
 };

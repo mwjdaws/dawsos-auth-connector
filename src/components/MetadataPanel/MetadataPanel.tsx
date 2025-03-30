@@ -12,25 +12,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { HeaderSection } from "./sections";
 import ContentAlert from "./components/ContentAlert";
 import MetadataContent from "./components/MetadataContent"; 
-import { usePanelContent } from "./hooks/usePanelContent";
-import { useAuth } from "@/hooks/useAuth";
-import { useTagMutations } from "@/hooks/metadata";
-
-export interface MetadataPanelProps {
-  contentId?: string;
-  onMetadataChange?: () => void;
-  isCollapsible?: boolean;
-  initialCollapsed?: boolean;
-  showOntologyTerms?: boolean;
-  showDomain?: boolean;
-  domain?: string | null;
-  editable?: boolean;
-  className?: string;
-  children?: React.ReactNode;
-}
+import { useMetadataPanel } from "./hooks/useMetadataPanel";
+import { MetadataPanelProps } from "./types";
 
 const MetadataPanel: React.FC<MetadataPanelProps> = ({ 
-  contentId,
+  contentId = "",
   onMetadataChange,
   isCollapsible = false,
   initialCollapsed = false,
@@ -41,11 +27,6 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   className = "",
   children
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
-  const [newTag, setNewTag] = useState("");
-  
-  const { user } = useAuth();
-  
   // Get content data from our custom hook
   const {
     contentExists,
@@ -56,46 +37,22 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     ontologyTerms,
     isLoading,
     error,
-    handleRefresh
-  } = usePanelContent(contentId, onMetadataChange, showOntologyTerms);
+    handleRefresh,
+    newTag,
+    setNewTag,
+    handleAddTag,
+    handleDeleteTag,
+    isCollapsed,
+    setIsCollapsed
+  } = useMetadataPanel({
+    contentId,
+    onMetadataChange,
+    isCollapsible,
+    initialCollapsed
+  });
   
-  // Mutation hooks
-  const { addTag, deleteTag, isAddingTag, isDeletingTag } = useTagMutations();
-  
-  // Handle tag operations
-  const handleAddTag = () => {
-    if (!contentId || !newTag.trim()) return;
-    
-    addTag({
-      contentId,
-      name: newTag,
-    });
-    
-    setNewTag("");
-    
-    if (onMetadataChange) {
-      onMetadataChange();
-    }
-  };
-  
-  const handleDeleteTag = (tagId: string) => {
-    if (!contentId) return;
-    
-    deleteTag({
-      tagId,
-      contentId,
-    });
-    
-    if (onMetadataChange) {
-      onMetadataChange();
-    }
-  };
-  
-  // Determine if content is editable (use prop or fallback to user presence)
-  const isEditable = (editable !== undefined ? editable : !!user) && isValidContent && contentExists;
-  
-  // Loading and pending states
-  const isPending = isAddingTag || isDeletingTag;
+  // Determine if content is editable (use prop or fallback to editable prop)
+  const isEditable = editable !== undefined ? editable : false;
   
   // Extract metadata values
   const externalSourceUrl = metadata?.external_source_url;
@@ -149,7 +106,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
             setNewTag={setNewTag}
             onAddTag={handleAddTag}
             onDeleteTag={handleDeleteTag}
-            isPending={isPending}
+            isPending={false}
             showOntologyTerms={showOntologyTerms}
             ontologyTerms={ontologyTermsArray}
             onMetadataChange={onMetadataChange}

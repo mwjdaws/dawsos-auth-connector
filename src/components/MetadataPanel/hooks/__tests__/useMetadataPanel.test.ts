@@ -1,5 +1,5 @@
 
-// Import your testing utilities
+// Import testing utilities
 import { renderHook } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { useMetadataPanel } from '../useMetadataPanel';
@@ -15,7 +15,10 @@ vi.mock('../useSourceMetadata', () => ({
     error: null,
     data: { title: 'Test Document' },
     fetchSourceMetadata: vi.fn(),
-    updateSourceMetadataState: vi.fn()
+    updateSourceMetadataState: vi.fn(),
+    setExternalSourceUrl: vi.fn(),
+    setNeedsExternalReview: vi.fn(),
+    setLastCheckedAt: vi.fn()
   }))
 }));
 
@@ -29,7 +32,8 @@ vi.mock('../tag-operations/useTagOperations', () => ({
     handleAddTag: vi.fn(),
     handleDeleteTag: vi.fn(),
     handleUpdateTagOrder: vi.fn(),
-    handleRefresh: vi.fn()
+    handleRefresh: vi.fn(),
+    isPending: false
   }))
 }));
 
@@ -44,22 +48,12 @@ vi.mock('../usePanelState', () => ({
     validationResult: { isValid: true, contentExists: true },
     isValidContent: true,
     contentValidationResult: 'valid',
-    contentExists: true
-  }))
-}));
-
-vi.mock('../usePanelContent', () => ({
-  usePanelContent: vi.fn(() => ({
-    externalSourceUrl: 'https://example.com',
-    needsExternalReview: false,
-    lastCheckedAt: '2023-01-01',
     contentExists: true,
-    metadata: { title: 'Test Document' },
-    tags: [{ id: '1', name: 'tag1' }],
-    ontologyTerms: [],
-    isLoading: false,
-    error: null,
-    handleRefresh: vi.fn()
+    toggleCollapsed: vi.fn(),
+    isMounted: { current: true },
+    validateContentId: vi.fn(() => true),
+    startLoading: vi.fn(),
+    finishLoading: vi.fn()
   }))
 }));
 

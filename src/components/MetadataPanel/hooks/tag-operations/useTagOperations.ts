@@ -65,7 +65,7 @@ export const useTagOperations = (contentId: string) => {
 
   // Handler to update tag order
   const handleUpdateTagOrder = useCallback(
-    async (reorderedTags: { id: string; position: number }[]) => {
+    async (reorderedTags: { id: string; position?: number }[]) => {
       if (!isValidContentId(contentId)) {
         handleError(
           new Error('Invalid content ID'),
