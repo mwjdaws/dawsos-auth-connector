@@ -16,7 +16,40 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
-    port: 8080
+    port: 8080,
+    // Improve handling of static assets
+    fs: {
+      strict: true,
+    },
+  },
+  build: {
+    // Improve chunk generation and module loading
+    sourcemap: true,
+    minify: 'terser',
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split vendor chunks more explicitly
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['@radix-ui/react-toast', '@radix-ui/react-dialog'],
+          'utils-vendor': ['@tanstack/react-query']
+        },
+      },
+    },
+  },
+  optimizeDeps: {
+    // Ensure dependencies are properly pre-bundled
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@supabase/supabase-js',
+    ],
+    esbuildOptions: {
+      // Improve JSX handling
+      jsx: 'automatic',
+    },
   },
   test: {
     globals: true,
