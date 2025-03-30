@@ -1,2 +1,3 @@
 
-export { DashboardTabs } from './DashboardTabs';
+export * from './LoadingIndicator';
+export * from './TabContents';
