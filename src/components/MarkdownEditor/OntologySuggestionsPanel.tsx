@@ -14,12 +14,12 @@ interface OntologySuggestionsPanelProps {
   onApplySuggestion?: () => void;
 }
 
-export function OntologySuggestionsPanel({ 
+export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> = ({ 
   content, 
   title, 
   sourceId,
   onApplySuggestion
-}: OntologySuggestionsPanelProps) {
+}: OntologySuggestionsPanelProps) => {
   const [isPending, startTransition] = useTransition();
   const [isVisible, setIsVisible] = useState(false);
   const {
@@ -184,4 +184,4 @@ export function OntologySuggestionsPanel({
       )}
     </Card>
   );
-}
+};
