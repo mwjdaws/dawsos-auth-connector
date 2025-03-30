@@ -24,8 +24,7 @@ export {
   
   // Tag validation
   validateTag,
-  validateTags,
-  ValidationResult
+  validateTags
 };
 
 // Re-export types explicitly for TypeScript modules
