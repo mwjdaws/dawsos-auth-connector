@@ -27,7 +27,7 @@ export function TagSaver({
     
     const result = await saveTags("", tags, { contentId });
     
-    // Only call onTagsSaved if we have a valid string content ID
+    // Only call onTagsSaved if we have a valid result
     if (result && typeof result === 'string') {
       onTagsSaved(result);
     }

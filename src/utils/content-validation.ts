@@ -25,7 +25,10 @@ export function isValidContentId(contentId: string | null | undefined): boolean 
   if (contentId.startsWith('temp-')) return false;
   
   // Basic validation: should be a UUID or a valid string ID
-  return contentId.length > 5;
+  // UUID format: 8-4-4-4-12 hexadecimal digits
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  
+  return uuidRegex.test(contentId);
 }
 
 /**
@@ -36,7 +39,11 @@ export function isValidContentId(contentId: string | null | undefined): boolean 
 export function getContentIdValidationResult(contentId: string | null | undefined): ContentIdValidationResult {
   if (!contentId) return ContentIdValidationResult.MISSING;
   if (contentId.startsWith('temp-')) return ContentIdValidationResult.TEMPORARY;
-  if (contentId.length <= 5) return ContentIdValidationResult.INVALID;
+  
+  // UUID validation
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(contentId)) return ContentIdValidationResult.INVALID;
+  
   return ContentIdValidationResult.VALID;
 }
 

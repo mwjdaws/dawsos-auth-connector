@@ -5,6 +5,7 @@ import { useTagOperations } from './tag-operations';
 import { useSourceMetadata } from './useSourceMetadata';
 import { usePanelState } from './usePanelState';
 import { isValidContentId } from '@/utils/content-validation';
+import { supabase } from '@/integrations/supabase/client';
 
 export function useMetadataPanel(
   contentId?: string,
@@ -47,8 +48,38 @@ export function useMetadataPanel(
     isMounted,
     validateContentId,
     startLoading,
-    finishLoading
+    finishLoading,
+    contentExists
   } = usePanelState(panelStateProps);
+
+  // Function to check if the knowledge source exists
+  useEffect(() => {
+    const checkKnowledgeSource = async () => {
+      if (!contentId || !isValidContentId(contentId)) {
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('knowledge_sources')
+          .select('id')
+          .eq('id', contentId)
+          .maybeSingle();
+          
+        if (error) {
+          console.error('Error checking knowledge source existence:', error);
+        }
+        
+        if (!data) {
+          console.warn(`Knowledge source not found for ID: ${contentId}`);
+        }
+      } catch (err) {
+        console.error('Error checking content existence:', err);
+      }
+    };
+    
+    checkKnowledgeSource();
+  }, [contentId]);
 
   // Function to fetch metadata
   const fetchMetadata = async () => {
@@ -133,6 +164,7 @@ export function useMetadataPanel(
     setIsCollapsed,
     handleRefresh,
     handleAddTag,
-    handleDeleteTag
+    handleDeleteTag,
+    contentExists
   };
 }

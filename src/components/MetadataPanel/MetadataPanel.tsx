@@ -102,7 +102,8 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     setIsCollapsed,
     handleRefresh,
     handleAddTag,
-    handleDeleteTag
+    handleDeleteTag,
+    contentExists
   } = useMetadataPanel(
     isValidContent ? contentId : undefined, 
     onMetadataChange, 
@@ -112,7 +113,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
 
   // Determine if content is editable (use prop or fallback to user presence)
   // Also ensure it's not editable if the content ID is temporary/invalid
-  const isEditable = (editable !== undefined ? editable : !!user) && isValidContent;
+  const isEditable = (editable !== undefined ? editable : !!user) && isValidContent && contentExists;
 
   // Determine card border styling based on review status
   const cardBorderClass = needsExternalReview
@@ -150,11 +151,21 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
           </Alert>
         );
       default:
+        if (!contentExists) {
+          return (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Content not found in database. Please save the note first.
+              </AlertDescription>
+            </Alert>
+          );
+        }
         return null;
     }
   };
 
-  if (!isValidContent) {
+  if (!isValidContent || !contentExists) {
     return (
       <Card className={className}>
         <CardContent className="pt-4">

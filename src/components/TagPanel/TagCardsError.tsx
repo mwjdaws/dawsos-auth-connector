@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RefreshCw } from "lucide-react";
 
-interface TagCardsErrorProps {
+export interface TagCardsErrorProps {
   error?: string;
   message?: string;
   onRetry?: () => void;

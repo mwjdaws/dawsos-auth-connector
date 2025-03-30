@@ -42,6 +42,27 @@ export function GroupedTagList({ contentId, refreshTrigger = 0, onTagClick, disa
       setError(null);
       
       try {
+        console.log(`Fetching tags for content: ${contentId}`);
+        
+        // Check if the knowledge source exists
+        const { data: knowledgeSource, error: knowledgeSourceError } = await supabase
+          .from('knowledge_sources')
+          .select('id')
+          .eq('id', contentId)
+          .maybeSingle();
+          
+        if (knowledgeSourceError) {
+          console.error('Error checking knowledge source:', knowledgeSourceError);
+          throw knowledgeSourceError;
+        }
+        
+        if (!knowledgeSource) {
+          console.warn(`Knowledge source not found for ID: ${contentId}`);
+          setTagGroups([]);
+          setIsLoading(false);
+          return;
+        }
+        
         // Get tags for the current content
         const { data, error } = await supabase
           .from('tags')
@@ -98,6 +119,12 @@ export function GroupedTagList({ contentId, refreshTrigger = 0, onTagClick, disa
   }, [contentId, refreshTrigger, disabled]);
   
   if (disabled) {
+    return (
+      <TagCardsEmpty message="Save the note before viewing tags" />
+    );
+  }
+  
+  if (!isValidContentId(contentId)) {
     return (
       <TagCardsEmpty message="Save the note before viewing tags" />
     );

@@ -3,6 +3,7 @@ import { useState, useEffect, useTransition, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 import { isValidContentId } from "@/utils/content-validation";
 import { handleError } from "@/utils/errors";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface UsePanelStateProps {
   contentId?: string;
@@ -21,6 +22,7 @@ export const usePanelState = ({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
+  const [contentExists, setContentExists] = useState(false);
   const isMounted = useRef(true);
 
   // Reset the component state when unmounting
@@ -30,6 +32,37 @@ export const usePanelState = ({
       isMounted.current = false;
     };
   }, []);
+
+  // Validate content ID and check if knowledge source exists
+  useEffect(() => {
+    const checkContentExists = async () => {
+      if (!contentId || !isValidContentId(contentId)) {
+        setContentExists(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('knowledge_sources')
+          .select('id')
+          .eq('id', contentId)
+          .maybeSingle();
+          
+        if (error) {
+          console.error('Error checking knowledge source existence:', error);
+          setContentExists(false);
+          return;
+        }
+        
+        setContentExists(!!data);
+      } catch (err) {
+        console.error('Error checking content existence:', err);
+        setContentExists(false);
+      }
+    };
+    
+    checkContentExists();
+  }, [contentId]);
 
   const validateContentId = (): boolean => {
     if (!contentId || !isValidContentId(contentId)) {
@@ -43,12 +76,20 @@ export const usePanelState = ({
       
       return false;
     }
+    
+    if (!contentExists) {
+      console.log("Content does not exist in database:", contentId);
+      setIsLoading(false);
+      setError("Content not found in database");
+      return false;
+    }
+    
     return true;
   };
 
   const startLoading = () => {
-    // Only start loading if we have a valid content ID
-    if (contentId && isValidContentId(contentId)) {
+    // Only start loading if we have a valid content ID that exists
+    if (contentId && isValidContentId(contentId) && contentExists) {
       setIsLoading(true);
       setError(null);
     } else {
@@ -95,6 +136,7 @@ export const usePanelState = ({
     isMounted,
     validateContentId,
     startLoading,
-    finishLoading
+    finishLoading,
+    contentExists
   };
 };

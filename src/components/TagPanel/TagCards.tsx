@@ -8,7 +8,7 @@ import { TagCardsLoading } from "./TagCardsLoading";
 import { TagCardsEmpty } from "./TagCardsEmpty";
 import { TagCardsError } from "./TagCardsError";
 
-interface TagCardsProps {
+export interface TagCardsProps {
   title?: string;
   tags?: string[];
   onTagClick?: (tag: string) => void;
