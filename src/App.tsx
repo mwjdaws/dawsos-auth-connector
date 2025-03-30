@@ -1,11 +1,26 @@
 
-import React, { Suspense } from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import React, { Suspense, useEffect } from 'react';
+import { BrowserRouter, useLocation } from 'react-router-dom';
 import { AppRoutes } from './routes';
 import { Toaster } from './components/ui/toaster';
 import { AuthProvider } from './context/AuthContext';
 import { QueryProvider } from './providers/QueryProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { clearToasts } from './hooks/use-toast';
+
+/**
+ * RouteChangeHandler component to clear toasts on route changes
+ */
+const RouteChangeHandler = () => {
+  const location = useLocation();
+  
+  useEffect(() => {
+    // Clear toasts when location changes
+    clearToasts();
+  }, [location]);
+  
+  return null;
+};
 
 /**
  * Loading fallback component displayed during suspense states
@@ -39,6 +54,15 @@ const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetError
   </div>
 );
 
+// The BrowserRouter contents
+const AppContent = () => (
+  <>
+    <RouteChangeHandler />
+    <AppRoutes />
+    <Toaster />
+  </>
+);
+
 /**
  * Root App component
  * 
@@ -53,8 +77,7 @@ function App() {
           <AuthProvider>
             <Suspense fallback={<LoadingFallback />}>
               <BrowserRouter>
-                <AppRoutes />
-                <Toaster />
+                <AppContent />
               </BrowserRouter>
             </Suspense>
           </AuthProvider>

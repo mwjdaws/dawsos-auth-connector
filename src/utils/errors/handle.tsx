@@ -34,7 +34,9 @@ export function handleError(
     silent = false,
     title = 'An error occurred',
     actionLabel,
-    action
+    action,
+    // Add option to prevent duplicate toasts
+    preventDuplicate = false,
   } = options;
   
   // Map 'warning' to 'warn' for console methods
@@ -52,17 +54,43 @@ export function handleError(
   // If silent mode is enabled, don't show UI notifications
   if (silent) return;
   
+  // Guard against showing toasts in non-browser environments (SSR)
+  if (typeof window === 'undefined') return;
+  
+  // Prevent duplicate errors if requested
+  if (preventDuplicate) {
+    // Simple deduplication strategy using a timestamp-based cache
+    const errorKey = `${title}-${typedError.message}`;
+    const now = Date.now();
+    const lastShownTime = window.sessionStorage.getItem(errorKey);
+    
+    // Don't show the same error toast within 3 seconds
+    if (lastShownTime && now - parseInt(lastShownTime, 10) < 3000) {
+      return;
+    }
+    
+    // Store the current time for this error
+    window.sessionStorage.setItem(errorKey, now.toString());
+  }
+  
   // Show toast notification with appropriate details
-  toast({
-    title,
-    description: userMessage || typedError.message,
-    variant: "destructive",
-    action: actionLabel && action ? (
-      <ToastAction altText={actionLabel} onClick={action}>
-        {actionLabel}
-      </ToastAction>
-    ) : undefined
-  });
+  try {
+    toast({
+      title,
+      description: userMessage || typedError.message,
+      variant: "destructive",
+      action: actionLabel && action ? (
+        <ToastAction altText={actionLabel} onClick={action}>
+          {actionLabel}
+        </ToastAction>
+      ) : undefined,
+      // Auto-dismiss after 5 seconds for better UX
+      duration: 5000,
+    });
+  } catch (toastError) {
+    // Fallback to console error if toast fails
+    console.error('Failed to show error toast:', toastError);
+  }
 }
 
 /**
@@ -81,6 +109,7 @@ export function withErrorHandling<T extends (...args: any[]) => any>(
     onError?: (error: unknown) => void;
     level?: ErrorLevel;
     context?: Record<string, any>;
+    preventDuplicate?: boolean;
   } = {}
 ): (...args: Parameters<T>) => ReturnType<T> {
   return (...args: Parameters<T>): ReturnType<T> => {
@@ -91,7 +120,8 @@ export function withErrorHandling<T extends (...args: any[]) => any>(
       handleError(error, options.errorMessage, {
         silent: options.silent,
         level: options.level || 'error',
-        context: options.context
+        context: options.context,
+        preventDuplicate: options.preventDuplicate,
       });
       
       // Call custom error handler if provided

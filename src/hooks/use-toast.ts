@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import type {
@@ -6,7 +7,7 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+const TOAST_REMOVE_DELAY = 5000 // Reduced from 1000000 to 5000ms (5 seconds)
 
 type ToasterToast = ToastProps & {
   id: string
@@ -168,6 +169,18 @@ function toast({ ...props }: Toast) {
   }
 }
 
+// Clear all toasts helper function
+function clearToasts() {
+  dispatch({ type: "DISMISS_TOAST" });
+}
+
+// Clean up any toasts on page unload or when leaving the page
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    clearToasts();
+  });
+}
+
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
 
@@ -185,7 +198,8 @@ function useToast() {
     ...state,
     toast,
     dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
+    clearToasts,
   }
 }
 
-export { useToast, toast }
+export { useToast, toast, clearToasts }
