@@ -1,4 +1,3 @@
-
 /**
  * useContentExists Hook
  * 
@@ -11,7 +10,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { queryKeys } from '@/utils/query-keys';
-import { isValidContentId } from '@/utils/content-validation';
+import { isValidContentId } from '@/utils/validation';
 
 interface UseContentExistsOptions {
   enabled?: boolean;
