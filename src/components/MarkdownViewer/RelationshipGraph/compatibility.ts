@@ -1,65 +1,80 @@
 
-import { GraphNode, GraphLink } from './types';
+/**
+ * Compatibility layer for RelationshipGraph components
+ * Provides type-safe wrappers and utility functions to bridge API differences
+ */
+import { GraphNode, GraphLink, GraphData, RelationshipGraphProps } from './types';
+import { ensureString, ensureNumber, ensureBoolean, createCompatibleGraphRef, createSafeGraphProps } from '@/utils/compatibility';
 
 /**
- * Ensures a node has a valid ID string
+ * Ensures a node ID is always a string
  */
-export function ensureNodeId(node: GraphNode): string {
-  if (typeof node === 'string') {
-    return node;
-  }
-  return node.id || String(Math.random()).substring(2, 8);
+export function ensureNodeId(id: string | undefined | null): string {
+  return ensureString(id);
 }
 
 /**
- * Gets a safe node property with type checking and default values
+ * Ensures a GraphNode has all required properties
  */
-export function getNodeProperty<T>(
-  node: GraphNode,
-  property: string,
-  defaultValue: T
-): T {
-  if (typeof node === 'string') {
-    return defaultValue;
+export function ensureValidNode(node: Partial<GraphNode>): GraphNode {
+  return {
+    id: node.id || '',
+    title: node.title || node.name || 'Untitled',
+    name: node.name || node.title || 'Unnamed',
+    type: node.type || 'document',
+    ...node
+  };
+}
+
+/**
+ * Ensures a GraphLink has all required properties
+ */
+export function ensureValidLink(link: Partial<GraphLink>): GraphLink {
+  return {
+    source: typeof link.source === 'string' ? link.source : (link.source as any)?.id || '',
+    target: typeof link.target === 'string' ? link.target : (link.target as any)?.id || '',
+    type: link.type || 'default',
+    ...link
+  };
+}
+
+/**
+ * Creates a safe wrapper for node click handlers
+ */
+export function createSafeNodeClickHandler(
+  handler: ((node: GraphNode) => void) | undefined
+): (node: any) => void {
+  return (node: any) => {
+    if (handler && node) {
+      handler(ensureValidNode(node));
+    }
+  };
+}
+
+/**
+ * Ensures GraphData is valid with proper types
+ */
+export function ensureValidGraphData(data: Partial<GraphData> | undefined | null): GraphData {
+  if (!data) {
+    return { nodes: [], links: [] };
   }
   
-  const value = (node as any)[property];
-  return value !== undefined && value !== null ? value : defaultValue;
+  return {
+    nodes: Array.isArray(data.nodes) 
+      ? data.nodes.map(node => ensureValidNode(node))
+      : [],
+    links: Array.isArray(data.links)
+      ? data.links.map(link => ensureValidLink(link))
+      : []
+  };
 }
 
 /**
- * Safely retrieves the source of a link as a string
+ * Creates a safe node renderer function
  */
-export function getLinkSource(link: GraphLink): string {
-  if (typeof link.source === 'string') {
-    return link.source;
-  }
-  if (link.source && typeof link.source === 'object' && 'id' in link.source) {
-    return String(link.source.id);
-  }
-  return '';
+export function createSafeHighlightNodeId(highlightedNodeId: string | null | undefined): string | null {
+  return highlightedNodeId === undefined ? null : highlightedNodeId;
 }
 
-/**
- * Safely retrieves the target of a link as a string
- */
-export function getLinkTarget(link: GraphLink): string {
-  if (typeof link.target === 'string') {
-    return link.target;
-  }
-  if (link.target && typeof link.target === 'object' && 'id' in link.target) {
-    return String(link.target.id);
-  }
-  return '';
-}
-
-/**
- * Convert links to be compatible with the graph renderer
- */
-export function convertLinks(links: GraphLink[]): GraphLink[] {
-  return links.map(link => ({
-    ...link,
-    source: getLinkSource(link),
-    target: getLinkTarget(link)
-  }));
-}
+// Re-export from utils/compatibility
+export { createCompatibleGraphRef, createSafeGraphProps };

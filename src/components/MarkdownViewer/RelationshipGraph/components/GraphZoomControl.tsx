@@ -31,7 +31,7 @@ export function GraphZoomControl({
     <div className="flex items-center gap-2 p-2 bg-background border rounded-lg shadow-sm">
       <Button
         variant="ghost"
-        size="icon"
+        size="sm"
         className="h-8 w-8"
         onClick={() => onZoomChange(Math.max(min, zoom - 0.1))}
         title="Zoom out"
@@ -47,8 +47,10 @@ export function GraphZoomControl({
           max={100}
           step={1}
           onValueChange={(value) => {
-            const zoomValue = min + (value[0] / 100) * (max - min);
-            onZoomChange(zoomValue);
+            if (value && value.length > 0) {
+              const zoomValue = min + (value[0] / 100) * (max - min);
+              onZoomChange(zoomValue);
+            }
           }}
           value={[sliderValue]}
           className="w-24"
@@ -57,7 +59,7 @@ export function GraphZoomControl({
       
       <Button
         variant="ghost"
-        size="icon"
+        size="sm"
         className="h-8 w-8"
         onClick={() => onZoomChange(Math.min(max, zoom + 0.1))}
         title="Zoom in"
@@ -68,7 +70,7 @@ export function GraphZoomControl({
       
       <Button
         variant="ghost"
-        size="icon"
+        size="sm"
         className="h-8 w-8"
         onClick={onReset}
         title="Reset zoom"

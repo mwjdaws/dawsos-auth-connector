@@ -5,9 +5,7 @@ import { useLinkRenderer } from './useLinkRenderer';
 import { useGraphRenderStyles } from './useGraphRenderStyles';
 import { 
   GraphRendererProps, 
-  GraphRendererRef,
-  GraphNode,
-  GraphLink 
+  GraphRendererRef
 } from './GraphRendererTypes';
 import { 
   createLinkTooltip, 
@@ -37,7 +35,7 @@ export const GraphRenderer = React.forwardRef<GraphRendererRef, GraphRendererPro
     const { getNodeSize, getNodeColor, nodeCanvasRenderer } = useNodeRenderer({ 
       highlightedNodeId 
     });
-    const { getLinkWidth, getLinkColor } = useLinkRenderer();
+    const { getLinkWidth, getLinkColor, getLinkLabel } = useLinkRenderer();
     const { backgroundColor } = useGraphRenderStyles();
     
     // Keep a reference to the graph instance
@@ -92,6 +90,26 @@ export const GraphRenderer = React.forwardRef<GraphRendererRef, GraphRendererPro
       graphData.links.length
     ]);
     
+    // Transform link data for compatibility
+    const getBasicLinkColor = (link: any) => {
+      return getLinkColor(link);
+    };
+    
+    // Transform link data for width
+    const getBasicLinkWidth = (link: any) => {
+      return getLinkWidth(link);
+    };
+    
+    // Simple node label accessor
+    const getNodeLabel = (node: any) => {
+      return createNodeTooltip(node);
+    };
+    
+    // Simple link label accessor
+    const getLinkLabelText = (link: any) => {
+      return createLinkTooltip(link);
+    };
+    
     return (
       <div style={{ width, height, position: 'relative' }}>
         <ForceGraph2D
@@ -107,13 +125,13 @@ export const GraphRenderer = React.forwardRef<GraphRendererRef, GraphRendererPro
           nodeColor={getNodeColor}
           nodeVal={getNodeSize}
           nodeCanvasObject={safeNodeCanvasObject}
-          nodeLabel={createNodeTooltip}
+          nodeLabel={getNodeLabel}
           onNodeClick={handleNodeClick}
           
           // Link styling
-          linkWidth={(link) => getLinkWidth(link as GraphLink)}
-          linkColor={(link) => getLinkColor(link as GraphLink)}
-          linkLabel={(link) => createLinkTooltip(link as GraphLink)}
+          linkWidth={getBasicLinkWidth}
+          linkColor={getBasicLinkColor}
+          linkLabel={getLinkLabelText}
           linkCurvature={0.1}
           
           // Physics settings

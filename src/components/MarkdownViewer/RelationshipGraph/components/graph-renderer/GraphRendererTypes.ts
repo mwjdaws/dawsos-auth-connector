@@ -73,5 +73,5 @@ export interface GraphZoomControlProps {
   percent?: number;
 }
 
-// Type for tooltip content
-export type TooltipContent = string | JSX.Element;
+// Define TooltipContent as string (compatible with force-graph)
+export type TooltipContent = string;

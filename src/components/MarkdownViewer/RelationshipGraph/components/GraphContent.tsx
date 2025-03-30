@@ -10,7 +10,7 @@ import { GraphData } from '../types';
 import { GraphRenderer } from './graph-renderer/GraphRenderer';
 import { GraphRendererRef as LegacyGraphRendererRef } from '../types';
 import { GraphRendererRef } from './graph-renderer/GraphRendererTypes';
-import { createCompatibleGraphRef } from '../compatibility';
+import { createCompatibleGraphRef } from '@/utils/compatibility';
 
 interface GraphContentProps {
   graphData: GraphData;

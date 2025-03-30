@@ -7,7 +7,7 @@
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { RelationshipGraph } from './RelationshipGraph';
-import { ensureNodeId } from './compatibility';
+import { ensureString } from '@/utils/compatibility';
 
 export interface RelationshipGraphPanelProps {
   sourceId?: string;
@@ -20,7 +20,7 @@ export function RelationshipGraphPanel({ sourceId, contentId, hasAttemptedRetry 
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   
   // Determine the starting node ID - use sourceId if available, otherwise contentId
-  const startingNodeId = ensureNodeId(sourceId || contentId);
+  const startingNodeId = ensureString(sourceId || contentId);
   
   // Update dimensions based on container size
   useEffect(() => {

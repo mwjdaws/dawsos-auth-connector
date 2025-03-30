@@ -7,7 +7,14 @@ interface NodeProps {
   isConnectable: boolean;
 }
 
-export function useNodeRenderer() {
+interface NodeRendererResult {
+  renderNode: ({ data, isConnectable }: NodeProps) => JSX.Element;
+  getNodeSize: (node: GraphNode) => number;
+  getNodeColor: (node: GraphNode) => string;
+  nodeCanvasRenderer: (node: GraphNode & { x?: number; y?: number; }, ctx: CanvasRenderingContext2D, globalScale: number) => void;
+}
+
+export function useNodeRenderer({ highlightedNodeId }: { highlightedNodeId?: string | null } = {}): NodeRendererResult {
   // Function to render the node component
   const renderNode = ({ data, isConnectable }: NodeProps) => {
     const nodeType = data.type || 'default';
@@ -38,8 +45,42 @@ export function useNodeRenderer() {
     );
   };
 
+  // Node canvas renderer for force-graph
+  const nodeCanvasRenderer = (node: GraphNode & { x?: number; y?: number; }, ctx: CanvasRenderingContext2D, globalScale: number) => {
+    if (!node || typeof node.x !== 'number' || typeof node.y !== 'number') return;
+    
+    const size = getNodeSize(node);
+    const color = getNodeColor(node);
+    const isHighlighted = highlightedNodeId === node.id;
+    
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, size, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.fill();
+    
+    // Draw border for highlighted nodes
+    if (isHighlighted) {
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    
+    // Draw label if zoomed in enough
+    if (globalScale > 1) {
+      const label = node.name || node.title || node.id || '';
+      ctx.font = '10px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(label.substring(0, 10), node.x, node.y);
+    }
+  };
+
   return {
-    renderNode
+    renderNode,
+    getNodeSize,
+    getNodeColor,
+    nodeCanvasRenderer
   };
 }
 

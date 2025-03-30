@@ -2,25 +2,20 @@
 /**
  * Adapters for the GraphRenderer component to interface with force-graph
  */
-import { 
-  GraphNode, 
-  GraphLink, 
-  GraphData, 
-  TooltipContent 
-} from './GraphRendererTypes';
+import { GraphNode, GraphLink } from './GraphRendererTypes';
 
 /**
  * Adapter function to create a link tooltip text
  */
-export function createLinkTooltip(link: GraphLink): TooltipContent {
-  return `${link.type} relationship`;
+export function createLinkTooltip(link: GraphLink): string {
+  return `${typeof link.type === 'string' ? link.type : 'default'} relationship`;
 }
 
 /**
  * Adapter function to create a node tooltip text
  */
-export function createNodeTooltip(node: GraphNode): TooltipContent {
-  return node.title || node.name;
+export function createNodeTooltip(node: GraphNode): string {
+  return node.title || node.name || '';
 }
 
 /**
@@ -51,8 +46,8 @@ export function safeNodeRenderer(
     title: node.title || node.name || node.id || 'Unknown',
     name: node.name || node.title || node.id || 'Unknown',
     type: node.type || 'document',
-    x: node.x,
-    y: node.y,
+    x: typeof node.x === 'number' ? node.x : 0,
+    y: typeof node.y === 'number' ? node.y : 0,
     ...node
   };
   

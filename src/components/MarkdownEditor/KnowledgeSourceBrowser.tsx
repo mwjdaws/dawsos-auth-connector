@@ -6,7 +6,7 @@ import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/di
 import { Search, Book } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useKnowledgeSourcesQuery } from '@/hooks/markdown-editor/useKnowledgeSources';
-import { ensureString } from '@/utils/type-compatibility';
+import { ensureString } from '@/utils/compatibility';
 
 // Define the KnowledgeSource type to match what the component expects
 export interface KnowledgeSource {
@@ -104,7 +104,7 @@ export function KnowledgeSourceBrowser({ onSelectSource }: KnowledgeSourceBrowse
                 key={source.id}
                 variant="ghost"
                 className="w-full justify-start text-left h-auto py-3"
-                onClick={() => handleSourceSelect(source)}
+                onClick={() => handleSourceSelect(source as ApiSourceData)}
               >
                 <div className="flex items-start gap-2">
                   <Book className="h-5 w-5 shrink-0 text-muted-foreground" />
