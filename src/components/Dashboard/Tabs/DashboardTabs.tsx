@@ -5,7 +5,10 @@ import { LoadingIndicator } from "./LoadingIndicator";
 import { 
   TagGeneratorTab, 
   MetadataTab, 
-  MarkdownEditorTab 
+  MarkdownEditorTab,
+  MarkdownViewerTab,
+  TemplatesTab,
+  RelationshipGraphTab
 } from "./TabContents";
 
 interface DashboardTabsProps {
@@ -42,10 +45,13 @@ export function DashboardTabs({
         onValueChange={handleTabChange}
         className="w-full"
       >
-        <TabsList className="grid grid-cols-3 mb-6">
+        <TabsList className="grid grid-cols-6 mb-6">
           <TabsTrigger value="tag-generator">Tag Generator</TabsTrigger>
+          <TabsTrigger value="markdown-viewer">Markdown Viewer</TabsTrigger>
+          <TabsTrigger value="editor">Markdown Editor</TabsTrigger>
           <TabsTrigger value="metadata">Metadata</TabsTrigger>
-          <TabsTrigger value="editor">Editor</TabsTrigger>
+          <TabsTrigger value="templates">Templates</TabsTrigger>
+          <TabsTrigger value="relationship-graph">Knowledge Graph</TabsTrigger>
         </TabsList>
 
         <TabsContent value="tag-generator">
@@ -54,6 +60,24 @@ export function DashboardTabs({
               <TagGeneratorTab 
                 contentId={contentId} 
                 onTagsSaved={onTagGenerationComplete} 
+              />
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="markdown-viewer">
+          <div className="bg-card border rounded-lg p-6 shadow-sm">
+            <MarkdownViewerTab />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="editor">
+          <div className="bg-card border rounded-lg p-6 shadow-sm">
+            {onSaveDraft && onPublish && (
+              <MarkdownEditorTab
+                contentId={contentId}
+                onSaveDraft={onSaveDraft}
+                onPublish={onPublish}
               />
             )}
           </div>
@@ -70,15 +94,15 @@ export function DashboardTabs({
           </div>
         </TabsContent>
 
-        <TabsContent value="editor">
+        <TabsContent value="templates">
           <div className="bg-card border rounded-lg p-6 shadow-sm">
-            {onSaveDraft && onPublish && (
-              <MarkdownEditorTab
-                contentId={contentId}
-                onSaveDraft={onSaveDraft}
-                onPublish={onPublish}
-              />
-            )}
+            <TemplatesTab />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="relationship-graph">
+          <div className="bg-card border rounded-lg p-6 shadow-sm">
+            <RelationshipGraphTab contentId={contentId} />
           </div>
         </TabsContent>
       </Tabs>
