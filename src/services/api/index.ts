@@ -1,8 +1,16 @@
 
-// Re-export all API functions and types
+// Re-export all API functions and types, but avoid circular dependencies
 export * from './types';
 export * from './base';
 export * from './knowledgeSources';
 export * from './knowledgeSourceVersions';
-export * from './templates'; // Import from the templates directory
-export * from './enrichment'; // Add the new enrichment API
+// Export templates with caution to avoid circular dependencies
+export { 
+  fetchKnowledgeTemplates,
+  fetchKnowledgeTemplateById,
+  createKnowledgeTemplate,
+  updateKnowledgeTemplate,
+  deleteKnowledgeTemplate,
+  duplicateKnowledgeTemplate
+} from './templates';
+export * from './enrichment';

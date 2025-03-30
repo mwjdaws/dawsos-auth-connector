@@ -2,9 +2,11 @@
 import React, { useState } from 'react';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+// Import hooks directly from their source files
 import { useTemplates } from '@/hooks/useTemplates';
-import { useMarkdownEditor } from '@/hooks/markdown-editor';
+import { useMarkdownEditor } from './useMarkdownEditor';
 import { useKnowledgeSources } from '@/hooks/markdown-editor/useKnowledgeSources';
+// Direct component imports
 import EditorHeader from './EditorHeader';
 import EditorActions from './EditorActions';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,6 +15,7 @@ import SplitEditor from './SplitEditor';
 import FullscreenEditor from './FullscreenEditor';
 import EditorToolbar from './EditorToolbar';
 import { KnowledgeSourceBrowser } from './KnowledgeSourceBrowser';
+import { OntologySuggestionsPanel } from './OntologySuggestionsPanel';
 
 interface MarkdownEditorProps {
   initialTitle?: string;

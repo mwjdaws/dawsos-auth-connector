@@ -5,7 +5,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { KnowledgeTemplate } from '@/services/api/types';
 import { ArchiveRestore, Link, Unlink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { UseTemplate } from '@/components/TemplateEditor';
+// Direct import from the UseTemplate component
+import UseTemplate from '@/components/TemplateEditor/UseTemplate';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import TemplateSelector from './TemplateSelector';

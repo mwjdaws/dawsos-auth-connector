@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+// Import directly from fetchers instead of through a barrel export
 import { fetchKnowledgeTemplateById } from '@/services/api/templates/knowledgeTemplateFetchers';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -11,6 +12,7 @@ interface UseMarkdownEditorProps {
   initialTemplateId?: string | null;
   initialExternalSourceUrl?: string;
   documentId?: string;
+  sourceId?: string;
   onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
   onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
 }
@@ -21,6 +23,7 @@ export const useMarkdownEditor = ({
   initialTemplateId = null,
   initialExternalSourceUrl = '',
   documentId,
+  sourceId,
   onSaveDraft,
   onPublish
 }: UseMarkdownEditorProps) => {
@@ -180,11 +183,15 @@ export const useMarkdownEditor = ({
     content,
     setContent,
     templateId,
+    setTemplateId,
     externalSourceUrl,
     setExternalSourceUrl,
     isLoadingTemplate,
     isSaving,
     isPublishing,
+    isDirty: true, // For now hardcoded, can be implemented properly later
+    isPublished: false, // For now hardcoded, can be implemented properly later
+    isLoading: false, // For now hardcoded, can be implemented properly later
     handleSaveDraft,
     handlePublish,
     handleTemplateChange
