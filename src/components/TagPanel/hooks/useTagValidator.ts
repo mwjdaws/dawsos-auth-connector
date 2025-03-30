@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { validateTags } from '@/utils/validation';
 
@@ -16,7 +17,7 @@ export const useTagValidator = () => {
     const result = validateTags(tags);
     setValidationResult({
       isValid: result.isValid,
-      message: result.message || '',
+      message: result.errors.join('. ') || '',
     });
     return result.isValid;
   }, []);

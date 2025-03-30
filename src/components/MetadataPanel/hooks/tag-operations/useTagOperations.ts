@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { TagOperationsProps } from "./types";
 import { useTagState } from "./useTagState";
@@ -21,7 +22,12 @@ export function useTagOperations(props: TagOperationsProps) {
   // Compose the hooks
   const tagState = useTagState();
   const { fetchTags, isLoading, error } = useTagFetch({ contentId });
-  const { handleAddTag, handleDeleteTag } = useTagMutations(props, tagState);
+  const { 
+    createTag, 
+    deleteTag, 
+    isCreating, 
+    isDeleting 
+  } = useTagMutations();
   
   // Initial fetch when the component mounts or contentId changes
   useEffect(() => {
@@ -32,7 +38,35 @@ export function useTagOperations(props: TagOperationsProps) {
         }
       });
     }
-  }, [contentId]);
+  }, [contentId, fetchTags, tagState]);
+
+  // Create wrapper functions for better API
+  const handleAddTag = async (name: string, typeId?: string) => {
+    if (!contentId) return;
+    
+    await createTag({ 
+      contentId, 
+      name, 
+      typeId 
+    });
+    
+    // Refetch tags to update the list
+    const tags = await fetchTags();
+    tagState.setTags(tags);
+  };
+
+  const handleDeleteTag = async (tagId: string) => {
+    if (!contentId) return;
+    
+    await deleteTag({ 
+      id: tagId, 
+      contentId 
+    });
+    
+    // Refetch tags to update the list
+    const tags = await fetchTags();
+    tagState.setTags(tags);
+  };
   
   return {
     ...tagState,
@@ -40,6 +74,8 @@ export function useTagOperations(props: TagOperationsProps) {
     isLoading,
     error,
     handleAddTag,
-    handleDeleteTag
+    handleDeleteTag,
+    isCreating,
+    isDeleting
   };
 }

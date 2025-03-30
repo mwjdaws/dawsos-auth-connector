@@ -9,6 +9,7 @@ export interface OntologyTerm {
   name: string;
   source_id: string;
   type?: string;
+  associationId?: string;
 }
 
 interface UseOntologyTermsQueryOptions {

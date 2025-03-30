@@ -1,8 +1,8 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { queryKeys } from '@/utils/query-keys';
 import { toast } from '@/hooks/use-toast';
-// Update import statement to correctly import isValidContentId
 import { isValidContentId } from '@/utils/validation';
 import { Tag } from './types';
 
@@ -145,7 +145,7 @@ export function useReorderTagsMutation() {
 
       // Fetch existing tags for the content
       const { data: existingTags, error: fetchError } = await supabase
-        .from<Tag>('tags')
+        .from('tags')
         .select('*')
         .eq('content_id', contentId);
 
@@ -160,21 +160,23 @@ export function useReorderTagsMutation() {
 
       // Create a map of tag IDs to their current positions
       const tagPositions: { [key: string]: number } = {};
-      existingTags.forEach((tag) => {
-        tagPositions[tag.id] = existingTags.findIndex((t) => t.id === tag.id);
+      existingTags.forEach((tag: any) => {
+        tagPositions[tag.id] = existingTags.findIndex((t: any) => t.id === tag.id);
       });
 
       // Update the order value for each tag based on the provided tagIds array
       const updates = tagIds.map((tagId, index) => ({
         id: tagId,
         order: index,
+        name: existingTags.find((tag: any) => tag.id === tagId)?.name || '',
+        content_id: contentId,
+        type_id: existingTags.find((tag: any) => tag.id === tagId)?.type_id
       }));
 
       // Execute the updates in a single transaction
-      const { error: updateError } = await supabase.from('tags').upsert(
-        updates.map(({ id, order }) => ({ id, order })),
-        { onConflict: 'id' }
-      );
+      const { error: updateError } = await supabase
+        .from('tags')
+        .upsert(updates, { onConflict: 'id' });
 
       if (updateError) {
         console.error('Tag reordering failed:', updateError);
@@ -223,7 +225,7 @@ export function useTagMutations() {
 }
 
 /**
- * Hook for adding a tag.  This is a wrapper around useCreateTagMutation
+ * Hook for adding a tag. This is a wrapper around useCreateTagMutation
  */
 export function useAddTagMutation() {
     const createTagMutation = useCreateTagMutation();
@@ -235,9 +237,9 @@ export function useAddTagMutation() {
 }
 
 /**
- * Hook for deleting a tag.  This is a wrapper around useDeleteTagMutation
+ * Hook for deleting a tag. This is a wrapper for useDeleteTagMutation
  */
-export function useDeleteTagMutation() {
+export function useRemoveTagMutation() {
     const deleteTagMutation = useDeleteTagMutation();
 
     return {

@@ -32,7 +32,7 @@ interface TemplateListCardProps {
   handleTemplateSelect: (template: KnowledgeTemplate) => void;
   filterType: 'all' | 'global' | 'custom';
   onFilterChange: (type: 'all' | 'global' | 'custom') => void;
-  selectedTemplateId?: string | null; // Added this property to fix the type error
+  selectedTemplateId?: string | null;
 }
 
 export const TemplateListCard = forwardRef<HTMLDivElement, TemplateListCardProps>(({
