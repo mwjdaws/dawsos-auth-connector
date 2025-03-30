@@ -1,86 +1,54 @@
 
 import { toast } from "@/hooks/use-toast";
-import { ToastAction } from "@/components/ui/toast";
-import { ErrorHandlingOptions } from './types';
-import { categorizeError } from './categorize';
+import { categorizeError } from "./categorize";
+import { ErrorHandlingOptions } from "./types";
 
 /**
- * Centralized error handling function
+ * Central error handling function for the application
  * 
- * @param error The error object
- * @param userMessage User-friendly message to display
+ * @param error The error object to handle
+ * @param userMessage Optional user-friendly message to display
  * @param options Additional error handling options
  */
 export function handleError(
   error: unknown,
   userMessage?: string,
-  options?: ErrorHandlingOptions
+  options: ErrorHandlingOptions = {}
 ): void {
-  // Categorize the error first
-  const categorizedError = categorizeError(error);
+  // Ensure we have a proper Error object
+  const typedError = categorizeError(error);
   
-  // Extract error details
-  const errorMessage = categorizedError.message;
-  const errorType = categorizedError.name;
+  // Extract options with defaults
+  const {
+    level = 'error',
+    context = {},
+    technical = false,
+    silent = false,
+    title = 'An error occurred',
+    actionLabel,
+    action
+  } = options;
   
-  // Prepare context data
-  const context = {
-    timestamp: new Date().toISOString(),
-    errorType,
-    errorMessage,
-    userMessage: userMessage || errorMessage,
-    ...(options?.context || {})
-  };
-  
-  // Log error with context to console
-  console.error(`[${context.timestamp}] ${errorType}: ${errorMessage}`, {
-    context,
+  // Log the error with context for debugging
+  console[level]('[Error Handler]', {
+    message: typedError.message,
     originalError: error,
+    userMessage,
+    context,
+    stack: typedError.stack
   });
   
-  // Determine logging level
-  const level = options?.level || 'error';
+  // If silent mode is enabled, don't show UI notifications
+  if (silent) return;
   
-  // Handle based on error level
-  switch (level) {
-    case 'warning':
-      console.warn(`Warning: ${userMessage || errorMessage}`, context);
-      break;
-    case 'info':
-      console.info(`Info: ${userMessage || errorMessage}`, context);
-      break;
-    case 'debug':
-      console.debug(`Debug: ${userMessage || errorMessage}`, context);
-      break;
-    case 'error':
-    default:
-      // Don't log again if already logged above
-      break;
-  }
-  
-  // Don't show UI toast if silent is specified
-  if (options?.silent) {
-    return;
-  }
-  
-  // Show toast notification if needed
-  const toastTitle = options?.title || (level === 'error' ? 'Error' : 
-                     level === 'warning' ? 'Warning' : 'Notice');
-  
-  const toastMessage = userMessage || errorMessage;
-  
-  // Map level to toast variant - ensure we only use valid variants
-  const variant = level === 'error' ? 'destructive' : 'default';
-  
+  // Show toast notification with appropriate details
   toast({
-    title: toastTitle,
-    description: toastMessage,
-    variant: variant,
-    // Include action if provided
-    action: options?.actionLabel && options?.action ? (
-      <ToastAction altText={options.actionLabel} onClick={options.action}>
-        {options.actionLabel}
-      </ToastAction>
-    ) : undefined
+    title,
+    description: userMessage || typedError.message,
+    variant: "destructive",
+    action: actionLabel && action ? {
+      label: actionLabel,
+      onClick: action
+    } : undefined
   });
 }

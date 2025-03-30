@@ -5,13 +5,23 @@ import { Toaster } from './components/ui/toaster';
 import { AuthProvider } from './context/AuthContext';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// Create a client
+// Create a client with properly configured error handling
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      // Use meta for error handling instead of onError
+      meta: {
+        handleError: true
+      }
     },
+    mutations: {
+      // Use meta for error handling instead of onError
+      meta: {
+        handleError: true
+      }
+    }
   },
 });
 
