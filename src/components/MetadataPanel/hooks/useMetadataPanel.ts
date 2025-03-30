@@ -1,3 +1,4 @@
+
 // Import necessary hooks
 import { useState, useEffect } from 'react';
 import { useSourceMetadata } from './useSourceMetadata';
@@ -14,7 +15,7 @@ export const useMetadataPanel = (props: MetadataPanelProps) => {
   const tagOperations = useTagOperations(contentId);
   
   // Use source metadata hook
-  const sourceMetadata = useSourceMetadata(contentId);
+  const sourceMetadata = useSourceMetadata({ contentId });
   
   // Panel state and content
   const panelState = usePanelState({ contentId });
