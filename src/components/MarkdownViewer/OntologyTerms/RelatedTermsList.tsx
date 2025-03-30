@@ -2,7 +2,7 @@
 import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { RelatedTerm } from "@/hooks/markdown-editor";
+import { RelatedTerm } from "@/hooks/markdown-editor/ontology-terms/types";
 
 interface RelatedTermsListProps {
   terms: RelatedTerm[];

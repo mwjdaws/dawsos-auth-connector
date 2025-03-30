@@ -20,6 +20,7 @@ export interface StandardizedError extends Error {
   status?: number;
   handled?: boolean;
   name: string;
+  id?: string; // Added id field for error tracking
 }
 
 // API error specific structure

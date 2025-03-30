@@ -6,7 +6,7 @@ import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/di
 import { Search, Book } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useKnowledgeSourcesQuery } from '@/hooks/markdown-editor/useKnowledgeSources';
-import { undefinedToNull, ensureString } from '@/utils/type-compatibility';
+import { ensureString } from '@/utils/type-compatibility';
 
 // Define the KnowledgeSource type to match what the component expects
 export interface KnowledgeSource {
@@ -61,7 +61,7 @@ export function KnowledgeSourceBrowser({ onSelectSource }: KnowledgeSourceBrowse
       externalSourceUrl: apiSource.external_source_url,
       externalSourceCheckedAt: apiSource.external_source_checked_at,
       externalContentHash: apiSource.external_content_hash,
-      needsExternalReview: apiSource.is_published
+      needsExternalReview: apiSource.is_published || false
     };
     
     onSelectSource(source);
@@ -99,7 +99,7 @@ export function KnowledgeSourceBrowser({ onSelectSource }: KnowledgeSourceBrowse
           </div>
         ) : sources && sources.length > 0 ? (
           <div className="space-y-1">
-            {sources.map((source: ApiSourceData) => (
+            {sources.map((source) => (
               <Button
                 key={source.id}
                 variant="ghost"

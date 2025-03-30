@@ -1,91 +1,127 @@
 
-/**
- * MetadataPanel component types
- */
+import { ReactNode } from 'react';
 
-export interface MetadataPanelProps {
-  contentId: string;
-  editable?: boolean;
-  isCollapsible?: boolean;
-  initialCollapsed?: boolean;
-  showOntologyTerms?: boolean;
-  onMetadataChange?: () => void;
-  className?: string;
-}
-
+// Source metadata type
 export interface SourceMetadata {
   id: string;
   title: string;
   content: string;
   created_at: string;
   updated_at: string;
-  created_by: string | null;
-  user_id: string;
-  is_published: boolean;
-  published_at: string | null;
   external_source_url: string | null;
   external_source_checked_at: string | null;
   external_content_hash: string | null;
   needs_external_review: boolean;
+  is_published: boolean;
+  published_at: string | null;
+  template_id: string | null;
 }
 
+// Tag type
 export interface Tag {
   id: string;
   name: string;
   content_id: string;
-  type_id?: string | null;
+  type_id: string | null;
 }
 
+// Ontology term type
 export interface OntologyTerm {
   id: string;
   term: string;
-  description: string;
+  description?: string;
   domain?: string;
+  review_required?: boolean;
 }
 
-export interface ExternalSourceMetadata {
-  url: string | null;
-  lastChecked: string | null;
-  needsReview: boolean;
+// Props for the main MetadataPanel component
+export interface MetadataPanelProps {
+  contentId: string;
+  editable?: boolean;
+  onMetadataChange?: (() => void);
+  isCollapsible?: boolean;
+  initialCollapsed?: boolean;
+  showOntologyTerms?: boolean;
+  showDomain?: boolean;
+  domain?: string | null;
+  className?: string;
+  children?: ReactNode;
 }
 
+// Props for the MetadataContent component
+export interface MetadataContentProps {
+  data: SourceMetadata | null;
+  contentId: string;
+  error: any;
+  tags: Tag[];
+  editable: boolean;
+  newTag: string;
+  setNewTag: (value: string) => void;
+  onAddTag: (typeId?: string | null) => Promise<void>;
+  onDeleteTag: (tagId: string) => Promise<void>;
+  onRefresh: () => void;
+  externalSourceUrl: string | null;
+  lastCheckedAt: string | null;
+  needsExternalReview: boolean;
+  onMetadataChange: (() => void);
+  showOntologyTerms: boolean;
+}
+
+// Props for the HeaderSection component
+export interface HeaderSectionProps {
+  title: string | undefined;
+  isPublished: boolean | undefined;
+  publishedAt: string | null | undefined;
+  editable: boolean;
+  className?: string;
+}
+
+// Props for the ExternalSourceSection component
+export interface ExternalSourceSectionProps {
+  externalSourceUrl: string | null;
+  lastCheckedAt: string | null;
+  editable: boolean;
+  onMetadataChange: (() => void);
+  contentId: string;
+}
+
+// Props for the TagsSection component
 export interface TagsSectionProps {
   tags: Tag[];
-  editable?: boolean;
-  newTag?: string;
-  setNewTag?: (value: string) => void;
-  onAddTag?: () => Promise<void>;
-  onDeleteTag?: (tagId: string) => Promise<void>;
-  onUpdateTagOrder?: (tags: Tag[]) => void;
+  contentId: string;
+  editable: boolean;
+  newTag: string;
+  setNewTag: (value: string) => void;
+  onAddTag: (typeId?: string | null) => Promise<void>;
+  onDeleteTag: (tagId: string) => Promise<void>;
+  onMetadataChange: (() => void);
+  className?: string;
 }
 
-// Props for ContentAlert component
+// Props for the OntologySection component
+export interface OntologySectionProps {
+  sourceId: string;
+  editable: boolean;
+}
+
+// Props for the OntologyTermsSection component
+export interface OntologyTermsSectionProps {
+  contentId: string;
+  sourceId: string;
+  editable: boolean;
+  onMetadataChange: (() => void);
+  className?: string;
+}
+
+// Props for the ContentAlert component
 export interface ContentAlertProps {
   contentId: string;
   isValidContent: boolean;
   contentExists: boolean;
-  validationResult: string;
 }
 
-// Props for MetadataContent component
-export interface MetadataContentProps {
-  contentId: string;
-  contentExists: boolean;
-  isValidContent: boolean;
-  tags: Tag[];
-  ontologyTerms: OntologyTerm[];
-  isLoading: boolean;
-  error: Error | null;
-  editable?: boolean;
-  onMetadataChange?: () => void;
-  handleRefresh: () => void;
+// Props for the DomainSection component
+export interface DomainSectionProps {
+  domain: string | null;
+  className?: string;
 }
-
-// Props for OntologyTermsSection
-export interface OntologyTermsSectionProps {
-  terms: OntologyTerm[];
-  editable?: boolean;
-  onDeleteTerm?: (termId: string) => Promise<void>;
-}
-
-export type ValidationStatus = 'valid' | 'invalid' | 'missing' | 'pending';

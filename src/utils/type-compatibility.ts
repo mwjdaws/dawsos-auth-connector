@@ -1,56 +1,80 @@
 
 /**
- * Type Compatibility Utilities
- * 
- * These utilities help ensure compatibility between different versions of types
- * and handle nullable/undefined values consistently.
+ * Type compatibility utilities
+ *
+ * These utilities help handle type conversions and compatibility
+ * between different parts of the application, especially when
+ * dealing with optional, nullable, or potentially undefined values.
  */
 
 /**
- * Ensures a value is a string, converting null/undefined to empty string
- */
-export function ensureString(value: string | null | undefined): string {
-  return value ?? '';
-}
-
-/**
- * Ensures a value is a number, converting null/undefined to a default value
- */
-export function ensureNumber(value: number | null | undefined, defaultValue = 0): number {
-  return value ?? defaultValue;
-}
-
-/**
- * Ensures a value is a boolean, converting null/undefined to a default value
- */
-export function ensureBoolean(value: boolean | null | undefined, defaultValue = false): boolean {
-  return value ?? defaultValue;
-}
-
-/**
- * Converts undefined to null for nullable fields
+ * Convert undefined to null
+ * @param value The value to convert
+ * @returns The value, or null if undefined
  */
 export function undefinedToNull<T>(value: T | undefined): T | null {
   return value === undefined ? null : value;
 }
 
 /**
- * Converts null to undefined for optional fields
+ * Convert null to undefined
+ * @param value The value to convert
+ * @returns The value, or undefined if null
  */
 export function nullToUndefined<T>(value: T | null): T | undefined {
   return value === null ? undefined : value;
 }
 
 /**
- * Ensures an object is not null or undefined
+ * Ensure a value is a string, even if null or undefined
+ * @param value The value to convert
+ * @returns The string value, or empty string if null or undefined
  */
-export function ensureObject<T>(obj: T | null | undefined, defaultValue: T): T {
-  return obj ?? defaultValue;
+export function ensureString(value: string | null | undefined): string {
+  return value ?? '';
 }
 
 /**
- * Ensures an array is not null or undefined
+ * Ensure a value is a number, even if null or undefined
+ * @param value The value to convert
+ * @returns The number value, or 0 if null or undefined
  */
-export function ensureArray<T>(arr: T[] | null | undefined): T[] {
-  return arr ?? [];
+export function ensureNumber(value: number | null | undefined): number {
+  return value ?? 0;
+}
+
+/**
+ * Ensure a value is a boolean, even if null or undefined
+ * @param value The value to convert
+ * @returns The boolean value, or false if null or undefined
+ */
+export function ensureBoolean(value: boolean | null | undefined): boolean {
+  return value ?? false;
+}
+
+/**
+ * Ensure a value is an array, even if null or undefined
+ * @param value The value to convert
+ * @returns The array value, or empty array if null or undefined
+ */
+export function ensureArray<T>(value: T[] | null | undefined): T[] {
+  return value ?? [];
+}
+
+/**
+ * Create a type-safe wrapper for functions that might be undefined
+ * @param fn The function to wrap
+ * @param defaultReturn The default return value if the function is undefined
+ * @returns A function that safely calls the wrapped function
+ */
+export function safeFunction<T extends (...args: any[]) => any>(
+  fn: T | undefined,
+  defaultReturn: ReturnType<T>
+): T {
+  return ((...args: Parameters<T>): ReturnType<T> => {
+    if (fn) {
+      return fn(...args);
+    }
+    return defaultReturn;
+  }) as T;
 }

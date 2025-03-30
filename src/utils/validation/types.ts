@@ -36,3 +36,20 @@ export interface TagValidationOptions {
   allowDuplicates?: boolean;
   pattern?: RegExp;
 }
+
+// Tag operation parameter interfaces
+export interface TagOperationParams {
+  tagId: string;
+  contentId: string;
+}
+
+export interface AddTagParams {
+  name: string;
+  contentId: string;
+  typeId?: string | null;
+}
+
+export interface DeleteTagParams {
+  tagId: string;
+  contentId: string;
+}
