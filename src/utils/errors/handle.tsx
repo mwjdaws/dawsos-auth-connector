@@ -1,7 +1,7 @@
 
 import { toast } from "@/hooks/use-toast";
 import { categorizeError } from "./categorize";
-import { ErrorHandlingOptions } from "./types";
+import { ErrorHandlingOptions, ErrorLevel } from "./types";
 import { ToastAction } from "@/components/ui/toast";
 import React from "react";
 

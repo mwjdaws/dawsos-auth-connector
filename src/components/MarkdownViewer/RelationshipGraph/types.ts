@@ -1,4 +1,3 @@
-
 import { ReactNode } from "react";
 
 export interface GraphNode {
@@ -8,6 +7,8 @@ export interface GraphNode {
   val: number;
   color: string;
   description?: string;
+  x?: number;
+  y?: number;
 }
 
 export interface GraphLink {

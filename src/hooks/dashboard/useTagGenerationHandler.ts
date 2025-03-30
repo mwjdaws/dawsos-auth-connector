@@ -8,11 +8,11 @@ type UseTagGenerationHandlerProps = {
   activeTab: string;
 };
 
-export const useTagGenerationHandler = ({
+export function useTagGenerationHandler({
   setContentId,
   setActiveTab,
   activeTab
-}: UseTagGenerationHandlerProps) => {
+}: UseTagGenerationHandlerProps) {
   const handleTagGenerationComplete = useCallback((newContentId: string) => {
     if (!newContentId) {
       console.error("Tag generation complete called with invalid contentId");
@@ -33,4 +33,4 @@ export const useTagGenerationHandler = ({
   }, [setContentId, setActiveTab, activeTab]);
 
   return handleTagGenerationComplete;
-};
+}

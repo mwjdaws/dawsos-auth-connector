@@ -12,7 +12,7 @@
  * - Error categorization
  */
 import { useCallback, useEffect, useRef } from 'react';
-import { GraphData } from '../../types';
+import { GraphData, WithErrorHandlingOptions } from '../../types';
 import { withErrorHandling } from '@/utils/errors';
 import { toast } from '@/hooks/use-toast';
 import { useGraphState } from './useGraphState';
@@ -111,7 +111,7 @@ export function useGraphData(startingNodeId?: string) {
       errorMessage: "Failed to refresh graph data",
       silent: false,
       level: "error"
-    });
+    })();
   }, [fetchGraphData]);
   
   return {
