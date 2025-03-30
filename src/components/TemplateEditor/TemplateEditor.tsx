@@ -6,16 +6,14 @@ import {
   updateKnowledgeTemplate 
 } from '@/services/api/templates';
 import { KnowledgeTemplate } from '@/services/api/types';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import MarkdownPreview from '@/components/MarkdownEditor/MarkdownPreview';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Save } from 'lucide-react';
-import { JsonEditor } from './JsonEditor';
+import { Card, CardContent } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
+import TemplateEditorHeader from './TemplateEditorHeader';
+import TemplateNameField from './TemplateNameField';
+import TemplateGlobalToggle from './TemplateGlobalToggle';
+import TemplateContentEditor from './TemplateContentEditor';
+import TemplateJsonFields from './TemplateJsonFields';
+import TemplateEditorFooter from './TemplateEditorFooter';
 
 interface TemplateEditorProps {
   templateId: string;
@@ -162,97 +160,31 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Edit Template</CardTitle>
-      </CardHeader>
+      <TemplateEditorHeader isEditing={true} />
       <CardContent>
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="template-name">Template Name</Label>
-            <Input
-              id="template-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter template name"
-              className="w-full"
-            />
-          </div>
-
-          <div className="flex items-center space-x-2 py-2">
-            <Switch
-              id="template-global"
-              checked={isGlobal}
-              onCheckedChange={setIsGlobal}
-            />
-            <Label htmlFor="template-global">
-              Global Template <span className="text-xs text-muted-foreground">(available to all users)</span>
-            </Label>
-          </div>
-
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-2">
-              <TabsTrigger value="edit">Edit Content</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="edit" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="template-content">Template Content (Markdown)</Label>
-                <Textarea
-                  id="template-content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Enter markdown content"
-                  className="min-h-[300px] font-mono"
-                />
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="preview">
-              <div className="border rounded-md p-4">
-                <MarkdownPreview content={content} />
-              </div>
-            </TabsContent>
-          </Tabs>
-
-          <div className="space-y-4 pt-4">
-            <Label htmlFor="template-metadata">Metadata (JSON)</Label>
-            <JsonEditor
-              id="template-metadata"
-              value={metadata}
-              onChange={setMetadata}
-              height="150px"
-            />
-          </div>
-
-          <div className="space-y-4 pt-4">
-            <Label htmlFor="template-structure">Structure (JSON)</Label>
-            <JsonEditor
-              id="template-structure"
-              value={structure}
-              onChange={setStructure}
-              height="150px"
-            />
-          </div>
+          <TemplateNameField name={name} setName={setName} />
+          <TemplateGlobalToggle isGlobal={isGlobal} setIsGlobal={setIsGlobal} />
+          <TemplateContentEditor 
+            content={content}
+            setContent={setContent}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+          />
+          <TemplateJsonFields
+            metadata={metadata}
+            setMetadata={setMetadata}
+            structure={structure}
+            setStructure={setStructure}
+          />
         </div>
       </CardContent>
       
-      <CardFooter className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={onCancel}
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2"
-        >
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Save Template
-        </Button>
-      </CardFooter>
+      <TemplateEditorFooter
+        onCancel={onCancel}
+        onSave={handleSave}
+        saving={saving}
+      />
     </Card>
   );
 };
