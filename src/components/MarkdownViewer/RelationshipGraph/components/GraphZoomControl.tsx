@@ -1,80 +1,84 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { 
-  ZoomIn, 
-  ZoomOut, 
-  RefreshCw 
-} from 'lucide-react';
-import { GraphZoomControlProps } from './graph-renderer/GraphRendererTypes';
+import { Button } from '@/components/ui/button';
+import { ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
 
-export function GraphZoomControl({ 
+interface GraphZoomControlProps {
+  zoom: number;
+  onZoomChange: (newZoom: number) => void;
+  onReset: () => void;
+  min: number;
+  max: number;
+  percent?: number;
+}
+
+export function GraphZoomControl({
   zoom,
   onZoomChange,
   onReset,
   min = 0.1,
-  max = 4
+  max = 2,
+  percent = 0
 }: GraphZoomControlProps) {
-  // Convert zoom to percentage for slider (0-100)
-  const zoomPercent = ((zoom - min) / (max - min)) * 100;
+  // Calculate the slider value as a percentage
+  const sliderValue = (zoom - min) / (max - min) * 100;
   
-  // Convert percentage back to zoom value
-  const handleSliderChange = (value: number[]) => {
-    const percent = value[0];
-    const newZoom = min + (percent / 100) * (max - min);
-    onZoomChange(newZoom);
-  };
-  
-  const handleZoomIn = () => {
-    const newZoom = Math.min(zoom + 0.1, max);
-    onZoomChange(newZoom);
-  };
-  
-  const handleZoomOut = () => {
-    const newZoom = Math.max(zoom - 0.1, min);
-    onZoomChange(newZoom);
-  };
+  // Format the zoom value for display
+  const zoomPercent = Math.round((zoom * 100)) + '%';
   
   return (
-    <div className="flex items-center space-x-2">
+    <div className="flex items-center gap-2 p-2 bg-background border rounded-lg shadow-sm">
       <Button
-        variant="outline"
-        size="sm"
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={() => onZoomChange(Math.max(min, zoom - 0.1))}
         title="Zoom out"
-        onClick={handleZoomOut}
+        disabled={zoom <= min}
       >
         <ZoomOut className="h-4 w-4" />
       </Button>
       
-      <div className="w-24 md:w-32">
+      <div className="flex-1 px-1">
         <Slider
-          value={[zoomPercent]}
+          defaultValue={[sliderValue]}
           min={0}
           max={100}
           step={1}
-          onValueChange={handleSliderChange}
-          className="w-full"
+          onValueChange={(value) => {
+            const zoomValue = min + (value[0] / 100) * (max - min);
+            onZoomChange(zoomValue);
+          }}
+          value={[sliderValue]}
+          className="w-24"
         />
       </div>
       
       <Button
-        variant="outline"
-        size="sm"
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={() => onZoomChange(Math.min(max, zoom + 0.1))}
         title="Zoom in"
-        onClick={handleZoomIn}
+        disabled={zoom >= max}
       >
         <ZoomIn className="h-4 w-4" />
       </Button>
       
       <Button
-        variant="outline"
-        size="sm"
-        title="Reset zoom"
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
         onClick={onReset}
+        title="Reset zoom"
       >
         <RefreshCw className="h-4 w-4" />
       </Button>
+      
+      <span className="text-xs font-medium w-12 text-center">
+        {zoomPercent}
+      </span>
     </div>
   );
 }

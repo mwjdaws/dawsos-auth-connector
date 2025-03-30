@@ -9,8 +9,8 @@ export interface GraphNode {
   title: string;
   name: string;
   type: string;
-  size?: number; // Added size property
-  color?: string; // Added color property
+  size?: number;
+  color?: string;
   // Allow for force-graph specific properties
   [key: string]: any;
 }
@@ -30,7 +30,6 @@ export interface GraphData {
 
 // Component props
 export interface GraphRendererProps {
-  ref?: React.RefObject<GraphRendererRef>;
   graphData: GraphData;
   width: number;
   height: number;
@@ -71,7 +70,7 @@ export interface GraphZoomControlProps {
   onReset: () => void;
   min: number;
   max: number;
-  percent?: number; // Added optional percent field
+  percent?: number;
 }
 
 // Type for tooltip content

@@ -1,99 +1,124 @@
 
 /**
- * Compatibility layer for RelationshipGraph components
+ * Compatibility layer for GraphRenderer
+ * 
+ * This module provides helpers to ensure backward compatibility between
+ * different versions of the GraphRenderer component and its APIs.
  */
-import { GraphNode, GraphLink, GraphRendererRef } from './types';
+import { GraphData, GraphNode, GraphLink, GraphRendererRef } from './types';
+import { GraphRendererRef as ModernGraphRendererRef } from './components/graph-renderer/GraphRendererTypes';
 
 /**
- * Ensures a string value for node IDs, never undefined or null
+ * Create safe props for the graph component with proper defaults and type conversions
  */
-export function ensureString(value: string | null | undefined): string {
-  return value || '';
-}
-
-/**
- * Ensures a node ID is never undefined or null
- */
-export function ensureNodeId(nodeId: string | null | undefined): string {
-  return nodeId || '';
-}
-
-/**
- * Ensures a number, defaulting to 0 for null or undefined
- */
-export function ensureNumber(value: number | null | undefined): number {
-  return typeof value === 'number' ? value : 0;
-}
-
-/**
- * Creates safe graph props to prevent undefined values
- */
-export function createSafeGraphProps(props: any) {
+export function createSafeGraphProps(props: any): any {
   return {
-    width: ensureNumber(props?.width) || 800,
-    height: ensureNumber(props?.height) || 600,
-    startingNodeId: ensureString(props?.startingNodeId),
-    hasAttemptedRetry: props?.hasAttemptedRetry || false
+    startingNodeId: props.startingNodeId || props.contentId || undefined,
+    width: props.width || 800,
+    height: props.height || 600,
+    hasAttemptedRetry: props.hasAttemptedRetry || false,
+    contentId: props.contentId || props.sourceId || undefined,
+    initialZoom: props.initialZoom || 1,
+    showControls: props.showControls !== false,
+    className: props.className || '',
   };
 }
 
 /**
- * A compatibility wrapper for graph link data
+ * Converts a node to a safe format with required properties
  */
-export function adaptGraphLink(link: any): GraphLink {
-  if (!link) return {
-    id: '',
+export function createSafeNode(node: any): GraphNode {
+  if (!node) return createEmptyNode();
+  
+  return {
+    id: node.id || `node-${Math.random().toString(36).substring(2, 9)}`,
+    title: node.title || node.name || 'Unnamed',
+    name: node.name || node.title || 'Unnamed',
+    type: node.type || 'default',
+    ...node,
+  };
+}
+
+/**
+ * Converts a link to a safe format with required properties
+ */
+export function createSafeLink(link: any): GraphLink {
+  if (!link) return createEmptyLink();
+
+  return {
+    source: link.source || '',
+    target: link.target || '',
+    type: link.type || 'default',
+    ...link,
+  };
+}
+
+/**
+ * Creates an empty node when no data is available
+ */
+function createEmptyNode(): GraphNode {
+  return {
+    id: `empty-${Math.random().toString(36).substring(2, 9)}`,
+    title: 'No data',
+    name: 'No data',
+    type: 'empty',
+  };
+}
+
+/**
+ * Creates an empty link when no data is available
+ */
+function createEmptyLink(): GraphLink {
+  return {
     source: '',
     target: '',
-    label: '',
-    type: 'default'
+    type: 'empty',
   };
+}
+
+/**
+ * Creates a safe GraphData structure with nodes and links
+ */
+export function createSafeGraphData(data: any): GraphData {
+  if (!data) {
+    return { nodes: [], links: [] };
+  }
+  
+  const safeNodes = Array.isArray(data.nodes) 
+    ? data.nodes.map(createSafeNode) 
+    : [];
+    
+  const safeLinks = Array.isArray(data.links) 
+    ? data.links.map(createSafeLink) 
+    : [];
   
   return {
-    id: ensureString(link.id),
-    source: typeof link.source === 'object' ? ensureString(link.source.id) : ensureString(link.source),
-    target: typeof link.target === 'object' ? ensureString(link.target.id) : ensureString(link.target),
-    label: ensureString(link.label),
-    type: ensureString(link.type) || 'default'
+    nodes: safeNodes,
+    links: safeLinks
   };
 }
 
 /**
- * Adapts node data to ensure type safety
+ * Creates a compatibility wrapper for the GraphRendererRef
  */
-export function adaptGraphNode(node: any): GraphNode {
-  if (!node) return {
-    id: '',
-    title: '',
-    color: '#cccccc',
-    size: 1,
-    type: 'default'
-  };
+export function createCompatibleGraphRef(ref: ModernGraphRendererRef | null): GraphRendererRef {
+  if (!ref) {
+    return {
+      centerOnNode: () => {},
+      zoomIn: () => {},
+      zoomOut: () => {},
+      resetZoom: () => {},
+      centerGraph: () => {},
+      setZoom: () => {},
+    };
+  }
   
   return {
-    id: ensureString(node.id),
-    title: ensureString(node.title || node.name),
-    color: ensureString(node.color) || '#cccccc',
-    size: ensureNumber(node.size) || 1,
-    type: ensureString(node.type) || 'default'
+    centerOnNode: ref.centerOnNode || (() => {}),
+    zoomIn: () => ref.setZoom(1.5),
+    zoomOut: () => ref.setZoom(0.75),
+    resetZoom: ref.resetZoom || (() => {}),
+    centerGraph: () => ref.zoomToFit(500),
+    setZoom: ref.setZoom || (() => {}),
   };
-}
-
-/**
- * GraphRenderer reference compatibility wrapper
- */
-export function createGraphRendererRefBridge(): React.RefObject<GraphRendererRef> {
-  return {
-    current: {
-      zoomToFit: () => {},
-      getGraphData: () => ({ nodes: [], links: [] })
-    }
-  };
-}
-
-/**
- * Create a TooltipContent with type safety
- */
-export function createTooltipContent(content: React.ReactNode) {
-  return content;
 }

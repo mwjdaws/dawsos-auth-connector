@@ -53,3 +53,32 @@ export interface DeleteTagParams {
   tagId: string;
   contentId: string;
 }
+
+// Document validation interfaces
+export interface DocumentValidationResult extends ValidationResult {
+  type?: 'title' | 'content' | 'general';
+}
+
+export function validateDocumentTitle(title: string): DocumentValidationResult {
+  if (!title || title.trim() === '') {
+    return {
+      isValid: false,
+      errorMessage: 'Title is required',
+      type: 'title'
+    };
+  }
+
+  if (title.length > 255) {
+    return {
+      isValid: false,
+      errorMessage: 'Title must be less than 255 characters',
+      type: 'title'
+    };
+  }
+
+  return {
+    isValid: true,
+    errorMessage: null,
+    type: 'title'
+  };
+}

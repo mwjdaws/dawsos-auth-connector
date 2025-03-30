@@ -6,8 +6,11 @@
  * and loading indicator when processing updates.
  */
 import React from 'react';
-import { GraphData, GraphRendererRef } from '../types';
+import { GraphData } from '../types';
 import { GraphRenderer } from './graph-renderer/GraphRenderer';
+import { GraphRendererRef as LegacyGraphRendererRef } from '../types';
+import { GraphRendererRef } from './graph-renderer/GraphRendererTypes';
+import { createCompatibleGraphRef } from '../compatibility';
 
 interface GraphContentProps {
   graphData: GraphData;
@@ -16,7 +19,7 @@ interface GraphContentProps {
   highlightedNodeId?: string | null;
   zoomLevel: number;
   isPending: boolean;
-  graphRendererRef: React.RefObject<GraphRendererRef>;
+  graphRendererRef: React.RefObject<LegacyGraphRendererRef>;
 }
 
 export function GraphContent({
@@ -28,6 +31,17 @@ export function GraphContent({
   isPending,
   graphRendererRef
 }: GraphContentProps) {
+  // Create a local ref for the modern GraphRenderer
+  const modernRef = React.useRef<GraphRendererRef>(null);
+  
+  // Set up a ref forwarding mechanism
+  React.useEffect(() => {
+    if (graphRendererRef.current && modernRef.current) {
+      // Forward the modern ref methods to the legacy ref
+      Object.assign(graphRendererRef.current, createCompatibleGraphRef(modernRef.current));
+    }
+  }, [graphRendererRef]);
+  
   // Ensure we have valid data with nodes and links
   const safeGraphData: GraphData = {
     nodes: graphData?.nodes || [],
@@ -40,7 +54,7 @@ export function GraphContent({
   return (
     <div className="relative w-full h-full">
       <GraphRenderer 
-        ref={graphRendererRef}
+        ref={modernRef}
         graphData={safeGraphData} 
         width={width} 
         height={height}

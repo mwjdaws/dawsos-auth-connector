@@ -1,148 +1,194 @@
 
-/**
- * Hook for mutating ontology terms
- */
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { OntologyTerm } from '@/hooks/markdown-editor/types/ontology';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/hooks/use-toast';
+import { UseTermMutationsProps, UseTermMutationsResult } from '@/hooks/markdown-editor/ontology-terms/types';
+import { handleError } from '@/utils/errors';
 
-export interface UseTermMutationsProps {
-  sourceId: string;
-  onSuccess?: () => void;
-}
-
-export interface UseTermMutationsResult {
-  addTerm: (termId: string) => Promise<boolean>;
-  removeTerm: (termId: string) => Promise<boolean>;
-  createTerm: (term: string, description: string, domain?: string) => Promise<OntologyTerm | null>;
-  isLoading: boolean;
-  error: Error | null;
-}
-
-export function useTermMutations({ sourceId, onSuccess }: UseTermMutationsProps): UseTermMutationsResult {
-  const [isLoading, setIsLoading] = useState(false);
+export function useTermMutations({ contentId }: UseTermMutationsProps): UseTermMutationsResult {
+  const [isAdding, setIsAdding] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
 
-  const addTerm = async (termId: string): Promise<boolean> => {
-    if (!sourceId || !termId) return false;
-    
+  // Add an existing term to the content
+  const addTerm = useCallback(async (termId: string, reviewRequired = false): Promise<boolean> => {
+    if (!contentId || !termId) {
+      return false;
+    }
+
+    setIsAdding(true);
+    setError(null);
+
     try {
-      setIsLoading(true);
-      setError(null);
-      
-      const { error } = await supabase
+      // Check if the association already exists
+      const { data: existingData, error: checkError } = await supabase
+        .from('knowledge_source_ontology_terms')
+        .select('id')
+        .eq('knowledge_source_id', contentId)
+        .eq('ontology_term_id', termId)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "row not found" which is expected
+        throw checkError;
+      }
+
+      // If the association already exists, just return success
+      if (existingData) {
+        toast({
+          title: 'Term Already Added',
+          description: 'This term is already associated with the content.',
+        });
+        return true;
+      }
+
+      // Create the association
+      const { error: insertError } = await supabase
         .from('knowledge_source_ontology_terms')
         .insert({
-          knowledge_source_id: sourceId,
+          knowledge_source_id: contentId,
           ontology_term_id: termId,
           created_by: user?.id || null,
-          review_required: false
+          review_required: reviewRequired
         });
-      
-      if (error) throw new Error(error.message);
-      
-      if (onSuccess) onSuccess();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      toast({
+        title: 'Term Added',
+        description: 'The term has been associated with the content.',
+      });
+
       return true;
-    } catch (err: any) {
-      console.error('Error adding ontology term:', err);
-      setError(err instanceof Error ? err : new Error(String(err)));
+    } catch (err) {
+      console.error('Error adding term:', err);
+      const errorObj = err instanceof Error ? err : new Error('Failed to add term');
+      setError(errorObj);
+      handleError(errorObj, 'Failed to add term');
       return false;
     } finally {
-      setIsLoading(false);
+      setIsAdding(false);
     }
-  };
-  
-  const removeTerm = async (termId: string): Promise<boolean> => {
-    if (!sourceId || !termId) return false;
-    
+  }, [contentId, user]);
+
+  // Delete a term association
+  const deleteTerm = useCallback(async (associationId: string): Promise<boolean> => {
+    if (!associationId) {
+      return false;
+    }
+
+    setIsDeleting(true);
+    setError(null);
+
     try {
-      setIsLoading(true);
-      setError(null);
-      
-      const { error } = await supabase
+      const { error: deleteError } = await supabase
         .from('knowledge_source_ontology_terms')
         .delete()
-        .eq('knowledge_source_id', sourceId)
-        .eq('ontology_term_id', termId);
-      
-      if (error) throw new Error(error.message);
-      
-      if (onSuccess) onSuccess();
+        .eq('id', associationId);
+
+      if (deleteError) {
+        throw deleteError;
+      }
+
+      toast({
+        title: 'Term Removed',
+        description: 'The term has been removed from the content.',
+      });
+
       return true;
-    } catch (err: any) {
-      console.error('Error removing ontology term:', err);
-      setError(err instanceof Error ? err : new Error(String(err)));
+    } catch (err) {
+      console.error('Error deleting term:', err);
+      const errorObj = err instanceof Error ? err : new Error('Failed to delete term');
+      setError(errorObj);
+      handleError(errorObj, 'Failed to delete term');
       return false;
     } finally {
-      setIsLoading(false);
+      setIsDeleting(false);
     }
-  };
-  
-  const createTerm = async (
-    term: string,
-    description: string,
-    domain?: string
-  ): Promise<OntologyTerm | null> => {
-    if (!term) return null;
-    
+  }, []);
+
+  // Create a new term and add it to the content
+  const createAndAddTerm = useCallback(async (term: string, description?: string, domain?: string): Promise<string | null> => {
+    if (!contentId || !term.trim()) {
+      return null;
+    }
+
+    setIsAdding(true);
+    setError(null);
+
     try {
-      setIsLoading(true);
-      setError(null);
-      
-      // First create the ontology term
-      const { data: termData, error: termError } = await supabase
+      // Check if term already exists
+      const { data: existingTerms, error: checkError } = await supabase
         .from('ontology_terms')
-        .insert({
-          term,
-          description,
-          domain: domain || null
-        })
-        .select()
-        .single();
-      
-      if (termError) throw new Error(termError.message);
-      
-      if (sourceId) {
-        // Then link it to the source
-        const { error: linkError } = await supabase
-          .from('knowledge_source_ontology_terms')
-          .insert({
-            knowledge_source_id: sourceId,
-            ontology_term_id: termData.id,
-            created_by: user?.id || null,
-            review_required: false
-          });
-        
-        if (linkError) throw new Error(linkError.message);
+        .select('id')
+        .ilike('term', term.trim());
+
+      if (checkError) {
+        throw checkError;
       }
-      
-      if (onSuccess) onSuccess();
-      
-      // Return the created term
-      return {
-        id: termData.id,
-        term: termData.term,
-        description: termData.description || '',
-        domain: termData.domain || ''
-      };
-    } catch (err: any) {
-      console.error('Error creating ontology term:', err);
-      setError(err instanceof Error ? err : new Error(String(err)));
+
+      let termId;
+
+      if (existingTerms && existingTerms.length > 0) {
+        // Use existing term
+        termId = existingTerms[0].id;
+        
+        toast({
+          title: 'Using Existing Term',
+          description: 'This term already exists in the ontology.',
+        });
+      } else {
+        // Create new term
+        const { data: newTerm, error: createError } = await supabase
+          .from('ontology_terms')
+          .insert({
+            term: term.trim(),
+            description: description || null,
+            domain: domain || null
+          })
+          .select('id')
+          .single();
+
+        if (createError) {
+          throw createError;
+        }
+
+        termId = newTerm.id;
+        
+        toast({
+          title: 'New Term Created',
+          description: 'A new term has been added to the ontology.',
+        });
+      }
+
+      // Add term to content
+      const success = await addTerm(termId, true);
+
+      if (success) {
+        return termId;
+      } else {
+        return null;
+      }
+    } catch (err) {
+      console.error('Error creating and adding term:', err);
+      const errorObj = err instanceof Error ? err : new Error('Failed to create and add term');
+      setError(errorObj);
+      handleError(errorObj, 'Failed to create and add term');
       return null;
     } finally {
-      setIsLoading(false);
+      setIsAdding(false);
     }
-  };
-  
+  }, [contentId, addTerm]);
+
   return {
     addTerm,
-    removeTerm,
-    createTerm,
-    isLoading,
+    deleteTerm,
+    createAndAddTerm,
+    isAdding,
+    isDeleting,
     error
   };
 }
-
-export default useTermMutations;

@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { AddTagParams, Tag, TagOperationParams, TagPosition, UseTagMutationsProps, UseTagMutationsResult } from './types';
+import { AddTagParams, DeleteTagParams, Tag, TagPosition, UseTagMutationsProps, UseTagMutationsResult } from './types';
 
 export function useTagMutations({
   contentId,
@@ -14,9 +14,11 @@ export function useTagMutations({
   const [isReordering, setIsReordering] = useState(false);
   
   // Add a new tag
-  const addTag = useCallback(async ({ name, contentId: tagContentId, typeId }: AddTagParams): Promise<Tag | null> => {
+  const addTag = useCallback(async (params: AddTagParams): Promise<boolean> => {
+    const { name, contentId: tagContentId, typeId } = params;
+    
     if (!name.trim() || !tagContentId) {
-      return null;
+      return false;
     }
     
     try {
@@ -36,7 +38,7 @@ export function useTagMutations({
       }
       
       if (!data || data.length === 0) {
-        return null;
+        return false;
       }
       
       const newTag: Tag = {
@@ -54,7 +56,7 @@ export function useTagMutations({
         description: `Added tag "${name}"`,
       });
       
-      return newTag;
+      return true;
     } catch (err) {
       console.error('Error adding tag:', err);
       toast({
@@ -62,16 +64,18 @@ export function useTagMutations({
         description: 'Failed to add tag',
         variant: 'destructive',
       });
-      return null;
+      return false;
     } finally {
       setIsAddingTag(false);
     }
   }, [tags, setTags]);
   
   // Delete a tag
-  const deleteTag = useCallback(async ({ tagId, contentId: tagContentId }: TagOperationParams): Promise<void> => {
+  const deleteTag = useCallback(async (params: DeleteTagParams): Promise<boolean> => {
+    const { tagId, contentId: tagContentId } = params;
+    
     if (!tagId || !tagContentId) {
-      return;
+      return false;
     }
     
     try {
@@ -93,6 +97,8 @@ export function useTagMutations({
         title: 'Tag deleted',
         description: 'Tag was successfully removed',
       });
+      
+      return true;
     } catch (err) {
       console.error('Error deleting tag:', err);
       toast({
@@ -100,13 +106,14 @@ export function useTagMutations({
         description: 'Failed to delete tag',
         variant: 'destructive',
       });
+      return false;
     } finally {
       setIsDeletingTag(false);
     }
   }, [tags, setTags]);
   
   // Reorder tags
-  const reorderTags = useCallback(async (positions: TagPosition[]): Promise<void> => {
+  const reorderTags = useCallback(async (positions: TagPosition[]): Promise<boolean> => {
     try {
       setIsReordering(true);
       
@@ -127,6 +134,8 @@ export function useTagMutations({
         title: 'Tags reordered',
         description: 'Tag order updated successfully',
       });
+      
+      return true;
     } catch (err) {
       console.error('Error reordering tags:', err);
       toast({
@@ -134,6 +143,7 @@ export function useTagMutations({
         description: 'Failed to reorder tags',
         variant: 'destructive',
       });
+      return false;
     } finally {
       setIsReordering(false);
     }

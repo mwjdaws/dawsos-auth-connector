@@ -37,7 +37,7 @@ export interface UseTermMutationsProps {
 }
 
 export interface UseTermMutationsResult {
-  addTerm: (termId: string, reviewRequired: boolean) => Promise<boolean>;
+  addTerm: (termId: string, reviewRequired?: boolean) => Promise<boolean>;
   deleteTerm: (associationId: string) => Promise<boolean>;
   createAndAddTerm: (term: string, description?: string, domain?: string) => Promise<string | null>;
   isAdding: boolean;

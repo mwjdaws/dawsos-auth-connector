@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/hooks/useAuth';
@@ -6,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PlusCircle, RefreshCcw, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { OntologyTerm } from '@/hooks/markdown-editor/types';
+import { OntologyTerm } from '@/hooks/markdown-editor/ontology-terms/types';
 import { useOntologyTerms } from '@/hooks/markdown-viewer/useOntologyTerms';
 import { useTermMutations } from '@/hooks/markdown-viewer/useTermMutations';
 
@@ -17,8 +18,8 @@ interface OntologyTermsPanelProps {
 export const OntologyTermsPanel: React.FC<OntologyTermsPanelProps> = ({ contentId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const { user } = useAuth();
-  const { terms, isLoading, error, handleRefresh } = useOntologyTerms(contentId);
-  const { addTerm, deleteTerm, isAdding, isDeleting } = useTermMutations(contentId);
+  const { terms, isLoading, error, handleRefresh } = useOntologyTerms({ contentId });
+  const { addTerm, deleteTerm, isAdding, isDeleting } = useTermMutations({ contentId });
 
   const filteredTerms = terms.filter(term =>
     term.term.toLowerCase().includes(searchTerm.toLowerCase())
@@ -34,12 +35,7 @@ export const OntologyTermsPanel: React.FC<OntologyTermsPanelProps> = ({ contentI
       return;
     }
 
-    await addTerm({
-      contentId: contentId,
-      termId: term.id,
-      createdBy: user?.id || null,
-      reviewRequired: false
-    });
+    await addTerm(term.id, false);
   };
 
   const handleDeleteTerm = async (termId: string) => {
@@ -52,10 +48,7 @@ export const OntologyTermsPanel: React.FC<OntologyTermsPanelProps> = ({ contentI
       return;
     }
 
-    await deleteTerm({
-      contentId: contentId,
-      termId: termId
-    });
+    await deleteTerm(termId);
   };
 
   return (
@@ -81,7 +74,7 @@ export const OntologyTermsPanel: React.FC<OntologyTermsPanelProps> = ({ contentI
             <Skeleton className="h-4 w-2/3" />
           </div>
         ) : error ? (
-          <p className="text-sm text-destructive">Error: {error}</p>
+          <p className="text-sm text-destructive">{error.message}</p>
         ) : filteredTerms.length === 0 ? (
           <p className="text-sm text-muted-foreground">No terms found.</p>
         ) : (
