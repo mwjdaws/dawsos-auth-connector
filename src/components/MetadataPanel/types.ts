@@ -1,8 +1,8 @@
 
 import { ReactNode } from 'react';
-import type { Tag } from '@/types/tag';
+import { Tag } from '@/types/tag';
 
-// Define OntologyTerm since it's referenced but not exported from base types
+// Define OntologyTerm
 export interface OntologyTerm {
   id: string;
   term: string;
@@ -24,9 +24,6 @@ export interface MetadataPanelProps {
   className?: string;
   children?: ReactNode;
 }
-
-// Re-export the Tag type for backward compatibility
-export type { Tag };
 
 // Source metadata
 export interface SourceMetadata {
@@ -57,9 +54,6 @@ export interface ExternalSourceMetadata {
   needsReview: boolean;
 }
 
-// Re-export the OntologyTerm type for backward compatibility
-export type { OntologyTerm };
-
 // Props for the OntologyTermsSection component
 export interface OntologyTermsSectionProps {
   contentId: string;
@@ -69,3 +63,6 @@ export interface OntologyTermsSectionProps {
   className?: string;
   ontologyTerms?: OntologyTerm[];
 }
+
+// Re-export Tag type from the centralized location
+export type { Tag };

@@ -6,14 +6,10 @@ import { X } from 'lucide-react';
 import { ErrorState } from '@/components/common/states/ErrorState';
 import { LoadingState } from '@/components/common/states/LoadingState';
 import { EmptyState } from '@/components/common/states/EmptyState';
-
-export interface TagItem {
-  id: string;
-  name: string;
-}
+import { Tag } from '@/types/tag';
 
 export interface TagListProps {
-  tags: TagItem[];
+  tags: Tag[] | { id: string; name: string }[];
   isLoading: boolean;
   error?: Error | null;
   knowledgeSourceId?: string;

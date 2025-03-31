@@ -4,14 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
-
-interface Tag {
-  id: string;
-  name: string;
-  content_id?: string;
-  type_id?: string;
-  type_name?: string;
-}
+import { Tag } from "@/types/tag";
 
 interface ManualTagTabProps {
   contentId: string;

@@ -39,6 +39,36 @@ export function ensureValue<T>(value: T | null | undefined, defaultValue: T): T 
 }
 
 /**
+ * Ensures a value is a string
+ */
+export function ensureString(value: any, defaultValue = ''): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  return defaultValue;
+}
+
+/**
+ * Ensures a value is a number
+ */
+export function ensureNumber(value: any, defaultValue = 0): number {
+  if (typeof value === 'number' && !isNaN(value)) {
+    return value;
+  }
+  return defaultValue;
+}
+
+/**
+ * Ensures a value is a boolean
+ */
+export function ensureBoolean(value: any, defaultValue = false): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  return defaultValue;
+}
+
+/**
  * Safe callback function invocation with null/undefined handling
  */
 export function safeCallback<T extends (...args: any[]) => any>(
