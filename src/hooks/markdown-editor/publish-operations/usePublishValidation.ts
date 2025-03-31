@@ -36,7 +36,7 @@ export function usePublishValidation() {
     return {
       isValid: true,
       message: null,
-      errorMessage: undefined
+      errorMessage: ''
     };
   }, []);
 
@@ -58,7 +58,7 @@ export function usePublishValidation() {
     return {
       isValid: true,
       message: null,
-      errorMessage: undefined
+      errorMessage: ''
     };
   };
 

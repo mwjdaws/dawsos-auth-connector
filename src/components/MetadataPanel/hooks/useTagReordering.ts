@@ -1,72 +1,70 @@
 
-import { useState } from "react";
-import { Tag } from "../types";
-import { TagPosition } from "@/utils/validation/types";
+import { useState, useCallback } from 'react';
+import { 
+  DragStartEvent, 
+  DragEndEvent,
+  DragOverEvent,
+  useDndMonitor
+} from '@dnd-kit/core';
+import { Tag } from '@/types/tag';
+import { arrayMove } from '@dnd-kit/sortable';
 
-interface UseTagReorderingProps {
-  tags: Tag[];
-  onSaveOrder?: (positions: TagPosition[]) => Promise<void>;
-}
-
-export function useTagReordering({ tags, onSaveOrder }: UseTagReorderingProps) {
-  const [isSaving, setIsSaving] = useState(false);
-  const [orderedTags, setOrderedTags] = useState<Tag[]>(tags);
-
-  // Reset orderedTags when tags prop changes
-  if (tags !== orderedTags && !isSaving) {
-    setOrderedTags(tags);
-  }
-
-  const handleDragEnd = (event: any) => {
+/**
+ * Custom hook for managing tag drag-and-drop reordering
+ */
+export const useTagReordering = (
+  tags: Tag[], 
+  onReorder: (tags: Tag[]) => void
+) => {
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [reordering, setReordering] = useState(false);
+  
+  // When drag starts, set the active tag ID
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const { active } = event;
+    setActiveId(active.id as string);
+    setReordering(true);
+  }, []);
+  
+  // When drag ends, update the tag order
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     
-    if (!over || active.id === over.id) {
-      return;
+    if (over && active.id !== over.id) {
+      // Find the indices of the tags being dragged
+      const activeIndex = tags.findIndex(tag => tag.id === active.id);
+      const overIndex = tags.findIndex(tag => tag.id === over.id);
+      
+      // Only proceed if both tags were found
+      if (activeIndex !== -1 && overIndex !== -1) {
+        // Create a new array with the updated order
+        const newTags = arrayMove(tags, activeIndex, overIndex);
+        
+        // Update display_order to match the array index
+        const reorderedTags = newTags.map((tag, index) => {
+          if (tag) {
+            return { ...tag, display_order: index };
+          }
+          return tag;
+        }).filter((tag): tag is Tag => tag !== undefined);
+        
+        // Call the onReorder callback with the new order
+        onReorder(reorderedTags);
+      }
     }
     
-    const oldIndex = orderedTags.findIndex(tag => tag.id === active.id);
-    const newIndex = orderedTags.findIndex(tag => tag.id === over.id);
-    
-    if (oldIndex === -1 || newIndex === -1) {
-      return;
-    }
-    
-    const newOrderedTags = [...orderedTags];
-    const [removed] = newOrderedTags.splice(oldIndex, 1);
-    newOrderedTags.splice(newIndex, 0, removed);
-    
-    setOrderedTags(newOrderedTags);
-  };
+    setActiveId(null);
+    setReordering(false);
+  }, [tags, onReorder]);
   
-  const saveOrder = async () => {
-    if (!onSaveOrder) return;
-    
-    const positions: TagPosition[] = orderedTags.map((tag, index) => ({
-      id: tag.id,
-      position: index
-    }));
-    
-    setIsSaving(true);
-    try {
-      await onSaveOrder(positions);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-  
-  const handleReorderComplete = () => {
-    if (onSaveOrder) {
-      saveOrder();
-    }
-  };
+  // Set up monitors for drag events
+  useDndMonitor({
+    onDragStart: handleDragStart,
+    onDragEnd: handleDragEnd
+  });
   
   return {
-    orderedTags,
-    setOrderedTags,
-    handleDragEnd,
-    handleReorderComplete,
-    isSaving
+    activeId,
+    reordering
   };
-}
-
-export default useTagReordering;
+};

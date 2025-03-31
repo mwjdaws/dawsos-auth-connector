@@ -11,6 +11,7 @@ export interface ValidationResult {
   isValid: boolean;
   message: string | null;
   errorMessage?: string;
+  field?: string; // Optional field identifier for form validations
 }
 
 /**
@@ -111,5 +112,5 @@ export interface ErrorOptions {
   showToast?: boolean;
   logError?: boolean;
   rethrow?: boolean;
-  variant?: 'default' | 'destructive';
+  variant?: 'default' | 'destructive' | 'warning';
 }

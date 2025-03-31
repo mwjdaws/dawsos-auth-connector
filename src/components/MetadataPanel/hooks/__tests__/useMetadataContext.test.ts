@@ -1,98 +1,68 @@
 
-import { renderHook, act } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { useMetadataContext } from '../useMetadataContext';
+import { renderHook } from "@testing-library/react-hooks";
+import { useMetadataContext, MetadataProvider } from "../useMetadataContext";
+import { mockMetadataContext } from "../../__tests__/setup/test-types";
+import React from "react";
 
-// Mock the hooks and services that useMetadataContext depends on
-vi.mock('@/hooks/metadata/useTagsQuery', () => ({
-  useTagsQuery: vi.fn(() => ({
-    data: [{ id: 'tag-1', name: 'test', content_id: 'content-1', type_id: null }],
-    isLoading: false,
-    error: null,
-    refetch: vi.fn().mockResolvedValue([])
-  }))
-}));
+describe("useMetadataContext", () => {
+  const wrapper = ({ children }: { children: React.ReactNode }) => (
+    <MetadataProvider value={mockMetadataContext}>
+      {children}
+    </MetadataProvider>
+  );
 
-vi.mock('@/hooks/metadata/useContentExists', () => ({
-  useContentExists: vi.fn(() => ({
-    exists: true,
-    isLoading: false,
-    error: null
-  }))
-}));
-
-vi.mock('@/hooks/metadata/useMetadataQuery', () => ({
-  useMetadataQuery: vi.fn(() => ({
-    data: { id: 'source-1', title: 'Test Source' },
-    isLoading: false,
-    error: null,
-    refetch: vi.fn().mockResolvedValue({})
-  }))
-}));
-
-vi.mock('@/hooks/metadata/useTagMutation', () => ({
-  useTagMutations: vi.fn(() => ({
-    addTag: vi.fn().mockResolvedValue({}),
-    deleteTag: vi.fn().mockResolvedValue(true),
-    isAddingTag: false,
-    isDeletingTag: false,
-    error: null
-  }))
-}));
-
-describe('useMetadataContext', () => {
-  const mockContentId = 'content-1';
-  
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-  
-  it('should initialize with the correct state', () => {
-    const { result } = renderHook(() => useMetadataContext(mockContentId));
+  it("returns the metadata context", () => {
+    const { result } = renderHook(() => useMetadataContext(), { wrapper });
     
-    expect(result.current.contentId).toBe(mockContentId);
-    expect(result.current.tags).toHaveLength(1);
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.error).toBeNull();
+    expect(result.current).toEqual(mockMetadataContext);
   });
-  
-  it('should handle adding a tag', async () => {
-    const { result } = renderHook(() => useMetadataContext(mockContentId));
+
+  it("throws an error when used outside of a MetadataProvider", () => {
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
     
-    if (result.current.handleAddTag) {
-      await act(async () => {
-        await result.current.handleAddTag('new-tag');
-      });
-      
-      // The addTag function from useTagMutation should have been called
-      expect(result.current.addTag).toHaveBeenCalled;
+    expect(() => {
+      renderHook(() => useMetadataContext());
+    }).toThrow("useMetadataContext must be used within a MetadataProvider");
+    
+    consoleError.mockRestore();
+  });
+
+  it("warns when contentId doesn't match the requested contentId", () => {
+    const consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    
+    renderHook(() => useMetadataContext("different-content-id"), { wrapper });
+    
+    expect(consoleWarn).toHaveBeenCalledWith(
+      "useMetadataContext: requested contentId different-content-id doesn't match context contentId test-content-123"
+    );
+    
+    consoleWarn.mockRestore();
+  });
+
+  it("calls refreshMetadata when available", () => {
+    const { result } = renderHook(() => useMetadataContext(), { wrapper });
+    
+    if (result.current.refreshMetadata) {
+      result.current.refreshMetadata();
+      expect(mockMetadataContext.refreshMetadata).toHaveBeenCalled();
     }
   });
   
-  it('should handle deleting a tag', async () => {
-    const { result } = renderHook(() => useMetadataContext(mockContentId));
-    
-    if (result.current.handleDeleteTag) {
-      await act(async () => {
-        await result.current.handleDeleteTag('tag-1');
-      });
-      
-      // The deleteTag function from useTagMutation should have been called
-      expect(result.current.deleteTag).toHaveBeenCalled;
-    }
-  });
-  
-  it('should handle refreshing data', async () => {
-    const { result } = renderHook(() => useMetadataContext(mockContentId));
+  it("calls handleRefresh when available", async () => {
+    const { result } = renderHook(() => useMetadataContext(), { wrapper });
     
     if (result.current.handleRefresh) {
-      await act(async () => {
-        await result.current.handleRefresh();
-      });
-      
-      // The refetch functions should have been called
-      expect(result.current.fetchTags).toHaveBeenCalled;
-      expect(result.current.fetchSourceMetadata).toHaveBeenCalled;
+      await result.current.handleRefresh();
+      expect(mockMetadataContext.handleRefresh).toHaveBeenCalled();
+    }
+  });
+  
+  it("calls fetchTags when available", async () => {
+    const { result } = renderHook(() => useMetadataContext(), { wrapper });
+    
+    if (result.current.fetchTags) {
+      await result.current.fetchTags();
+      expect(mockMetadataContext.fetchTags).toHaveBeenCalled();
     }
   });
 });

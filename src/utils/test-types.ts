@@ -1,95 +1,86 @@
 
+import { ValidationResult } from "./validation/types";
+
 /**
- * Type definitions for test files
+ * Test utility types and mock data
  * 
- * This file provides common type definitions for test files to prevent
- * implicit any type errors in test files.
+ * This file provides common test data structures for use across test files.
  */
 
-import { Tag, OntologyTerm } from '@/components/MetadataPanel/types';
-import { Mock } from 'vitest';
+/**
+ * Mock user for authentication testing
+ */
+export const mockUser = {
+  id: "test-user-id",
+  email: "test@example.com",
+  user_metadata: {
+    name: "Test User",
+    avatar_url: "https://example.com/avatar.png"
+  }
+};
 
-// Header section test props
-export interface HeaderSectionTestProps {
-  handleRefresh: () => void;
-  setIsCollapsed: (value: boolean) => void;
-  isCollapsed: boolean;
-  needsExternalReview?: boolean;
-  isLoading?: boolean;
-}
+/**
+ * Mock session for authentication testing
+ */
+export const mockSession = {
+  access_token: "mock-access-token",
+  refresh_token: "mock-refresh-token",
+  expires_at: Date.now() + 3600,
+  user: mockUser
+};
 
-// External source section test props
-export interface ExternalSourceSectionTestProps {
-  externalSourceUrl: string | null;
-  lastCheckedAt?: string | null;
-  editable: boolean;
-  onMetadataChange?: () => void;
-  contentId: string;
-}
+/**
+ * Mock content source for testing
+ */
+export const mockContentSource = {
+  id: "test-source-id",
+  title: "Test Document",
+  content: "This is test content for a mock document",
+  created_at: "2023-01-01T00:00:00Z",
+  updated_at: "2023-01-02T00:00:00Z",
+  published: false,
+  user_id: "test-user-id",
+  template_id: null,
+  external_source_url: null
+};
 
-// Tags section test props
-export interface TagsSectionTestProps {
-  tags: Tag[];
-  editable: boolean;
-  newTag: string;
-  setNewTag: (value: string) => void;
-  onAddTag: (typeId?: string | null) => Promise<void>;
-  onDeleteTag: (tagId: string) => Promise<void>;
-  contentId: string;
-  onMetadataChange?: () => void;
-}
+/**
+ * Mock tag for testing
+ */
+export const mockTag = {
+  id: "test-tag-id",
+  name: "test-tag",
+  content_id: "test-source-id",
+  type_id: null,
+  type_name: null,
+  display_order: 0
+};
 
-// Domain section test props
-export interface DomainSectionTestProps {
-  domain: string | null;
-}
+/**
+ * Mock ontology term for testing
+ */
+export const mockOntologyTerm = {
+  id: "test-term-id",
+  term: "Test Term",
+  description: "This is a test ontology term",
+  domain: "Test Domain",
+  review_required: false
+};
 
-// Ontology section test props
-export interface OntologySectionTestProps {
-  sourceId: string;
-  editable: boolean;
-}
+/**
+ * Mock validation result (success)
+ */
+export const mockValidationSuccess: ValidationResult = {
+  isValid: true,
+  message: "Validation passed",
+  errorMessage: ""
+};
 
-// Content ID section test props
-export interface ContentIdSectionTestProps {
-  contentId: string;
-}
-
-// Test tag type
-export interface TestTag {
-  id: string;
-  name: string;
-  content_id: string;
-  type_id: string; // Made required to match Tag interface
-  type_name?: string | null;
-}
-
-// Test suggestion type
-export interface TestSuggestion {
-  id: string;
-  term: string;
-  description?: string;
-  domain?: string;
-  score?: number;
-}
-
-// Test callbacks
-export interface TestCallbacks {
-  handleRefresh: Mock;
-  setIsCollapsed: Mock;
-  onAddTag: Mock;
-  onDeleteTag: Mock;
-  setNewTag: Mock;
-  onMetadataChange: Mock;
-}
-
-// Helper function to convert TestTag to Tag
-export function toTag(testTag: TestTag): Tag {
-  return {
-    id: testTag.id,
-    name: testTag.name,
-    content_id: testTag.content_id,
-    type_id: testTag.type_id || '',
-    type_name: testTag.type_name
-  };
-}
+/**
+ * Mock validation result (failure)
+ */
+export const mockValidationFailure: ValidationResult = {
+  isValid: false,
+  message: null,
+  errorMessage: "Validation failed"
+};

@@ -1,119 +1,133 @@
 
-import { renderHook, act } from '@testing-library/react';
-import { useMetadataPanel } from '../useMetadataPanel';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { renderHook, act } from "@testing-library/react-hooks";
+import { useMetadataPanel } from "../useMetadataPanel";
+import { useMetadataQuery } from "@/hooks/metadata/useMetadataQuery";
+import { useTagsQuery } from "@/hooks/metadata/useTagsQuery";
+import { useTagMutations } from "@/hooks/metadata/useTagMutations";
+import { useOntologyTermsQuery } from "@/hooks/metadata/useOntologyTermsQuery";
+import { basicTag, typedTag } from "../../__tests__/setup/test-types";
 
-// Mock the hooks that useMetadataPanel depends on
-vi.mock('../usePanelState', () => ({
-  usePanelState: vi.fn(() => ({
-    isCollapsed: false,
-    setIsCollapsed: vi.fn(),
-    contentExists: true,
-    isCollapsible: true,
-    onMetadataChange: vi.fn(),
-    isValidContent: true,
-    contentValidationResult: null
-  }))
+// Mock the hooks we're using inside useMetadataPanel
+jest.mock("@/hooks/metadata/useMetadataQuery", () => ({
+  useMetadataQuery: jest.fn()
 }));
 
-vi.mock('../useSourceMetadata', () => ({
-  useSourceMetadata: vi.fn(() => ({
-    externalSourceUrl: 'https://example.com',
-    needsExternalReview: false,
-    lastCheckedAt: '2023-01-01T00:00:00Z',
-    isLoading: false,
-    error: null,
-    data: { id: 'source-1', title: 'Example Source' },
-    fetchSourceMetadata: vi.fn().mockResolvedValue({}),
-    setExternalSourceUrl: vi.fn(),
-    setNeedsExternalReview: vi.fn(),
-    updateSourceMetadataState: vi.fn()
-  }))
+jest.mock("@/hooks/metadata/useTagsQuery", () => ({
+  useTagsQuery: jest.fn()
 }));
 
-vi.mock('../tag-operations/useTagOperations', () => ({
-  useTagOperations: vi.fn(() => ({
-    tags: [{ id: 'tag-1', name: 'Test Tag', content_id: 'content-1', type_id: null }],
-    isLoading: false,
-    error: null,
-    newTag: '',
-    setNewTag: vi.fn(),
-    handleAddTag: vi.fn().mockResolvedValue(undefined),
-    handleDeleteTag: vi.fn().mockResolvedValue(undefined),
-    handleReorderTags: vi.fn().mockResolvedValue(undefined),
-    handleRefresh: vi.fn().mockResolvedValue(undefined),
-    isAddingTag: false,
-    isDeletingTag: false,
-    isReordering: false
-  }))
+jest.mock("@/hooks/metadata/useTagMutations", () => ({
+  useTagMutations: jest.fn()
 }));
 
-describe('useMetadataPanel', () => {
-  const mockContentId = 'content-1';
-  const mockOnMetadataChange = vi.fn();
-  
+jest.mock("@/hooks/metadata/useOntologyTermsQuery", () => ({
+  useOntologyTermsQuery: jest.fn()
+}));
+
+describe("useMetadataPanel", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    // Default mocks for all hooks
+    (useMetadataQuery as jest.Mock).mockReturnValue({
+      data: {
+        title: "Test Content",
+        external_source_url: "https://example.com",
+        needs_external_review: false,
+        external_source_checked_at: "2023-01-01T00:00:00Z"
+      },
+      isLoading: false,
+      error: null
+    });
+    
+    (useTagsQuery as jest.Mock).mockReturnValue({
+      data: [basicTag, typedTag],
+      isLoading: false,
+      error: null
+    });
+    
+    (useTagMutations as jest.Mock).mockReturnValue({
+      addTag: jest.fn(),
+      deleteTag: jest.fn(),
+      isAddingTag: false,
+      isDeletingTag: false
+    });
+    
+    (useOntologyTermsQuery as jest.Mock).mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null
+    });
   });
   
-  it('should initialize with the correct state', () => {
-    const { result } = renderHook(() => useMetadataPanel({
-      contentId: mockContentId,
-      onMetadataChange: mockOnMetadataChange
-    }));
+  it("initializes with correct state", () => {
+    const { result } = renderHook(() => 
+      useMetadataPanel({ contentId: "test-123" })
+    );
     
-    expect(result.current.contentId).toBe(mockContentId);
     expect(result.current.isLoading).toBe(false);
-    expect(result.current.error).toBeNull();
-    expect(result.current.tags).toHaveLength(1);
-    expect(result.current.externalSourceUrl).toBe('https://example.com');
+    expect(result.current.contentId).toBe("test-123");
+    expect(result.current.tags.length).toBe(2);
+    expect(result.current.isCollapsed).toBe(false);
   });
   
-  it('should handle refreshing data', async () => {
-    const { result } = renderHook(() => useMetadataPanel({
-      contentId: mockContentId,
-      onMetadataChange: mockOnMetadataChange
-    }));
+  it("uses initialCollapsed prop correctly", () => {
+    const { result } = renderHook(() => 
+      useMetadataPanel({ 
+        contentId: "test-123", 
+        isCollapsible: true,
+        initialCollapsed: true 
+      })
+    );
     
-    await act(async () => {
-      await result.current.handleRefresh();
-    });
-    
-    // We expect fetchSourceMetadata and refreshTags to be called
-    expect(result.current.fetchSourceMetadata).toHaveBeenCalled();
-    // Since we're now mocking handleRefresh, this is how we indirectly check that refreshTags was called
-    expect(result.current.handleMetadataChange).toHaveBeenCalled;
+    expect(result.current.isCollapsed).toBe(true);
   });
   
-  it('should handle tag operations', async () => {
-    const { result } = renderHook(() => useMetadataPanel({
-      contentId: mockContentId,
-      onMetadataChange: mockOnMetadataChange
-    }));
-    
-    // Test add tag
-    await act(async () => {
-      await result.current.handleAddTag();
+  it("updates state when content is loading", () => {
+    (useMetadataQuery as jest.Mock).mockReturnValue({
+      data: null,
+      isLoading: true,
+      error: null
     });
-    expect(result.current.handleAddTag).toHaveBeenCalled;
     
-    // Test delete tag
-    await act(async () => {
-      await result.current.handleDeleteTag('tag-1');
+    const { result } = renderHook(() => 
+      useMetadataPanel({ contentId: "test-123" })
+    );
+    
+    expect(result.current.isLoading).toBe(true);
+  });
+  
+  it("updates newTag state", () => {
+    const { result } = renderHook(() => 
+      useMetadataPanel({ contentId: "test-123" })
+    );
+    
+    act(() => {
+      result.current.setNewTag("test tag");
     });
-    expect(result.current.handleDeleteTag).toHaveBeenCalled;
     
-    // Test reorder tags
-    await act(async () => {
-      await result.current.handleReorderTags([
-        { id: 'tag-1', name: 'Test Tag', content_id: 'content-1', type_id: null }
-      ]);
+    expect(result.current.newTag).toBe("test tag");
+  });
+  
+  it("handles tag addition", () => {
+    const mockAddTag = jest.fn();
+    (useTagMutations as jest.Mock).mockReturnValue({
+      addTag: mockAddTag,
+      deleteTag: jest.fn(),
+      isAddingTag: false,
+      isDeletingTag: false
     });
-    expect(result.current.handleReorderTags).toHaveBeenCalled;
     
-    // Check loading states
-    expect(result.current.isAddingTag).toBe(false);
-    expect(result.current.isDeletingTag).toBe(false);
-    expect(result.current.isReordering).toBe(false);
+    const { result } = renderHook(() => 
+      useMetadataPanel({ contentId: "test-123" })
+    );
+    
+    act(() => {
+      result.current.handleAddTag("new tag");
+    });
+    
+    expect(mockAddTag).toHaveBeenCalledWith({
+      contentId: "test-123",
+      name: "new tag",
+      display_order: 2 // Should be the index after the existing tags
+    });
   });
 });

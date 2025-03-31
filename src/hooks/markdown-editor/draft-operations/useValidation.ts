@@ -1,14 +1,15 @@
 
 import { toast } from '@/hooks/use-toast';
 import { validateDocument } from '@/utils/validation/documentValidation';
+import { ValidationResult } from '@/utils/validation/types';
 
 export function useValidation() {
   /**
    * Validate document for saving
    */
-  const validateDocumentForSave = (title: string): { isValid: boolean; errorMessage: string | null } => {
-    // Use the existing validation function
-    const validationResult = validateDocument(title);
+  const validateDocumentForSave = (title: string): ValidationResult => {
+    // Use the existing validation function with title
+    const validationResult = validateDocument({ title, content: '' });
     
     if (!validationResult.isValid) {
       // Show toast with error message
