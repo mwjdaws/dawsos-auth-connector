@@ -4,6 +4,18 @@
  * 
  * This hook combines tag state management, fetching, and mutations into a single
  * interface for managing tag operations in the MetadataPanel component.
+ * 
+ * Architecture:
+ * - State management: handled by useTagState
+ * - Data fetching: handled by useTagFetch
+ * - Data mutations: handled by useTagMutations
+ * 
+ * Features:
+ * - Fetching tags for a content item
+ * - Adding new tags
+ * - Deleting tags
+ * - Reordering tags via drag and drop
+ * - Loading, error, and operation states
  */
 
 import { useState, useCallback } from 'react';
@@ -12,6 +24,7 @@ import { useTagFetch } from './useTagFetch';
 import { useTagMutations } from './useTagMutations';
 import { UseTagOperationsResult, Tag, TagPosition } from './types';
 import { handleError } from '@/utils/error-handling';
+import { useValidation } from '@/hooks/markdown-editor/draft-operations/useValidation';
 
 /**
  * Main hook for tag operations that combines state, fetching, and mutations
@@ -21,6 +34,7 @@ import { handleError } from '@/utils/error-handling';
  */
 export const useTagOperations = (contentId: string): UseTagOperationsResult => {
   const { tags, setTags, isLoading, setIsLoading, error, setError, newTag, setNewTag } = useTagState({});
+  const { isValidTag } = useValidation();
   
   // Set up tag fetching
   const { 
@@ -65,14 +79,26 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
   /**
    * Add a new tag to the content
    * 
+   * @param tagName Tag text to add
    * @param typeId Optional type ID for the tag
    */
-  const handleAddTag = async (typeId?: string | null) => {
-    if (!newTag.trim()) return;
+  const handleAddTag = async (tagName: string, typeId?: string | null) => {
+    if (!tagName.trim()) return;
+    
+    // Validate the tag first
+    const validation = isValidTag(tagName);
+    if (!validation.isValid) {
+      handleError(
+        new Error(validation.errorMessage || 'Invalid tag'),
+        validation.errorMessage || 'Invalid tag',
+        { level: "warning", technical: false }
+      );
+      return;
+    }
     
     try {
       const result = await addTag({ 
-        name: newTag, 
+        name: tagName, 
         contentId,
         typeId: typeId || null
       });

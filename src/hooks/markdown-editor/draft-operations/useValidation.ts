@@ -3,19 +3,31 @@ import { toast } from '@/hooks/use-toast';
 import { validateDocument } from '@/utils/validation/documentValidation';
 import { ValidationResult } from '@/utils/validation/types';
 
+/**
+ * Hook for document validation operations
+ * 
+ * Provides functions to validate documents before saving or publishing
+ */
 export function useValidation() {
   /**
    * Validate document for saving
+   * 
+   * @param title Document title to validate
+   * @param content Optional document content to validate
+   * @returns Validation result with isValid flag and any error messages
    */
-  const validateDocumentForSave = (title: string): ValidationResult => {
-    // Use the existing validation function with title
-    const validationResult = validateDocument({ title, content: '' });
+  const validateDocumentForSave = (title: string, content?: string): ValidationResult => {
+    // Use the existing validation function with title and optional content
+    const validationResult = validateDocument({ 
+      title, 
+      content: content || '' 
+    });
     
-    if (!validationResult.isValid) {
+    if (!validationResult.isValid && validationResult.errorMessage) {
       // Show toast with error message
       toast({
         title: "Validation Error",
-        description: validationResult.errorMessage || "Please fix validation errors before saving",
+        description: validationResult.errorMessage,
         variant: "destructive"
       });
     }
@@ -23,7 +35,40 @@ export function useValidation() {
     return validationResult;
   };
 
+  /**
+   * Check if a tag is valid
+   * 
+   * @param tag Tag text to validate
+   * @returns Validation result with isValid flag and any error messages
+   */
+  const isValidTag = (tag: string): ValidationResult => {
+    if (!tag || tag.trim() === '') {
+      return {
+        isValid: false,
+        message: null,
+        errorMessage: 'Tag cannot be empty'
+      };
+    }
+    
+    if (tag.length < 2) {
+      return {
+        isValid: false,
+        message: null,
+        errorMessage: 'Tag must be at least 2 characters long'
+      };
+    }
+    
+    // Add more tag validation rules as needed
+    
+    return {
+      isValid: true,
+      message: null,
+      errorMessage: ''
+    };
+  };
+
   return {
-    validateDocumentForSave
+    validateDocumentForSave,
+    isValidTag
   };
 }

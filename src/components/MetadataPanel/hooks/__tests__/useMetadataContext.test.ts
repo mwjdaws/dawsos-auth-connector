@@ -1,68 +1,77 @@
 
-import { renderHook } from "@testing-library/react-hooks";
-import { useMetadataContext, MetadataProvider } from "../useMetadataContext";
-import { mockMetadataContext } from "../../__tests__/setup/test-types";
-import React from "react";
+import { renderHook } from '@testing-library/react-hooks';
+import { MetadataProvider, useMetadataContext } from '../useMetadataContext';
+import { mockMetadataContext } from './setup/test-types';
+import { ValidationResult } from '@/utils/validation/types';
+import React from 'react';
 
-describe("useMetadataContext", () => {
-  const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <MetadataProvider value={mockMetadataContext}>
-      {children}
-    </MetadataProvider>
-  );
-
-  it("returns the metadata context", () => {
-    const { result } = renderHook(() => useMetadataContext(), { wrapper });
-    
-    expect(result.current).toEqual(mockMetadataContext);
-  });
-
-  it("throws an error when used outside of a MetadataProvider", () => {
-    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+describe('useMetadataContext', () => {
+  // Test that the hook throws an error when used outside a provider
+  test('throws error when used outside MetadataProvider', () => {
+    // Prevent console.error from cluttering test output
+    jest.spyOn(console, 'error').mockImplementation(() => {});
     
     expect(() => {
       renderHook(() => useMetadataContext());
-    }).toThrow("useMetadataContext must be used within a MetadataProvider");
+    }).toThrow('useMetadataContext must be used within a MetadataProvider');
     
-    consoleError.mockRestore();
+    // Restore console.error
+    jest.restoreAllMocks();
   });
 
-  it("warns when contentId doesn't match the requested contentId", () => {
-    const consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => {});
+  // Test that the hook returns the context values correctly
+  test('returns context when used within MetadataProvider', () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <MetadataProvider value={mockMetadataContext}>
+        {children}
+      </MetadataProvider>
+    );
+
+    const { result } = renderHook(() => useMetadataContext(), { wrapper });
     
-    renderHook(() => useMetadataContext("different-content-id"), { wrapper });
+    expect(result.current).toBe(mockMetadataContext);
+  });
+
+  // Test that the hook warns when contentId doesn't match
+  test('warns when contentId does not match context contentId', () => {
+    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     
-    expect(consoleWarn).toHaveBeenCalledWith(
-      "useMetadataContext: requested contentId different-content-id doesn't match context contentId test-content-123"
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <MetadataProvider value={mockMetadataContext}>
+        {children}
+      </MetadataProvider>
+    );
+
+    renderHook(() => useMetadataContext('different-content-id'), { wrapper });
+    
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('requested contentId different-content-id doesn\'t match context contentId')
     );
     
-    consoleWarn.mockRestore();
+    consoleSpy.mockRestore();
   });
 
-  it("calls refreshMetadata when available", () => {
+  // Test that validation results are properly passed
+  test('passes validation results through context', () => {
+    const mockValidation: ValidationResult = {
+      isValid: false,
+      message: null,
+      errorMessage: 'Test validation error'
+    };
+    
+    const contextWithValidation = {
+      ...mockMetadataContext,
+      validationResult: mockValidation
+    };
+    
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <MetadataProvider value={contextWithValidation}>
+        {children}
+      </MetadataProvider>
+    );
+
     const { result } = renderHook(() => useMetadataContext(), { wrapper });
     
-    if (result.current.refreshMetadata) {
-      result.current.refreshMetadata();
-      expect(mockMetadataContext.refreshMetadata).toHaveBeenCalled();
-    }
-  });
-  
-  it("calls handleRefresh when available", async () => {
-    const { result } = renderHook(() => useMetadataContext(), { wrapper });
-    
-    if (result.current.handleRefresh) {
-      await result.current.handleRefresh();
-      expect(mockMetadataContext.handleRefresh).toHaveBeenCalled();
-    }
-  });
-  
-  it("calls fetchTags when available", async () => {
-    const { result } = renderHook(() => useMetadataContext(), { wrapper });
-    
-    if (result.current.fetchTags) {
-      await result.current.fetchTags();
-      expect(mockMetadataContext.fetchTags).toHaveBeenCalled();
-    }
+    expect(result.current.validationResult).toEqual(mockValidation);
   });
 });

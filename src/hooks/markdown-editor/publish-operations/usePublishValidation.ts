@@ -35,36 +35,58 @@ export function usePublishValidation() {
 
     return {
       isValid: true,
-      message: null,
-      errorMessage: ''
+      message: 'Title validation passed',
+      errorMessage: null
     };
+  }, []);
+
+  /**
+   * Validates a document content
+   * 
+   * @param content Document content to validate
+   * @returns Validation result
+   */
+  const validateContent = useCallback((content: string): ValidationResult => {
+    // Use the existing validation function
+    return validateDocument({ title: '', content });
   }, []);
 
   /**
    * Validates a document before publishing
    * 
    * @param title Document title
+   * @param content Document content
    * @returns Validation result
    */
-  const validateForPublish = (title: string): ValidationResult => {
+  const validateForPublish = useCallback((title: string, content: string): ValidationResult => {
+    // First check title
     const titleValidation = validateTitle(title);
-    
-    // If title is invalid, return that error
     if (!titleValidation.isValid) {
+      setValidationResult(titleValidation);
       return titleValidation;
     }
     
+    // Then check content
+    const contentValidation = validateContent(content);
+    if (!contentValidation.isValid) {
+      setValidationResult(contentValidation);
+      return contentValidation;
+    }
+    
     // All checks passed
-    return {
+    const result = {
       isValid: true,
-      message: null,
-      errorMessage: ''
+      message: 'Document is valid for publishing',
+      errorMessage: null
     };
-  };
+    
+    setValidationResult(result);
+    return result;
+  }, [validateTitle, validateContent]);
 
   return {
     validateTitle,
-    validateContent: validateDocument,
+    validateContent,
     validateForPublish,
     validationResult
   };

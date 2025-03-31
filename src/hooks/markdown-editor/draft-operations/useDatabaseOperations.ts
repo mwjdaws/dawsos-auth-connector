@@ -5,10 +5,26 @@ import { SaveDraftResult } from '../types';
 
 /**
  * Hook for database operations related to drafts
+ * 
+ * This hook encapsulates all database interactions for saving drafts,
+ * providing a clean interface for the rest of the application to use.
+ * It handles both creation of new documents and updates to existing ones.
  */
 export const useDatabaseOperations = () => {
   /**
    * Perform database operations for saving a draft
+   * 
+   * This function handles the complexity of determining whether to create
+   * a new document or update an existing one. It also manages temporary
+   * documents for unauthenticated users.
+   * 
+   * @param title Document title
+   * @param content Document content
+   * @param templateId Optional template ID
+   * @param externalSourceUrl External source URL if applicable
+   * @param userId User ID of the document owner
+   * @param documentId Optional existing document ID
+   * @returns Promise resolving to a SaveDraftResult object
    */
   const performDatabaseOperation = async (
     title: string,

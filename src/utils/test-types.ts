@@ -1,4 +1,3 @@
-
 import { ValidationResult } from "./validation/types";
 
 /**
@@ -73,7 +72,7 @@ export const mockOntologyTerm = {
 export const mockValidationSuccess: ValidationResult = {
   isValid: true,
   message: "Validation passed",
-  errorMessage: ""
+  errorMessage: null
 };
 
 /**
