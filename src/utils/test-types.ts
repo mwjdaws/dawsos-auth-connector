@@ -7,6 +7,7 @@
  */
 
 import { Tag, OntologyTerm } from '@/components/MetadataPanel/types';
+import { Mock } from 'vitest';
 
 // Header section test props
 export interface HeaderSectionTestProps {
@@ -34,7 +35,7 @@ export interface TagsSectionTestProps {
   setNewTag: (value: string) => void;
   onAddTag: (typeId?: string | null) => Promise<void>;
   onDeleteTag: (tagId: string) => Promise<void>;
-  contentId?: string;
+  contentId: string;
   onMetadataChange?: () => void;
 }
 
@@ -59,7 +60,8 @@ export interface TestTag {
   id: string;
   name: string;
   content_id: string;
-  type_id?: string | null;
+  type_id: string; // Made required to match Tag interface
+  type_name?: string | null;
 }
 
 // Test suggestion type
@@ -69,4 +71,25 @@ export interface TestSuggestion {
   description?: string;
   domain?: string;
   score?: number;
+}
+
+// Test callbacks
+export interface TestCallbacks {
+  handleRefresh: Mock;
+  setIsCollapsed: Mock;
+  onAddTag: Mock;
+  onDeleteTag: Mock;
+  setNewTag: Mock;
+  onMetadataChange: Mock;
+}
+
+// Helper function to convert TestTag to Tag
+export function toTag(testTag: TestTag): Tag {
+  return {
+    id: testTag.id,
+    name: testTag.name,
+    content_id: testTag.content_id,
+    type_id: testTag.type_id || '',
+    type_name: testTag.type_name
+  };
 }

@@ -1,125 +1,74 @@
 
 import React from 'react';
-import { ZoomIn, ZoomOut } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { ensureNumber } from '../compatibility';
+import { ensureNumber, ensureValidZoom } from '../compatibility';
 
-export interface GraphZoomControlProps {
+interface GraphZoomControlProps {
   zoom: number;
   setZoom: (zoom: number) => void;
-  minZoom?: number;
-  maxZoom?: number;
-  step?: number;
-  onZoomChange?: (newZoom: number) => void;
-  onResetZoom?: () => void;
+  onResetZoom: () => void;
 }
 
 /**
  * GraphZoomControl Component
  * 
- * Provides zoom controls for graph rendering with slider and buttons
- * 
- * @param zoom - Current zoom level
- * @param setZoom - Function to set the zoom level
- * @param minZoom - Minimum zoom level (default: 0.1)
- * @param maxZoom - Maximum zoom level (default: 3)
- * @param step - Step increment for the slider (default: 0.1)
- * @param onZoomChange - Optional callback for zoom change
- * @param onResetZoom - Optional callback for zoom reset
+ * This component provides zoom controls for the graph visualization,
+ * allowing users to zoom in, zoom out, and reset the zoom level.
  */
-export function GraphZoomControl({
-  zoom,
-  setZoom,
-  minZoom = 0.1,
-  maxZoom = 3,
-  step = 0.1,
-  onZoomChange,
-  onResetZoom
+export function GraphZoomControl({ 
+  zoom, 
+  setZoom, 
+  onResetZoom 
 }: GraphZoomControlProps) {
-  // Ensure zoom is a valid number and constrained
-  const safeZoom = ensureNumber(zoom, 1);
-  const constrainedZoom = Math.max(minZoom, Math.min(maxZoom, safeZoom));
+  const safeZoom = ensureValidZoom(zoom);
   
-  const handleChange = (value: number[]) => {
-    if (value.length > 0 && typeof value[0] === 'number') {
-      setZoom(value[0]);
-      if (onZoomChange) {
-        onZoomChange(value[0]);
-      }
-    }
+  // Zoom in by 10%
+  const handleZoomIn = () => {
+    const newZoom = Math.min(2, safeZoom * 1.1);
+    setZoom(newZoom);
   };
-
-  const zoomIn = () => {
-    if (constrainedZoom < maxZoom) {
-      const newZoom = Math.min(maxZoom, constrainedZoom + step);
-      setZoom(newZoom);
-      if (onZoomChange) {
-        onZoomChange(newZoom);
-      }
-    }
+  
+  // Zoom out by 10%
+  const handleZoomOut = () => {
+    const newZoom = Math.max(0.1, safeZoom * 0.9);
+    setZoom(newZoom);
   };
-
-  const zoomOut = () => {
-    if (constrainedZoom > minZoom) {
-      const newZoom = Math.max(minZoom, constrainedZoom - step);
-      setZoom(newZoom);
-      if (onZoomChange) {
-        onZoomChange(newZoom);
-      }
-    }
-  };
-
-  const handleReset = () => {
-    setZoom(1);
-    if (onResetZoom) {
-      onResetZoom();
-    }
-  };
-
+  
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center space-x-2 bg-background/90 p-1 rounded-md shadow-sm border">
       <Button
-        variant="outline"
+        variant="ghost"
         size="sm"
-        onClick={zoomOut}
-        disabled={constrainedZoom <= minZoom}
-        className="h-7 w-7"
-        aria-label="Zoom Out"
+        onClick={handleZoomOut}
+        aria-label="Zoom out"
+        className="h-8 w-8 p-0"
       >
         <ZoomOut className="h-4 w-4" />
       </Button>
       
-      <div className="w-24">
-        <Slider
-          value={[constrainedZoom]}
-          min={minZoom}
-          max={maxZoom}
-          step={step}
-          onValueChange={handleChange}
-          aria-label="Zoom Level"
-        />
-      </div>
+      <span className="text-xs font-mono w-12 text-center">
+        {Math.round(safeZoom * 100)}%
+      </span>
       
       <Button
-        variant="outline"
+        variant="ghost"
         size="sm"
-        onClick={zoomIn}
-        disabled={constrainedZoom >= maxZoom}
-        className="h-7 w-7"
-        aria-label="Zoom In"
+        onClick={handleZoomIn}
+        aria-label="Zoom in"
+        className="h-8 w-8 p-0"
       >
         <ZoomIn className="h-4 w-4" />
       </Button>
       
       <Button
-        variant="outline"
+        variant="ghost"
         size="sm"
-        onClick={handleReset}
-        className="text-xs ml-1"
-        aria-label="Reset Zoom"
+        onClick={onResetZoom}
+        aria-label="Reset zoom"
+        className="h-8 w-8 p-0"
       >
-        {Math.round(constrainedZoom * 100)}%
+        <Maximize className="h-4 w-4" />
       </Button>
     </div>
   );

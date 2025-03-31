@@ -39,7 +39,6 @@ export function GraphControls({
           zoom={zoom} 
           setZoom={onZoomChange} 
           onResetZoom={onResetZoom}
-          onZoomChange={onZoomChange}
         />
       </div>
     </div>

@@ -1,99 +1,116 @@
 
 /**
- * Type Compatibility Layer
+ * Utility functions for compatibility across the application
+ */
+
+/**
+ * Safely calls a callback function if it exists
  * 
- * This module provides utilities to handle type compatibility issues between
- * different parts of the application, especially for nullable/undefined values.
+ * @param callback The callback function to call
+ * @param defaultFn A default function to call if the callback is null or undefined
+ * @param args Arguments to pass to the callback
+ * @returns The result of the callback or default function
  */
-
-/**
- * Ensures a value is a string, never undefined or null
- */
-export function ensureString(value: string | null | undefined): string {
-  return value || '';
+export function safeCallback<T extends (...args: any[]) => any>(
+  callback: T | null | undefined,
+  defaultFn: (...args: Parameters<T>) => ReturnType<T>,
+  ...args: Parameters<T>
+): ReturnType<T> {
+  if (typeof callback === 'function') {
+    return callback(...args);
+  }
+  return defaultFn(...args);
 }
 
 /**
- * Ensures a value is a number, never undefined or null
+ * Convert null to undefined
+ * 
+ * @param value The value to convert
+ * @returns undefined if the value is null, otherwise the value
  */
-export function ensureNumber(value: number | null | undefined): number {
-  return typeof value === 'number' ? value : 0;
+export function nullToUndefined<T>(value: T | null): T | undefined {
+  return value === null ? undefined : value;
 }
 
 /**
- * Ensures a boolean value, never undefined or null
+ * Convert undefined to null
+ * 
+ * @param value The value to convert
+ * @returns null if the value is undefined, otherwise the value
  */
-export function ensureBoolean(value: boolean | null | undefined): boolean {
-  return value === true;
-}
-
-/**
- * Ensures an array is never undefined or null
- */
-export function ensureArray<T>(value: T[] | null | undefined): T[] {
-  return value || [];
-}
-
-/**
- * Ensures a value is either the provided value or null (not undefined)
- */
-export function ensureNullable<T>(value: T | null | undefined): T | null {
+export function undefinedToNull<T>(value: T | undefined): T | null {
   return value === undefined ? null : value;
 }
 
 /**
- * Creates a fallback object for when an object might be undefined
+ * Ensures a value is a string
+ * 
+ * @param value The value to check
+ * @param defaultValue The default value to use if the value is not a string
+ * @returns The value as a string or the default value
  */
-export function ensureObject<T extends object>(value: T | null | undefined, fallback: T): T {
-  return value || fallback;
+export function ensureString(value: any, defaultValue = ''): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  return defaultValue;
 }
 
 /**
- * Safely access a property that might be undefined
+ * Ensures a value is a number
+ * 
+ * @param value The value to check
+ * @param defaultValue The default value to use if the value is not a number
+ * @returns The value as a number or the default value
  */
-export function safelyAccessProperty<T, K extends keyof T>(obj: T | null | undefined, property: K): T[K] | undefined {
-  return obj ? obj[property] : undefined;
+export function ensureNumber(value: any, defaultValue = 0): number {
+  if (typeof value === 'number' && !isNaN(value)) {
+    return value;
+  }
+  return defaultValue;
 }
 
 /**
- * Creates a safe function that won't throw if the function is undefined
+ * Ensures a value is a boolean
+ * 
+ * @param value The value to check
+ * @param defaultValue The default value to use if the value is not a boolean
+ * @returns The value as a boolean or the default value
  */
-export function createSafeFunction<T extends (...args: any[]) => any>(fn: T | undefined | null): T {
-  return ((...args: any[]) => {
-    if (typeof fn === 'function') {
-      return fn(...args);
-    }
-    return undefined;
-  }) as T;
+export function ensureBoolean(value: any, defaultValue = false): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  return defaultValue;
 }
 
 /**
- * Type guard to check if a value is defined (not null or undefined)
+ * Ensures a value is an object
+ * 
+ * @param value The value to check
+ * @param defaultValue The default value to use if the value is not an object
+ * @returns The value as an object or the default value
  */
-export function isDefined<T>(value: T | null | undefined): value is T {
-  return value !== null && value !== undefined;
+export function ensureObject<T extends object>(value: any, defaultValue: T): T {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as T;
+  }
+  return defaultValue;
 }
 
 /**
- * Ensures an ID value is always a string (for IDs that might be nullable)
+ * Creates a boolean validation result
+ * 
+ * @param isValid Whether the validation passed
+ * @param errorMessage The error message if validation failed
+ * @returns A validation result object
  */
-export function ensureId(id: string | null | undefined): string {
-  return id || '';
-}
-
-/**
- * Type compatibility for error handling options
- */
-export interface ErrorHandlingCompatOptions {
-  level?: string;
-  context?: Record<string, any>;
-  silent?: boolean;
-  technical?: boolean;
-  title?: string;
-  actionLabel?: string;
-  onRetry?: () => void;
-  preventDuplicate?: boolean;
-  duration?: number;
-  deduplicate?: boolean;
-  action?: any; // For backward compatibility
+export function createBooleanValidationResult(
+  isValid: boolean,
+  errorMessage: string | null = null
+): { isValid: boolean; errorMessage: string | null } {
+  return {
+    isValid,
+    errorMessage: isValid ? null : errorMessage || 'Validation failed'
+  };
 }

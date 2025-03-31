@@ -1,66 +1,132 @@
 
-import { GraphProps, GraphData } from './types';
+/**
+ * Compatibility utilities for RelationshipGraph
+ * 
+ * These functions provide type safety and compatibility between various
+ * interfaces and components in the graph system.
+ */
+
+import { GraphData, GraphNode, GraphLink, GraphProps, GraphRendererRef } from './types';
 
 /**
- * Ensures that zoom level is valid
- * 
- * @param zoom - The zoom level to validate
- * @param defaultValue - Default zoom level if invalid
- * @returns A valid zoom level
+ * Creates a compatible graph reference
  */
-export function ensureValidZoom(zoom: number | undefined, defaultValue: number = 1): number {
-  if (typeof zoom !== 'number' || isNaN(zoom) || zoom <= 0) {
-    return defaultValue;
-  }
-  
-  // Constrain zoom to reasonable bounds
-  return Math.max(0.1, Math.min(5, zoom));
-}
-
-/**
- * Creates safe graph props with defaults
- * 
- * @param props - Graph props to sanitize
- * @returns Safe graph props with defaults for missing values
- */
-export function createSafeGraphProps(props: GraphProps): GraphProps {
+export function createCompatibleGraphRef(ref: any): GraphRendererRef {
   return {
-    startingNodeId: props.startingNodeId || '',
-    width: typeof props.width === 'number' ? props.width : 800,
-    height: typeof props.height === 'number' ? props.height : 600,
-    hasAttemptedRetry: !!props.hasAttemptedRetry
+    zoomToFit: () => {
+      if (ref?.current?.zoomToFit) {
+        ref.current.zoomToFit();
+      }
+    },
+    centerGraph: () => {
+      if (ref?.current?.centerGraph) {
+        ref.current.centerGraph();
+      }
+    },
+    findNode: (nodeId: string) => {
+      if (ref?.current?.findNode) {
+        return ref.current.findNode(nodeId);
+      }
+      return null;
+    }
   };
 }
 
 /**
- * Creates empty graph data
- * 
- * @returns Empty graph data structure
+ * Ensures a value is a number
  */
-export function createEmptyGraphData(): GraphData {
-  return {
-    nodes: [],
-    links: []
-  };
+export function ensureNumber(value: any, defaultValue = 0): number {
+  if (typeof value === 'number' && !isNaN(value)) {
+    return value;
+  }
+  return defaultValue;
 }
 
 /**
- * Ensures graph data is valid
- * 
- * @param data - Graph data to validate
- * @returns Valid graph data
+ * Ensures a value is a string
  */
-export function ensureValidGraphData(data: GraphData | null | undefined): GraphData {
-  if (!data || !Array.isArray(data.nodes) || !Array.isArray(data.links)) {
-    return createEmptyGraphData();
+export function ensureString(value: any, defaultValue = ''): string {
+  if (typeof value === 'string') {
+    return value;
   }
-  
+  return defaultValue;
+}
+
+/**
+ * Ensures a value is a boolean
+ */
+export function ensureBoolean(value: any, defaultValue = false): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  return defaultValue;
+}
+
+/**
+ * Ensures a zoom value is valid
+ */
+export function ensureValidZoom(zoom: any): number {
+  const numberZoom = ensureNumber(zoom, 1);
+  return Math.max(0.1, Math.min(2, numberZoom));
+}
+
+/**
+ * Sanitizes graph data to ensure all required properties are present
+ */
+export function sanitizeGraphData(data: any): GraphData {
+  if (!data) {
+    return { nodes: [], links: [] };
+  }
+
+  const nodes: GraphNode[] = Array.isArray(data.nodes) 
+    ? data.nodes.map((node: any) => ({
+        id: ensureString(node.id),
+        name: ensureString(node.name),
+        val: ensureNumber(node.val, 1),
+        type: ensureString(node.type, 'document'),
+        title: ensureString(node.title, node.name || node.id || ''),
+        ...node
+      }))
+    : [];
+
+  const links: GraphLink[] = Array.isArray(data.links)
+    ? data.links.map((link: any) => ({
+        source: ensureString(link.source),
+        target: ensureString(link.target),
+        type: ensureString(link.type, 'default'),
+        ...link
+      }))
+    : [];
+
+  return { nodes, links };
+}
+
+/**
+ * Creates safe graph props from potentially unsafe input
+ */
+export function createSafeGraphProps(props: any): GraphProps {
   return {
-    nodes: data.nodes.filter(node => node && typeof node.id === 'string'),
-    links: data.links.filter(link => 
-      link && 
-      typeof link.source === 'string' && 
-      typeof link.target === 'string'
-    )
+    data: sanitizeGraphData(props.data),
+    width: ensureNumber(props.width, 800),
+    height: ensureNumber(props.height, 600),
+    onNodeClick: props.onNodeClick || (() => {}),
+    onNodeHover: props.onNodeHover || (() => {}),
+    onLinkClick: props.onLinkClick || (() => {}),
+    nodeColor: props.nodeColor || ((node) => '#1f77b4'),
+    linkColor: props.linkColor || ((link) => '#999'),
+    nodeLabel: props.nodeLabel || ((node) => node.name || node.id),
+    linkLabel: props.linkLabel || ((link) => ''),
+    nodeLabelVisibility: props.nodeLabelVisibility || (() => true),
+    linkLabelVisibility: props.linkLabelVisibility || (() => false),
+    nodeSize: props.nodeSize || ((node) => 7),
+    linkWidth: props.linkWidth || ((link) => 1),
+    nodeCanvasObject: props.nodeCanvasObject,
+    linkCanvasObject: props.linkCanvasObject,
+    cooldownTime: ensureNumber(props.cooldownTime, 15000),
+    centerAtInit: ensureBoolean(props.centerAtInit, true),
+    showLabels: ensureBoolean(props.showLabels, true),
+    labelSize: ensureNumber(props.labelSize, 12),
+    defaultNodeColor: ensureString(props.defaultNodeColor, '#1f77b4'),
+    defaultLinkColor: ensureString(props.defaultLinkColor, '#999'),
   };
 }

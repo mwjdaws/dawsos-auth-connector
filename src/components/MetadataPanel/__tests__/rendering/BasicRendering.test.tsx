@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { vi, describe, test, expect } from 'vitest';
 import { HeaderSection } from '../../sections/HeaderSection';
 import { ExternalSourceSection } from '../../sections/ExternalSourceSection';
 import { TagsSection } from '../../sections/TagsSection';
@@ -14,7 +15,8 @@ import {
   OntologySectionTestProps,
   ContentIdSectionTestProps,
   DomainSectionTestProps,
-  TestTag
+  TestTag,
+  toTag
 } from '@/utils/test-types';
 
 describe('MetadataPanel Basic Rendering', () => {
@@ -34,10 +36,10 @@ describe('MetadataPanel Basic Rendering', () => {
       );
     };
 
-    it('should render the refresh button', () => {
+    test('should render the refresh button', () => {
       renderHeaderSection({
-        handleRefresh: jest.fn(),
-        setIsCollapsed: jest.fn(),
+        handleRefresh: vi.fn(),
+        setIsCollapsed: vi.fn(),
         isCollapsed: false
       });
       expect(screen.getByLabelText(/refresh metadata/i)).toBeInTheDocument();
@@ -48,18 +50,19 @@ describe('MetadataPanel Basic Rendering', () => {
   describe('ExternalSourceSection', () => {
     const renderExternalSourceSection = ({
       externalSourceUrl,
-      editable
+      editable,
+      contentId
     }: ExternalSourceSectionTestProps) => {
       return render(
         <ExternalSourceSection
           externalSourceUrl={externalSourceUrl}
           editable={editable}
-          contentId="content-123"
+          contentId={contentId}
         />
       );
     };
 
-    it('should display external source URL when provided', () => {
+    test('should display external source URL when provided', () => {
       renderExternalSourceSection({
         externalSourceUrl: 'https://example.com',
         editable: false,
@@ -72,8 +75,8 @@ describe('MetadataPanel Basic Rendering', () => {
   // Test TagsSection rendering
   describe('TagsSection', () => {
     const tags: TestTag[] = [
-      { id: '1', name: 'React', content_id: 'content-123' },
-      { id: '2', name: 'TypeScript', content_id: 'content-123' }
+      { id: '1', name: 'React', content_id: 'content-123', type_id: 'type-1' },
+      { id: '2', name: 'TypeScript', content_id: 'content-123', type_id: 'type-2' }
     ];
 
     const renderTagsSection = ({
@@ -82,7 +85,8 @@ describe('MetadataPanel Basic Rendering', () => {
       newTag,
       setNewTag,
       onAddTag,
-      onDeleteTag
+      onDeleteTag,
+      contentId
     }: TagsSectionTestProps) => {
       return render(
         <TagsSection
@@ -92,18 +96,20 @@ describe('MetadataPanel Basic Rendering', () => {
           setNewTag={setNewTag}
           onAddTag={onAddTag}
           onDeleteTag={onDeleteTag}
+          contentId={contentId}
         />
       );
     };
 
-    it('should render tag list', () => {
+    test('should render tag list', () => {
       renderTagsSection({
-        tags,
+        tags: tags.map(tag => toTag(tag)),
         editable: false,
         newTag: '',
-        setNewTag: jest.fn(),
-        onAddTag: jest.fn().mockResolvedValue(undefined),
-        onDeleteTag: jest.fn().mockResolvedValue(undefined)
+        setNewTag: vi.fn(),
+        onAddTag: vi.fn().mockResolvedValue(undefined),
+        onDeleteTag: vi.fn().mockResolvedValue(undefined),
+        contentId: 'content-123'
       });
       expect(screen.getByText('React')).toBeInTheDocument();
       expect(screen.getByText('TypeScript')).toBeInTheDocument();
@@ -124,7 +130,7 @@ describe('MetadataPanel Basic Rendering', () => {
       );
     };
 
-    it('should render the ontology section', () => {
+    test('should render the ontology section', () => {
       renderOntologySection({
         sourceId: 'source-123',
         editable: false
@@ -145,7 +151,7 @@ describe('MetadataPanel Basic Rendering', () => {
       );
     };
 
-    it('should render the content ID', () => {
+    test('should render the content ID', () => {
       renderContentIdSection({
         contentId: 'content-123'
       });
@@ -165,7 +171,7 @@ describe('MetadataPanel Basic Rendering', () => {
       );
     };
 
-    it('should render the domain when provided', () => {
+    test('should render the domain when provided', () => {
       renderDomainSection({
         domain: 'Web Development'
       });

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { vi, describe, test, expect } from 'vitest';
 import { ExternalSourceSection } from '../../sections/ExternalSourceSection';
 import { DomainSection } from '../../sections/DomainSection';
 import { 
@@ -25,7 +26,7 @@ describe('MetadataPanel Props Behavior', () => {
       );
     };
 
-    it('should show edit button when editable is true', () => {
+    test('should show edit button when editable is true', () => {
       renderExternalSourceSection({
         externalSourceUrl: 'https://example.com',
         editable: true,
@@ -34,7 +35,7 @@ describe('MetadataPanel Props Behavior', () => {
       expect(screen.getByLabelText(/edit external source/i)).toBeInTheDocument();
     });
 
-    it('should not show edit button when editable is false', () => {
+    test('should not show edit button when editable is false', () => {
       renderExternalSourceSection({
         externalSourceUrl: 'https://example.com',
         editable: false,
@@ -56,14 +57,14 @@ describe('MetadataPanel Props Behavior', () => {
       );
     };
 
-    it('should display "None" when domain is null', () => {
+    test('should display "None" when domain is null', () => {
       renderDomainSection({
         domain: null
       });
       expect(screen.getByText('None')).toBeInTheDocument();
     });
 
-    it('should display domain name when provided', () => {
+    test('should display domain name when provided', () => {
       renderDomainSection({
         domain: 'Web Development'
       });

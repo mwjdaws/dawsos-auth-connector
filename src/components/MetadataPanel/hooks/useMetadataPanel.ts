@@ -1,113 +1,158 @@
 
-// Import necessary hooks
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSourceMetadata } from './useSourceMetadata';
 import { useTagOperations } from './tag-operations/useTagOperations';
 import { usePanelState } from './usePanelState';
-import { MetadataPanelProps, SourceMetadata, Tag, OntologyTerm } from '../types';
+import { MetadataPanelProps, OntologyTerm, Tag } from '../types';
+import { safeCallback } from '@/utils/compatibility';
 
-export interface UseMetadataPanelProps {
-  contentId: string;
-  onMetadataChange?: (() => void) | null;
-  isCollapsible?: boolean;
-  initialCollapsed?: boolean;
-}
-
-export const useMetadataPanel = (props: UseMetadataPanelProps) => {
-  const { contentId, onMetadataChange, isCollapsible, initialCollapsed } = props;
-  
-  // Use the tag operations hook
-  const tagOperations = useTagOperations(contentId);
-  
-  // Use source metadata hook
-  const sourceMetadata = useSourceMetadata({ contentId });
-  
-  // Panel state with properly typed props
-  const panelState = usePanelState({ 
-    contentId, 
-    onMetadataChange: onMetadataChange || null,
-    isCollapsible: isCollapsible || false,
-    initialCollapsed: initialCollapsed || false
+/**
+ * Custom hook for managing the metadata panel state and operations
+ */
+export const useMetadataPanel = ({
+  contentId,
+  onMetadataChange = null,
+  isCollapsible = false,
+  initialCollapsed = false
+}: MetadataPanelProps) => {
+  // Panel state management
+  const { 
+    isCollapsed, 
+    setIsCollapsed,
+    contentExists,
+    isValidContent,
+    contentValidationResult,
+    isCollapsible: isPanelCollapsible, 
+    onMetadataChange: panelMetadataChange
+  } = usePanelState({
+    contentId,
+    onMetadataChange,
+    isCollapsible,
+    initialCollapsed,
+    contentExists: true
   });
 
-  // Ontology terms (mock for now, would typically come from another hook)
-  const [ontologyTerms, setOntologyTerms] = useState<OntologyTerm[]>([]);
-  
-  // Prepare validation result for panel content
-  const validationResult = useMemo(() => ({
-    contentExists: panelState.contentExists,
-    isValid: !!contentId && typeof contentId === 'string'
-  }), [contentId, panelState.contentExists]);
-  
-  // Create panel content
-  const panelContent = useMemo(() => ({
-    contentId,
-    isLoading: sourceMetadata.isLoading || tagOperations.isLoading,
-    error: sourceMetadata.error || tagOperations.error,
-    data: sourceMetadata.data,
-    validationResult,
-    tags: tagOperations.tags,
-    ontologyTerms
-  }), [contentId, sourceMetadata, tagOperations, validationResult, ontologyTerms]);
-  
-  // Call onMetadataChange when data changes
+  // Source metadata management
+  const {
+    externalSourceUrl,
+    needsExternalReview,
+    lastCheckedAt,
+    setExternalSourceUrl,
+    setNeedsExternalReview,
+    isLoading: isSourceLoading,
+    error: sourceError,
+    data: sourceData,
+    fetchSourceMetadata,
+    updateSourceMetadataState
+  } = useSourceMetadata(contentId);
+
+  // Tag operations management
+  const {
+    tags,
+    isLoading: isTagsLoading,
+    error: tagsError,
+    newTag,
+    setNewTag,
+    handleAddTag,
+    handleDeleteTag,
+    handleReorderTags,
+    handleRefresh: refreshTags,
+    isAddingTag,
+    isDeletingTag,
+    isReordering
+  } = useTagOperations(contentId);
+
+  // Combined loading and error states
+  const isLoading = isSourceLoading || isTagsLoading;
+  const error = sourceError || tagsError;
+
+  // Mounted ref to prevent updates on unmounted component
+  const isMounted = useRef(true);
   useEffect(() => {
-    if (onMetadataChange && sourceMetadata.data) {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  // Handle metadata changes
+  const handleMetadataChange = useCallback(() => {
+    if (isMounted.current && onMetadataChange) {
       onMetadataChange();
     }
-  }, [sourceMetadata.data, onMetadataChange]);
-  
-  // Load content when necessary
+  }, [onMetadataChange]);
+
+  // Refresh all metadata
+  const handleRefresh = useCallback(async () => {
+    if (!contentId || !isValidContent) return;
+    
+    try {
+      await Promise.all([
+        fetchSourceMetadata(),
+        refreshTags()
+      ]);
+      
+      handleMetadataChange();
+    } catch (err) {
+      console.error('Error refreshing metadata:', err);
+    }
+  }, [contentId, isValidContent, fetchSourceMetadata, refreshTags, handleMetadataChange]);
+
+  // Initialize data on mount and when contentId changes
   useEffect(() => {
-    // Any initialization logic would go here
-  }, [contentId]);
-  
-  // The derived panel content from usePanelContent
-  const panelContentResult = useMemo(() => {
-    const exists = panelState.contentExists;
-    const isValid = !!contentId && typeof contentId === 'string';
-    
-    return {
-      contentExists: exists,
-      isValidContent: isValid,
-      contentValidationResult: isValid ? 'valid' : 'invalid',
-      metadata: sourceMetadata.data,
-      tags: tagOperations.tags,
-      ontologyTerms,
-      isLoading: sourceMetadata.isLoading || tagOperations.isLoading,
-      error: sourceMetadata.error || tagOperations.error,
-      handleRefresh: () => {
-        sourceMetadata.fetchSourceMetadata();
-        tagOperations.handleRefresh();
-      }
-    };
-  }, [contentId, sourceMetadata, tagOperations, panelState, ontologyTerms]);
-  
+    if (contentId && isValidContent) {
+      handleRefresh();
+    }
+  }, [contentId, isValidContent, handleRefresh]);
+
   return {
-    // Consolidate everything into a single object
-    ...sourceMetadata,  
-    handleRefresh: panelContentResult.handleRefresh,
-    
-    // Tag operations
-    tags: tagOperations.tags,
-    isTagsLoading: tagOperations.isLoading,
-    tagsError: tagOperations.error,
-    newTag: tagOperations.newTag,
-    setNewTag: tagOperations.setNewTag,
-    handleAddTag: tagOperations.handleAddTag,
-    handleDeleteTag: tagOperations.handleDeleteTag,
-    handleReorderTags: tagOperations.handleReorderTags,
+    // Content validation properties
+    contentId,
+    contentExists,
+    isValidContent,
+    contentValidationResult,
     
     // Panel state
-    ...panelState,
+    isCollapsed,
+    setIsCollapsed,
+    isCollapsible: isPanelCollapsible,
     
-    // Panel content results
-    ontologyTerms,
-    contentId,
+    // Loading and error states
+    isLoading,
+    error,
     
-    // Include validation results
-    contentExists: panelContentResult.contentExists,
-    isValidContent: panelContentResult.isValidContent,
-    contentValidationResult: panelContentResult.contentValidationResult,
+    // Source metadata
+    externalSourceUrl,
+    needsExternalReview,
+    lastCheckedAt,
+    data: sourceData,
+    
+    // Tag operations
+    tags,
+    newTag,
+    setNewTag,
+    handleAddTag,
+    handleDeleteTag,
+    handleReorderTags,
+    
+    // User info (to be implemented)
+    user: { id: 'user-1' },
+    
+    // Operations
+    handleRefresh,
+    handleMetadataChange,
+    
+    // Additional states for operations
+    isAddingTag,
+    isDeletingTag,
+    isReordering,
+    
+    // Additional source operations
+    fetchSourceMetadata,
+    updateSourceMetadataState,
+    setExternalSourceUrl,
+    setNeedsExternalReview,
+    
+    // Empty ontology terms array (to be implemented)
+    ontologyTerms: [] as OntologyTerm[]
   };
 };

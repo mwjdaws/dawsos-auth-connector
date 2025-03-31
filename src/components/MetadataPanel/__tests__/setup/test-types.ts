@@ -7,6 +7,7 @@
  */
 
 import { Tag, OntologyTerm } from '@/components/MetadataPanel/types';
+import { Mock } from 'vitest';
 
 /**
  * Test version of Tag that makes type_id optional to simplify test setup
@@ -15,8 +16,8 @@ export interface TestTag {
   id: string;
   name: string;
   content_id: string;
-  type_id?: string;
-  type_name?: string;
+  type_id: string;
+  type_name?: string | null;
 }
 
 /**
@@ -46,12 +47,12 @@ export interface TestOntologyTerm {
  * Test callbacks for component testing
  */
 export interface TestCallbacks {
-  handleRefresh: jest.Mock;
-  setIsCollapsed: jest.Mock;
-  onAddTag: jest.Mock;
-  onDeleteTag: jest.Mock;
-  setNewTag: jest.Mock;
-  onMetadataChange: jest.Mock;
+  handleRefresh: Mock;
+  setIsCollapsed: Mock;
+  onAddTag: Mock;
+  onDeleteTag: Mock;
+  setNewTag: Mock;
+  onMetadataChange: Mock;
 }
 
 /**
@@ -89,11 +90,11 @@ export function createEmptyTestData(): TestMockData {
  */
 export function createTestCallbacks(): TestCallbacks {
   return {
-    handleRefresh: jest.fn(),
-    setIsCollapsed: jest.fn(),
-    onAddTag: jest.fn(),
-    onDeleteTag: jest.fn(),
-    setNewTag: jest.fn(),
-    onMetadataChange: jest.fn()
+    handleRefresh: vi.fn(),
+    setIsCollapsed: vi.fn(),
+    onAddTag: vi.fn(),
+    onDeleteTag: vi.fn(),
+    setNewTag: vi.fn(),
+    onMetadataChange: vi.fn()
   };
 }
