@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
-import { Tag } from '@/types/tag';
+import { Tag } from '@/components/MetadataPanel/hooks/tag-operations/types';
 import { TagCard } from './TagCard';
 import { safeCallback } from '@/utils/compatibility';
 
