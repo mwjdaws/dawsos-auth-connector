@@ -1,39 +1,83 @@
 
 /**
- * Error handling type definitions
- * 
- * Type definitions for error handling utilities.
+ * Error handling types and configurations
  */
 
 // Error severity levels
-export type ErrorLevel = 'debug' | 'info' | 'warning' | 'error';
-
-// Error context information
-export interface ErrorContext {
-  [key: string]: any;
-}
+export type ErrorLevel = 'debug' | 'info' | 'warning' | 'error' | 'critical';
 
 // Error handling options
 export interface ErrorOptions {
-  // Error severity level
-  level?: ErrorLevel;
+  // The severity level of the error
+  level: ErrorLevel;
   
-  // Additional context information for debugging
-  context?: ErrorContext;
+  // Whether the error is technical (for developers) or user-facing
+  technical: boolean;
   
-  // Whether to show a user notification
+  // Additional context for the error
+  context?: Record<string, any>;
+  
+  // ID for deduplication purposes
+  deduplicationId?: string;
+  
+  // Whether to deduplicate similar errors
+  deduplicate?: boolean;
+  
+  // Whether to suppress notifications
   silent?: boolean;
   
-  // Whether this is a technical error (for internal use)
-  technical?: boolean;
+  // Content ID if error is related to specific content
+  contentId?: string;
   
-  // Whether to deduplicate this error message
+  // Category of the error (e.g., 'validation', 'network')
+  category?: string;
+}
+
+// Compatibility types for older error handling
+export interface ErrorHandlingCompatOptions {
+  errorMessage?: string;
+  silent?: boolean;
+  level?: ErrorLevel;
+  category?: string;
+  technical?: boolean;
+  context?: Record<string, any>;
   deduplicate?: boolean;
 }
 
-// Tagged error types (for categorization)
-export interface TaggedError extends Error {
-  errorType?: string;
-  statusCode?: number;
-  context?: ErrorContext;
+/**
+ * Custom error classes
+ */
+
+// Base class for application errors
+export class AppError extends Error {
+  level: ErrorLevel;
+  
+  constructor(message: string, level: ErrorLevel = 'error') {
+    super(message);
+    this.name = 'AppError';
+    this.level = level;
+  }
+}
+
+// Validation error
+export class ValidationError extends AppError {
+  field?: string;
+  
+  constructor(message: string, field?: string) {
+    super(message, 'warning');
+    this.name = 'ValidationError';
+    this.field = field;
+  }
+}
+
+// API error
+export class ApiError extends AppError {
+  status: number;
+  
+  constructor(message: string, status: number = 500) {
+    const level = status >= 500 ? 'error' : 'warning';
+    super(message, level);
+    this.name = 'ApiError';
+    this.status = status;
+  }
 }

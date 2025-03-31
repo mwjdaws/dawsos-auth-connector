@@ -9,23 +9,36 @@
  * - State management: handled by useTagState
  * - Data fetching: handled by useTagFetch
  * - Data mutations: handled by useTagMutations
- * 
- * Features:
- * - Fetching tags for a content item
- * - Adding new tags
- * - Deleting tags
- * - Reordering tags via drag and drop
- * - Loading, error, and operation states
  */
 
 import { useState, useCallback } from 'react';
 import { useTagState } from './useTagState';
 import { useTagFetch } from './useTagFetch';
 import { useTagMutations } from './useTagMutations';
-import { UseTagOperationsResult, Tag, TagPosition } from './types';
-import { handleError } from '@/utils/error-handling';
-import { useValidation } from '@/hooks/markdown-editor/draft-operations/useValidation';
+import { Tag } from '@/types/tag';
+import { handleError } from '@/utils/errors/handle';
 import { isValidContentId } from '@/utils/validation/contentIdValidation';
+
+/**
+ * Result type for useTagOperations
+ */
+export interface UseTagOperationsResult {
+  tags: Tag[];
+  isLoading: boolean;
+  error: Error | null;
+  newTag: string;
+  setNewTag: (tag: string) => void;
+  handleAddTag: (typeId?: string | null) => Promise<void>;
+  handleDeleteTag: (tagId: string) => Promise<void>;
+  handleReorderTags: (tags: Tag[]) => Promise<void>;
+  handleRefresh: () => Promise<void>;
+  isAddingTag: boolean;
+  isDeletingTag: boolean;
+  isReordering: boolean;
+  // Backward compatibility properties
+  isTagsLoading?: boolean;
+  tagsError?: Error | null;
+}
 
 /**
  * Main hook for tag operations that combines state, fetching, and mutations
@@ -40,7 +53,6 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
   }
   
   const { tags, setTags, isLoading, setIsLoading, error, setError, newTag, setNewTag } = useTagState({});
-  const { isValidTag } = useValidation();
   
   // Set up tag fetching
   const { 
@@ -90,12 +102,11 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
   const handleAddTag = async (typeId?: string | null) => {
     if (!newTag.trim()) return;
     
-    // Validate the tag first
-    const validation = isValidTag(newTag);
-    if (!validation.isValid) {
+    // Check if the tag name is valid
+    if (newTag.trim().length < 2) {
       handleError(
-        new Error(validation.errorMessage || 'Invalid tag'),
-        validation.errorMessage || 'Invalid tag',
+        new Error('Tag must be at least 2 characters long'),
+        'Tag must be at least 2 characters long',
         { level: "warning", technical: false }
       );
       return;
@@ -145,7 +156,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
    */
   const handleReorderTags = async (updatedTags: Tag[]) => {
     // Convert tags to positions
-    const tagPositions: TagPosition[] = updatedTags.map((tag, index) => ({
+    const tagPositions = updatedTags.map((tag, index) => ({
       id: tag.id,
       position: index
     }));

@@ -7,12 +7,7 @@
 import { useState, useCallback } from 'react';
 import { isValidContentId } from '@/utils/validation/contentIdValidation';
 import { handleError } from '@/utils/errors/handle';
-
-// Tag validation result interface
-export interface TagValidationResult {
-  isValid: boolean;
-  errorMessage: string | null;
-}
+import { ValidationResult, createValidResult, createInvalidResult } from '@/utils/validation/types';
 
 /**
  * Hook for validating tag operations
@@ -26,45 +21,30 @@ export function useTagValidation() {
    * @param tagName The tag name to validate
    * @returns Validation result object
    */
-  const validateTag = useCallback((tagName: string): TagValidationResult => {
+  const validateTag = useCallback((tagName: string): ValidationResult => {
     setLastValidatedTag(tagName);
     
     if (!tagName || tagName.trim() === '') {
-      return {
-        isValid: false,
-        errorMessage: 'Tag name cannot be empty'
-      };
+      return createInvalidResult('Tag name cannot be empty');
     }
     
     // Validate minimum length
     if (tagName.trim().length < 2) {
-      return {
-        isValid: false,
-        errorMessage: 'Tag must be at least 2 characters long'
-      };
+      return createInvalidResult('Tag must be at least 2 characters long');
     }
     
     // Validate maximum length
     if (tagName.trim().length > 50) {
-      return {
-        isValid: false,
-        errorMessage: 'Tag must be less than 50 characters long'
-      };
+      return createInvalidResult('Tag must be less than 50 characters long');
     }
     
     // Check for invalid characters (optional, adjust as needed)
     const invalidCharsRegex = /[^\w\s\-\.]/;
     if (invalidCharsRegex.test(tagName)) {
-      return {
-        isValid: false,
-        errorMessage: 'Tag contains invalid characters'
-      };
+      return createInvalidResult('Tag contains invalid characters');
     }
     
-    return {
-      isValid: true,
-      errorMessage: null
-    };
+    return createValidResult();
   }, []);
   
   /**
@@ -80,7 +60,7 @@ export function useTagValidation() {
       handleError(
         new Error('Invalid content ID'),
         'Cannot perform tag operation: invalid content ID',
-        { level: 'warning' }
+        { level: "warning" }
       );
       return false;
     }
@@ -91,7 +71,7 @@ export function useTagValidation() {
       handleError(
         new Error(tagValidation.errorMessage || 'Invalid tag'),
         tagValidation.errorMessage || 'Invalid tag',
-        { level: 'warning' }
+        { level: "warning" }
       );
       return false;
     }
@@ -99,9 +79,17 @@ export function useTagValidation() {
     return true;
   }, [validateTag]);
   
+  /**
+   * Get validation result for tag name
+   */
+  const isValidTag = useCallback((tagName: string): ValidationResult => {
+    return validateTag(tagName);
+  }, [validateTag]);
+  
   return {
     validateTag,
     validateTagOperation,
+    isValidTag,
     lastValidatedTag
   };
 }

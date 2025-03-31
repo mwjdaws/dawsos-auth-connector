@@ -1,41 +1,62 @@
 
 /**
- * Compatibility utilities
- * 
- * Helper functions for maintaining backward compatibility
- * with older code while refactoring.
+ * Utility functions for type compatibility and conversions
  */
 
 /**
- * Safely calls a callback function if it exists
+ * Ensures a value is a string
  * 
- * @param callback The callback to call
- * @param args Arguments to pass to the callback
- * @returns The result of the callback or undefined
+ * @param value The value to check/convert
+ * @param defaultValue Optional default value if conversion fails
+ * @returns The value as a string, or the default value
  */
-export function safeCallback<T, A extends any[]>(
-  callback: ((...args: A) => T) | null | undefined,
-  ...args: A
-): T | undefined {
-  if (typeof callback === 'function') {
-    return callback(...args);
+export function ensureString(value: unknown, defaultValue: string = ''): string {
+  if (value === null || value === undefined) {
+    return defaultValue;
   }
-  return undefined;
+  
+  return String(value);
 }
 
 /**
- * Safely calls an async callback function if it exists
+ * Ensures a value is a number
  * 
- * @param callback The async callback to call
- * @param args Arguments to pass to the callback
- * @returns Promise that resolves to the result of the callback or undefined
+ * @param value The value to check/convert
+ * @param defaultValue Optional default value if conversion fails
+ * @returns The value as a number, or the default value
  */
-export async function safeAsyncCallback<T, A extends any[]>(
-  callback: ((...args: A) => Promise<T>) | null | undefined,
-  ...args: A
-): Promise<T | undefined> {
-  if (typeof callback === 'function') {
-    return await callback(...args);
+export function ensureNumber(value: unknown, defaultValue: number = 0): number {
+  if (value === null || value === undefined) {
+    return defaultValue;
   }
-  return undefined;
+  
+  const num = Number(value);
+  return isNaN(num) ? defaultValue : num;
+}
+
+/**
+ * Ensures a value is a boolean
+ * 
+ * @param value The value to check/convert
+ * @param defaultValue Optional default value if conversion fails
+ * @returns The value as a boolean, or the default value
+ */
+export function ensureBoolean(value: unknown, defaultValue: boolean = false): boolean {
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
+  
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true';
+  }
+  
+  if (typeof value === 'number') {
+    return value !== 0;
+  }
+  
+  return defaultValue;
 }

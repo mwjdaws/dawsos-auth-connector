@@ -1,9 +1,14 @@
 
+/**
+ * useTagMutations Hook
+ * 
+ * Handles creating, updating, and deleting tags
+ */
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Tag } from '@/types/tag';
-import { TagPosition } from '@/utils/validation/types';
-import { handleError } from '@/utils/error-handling';
+import { Tag, TagPosition } from '@/types/tag';
+import { handleError } from '@/utils/errors/handle';
 
 interface UseTagMutationsProps {
   contentId: string;
@@ -66,7 +71,7 @@ export const useTagMutations = ({ contentId, setTags, tags }: UseTagMutationsPro
       handleError(
         error,
         `Failed to add tag "${params.name}"`,
-        { level: "warning", contentId: params.contentId }
+        { level: "warning" }
       );
       return null;
     } finally {
@@ -99,7 +104,7 @@ export const useTagMutations = ({ contentId, setTags, tags }: UseTagMutationsPro
       handleError(
         error,
         "Failed to delete tag",
-        { level: "warning", contentId: params.contentId }
+        { level: "warning" }
       );
       return false;
     } finally {
@@ -114,22 +119,16 @@ export const useTagMutations = ({ contentId, setTags, tags }: UseTagMutationsPro
     try {
       setIsReordering(true);
       
-      // Create an array of updates to perform in a transaction
-      const updates = positions.map(position => ({
-        id: position.id,
-        display_order: position.position
-      }));
+      // Create an array of updates to perform as separate operations
+      const updatePromises = positions.map(position => 
+        supabase
+          .from('tags')
+          .update({ display_order: position.position })
+          .eq('id', position.id)
+      );
       
-      // Update all tags in a single batch operation
-      const { error } = await supabase
-        .from('tags')
-        .upsert(updates, {
-          onConflict: 'id'
-        });
-      
-      if (error) {
-        throw error;
-      }
+      // Execute all updates
+      await Promise.all(updatePromises);
       
       // Update local state with the new order
       // Create a map of tag ID -> new display_order for fast lookup
@@ -152,7 +151,7 @@ export const useTagMutations = ({ contentId, setTags, tags }: UseTagMutationsPro
       handleError(
         error,
         "Failed to reorder tags",
-        { level: "warning", contentId }
+        { level: "warning" }
       );
       return false;
     } finally {

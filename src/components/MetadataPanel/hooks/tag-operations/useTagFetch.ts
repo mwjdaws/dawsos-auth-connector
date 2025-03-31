@@ -8,14 +8,14 @@
 import { useCallback } from 'react';
 import { Tag } from '@/types/tag';
 import { supabase } from '@/integrations/supabase/client';
-import { handleError } from '@/utils/error-handling';
+import { handleError } from '@/utils/errors/handle';
 import { useTagsQuery } from '@/hooks/metadata';
 
 interface TagFetchOptions {
   contentId: string;
   setTags: (tags: Tag[]) => void;
   setIsLoading: (isLoading: boolean) => void;
-  setError: (error: string | null) => void;
+  setError: (error: Error | null) => void;
   retryCount?: number;
 }
 
@@ -37,6 +37,7 @@ export const useTagFetch = (options: TagFetchOptions) => {
   // Use react-query for data fetching with automatic caching
   const { data: queryTags, isLoading, error, refetch } = useTagsQuery(contentId, {
     enabled: !!contentId,
+    // Define callback handlers
     onSuccess: (data) => {
       if (data && Array.isArray(data)) {
         setTags(data);
@@ -48,7 +49,7 @@ export const useTagFetch = (options: TagFetchOptions) => {
         "Failed to fetch tags",
         { level: "warning", technical: false }
       );
-      setError(err instanceof Error ? err.message : 'Unknown error fetching tags');
+      setError(err instanceof Error ? err : new Error('Unknown error fetching tags'));
     }
   });
 
@@ -58,7 +59,7 @@ export const useTagFetch = (options: TagFetchOptions) => {
    */
   const fetchTags = useCallback(async (attemptNumber = 0): Promise<Tag[]> => {
     if (!contentId) {
-      setError('Invalid content ID provided');
+      setError(new Error('Invalid content ID provided'));
       return [];
     }
 
@@ -98,14 +99,14 @@ export const useTagFetch = (options: TagFetchOptions) => {
       }
 
       // Handle error after retries are exhausted
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch tags';
+      const errorObj = err instanceof Error ? err : new Error('Failed to fetch tags');
       handleError(
-        err,
+        errorObj,
         "Error fetching tags after multiple attempts",
         { level: "error", technical: true }
       );
       
-      setError(errorMessage);
+      setError(errorObj);
       setIsLoading(false);
       return [];
     }

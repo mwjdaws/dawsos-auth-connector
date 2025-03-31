@@ -1,63 +1,40 @@
 
 /**
- * Hook for enhanced content validation
+ * useContentValidator Hook
  * 
- * Combines content ID validation with content existence check
+ * Validates content IDs and checks if content exists in the database
  */
-import { useState, useEffect } from 'react';
-import { useValidateContentId } from './useValidateContentId';
+import { useMemo } from 'react';
+import { isValidContentId, getContentIdValidationResult } from '@/utils/validation/contentIdValidation';
 import { useContentExists } from '@/hooks/metadata/useContentExists';
 
 /**
- * Enhanced content validation hook
+ * Hook for validating content IDs
  * 
- * @param contentId Content ID to validate
- * @returns Object with validation and existence information
+ * @param contentId The content ID to validate
+ * @returns Validation state for the content ID
  */
 export function useContentValidator(contentId?: string | null) {
-  const [isValidating, setIsValidating] = useState(false);
+  // Check if the content ID is valid
+  const validationResult = useMemo(() => {
+    return getContentIdValidationResult(contentId);
+  }, [contentId]);
   
-  // Basic content ID validation
-  const {
-    isValid,
-    isTemporary,
-    isUuid,
-    validationResult,
-    errorMessage
-  } = useValidateContentId(contentId);
+  // Check if the content exists in the database
+  const { data: exists, isLoading, error } = useContentExists(
+    contentId && validationResult.isValid ? contentId : null
+  );
   
-  // Check if content exists in the database (only for UUID content IDs)
-  const {
-    exists: contentExists,
-    isLoading: isCheckingExistence,
-    error: existenceError
-  } = useContentExists(contentId, {
-    enabled: isValid && isUuid, // Only check existence for valid UUIDs
-    retry: 1, // Limit retries to avoid excessive database queries
-  });
-  
-  // Set validating state when checking existence
-  useEffect(() => {
-    setIsValidating(isCheckingExistence);
-  }, [isCheckingExistence]);
-  
-  // For temporary IDs, we don't check existence
-  const exists = isTemporary ? true : contentExists;
-  
+  // Combine validation and existence check
   return {
-    // Base validation properties
-    isValid,
-    isTemporary,
-    isUuid,
-    validationResult,
-    errorMessage,
-    
-    // Existence check properties
-    contentExists: exists,
-    isValidating,
-    existenceError
+    isValid: validationResult.isValid,
+    isTemp: validationResult.isTemp,
+    isUuid: validationResult.isUuid,
+    contentExists: !!exists,
+    isLoading,
+    error,
+    errorMessage: validationResult.errorMessage
   };
 }
 
-// Default export
 export default useContentValidator;
