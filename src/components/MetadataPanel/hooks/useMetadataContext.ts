@@ -20,7 +20,7 @@ export interface MetadataContextProps {
   handleDeleteTag?: (tagId: string) => Promise<void>;
 }
 
-// Create the context with default values
+// Create the context with undefined as default value
 const MetadataContext = createContext<MetadataContextProps | undefined>(undefined);
 
 // Provider component
