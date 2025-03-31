@@ -1,68 +1,53 @@
 
-import { ContentIdValidationResultType, ValidationResult } from './types';
+import { ContentIdValidationResultType } from './types';
 
 /**
- * Determines the validation status of a content ID
+ * Validates if a string is a valid content ID
+ * (either UUID or temporary ID)
  */
-export function getContentIdValidationResult(id: string | null | undefined): ValidationResult & { type: ContentIdValidationResultType } {
-  if (id === null || id === undefined || id.trim() === '') {
-    return {
-      type: ContentIdValidationResultType.INVALID,
-      isValid: false,
-      message: 'Content ID is required',
-      errorMessage: 'Content ID is required'
-    };
-  }
-
-  // UUID pattern
-  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function isValidContentId(contentId: string | null | undefined): boolean {
+  if (!contentId) return false;
   
-  // Temporary ID pattern
-  const tempPattern = /^temp-/i;
-
-  // Format is UUID
-  if (uuidPattern.test(id)) {
-    return {
-      type: ContentIdValidationResultType.UUID,
-      isValid: true,
-      message: null,
-      errorMessage: null
-    };
+  // Check if UUID format
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(contentId)) {
+    return true;
   }
   
-  // Format is temporary ID
-  if (tempPattern.test(id)) {
-    return {
-      type: ContentIdValidationResultType.TEMP,
-      isValid: true,
-      message: 'Temporary content ID',
-      errorMessage: null
-    };
+  // Check if temporary ID (temp_xxx format)
+  const tempIdRegex = /^temp_[a-zA-Z0-9-_]+$/;
+  if (tempIdRegex.test(contentId)) {
+    return true;
   }
   
-  // Format is string ID
-  if (id.length > 0) {
-    return {
-      type: ContentIdValidationResultType.STRING,
-      isValid: true,
-      message: null,
-      errorMessage: null
-    };
-  }
-
-  // Invalid ID
-  return {
-    type: ContentIdValidationResultType.INVALID,
-    isValid: false,
-    message: 'Invalid content ID format',
-    errorMessage: 'Invalid content ID format'
-  };
+  // Any non-empty string is considered valid for backward compatibility
+  return contentId.trim() !== '';
 }
 
 /**
- * Simplified check to see if a content ID is valid
+ * Gets detailed validation result for a content ID
  */
-export function isValidContentId(id: string | null | undefined): boolean {
-  if (!id) return false;
-  return getContentIdValidationResult(id).isValid;
+export function getContentIdValidationResult(contentId: string | null | undefined): ContentIdValidationResultType {
+  if (!contentId) {
+    return ContentIdValidationResultType.INVALID;
+  }
+  
+  // Check if UUID format
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(contentId)) {
+    return ContentIdValidationResultType.UUID;
+  }
+  
+  // Check if temporary ID (temp_xxx format)
+  const tempIdRegex = /^temp_[a-zA-Z0-9-_]+$/;
+  if (tempIdRegex.test(contentId)) {
+    return ContentIdValidationResultType.TEMP;
+  }
+  
+  // Any non-empty string is considered valid
+  if (contentId.trim() !== '') {
+    return ContentIdValidationResultType.STRING;
+  }
+  
+  return ContentIdValidationResultType.INVALID;
 }

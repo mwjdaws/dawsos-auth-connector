@@ -113,7 +113,7 @@ export function GroupedTagList({
         <TagCard
           key={typeKey}
           title={typeKey}
-          tags={groupedTags.typedTags[typeKey]}
+          tags={groupedTags.typedTags[typeKey] || []} {/* Ensure tags is never undefined */}
           onTagClick={handleTagClick}
         />
       ))}

@@ -1,48 +1,49 @@
 
-import { useState, useCallback } from "react";
-import { toast } from "@/hooks/use-toast";
-import { validateTag } from "@/utils/validation";
-import { TagValidationOptions } from "@/utils/validation/types";
+import { useState, useCallback } from 'react';
+import { validateTag } from '@/utils/validation/tagValidation';
+import { TagValidationOptions } from '@/utils/validation/types';
 
 export function useTagValidator() {
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
-  /**
-   * Validates a tag with proper error handling
-   * 
-   * @param tagText The text to validate
-   * @param options Validation options
-   * @returns True if the tag is valid, false otherwise
-   */
+  // Validate a single tag text
   const validateTagText = useCallback((tagText: string, options?: TagValidationOptions) => {
-    // Default options
-    const validationOptions: TagValidationOptions = {
-      maxLength: options?.maxLength || 50,
-      minLength: options?.minLength || 1,
-      allowSpecialChars: options?.allowSpecialChars || false,
-      allowEmpty: options?.allowEmpty || false,
-    };
-
-    const result = validateTag(tagText, validationOptions);
-    
-    // Set validation message for UI display
-    setValidationMessage(result.errorMessage || result.message || null);
-    
-    // Show toast for validation errors
-    if (!result.isValid && result.errorMessage) {
-      toast({
-        title: "Invalid Tag",
-        description: result.errorMessage,
-        variant: "destructive",
-      });
-    }
-    
+    const result = validateTag(tagText, options);
+    setValidationMessage(result.errorMessage);
     return result.isValid;
+  }, []);
+
+  // Validate a list of tags
+  const validateTagList = useCallback((tags: string[], options?: TagValidationOptions) => {
+    // No tags is valid by default, but can be configured with options
+    if (!tags || tags.length === 0) {
+      if (options?.allowEmpty === false) {
+        setValidationMessage("At least one tag is required");
+        return { isValid: false, message: "At least one tag is required" };
+      }
+      return { isValid: true, message: null };
+    }
+
+    // Check each tag
+    for (const tag of tags) {
+      const result = validateTag(tag, options);
+      if (!result.isValid) {
+        setValidationMessage(result.errorMessage);
+        return { isValid: false, message: result.errorMessage };
+      }
+    }
+
+    return { isValid: true, message: null };
+  }, []);
+
+  const clearValidationMessage = useCallback(() => {
+    setValidationMessage(null);
   }, []);
 
   return {
     validateTagText,
+    validateTagList,
     validationMessage,
-    clearValidationMessage: () => setValidationMessage(null)
+    clearValidationMessage
   };
 }

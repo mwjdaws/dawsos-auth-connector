@@ -30,14 +30,14 @@ export const useSaveTags = (initialContentId?: string) => {
     }
 
     // Validate tags before saving
-    const isValid = tagValidator.validateTagList(tags).isValid;
-    if (!isValid) {
+    const validationResult = tagValidator.validateTagList(tags);
+    if (!validationResult.isValid) {
       toast({
         title: "Validation Error",
-        description: tagValidator.validateTagList(tags).message || "Invalid tags",
+        description: validationResult.message || "Invalid tags",
         variant: "destructive",
       });
-      return { success: false, message: tagValidator.validateTagList(tags).message || "Invalid tags" };
+      return { success: false, message: validationResult.message || "Invalid tags" };
     }
 
     setIsSaving(true);
