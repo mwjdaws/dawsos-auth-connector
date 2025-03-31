@@ -1,79 +1,111 @@
 
 /**
- * Content validation utilities
- * Public API for content ID validation
+ * Content ID validation utilities
+ * 
+ * Provides functions for validating content IDs with support for both UUID and temporary IDs.
  */
-import { 
-  isValidContentId as isValidContentIdInternal, 
-  getContentIdValidationResult, 
-  tryConvertToUUID, 
-  isStorableContentId as isStorableContentIdInternal, 
-  isUUID 
-} from './validation/contentIdValidation';
+
+import { ContentIdValidationResult } from '@/utils/validation/types';
+
+// UUID pattern for validation
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Temporary ID pattern (e.g., "temp-123456")
+const TEMP_ID_PATTERN = /^temp-[\w-]+$/;
 
 /**
- * Validates if a string is a valid content ID
- * Supports both UUID and temporary ID formats
+ * Checks if a content ID is valid (either UUID or temporary ID)
  * 
- * @param contentId The content ID to validate
- * @returns True if the content ID is valid
+ * @param contentId The ID to validate
+ * @returns True if the ID is valid
  */
 export function isValidContentId(contentId?: string | null): boolean {
-  return isValidContentIdInternal(contentId);
-}
-
-/**
- * Gets detailed validation information for a content ID
- * 
- * @param contentId The content ID to validate
- * @returns Validation result object with detailed information
- */
-export function validateContentId(contentId?: string | null) {
-  return getContentIdValidationResult(contentId);
-}
-
-/**
- * Attempts to convert a string to a UUID format
- * 
- * @param contentId The content ID to convert
- * @returns UUID string if conversion is successful, null otherwise
- */
-export function tryParseContentIdAsUUID(contentId?: string | null): string | null {
-  return tryConvertToUUID(contentId);
-}
-
-/**
- * Checks if a content ID represents a temporary ID
- * 
- * @param contentId The content ID to check
- * @returns True if the content ID is a temporary ID
- */
-export function isTemporaryContentId(contentId?: string | null): boolean {
   if (!contentId) return false;
-  return contentId.startsWith('temp-');
+  return isUuidContentId(contentId) || isTemporaryContentId(contentId);
 }
 
 /**
  * Checks if a content ID is a valid UUID
  * 
- * @param contentId The content ID to check
- * @returns True if the content ID is a valid UUID
+ * @param contentId The ID to validate
+ * @returns True if the ID is a valid UUID
  */
 export function isUuidContentId(contentId?: string | null): boolean {
   if (!contentId) return false;
-  return isUUID(contentId);
+  return UUID_PATTERN.test(contentId);
 }
 
 /**
- * Determines if a content ID is suitable for direct database storage
+ * Checks if a content ID is a valid temporary ID
  * 
- * @param contentId The content ID to evaluate
- * @returns True if the ID is appropriate for database storage
+ * @param contentId The ID to validate
+ * @returns True if the ID is a valid temporary ID
  */
-export function isStorableContentId(contentId?: string | null): boolean {
-  return isStorableContentIdInternal(contentId);
+export function isTemporaryContentId(contentId?: string | null): boolean {
+  if (!contentId) return false;
+  return TEMP_ID_PATTERN.test(contentId);
 }
 
-// Backward compatibility aliases
-export const isContentIdValid = isValidContentId;
-export const isUuidValid = isUuidContentId;
+/**
+ * Checks if a content ID is suitable for storage
+ * 
+ * @param contentId The ID to validate
+ * @returns True if the ID is a valid UUID that can be stored
+ */
+export function isStorableContentId(contentId?: string | null): boolean {
+  return isUuidContentId(contentId);
+}
+
+/**
+ * Attempts to parse a content ID as a UUID
+ * 
+ * @param contentId The ID to parse
+ * @returns The UUID if valid, or null
+ */
+export function tryParseContentIdAsUUID(contentId?: string | null): string | null {
+  if (!contentId) return null;
+  if (isUuidContentId(contentId)) return contentId;
+  return null;
+}
+
+/**
+ * Performs comprehensive validation of a content ID
+ * 
+ * @param contentId The ID to validate
+ * @returns A validation result with details
+ */
+export function validateContentId(contentId?: string | null): ContentIdValidationResult {
+  if (!contentId) {
+    return {
+      isValid: false,
+      resultType: 'invalid',
+      message: null,
+      errorMessage: 'Content ID is missing'
+    };
+  }
+
+  if (isUuidContentId(contentId)) {
+    return {
+      isValid: true,
+      resultType: 'uuid',
+      message: 'Valid UUID',
+      errorMessage: null
+    };
+  }
+
+  if (isTemporaryContentId(contentId)) {
+    return {
+      isValid: true,
+      resultType: 'temp',
+      message: 'Valid temporary ID',
+      errorMessage: null
+    };
+  }
+
+  return {
+    isValid: false,
+    resultType: 'invalid',
+    message: null,
+    errorMessage: 'Invalid content ID format'
+  };
+}
