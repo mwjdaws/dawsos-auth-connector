@@ -7,13 +7,15 @@
 export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
+  message?: string | null; // For backward compatibility 
 }
 
 // Create a valid result helper
-export function createValidResult(): ValidationResult {
+export function createValidResult(message?: string): ValidationResult {
   return {
     isValid: true,
-    errorMessage: null
+    errorMessage: null,
+    message: message || null
   };
 }
 
@@ -21,7 +23,8 @@ export function createValidResult(): ValidationResult {
 export function createInvalidResult(message: string): ValidationResult {
   return {
     isValid: false,
-    errorMessage: message
+    errorMessage: message,
+    message
   };
 }
 
@@ -31,6 +34,7 @@ export interface ContentIdValidationResult {
   isTemp: boolean;
   isUuid: boolean;
   errorMessage: string | null;
+  resultType?: string; // For backward compatibility
 }
 
 // Tag position for reordering

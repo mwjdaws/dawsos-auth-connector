@@ -5,7 +5,7 @@
  * Centralizes error handling in the application
  */
 import { toast } from '@/hooks/use-toast';
-import { ErrorLevel, ErrorOptions } from './types';
+import { ErrorLevel, ErrorOptions, errorLevelToToastVariant } from './types';
 import { categorizeError } from './categorize';
 
 // In-memory store for deduplication
@@ -93,10 +93,7 @@ export function handleError(
   }
 
   // Determine appropriate variant for toast based on error level
-  const variant = level === 'info' ? 'default' :
-                 level === 'debug' ? 'default' :
-                 level === 'warning' ? 'warning' :
-                 'destructive';
+  const variant = errorLevelToToastVariant[level] || 'destructive';
 
   // Show toast notification
   toast({

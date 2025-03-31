@@ -20,7 +20,7 @@ interface UseContentExistsOptions {
  * @param options Query options
  * @returns Query result with existence information
  */
-export function useContentExists(contentId: string | null, options: UseContentExistsOptions = {}) {
+export function useContentExists(contentId: string | null | undefined, options: UseContentExistsOptions = {}) {
   const {
     enabled = true,
     staleTime = 60000, // Cache for 1 minute by default
@@ -44,7 +44,7 @@ export function useContentExists(contentId: string | null, options: UseContentEx
       
       return count ? count > 0 : false;
     },
-    enabled: !!contentId && enabled,
+    enabled: Boolean(contentId) && enabled,
     staleTime,
     retry
   });

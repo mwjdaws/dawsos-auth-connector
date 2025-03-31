@@ -105,7 +105,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   };
   
   return (
-    <Card className={className}>
+    <Card className={`${needsExternalReview ? 'border border-yellow-400' : ''} ${className}`}>
       <HeaderSection 
         needsExternalReview={needsExternalReview}
         handleRefresh={handleRefresh}
@@ -132,6 +132,8 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
           needsExternalReview={needsExternalReview}
           onMetadataChange={metadataChangeWrapper}
           showOntologyTerms={showOntologyTerms}
+          domain={domain}
+          showDomain={showDomain}
         />
       )}
       

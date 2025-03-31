@@ -1,54 +1,60 @@
 
 import { ValidationResult } from '@/utils/validation/types';
 import { Tag } from '@/types/tag';
-import { OntologyTerm } from '../../types';
+import { OntologyTerm } from '../../../types';
 
-// Mock tag objects
+// Basic tag object for testing
 export const basicTag: Tag = {
-  id: "tag-1",
-  name: "test-tag",
-  content_id: "test-content-id"
+  id: "test-tag-123",
+  name: "test tag",
+  content_id: "test-content-123",
+  type_id: null,
+  type_name: null,
+  display_order: 0
 };
 
+// Tag with type for testing
 export const typedTag: Tag = {
-  id: "tag-2",
-  name: "typed-tag",
-  content_id: "test-content-id",
-  type_id: "type-1",
-  type_name: "Test Type"
+  id: "test-tag-456",
+  name: "test category tag",
+  content_id: "test-content-123",
+  type_id: "category",
+  type_name: "Category",
+  display_order: 1
 };
 
-// Mock ontology term
-export const mockOntologyTerm: OntologyTerm = {
-  id: "term-1",
-  term: "Test Term",
-  description: "This is a test term",
-  domain: "Test Domain",
-  relation_type: null
+// Basic ontology term for testing
+export const basicTerm: OntologyTerm = {
+  id: "test-term-123",
+  term: "Example Term",
+  description: "This is a description of the example term",
+  review_required: false
 };
 
 // Mock validation result
 export const mockValidationResult: ValidationResult = {
   isValid: true,
-  message: "Validation passed",
-  errorMessage: null
+  errorMessage: null,
+  message: "Validation passed"
 };
 
 // Mock metadata context for testing
 export const mockMetadataContext = {
-  contentId: "test-content-id",
-  title: "Test Content",
-  description: "Test description",
-  contentType: "article",
-  sourceUrl: "https://example.com",
+  contentId: "test-content-123",
   validationResult: mockValidationResult,
   isEditable: true,
   isLoading: false,
   error: null,
   tags: [basicTag, typedTag],
-  ontologyTerms: [mockOntologyTerm],
+  ontologyTerms: [basicTerm],
   refreshMetadata: jest.fn(),
-  handleRefresh: jest.fn(),
-  fetchSourceMetadata: jest.fn(),
-  fetchTags: jest.fn()
+  handleRefresh: jest.fn().mockResolvedValue(undefined),
+  fetchSourceMetadata: jest.fn().mockResolvedValue(undefined),
+  fetchTags: jest.fn().mockResolvedValue([basicTag, typedTag]),
+  addTag: jest.fn(),
+  removeTag: jest.fn(),
+  refreshTags: jest.fn().mockResolvedValue(undefined),
+  handleAddTag: jest.fn().mockResolvedValue(undefined),
+  handleDeleteTag: jest.fn().mockResolvedValue(undefined),
+  deleteTag: jest.fn().mockResolvedValue(true)
 };

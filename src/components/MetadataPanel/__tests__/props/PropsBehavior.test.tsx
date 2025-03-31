@@ -16,7 +16,7 @@ describe('MetadataPanel Props Behavior', () => {
       externalSourceUrl,
       editable,
       contentId
-    }: ExternalSourceSectionTestProps) => {
+    }: Omit<ExternalSourceSectionTestProps, 'url'>) => {
       return render(
         <ExternalSourceSection
           externalSourceUrl={externalSourceUrl}

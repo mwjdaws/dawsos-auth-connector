@@ -11,16 +11,18 @@ export interface HeaderSectionTestProps {
   handleRefresh?: () => void;
   setIsCollapsed?: (value: boolean) => void;
   isCollapsed?: boolean;
+  needsExternalReview?: boolean;
 }
 
 export interface TagsSectionTestProps {
   tags: Tag[];
-  editable?: boolean;
-  newTag?: string;
-  setNewTag?: (value: string) => void;
-  onAddTag?: (typeId?: string | null) => Promise<void>;
-  onDeleteTag?: (tagId: string) => Promise<void>;
-  contentId?: string;
+  editable: boolean;
+  newTag: string;
+  setNewTag: (value: string) => void;
+  onAddTag: (typeId?: string | null) => Promise<void>;
+  onDeleteTag: (tagId: string) => Promise<void>;
+  contentId: string;
+  onMetadataChange?: () => void;
 }
 
 export interface OntologySectionTestProps {
@@ -35,15 +37,17 @@ export interface ContentIdSectionTestProps {
 
 export interface ExternalSourceSectionTestProps {
   url: string;
-  externalSourceUrl?: string | null;
-  checkedAt?: string;
+  externalSourceUrl: string | null;
+  checkedAt?: string | null;
   isValid?: boolean;
-  editable?: boolean;
-  contentId?: string;
+  editable: boolean;
+  contentId: string;
+  lastCheckedAt?: string | null;
+  needsExternalReview?: boolean;
 }
 
 export interface DomainSectionTestProps {
-  domain: string;
+  domain: string | null;
 }
 
 // Test tag helpers
@@ -51,8 +55,8 @@ export interface TestTag {
   id: string;
   name: string;
   content_id: string;
-  type_id?: string;
-  type_name?: string;
+  type_id?: string | null;
+  type_name?: string | null;
   display_order?: number;
 }
 

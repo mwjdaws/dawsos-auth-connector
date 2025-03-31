@@ -10,12 +10,14 @@ describe('MetadataPanel User Interactions', () => {
   // Test HeaderSection interactions
   describe('HeaderSection', () => {
     const renderHeaderSection = ({
+      title,
       handleRefresh,
       setIsCollapsed,
       isCollapsed
     }: HeaderSectionTestProps) => {
       return render(
         <HeaderSection
+          title={title}
           handleRefresh={handleRefresh}
           setIsCollapsed={setIsCollapsed}
           isCollapsed={isCollapsed}
@@ -26,6 +28,7 @@ describe('MetadataPanel User Interactions', () => {
     test('should call setIsCollapsed when collapse button is clicked', () => {
       const setIsCollapsed = vi.fn();
       renderHeaderSection({
+        title: "Content Metadata",
         handleRefresh: vi.fn(),
         setIsCollapsed,
         isCollapsed: false

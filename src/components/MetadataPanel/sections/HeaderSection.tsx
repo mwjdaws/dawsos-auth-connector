@@ -11,6 +11,7 @@ import { CardHeader, CardTitle } from "@/components/ui/card";
 import { RefreshCw, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 
 export interface HeaderSectionProps {
+  title?: string;
   needsExternalReview?: boolean;
   handleRefresh?: () => void;
   isLoading?: boolean;
@@ -21,6 +22,7 @@ export interface HeaderSectionProps {
 }
 
 export const HeaderSection: React.FC<HeaderSectionProps> = ({
+  title = "Content Metadata",
   needsExternalReview = false,
   handleRefresh,
   isLoading = false,
@@ -32,7 +34,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   return (
     <CardHeader className={`flex flex-row items-center justify-between pb-2 ${className}`}>
       <div className="flex items-center gap-2">
-        <CardTitle>Content Metadata</CardTitle>
+        <CardTitle>{title}</CardTitle>
         {needsExternalReview && (
           <div className="flex items-center text-yellow-600 dark:text-yellow-500">
             <AlertTriangle className="h-5 w-5 mr-1" />
@@ -47,6 +49,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             size="sm"
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="p-0 h-8 w-8"
+            aria-label="toggle panel"
           >
             {isCollapsed ? (
               <ChevronRight className="h-4 w-4" />
@@ -61,6 +64,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             size="sm" 
             onClick={handleRefresh}
             disabled={isLoading}
+            aria-label="refresh metadata"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             <span className="sr-only">Refresh</span>

@@ -23,21 +23,26 @@ describe('MetadataPanel Basic Rendering', () => {
   // Test HeaderSection rendering
   describe('HeaderSection', () => {
     const renderHeaderSection = ({
+      title,
       handleRefresh,
       setIsCollapsed,
-      isCollapsed
+      isCollapsed,
+      needsExternalReview
     }: HeaderSectionTestProps) => {
       return render(
         <HeaderSection
+          title={title}
           handleRefresh={handleRefresh}
           setIsCollapsed={setIsCollapsed}
           isCollapsed={isCollapsed}
+          needsExternalReview={needsExternalReview}
         />
       );
     };
 
     test('should render the refresh button', () => {
       renderHeaderSection({
+        title: "Content Metadata",
         handleRefresh: vi.fn(),
         setIsCollapsed: vi.fn(),
         isCollapsed: false
@@ -51,13 +56,17 @@ describe('MetadataPanel Basic Rendering', () => {
     const renderExternalSourceSection = ({
       externalSourceUrl,
       editable,
-      contentId
-    }: ExternalSourceSectionTestProps) => {
+      contentId,
+      lastCheckedAt,
+      needsExternalReview
+    }: Omit<ExternalSourceSectionTestProps, 'url'>) => {
       return render(
         <ExternalSourceSection
           externalSourceUrl={externalSourceUrl}
           editable={editable}
           contentId={contentId}
+          lastCheckedAt={lastCheckedAt}
+          needsExternalReview={needsExternalReview}
         />
       );
     };
@@ -118,12 +127,19 @@ describe('MetadataPanel Basic Rendering', () => {
 
   // Test OntologySection rendering
   describe('OntologySection', () => {
+    const terms = [
+      { id: 'term-1', term: 'React', description: 'A JavaScript library' },
+      { id: 'term-2', term: 'TypeScript', description: 'JavaScript with types' }
+    ];
+    
     const renderOntologySection = ({
+      terms,
       sourceId,
       editable
     }: OntologySectionTestProps) => {
       return render(
         <OntologySection
+          terms={terms}
           sourceId={sourceId}
           editable={editable}
         />
@@ -132,6 +148,7 @@ describe('MetadataPanel Basic Rendering', () => {
 
     test('should render the ontology section', () => {
       renderOntologySection({
+        terms,
         sourceId: 'source-123',
         editable: false
       });
@@ -176,6 +193,13 @@ describe('MetadataPanel Basic Rendering', () => {
         domain: 'Web Development'
       });
       expect(screen.getByText('Web Development')).toBeInTheDocument();
+    });
+
+    test('should display "None" when domain is null', () => {
+      renderDomainSection({
+        domain: null
+      });
+      expect(screen.getByText('None')).toBeInTheDocument();
     });
   });
 });
