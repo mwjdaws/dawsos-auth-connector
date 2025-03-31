@@ -6,7 +6,7 @@ import { X } from "lucide-react";
 import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Tag } from "../hooks/tag-operations/types";
+import { Tag } from "@/types/tag";
 
 interface SortableTagProps {
   tag: Tag;

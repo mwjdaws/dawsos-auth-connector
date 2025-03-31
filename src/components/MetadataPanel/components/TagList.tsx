@@ -7,7 +7,7 @@
  */
 import React from "react";
 import { DraggableTagList } from "./DraggableTagList";
-import { Tag } from "../hooks/tag-operations/types";
+import { Tag } from "@/types/tag";
 
 interface TagListProps {
   tags: Tag[];

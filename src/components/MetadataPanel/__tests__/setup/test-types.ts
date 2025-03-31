@@ -6,7 +6,7 @@
  * to ensure consistent typing and reduce duplication.
  */
 
-import { Tag, OntologyTerm } from '@/components/MetadataPanel/types';
+import { Tag, OntologyTerm } from '@/types';
 import { Mock } from 'vitest';
 
 /**

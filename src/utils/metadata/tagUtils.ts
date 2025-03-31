@@ -1,5 +1,5 @@
 
-import { Tag } from '@/components/MetadataPanel/hooks/tag-operations/types';
+import { Tag } from '@/types/tag';
 
 /**
  * Transforms tag data from various formats into a standard Tag object
@@ -13,7 +13,8 @@ export function transformTagData(tagData: any): Tag {
     return {
       id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: tagData.trim().toLowerCase(),
-      content_id: undefined
+      content_id: '',
+      type_id: null
     };
   }
   
@@ -27,9 +28,9 @@ export function transformTagData(tagData: any): Tag {
     return {
       id: tagData.id || `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name,
-      content_id: tagData.content_id,
-      type_id: tagData.type_id,
-      type_name: tagData.type_name
+      content_id: tagData.content_id || '',
+      type_id: tagData.type_id || null,
+      type_name: tagData.type_name || null
     };
   }
   
@@ -37,7 +38,8 @@ export function transformTagData(tagData: any): Tag {
   return {
     id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     name: String(tagData).trim().toLowerCase(),
-    content_id: undefined
+    content_id: '',
+    type_id: null
   };
 }
 

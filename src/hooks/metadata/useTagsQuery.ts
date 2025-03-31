@@ -3,14 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { isValidContentId } from '@/utils/validation';
 import { toast } from '@/hooks/use-toast';
-
-export interface Tag {
-  id: string;
-  name: string;
-  content_id: string;
-  type_id?: string | null;
-  type_name?: string | null;
-}
+import { Tag } from '@/types/tag';
 
 // Type guard for parser errors
 function isParserError(data: any): data is { message: string } {

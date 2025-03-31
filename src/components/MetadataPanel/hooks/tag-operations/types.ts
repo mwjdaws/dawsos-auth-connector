@@ -1,20 +1,32 @@
 
 /**
  * Tag operations types
+ * 
+ * @deprecated Import Tag types from @/types/tag instead
  */
 
-export interface Tag {
-  id: string;
-  name: string;
-  content_id: string;
-  type_id: string | null;
-  type_name?: string | null;
-}
+// Re-export the unified types
+import { 
+  Tag, 
+  TagPosition, 
+  AugmentedTag,
+  mapApiTagToTag,
+  mapApiTagsToTags,
+  ensureNonNullableTag,
+  filterDuplicateTags,
+  convertTagPositionsToTags
+} from '@/types/tag';
 
-export interface TagPosition {
-  id: string;
-  position: number;
-}
+export { 
+  Tag, 
+  TagPosition, 
+  AugmentedTag,
+  mapApiTagToTag,
+  mapApiTagsToTags,
+  ensureNonNullableTag,
+  filterDuplicateTags,
+  convertTagPositionsToTags
+};
 
 export interface UseTagStateProps {
   initialTags?: Tag[];
@@ -92,17 +104,4 @@ export interface UseTagOperationsResult {
   // Added for backward compatibility
   isTagsLoading?: boolean; 
   tagsError?: Error | null;
-}
-
-// Utility function to map API tags to internal Tag type
-export function mapApiTagToTag(apiTag: any): Tag {
-  return {
-    id: typeof apiTag.id === 'string' ? apiTag.id : '',
-    name: typeof apiTag.name === 'string' ? apiTag.name : '',
-    content_id: typeof apiTag.content_id === 'string' ? apiTag.content_id : '',
-    type_id: typeof apiTag.type_id === 'string' ? apiTag.type_id : null,
-    type_name: apiTag.tag_types && typeof apiTag.tag_types.name === 'string' 
-      ? apiTag.tag_types.name 
-      : null
-  };
 }

@@ -3,14 +3,8 @@
  * Common type definitions shared across the application
  */
 
-// Tag type definition
-export interface Tag {
-  id: string;
-  name: string;
-  content_id: string;
-  type_id?: string | null;
-  type_name?: string | null;
-}
+// Import and re-export the Tag type from the centralized definition
+export { Tag, AugmentedTag, TagPosition } from './tag';
 
 // Knowledge Source type definition
 export interface KnowledgeSource {

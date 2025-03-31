@@ -1,5 +1,5 @@
 
-import { Tag, TagPosition } from "@/components/MetadataPanel/hooks/tag-operations/types";
+import { Tag, TagPosition } from "@/types/tag";
 
 /**
  * API compatibility layer for tag operations

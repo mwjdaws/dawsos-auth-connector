@@ -1,5 +1,6 @@
 
 import { ReactNode } from 'react';
+import { Tag, OntologyTerm } from '@/types';
 
 // Base metadata panel props
 export interface MetadataPanelProps {
@@ -15,14 +16,8 @@ export interface MetadataPanelProps {
   children?: ReactNode;
 }
 
-// Standardized tag interface
-export interface Tag {
-  id: string;
-  name: string;
-  content_id: string;
-  type_id: string | null;
-  type_name?: string | null;
-}
+// Re-export the Tag type for backward compatibility
+export { Tag };
 
 // Source metadata
 export interface SourceMetadata {
@@ -53,13 +48,8 @@ export interface ExternalSourceMetadata {
   needsReview: boolean;
 }
 
-// Ontology term
-export interface OntologyTerm {
-  id: string;
-  term: string;
-  description: string;
-  domain?: string | null;
-}
+// Re-export the OntologyTerm type for backward compatibility
+export { OntologyTerm };
 
 // Props for the OntologyTermsSection component
 export interface OntologyTermsSectionProps {
