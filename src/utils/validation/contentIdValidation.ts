@@ -1,3 +1,4 @@
+
 /**
  * Content ID validation utility functions
  * 
@@ -22,6 +23,63 @@ export function isValidContentId(contentId: string | null | undefined): boolean 
   }
   
   // Otherwise, must be a valid UUID
+  return validateUuid(contentId);
+}
+
+/**
+ * Check if a content ID is a temporary ID
+ * 
+ * @param contentId The ID to check
+ * @returns Whether the ID is a temporary ID
+ */
+export function isTempId(contentId: string): boolean {
+  return contentId.startsWith('temp-');
+}
+
+/**
+ * Check if a content ID is a UUID
+ * 
+ * @param contentId The ID to check
+ * @returns Whether the ID is a UUID
+ */
+export function isUUID(contentId: string): boolean {
+  return validateUuid(contentId);
+}
+
+/**
+ * Attempts to convert a string to a UUID
+ * If conversion fails, returns null
+ * 
+ * @param contentId The ID to convert
+ * @returns A UUID if conversion succeeded, null otherwise
+ */
+export function tryConvertToUUID(contentId: string | null | undefined): string | null {
+  if (!contentId) return null;
+  
+  // If it's already a UUID, return it
+  if (validateUuid(contentId)) {
+    return contentId;
+  }
+  
+  // If it's a temp ID, try to extract a UUID from it
+  if (contentId.startsWith('temp-') && contentId.length > 5) {
+    const possibleUuid = contentId.substring(5);
+    if (validateUuid(possibleUuid)) {
+      return possibleUuid;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Checks if a content ID can be stored in the database
+ * 
+ * @param contentId The ID to check
+ * @returns Whether the ID is storable (UUID only)
+ */
+export function isStorableContentId(contentId: string | null | undefined): boolean {
+  if (!contentId) return false;
   return validateUuid(contentId);
 }
 

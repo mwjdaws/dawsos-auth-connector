@@ -11,7 +11,7 @@ import { Tag } from '@/types/tag';
 interface TagStateOptions {
   initialTags?: Tag[];
   initialLoading?: boolean;
-  initialError?: string | null;
+  initialError?: Error | null;
   initialNewTag?: string;
 }
 
@@ -32,7 +32,7 @@ export const useTagState = (options: TagStateOptions = {}) => {
   // State for tag data
   const [tags, setTags] = useState<Tag[]>(initialTags);
   const [isLoading, setIsLoading] = useState<boolean>(initialLoading);
-  const [error, setError] = useState<string | null>(initialError);
+  const [error, setError] = useState<Error | null>(initialError);
   const [newTag, setNewTag] = useState<string>(initialNewTag);
 
   // Reset all state

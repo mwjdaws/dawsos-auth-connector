@@ -1,12 +1,10 @@
 
 /**
- * Tag related types and utilities
+ * Tag types and utilities
  */
 
 /**
- * Tag type definition
- * 
- * Represents a tag that can be associated with content
+ * Base Tag interface
  */
 export interface Tag {
   id: string;
@@ -18,19 +16,6 @@ export interface Tag {
 }
 
 /**
- * Tag group definition
- * 
- * Represents a group of tags with a common type/category
- */
-export interface TagGroup {
-  type: string | null;
-  typeName: string | null;
-  content_id: string;
-  tags: Tag[];
-  category?: string;
-}
-
-/**
  * Tag position for reordering
  */
 export interface TagPosition {
@@ -39,35 +24,97 @@ export interface TagPosition {
 }
 
 /**
- * Sorts tags by their display order
- * 
- * @param tags Array of tags to sort
- * @returns Sorted array of tags
+ * Augmented tag with additional metadata
  */
-export function sortTagsByDisplayOrder(tags: Tag[]): Tag[] {
-  return [...tags].sort((a, b) => {
-    // First sort by display_order
-    const orderDiff = (a.display_order || 0) - (b.display_order || 0);
-    if (orderDiff !== 0) return orderDiff;
-    
-    // Then by name as fallback
-    return a.name.localeCompare(b.name);
-  });
+export interface AugmentedTag extends Tag {
+  category?: string;
+  color?: string;
+  description?: string;
+  isUserCreated?: boolean;
 }
 
 /**
- * Creates a new tag with default values
- * 
- * @param options Initial values for the tag
- * @returns A new tag object
+ * Convert a database tag to a Tag interface
  */
-export function createTag(options: Partial<Tag> = {}): Tag {
+export function mapApiTagToTag(tag: any): Tag {
   return {
-    id: options.id || '',
-    name: options.name || '',
-    content_id: options.content_id || '',
-    type_id: options.type_id || null,
-    type_name: options.type_name || null,
-    display_order: options.display_order !== undefined ? options.display_order : 0
+    id: tag.id,
+    name: tag.name,
+    content_id: tag.content_id,
+    type_id: tag.type_id || null,
+    type_name: tag.type_name || null,
+    display_order: tag.display_order || 0
   };
+}
+
+/**
+ * Convert an array of database tags to Tag interfaces
+ */
+export function mapApiTagsToTags(tags: any[]): Tag[] {
+  return tags.map(mapApiTagToTag);
+}
+
+/**
+ * Ensure a tag is not null or undefined
+ */
+export function ensureNonNullableTag(tag: Tag | null | undefined): Tag | null {
+  if (!tag) return null;
+  
+  return {
+    id: tag.id,
+    name: tag.name,
+    content_id: tag.content_id,
+    type_id: tag.type_id,
+    type_name: tag.type_name || null,
+    display_order: tag.display_order
+  };
+}
+
+/**
+ * Remove duplicate tags from an array
+ */
+export function filterDuplicateTags(tags: Tag[]): Tag[] {
+  const uniqueTagMap = new Map<string, Tag>();
+  
+  tags.forEach(tag => {
+    const key = `${tag.name.toLowerCase()}`;
+    if (!uniqueTagMap.has(key)) {
+      uniqueTagMap.set(key, tag);
+    }
+  });
+  
+  return Array.from(uniqueTagMap.values());
+}
+
+/**
+ * Convert tag positions to tags
+ */
+export function convertTagPositionsToTags(positions: TagPosition[], existingTags: Tag[]): Tag[] {
+  const tagMap = new Map<string, Tag>();
+  
+  // Create a map of existing tags by ID
+  existingTags.forEach(tag => {
+    tagMap.set(tag.id, tag);
+  });
+  
+  // Update tag positions
+  positions.forEach(position => {
+    const tag = tagMap.get(position.id);
+    if (tag) {
+      tag.display_order = position.position;
+    }
+  });
+  
+  return Array.from(tagMap.values());
+}
+
+/**
+ * Validate if tag name is valid
+ */
+export function isValidTag(name: string): boolean {
+  if (!name || name.trim().length === 0) return false;
+  if (name.trim().length < 2) return false;
+  if (name.trim().length > 50) return false;
+  
+  return true;
 }

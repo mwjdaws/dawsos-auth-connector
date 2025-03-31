@@ -2,141 +2,115 @@
 /**
  * Document validation utilities
  * 
- * Functions for validating documents.
+ * Functions for validating document content and metadata
  */
+import { DocumentValidationOptions, ValidationResult } from './types';
+import { createValidResult, createInvalidResult } from './types';
 
-import { DocumentValidationOptions, DocumentValidationResult } from './types';
+interface DocumentContent {
+  title: string;
+  content: string;
+}
+
+/**
+ * Validates a document's title and content
+ * 
+ * @param document The document to validate
+ * @param options Validation options
+ * @returns Validation result object
+ */
+export function validateDocument(
+  document: DocumentContent,
+  options: DocumentValidationOptions = {}
+): ValidationResult {
+  const {
+    requireTitle = true,
+    minTitleLength = 3,
+    maxTitleLength = 255,
+    requireContent = true,
+    minContentLength = 10
+  } = options;
+  
+  // Validate title
+  if (requireTitle && (!document.title || document.title.trim().length === 0)) {
+    return createInvalidResult('Title is required');
+  }
+  
+  if (document.title && document.title.length < minTitleLength) {
+    return createInvalidResult(`Title must be at least ${minTitleLength} characters`);
+  }
+  
+  if (document.title && document.title.length > maxTitleLength) {
+    return createInvalidResult(`Title must be at most ${maxTitleLength} characters`);
+  }
+  
+  // Validate content
+  if (requireContent && (!document.content || document.content.trim().length === 0)) {
+    return createInvalidResult('Content is required');
+  }
+  
+  if (document.content && document.content.length < minContentLength) {
+    return createInvalidResult(`Content must be at least ${minContentLength} characters`);
+  }
+  
+  return createValidResult();
+}
 
 /**
  * Validates a document title
+ * 
+ * @param title The title to validate
+ * @param options Validation options
+ * @returns Validation result object
  */
-export function validateDocumentTitle(
+export function validateTitle(
   title: string,
-  options?: DocumentValidationOptions
-): DocumentValidationResult {
-  const opts = {
-    minTitleLength: 1,
-    maxTitleLength: 255,
-    titleRequired: true,
-    ...options
-  };
-
-  if (opts.titleRequired && (!title || title.trim().length === 0)) {
-    return {
-      isValid: false,
-      errorMessage: 'Title is required',
-      field: 'title',
-      resultType: 'missing_title',
-      contentExists: false
-    };
+  options: DocumentValidationOptions = {}
+): ValidationResult {
+  const {
+    requireTitle = true,
+    minTitleLength = 3,
+    maxTitleLength = 255
+  } = options;
+  
+  if (requireTitle && (!title || title.trim().length === 0)) {
+    return createInvalidResult('Title is required');
   }
-
-  if (title && title.length < opts.minTitleLength) {
-    return {
-      isValid: false,
-      errorMessage: `Title must be at least ${opts.minTitleLength} characters`,
-      field: 'title',
-      resultType: 'title_too_short',
-      contentExists: true
-    };
+  
+  if (title && title.length < minTitleLength) {
+    return createInvalidResult(`Title must be at least ${minTitleLength} characters`);
   }
-
-  if (title && title.length > opts.maxTitleLength) {
-    return {
-      isValid: false,
-      errorMessage: `Title must be at most ${opts.maxTitleLength} characters`,
-      field: 'title',
-      resultType: 'title_too_long',
-      contentExists: true
-    };
+  
+  if (title && title.length > maxTitleLength) {
+    return createInvalidResult(`Title must be at most ${maxTitleLength} characters`);
   }
-
-  return {
-    isValid: true,
-    errorMessage: null,
-    field: 'title',
-    resultType: 'valid',
-    contentExists: true
-  };
+  
+  return createValidResult();
 }
 
 /**
  * Validates document content
+ * 
+ * @param content The content to validate
+ * @param options Validation options
+ * @returns Validation result object
  */
-export function validateDocumentContent(
+export function validateContent(
   content: string,
-  options?: DocumentValidationOptions
-): DocumentValidationResult {
-  const opts = {
-    minContentLength: 0,
-    maxContentLength: 1000000,
-    contentRequired: false,
-    ...options
-  };
-
-  if (opts.contentRequired && (!content || content.trim().length === 0)) {
-    return {
-      isValid: false,
-      errorMessage: 'Content is required',
-      field: 'content',
-      resultType: 'missing_content',
-      contentExists: false
-    };
+  options: DocumentValidationOptions = {}
+): ValidationResult {
+  const {
+    requireContent = true,
+    minContentLength = 10
+  } = options;
+  
+  if (requireContent && (!content || content.trim().length === 0)) {
+    return createInvalidResult('Content is required');
   }
-
-  if (content && content.length < opts.minContentLength) {
-    return {
-      isValid: false,
-      errorMessage: `Content must be at least ${opts.minContentLength} characters`,
-      field: 'content',
-      resultType: 'content_too_short',
-      contentExists: true
-    };
+  
+  if (content && content.length < minContentLength) {
+    return createInvalidResult(`Content must be at least ${minContentLength} characters`);
   }
-
-  if (content && content.length > opts.maxContentLength) {
-    return {
-      isValid: false,
-      errorMessage: `Content must be at most ${opts.maxContentLength} characters`,
-      field: 'content',
-      resultType: 'content_too_long',
-      contentExists: true
-    };
-  }
-
-  return {
-    isValid: true,
-    errorMessage: null,
-    field: 'content',
-    resultType: 'valid',
-    contentExists: true
-  };
-}
-
-/**
- * Validates a full document
- */
-export function validateDocument(
-  document: { title: string; content: string },
-  options?: DocumentValidationOptions
-): DocumentValidationResult {
-  // Validate title
-  const titleResult = validateDocumentTitle(document.title, options);
-  if (!titleResult.isValid) {
-    return titleResult;
-  }
-
-  // Validate content
-  const contentResult = validateDocumentContent(document.content, options);
-  if (!contentResult.isValid) {
-    return contentResult;
-  }
-
-  // All validations passed
-  return {
-    isValid: true,
-    errorMessage: null,
-    contentExists: true,
-    resultType: 'valid'
-  };
+  
+  return createValidResult();
 }

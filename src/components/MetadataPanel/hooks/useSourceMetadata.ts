@@ -1,6 +1,7 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { SourceMetadata, SimpleSourceMetadata } from '../types';
+import { handleError } from '@/utils/errors/handle';
 
 interface UseSourceMetadataProps {
   contentId: string;
@@ -15,7 +16,7 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
   const [needsExternalReview, setNeedsExternalReview] = useState(false);
 
   // Function to fetch the source metadata
-  const fetchSourceMetadata = async () => {
+  const fetchSourceMetadata = useCallback(async () => {
     if (!contentId) {
       setIsLoading(false);
       setData(null);
@@ -32,30 +33,43 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
       // Mock response data
       // In a real implementation, this would be an API call
       const mockData: SimpleSourceMetadata = {
-        id: 'mock-id-123',
+        id: contentId,
+        title: 'Sample content',
         external_source_url: "https://example.com/article",
         external_source_checked_at: new Date().toISOString(),
-        external_content_hash: "mock-hash-456",
         needs_external_review: false,
-        is_published: true
+        published: true,
+        updated_at: new Date().toISOString(),
+        content: "Sample content",
+        created_at: new Date().toISOString(),
+        published_at: null,
+        metadata: null
       };
 
       setData(mockData);
-      setExternalSourceUrl(mockData.external_source_url);
-      setLastCheckedAt(mockData.external_source_checked_at);
-      setNeedsExternalReview(mockData.needs_external_review);
+      setExternalSourceUrl(mockData.external_source_url || null);
+      setLastCheckedAt(mockData.external_source_checked_at || null);
+      setNeedsExternalReview(mockData.needs_external_review || false);
     } catch (err) {
       console.error("Error fetching source metadata:", err);
-      setError(err instanceof Error ? err : new Error(String(err)));
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      
+      handleError(
+        error, 
+        "Failed to fetch metadata", 
+        { level: "warning" }
+      );
       
       // Set default values in case of error
       setData({
-        id: 'error-id',
+        id: contentId,
+        title: 'Error loading content',
         external_source_url: null,
         needs_external_review: false, 
         external_source_checked_at: null,
-        external_content_hash: null,
-        is_published: false
+        published: false,
+        updated_at: null
       });
       setExternalSourceUrl(null);
       setLastCheckedAt(null);
@@ -63,12 +77,12 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [contentId]);
 
   // Fetch the metadata on mount or contentId change
   useEffect(() => {
     fetchSourceMetadata();
-  }, [contentId]);
+  }, [contentId, fetchSourceMetadata]);
 
   return {
     isLoading,

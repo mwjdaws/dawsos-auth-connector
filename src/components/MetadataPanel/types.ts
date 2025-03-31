@@ -32,7 +32,12 @@ export interface SimpleSourceMetadata {
   published: boolean;
   external_source_url?: string | null;
   external_source_checked_at?: string | null;
+  external_content_hash?: string | null;
   needs_external_review?: boolean;
+  content?: string;
+  created_at?: string | null;
+  published_at?: string | null;
+  metadata?: Record<string, any> | null;
 }
 
 /**

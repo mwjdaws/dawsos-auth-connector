@@ -7,10 +7,26 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+interface UseContentExistsOptions {
+  enabled?: boolean;
+  staleTime?: number;
+  retry?: number;
+}
+
 /**
  * Hook to check if content exists in the database
+ * 
+ * @param contentId Content ID to check
+ * @param options Query options
+ * @returns Query result with existence information
  */
-export function useContentExists(contentId: string | null) {
+export function useContentExists(contentId: string | null, options: UseContentExistsOptions = {}) {
+  const {
+    enabled = true,
+    staleTime = 60000, // Cache for 1 minute by default
+    retry = 1
+  } = options;
+  
   return useQuery({
     queryKey: contentId ? ['content', 'exists', contentId] : ['content', 'exists', 'none'],
     queryFn: async () => {
@@ -28,8 +44,8 @@ export function useContentExists(contentId: string | null) {
       
       return count ? count > 0 : false;
     },
-    enabled: !!contentId,
-    staleTime: 60000, // Cache for 1 minute
-    retry: 1
+    enabled: !!contentId && enabled,
+    staleTime,
+    retry
   });
 }

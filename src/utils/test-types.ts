@@ -35,9 +35,9 @@ export interface ContentIdSectionTestProps {
 
 export interface ExternalSourceSectionTestProps {
   url: string;
+  externalSourceUrl?: string | null;
   checkedAt?: string;
   isValid?: boolean;
-  externalSourceUrl?: string | null;
   editable?: boolean;
   contentId?: string;
 }

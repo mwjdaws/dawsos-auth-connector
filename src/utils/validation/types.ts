@@ -48,12 +48,22 @@ export interface DocumentValidationOptions {
   minContentLength?: number;
 }
 
+// Document validation result
+export interface DocumentValidationResult extends ValidationResult {
+  // Additional fields can be added for specific document validation
+}
+
 // Tag validation options
 export interface TagValidationOptions {
   minLength?: number;
   maxLength?: number;
   allowSpecialChars?: boolean;
   allowDuplicates?: boolean;
+}
+
+// Tag validation result
+export interface TagValidationResult extends ValidationResult {
+  // Additional fields can be added for specific tag validation
 }
 
 // Error types for validation
@@ -73,4 +83,12 @@ export class ApiError extends Error {
     this.name = 'ApiError';
     this.status = status;
   }
+}
+
+// Content ID validation result types
+export enum ContentIdValidationResultType {
+  VALID_UUID = 'VALID_UUID',
+  VALID_TEMP = 'VALID_TEMP',
+  INVALID_FORMAT = 'INVALID_FORMAT',
+  EMPTY = 'EMPTY'
 }
