@@ -19,4 +19,20 @@ export interface ContentIdValidationResult {
 export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
+  message?: string | null; // Added for backwards compatibility
+}
+
+export interface DocumentValidationResult extends ValidationResult {
+  isPublishable: boolean;
+}
+
+export interface TagPosition {
+  id: string;
+  position: number;
+}
+
+export interface TagValidationOptions {
+  maxLength?: number;
+  minLength?: number;
+  allowSpecialChars?: boolean;
 }

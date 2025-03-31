@@ -1,94 +1,93 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
-import { Tag } from "@/components/MetadataPanel/hooks/tag-operations/types";
+import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Tag } from "../hooks/tag-operations/types";
+
+interface SortableTagProps {
+  tag: Tag;
+  onDelete: (id: string) => void;
+  editable: boolean;
+}
+
+const SortableTag: React.FC<SortableTagProps> = ({ tag, onDelete, editable }) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: tag.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    cursor: 'grab',
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <Badge variant="secondary" className="m-1 px-3 py-1.5">
+        {tag.name}
+        {editable && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-4 w-4 p-0 ml-2 hover:bg-destructive/10 hover:text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(tag.id);
+            }}
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        )}
+      </Badge>
+    </div>
+  );
+};
 
 interface DraggableTagListProps {
   tags: Tag[];
-  onDeleteTag?: (id: string) => Promise<void>;
-  onReorderTags?: (reorderedTags: Tag[]) => void;
-  editable?: boolean;
+  editable: boolean;
+  onDeleteTag: (id: string) => Promise<void>;
+  onReorderTags: (tags: Tag[]) => void;
+  className?: string;
 }
 
 export const DraggableTagList: React.FC<DraggableTagListProps> = ({
   tags,
+  editable,
   onDeleteTag,
   onReorderTags,
-  editable = false,
+  className = ""
 }) => {
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    e.dataTransfer.setData("tagIndex", index.toString());
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault();
+  // Safe handling of non-existent tags
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
     
-    const dragIndex = parseInt(e.dataTransfer.getData("tagIndex"), 10);
-    
-    if (dragIndex === dropIndex) return;
-    
-    const reorderedTags = [...tags];
-    const draggedItem = reorderedTags[dragIndex];
-    
-    // Remove the dragged item and insert it at the drop index
-    reorderedTags.splice(dragIndex, 1);
-    reorderedTags.splice(dropIndex, 0, draggedItem);
-    
-    if (onReorderTags) {
-      onReorderTags(reorderedTags);
+    if (over && active.id !== over.id) {
+      const oldIndex = tags.findIndex(tag => tag.id === active.id);
+      const newIndex = tags.findIndex(tag => tag.id === over.id);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newTags = arrayMove(tags, oldIndex, newIndex);
+        onReorderTags(newTags);
+      }
     }
   };
 
-  const handleDelete = async (tagId: string) => {
-    if (onDeleteTag) {
-      await onDeleteTag(tagId);
-    }
-  };
-
-  // Safely handle tag access
-  const safeRenderTag = (tag: Tag | undefined, index: number) => {
-    if (!tag) return null;
-    
-    return (
-      <div
-        key={tag.id}
-        draggable={editable}
-        onDragStart={(e) => handleDragStart(e, index)}
-        onDragOver={handleDragOver}
-        onDrop={(e) => handleDrop(e, index)}
-        className={`inline-block mb-2 mr-2 ${editable ? "cursor-grab" : ""}`}
-      >
-        <Badge variant="outline" className="px-3 py-1 select-none bg-muted/40">
-          {tag.name}
-          {editable && onDeleteTag && (
-            <button
-              type="button"
-              onClick={() => handleDelete(tag.id)}
-              className="ml-2 text-muted-foreground hover:text-destructive transition-colors focus:outline-none"
-              aria-label={`Delete ${tag.name} tag`}
-            >
-              <X size={14} />
-            </button>
-          )}
-        </Badge>
-      </div>
-    );
-  };
-
-  if (!tags.length) {
-    return (
-      <p className="text-sm text-muted-foreground">No tags available</p>
-    );
+  if (tags.length === 0) {
+    return <div className="text-sm text-muted-foreground">No tags</div>;
   }
 
   return (
-    <div className="flex flex-wrap">
-      {tags.map((tag, index) => safeRenderTag(tag, index))}
+    <div className={`flex flex-wrap ${className}`}>
+      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={tags.map(tag => tag.id)} strategy={verticalListSortingStrategy}>
+          {tags.map(tag => (
+            <SortableTag key={tag.id} tag={tag} onDelete={onDeleteTag} editable={editable} />
+          ))}
+        </SortableContext>
+      </DndContext>
     </div>
   );
 };

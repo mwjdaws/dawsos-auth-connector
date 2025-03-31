@@ -26,20 +26,23 @@ export function GraphZoomControl({
     }
   };
   
+  // Ensure zoom is never undefined
+  const safeZoom = typeof zoom === 'number' ? zoom : 1;
+  
   return (
     <div className="flex items-center space-x-2 px-2 py-1 bg-background/60 backdrop-blur-sm rounded-lg shadow-sm">
       <Button 
         variant="ghost" 
-        size="icon" 
+        size="sm" 
         className="h-7 w-7" 
-        onClick={() => onZoomChange(Math.max(0.1, zoom - 0.2))}
+        onClick={() => onZoomChange(Math.max(0.1, safeZoom - 0.2))}
         aria-label="Zoom out"
       >
         <ZoomOut size={16} />
       </Button>
       
       <Slider
-        value={[zoom]}
+        value={[safeZoom]}
         min={0.1}
         max={2}
         step={0.1}
@@ -50,9 +53,9 @@ export function GraphZoomControl({
       
       <Button 
         variant="ghost" 
-        size="icon" 
+        size="sm" 
         className="h-7 w-7" 
-        onClick={() => onZoomChange(Math.min(2, zoom + 0.2))}
+        onClick={() => onZoomChange(Math.min(2, safeZoom + 0.2))}
         aria-label="Zoom in"
       >
         <ZoomIn size={16} />
@@ -60,7 +63,7 @@ export function GraphZoomControl({
       
       <Button 
         variant="ghost" 
-        size="icon" 
+        size="sm" 
         className="h-7 w-7" 
         onClick={onResetZoom}
         aria-label="Reset zoom"

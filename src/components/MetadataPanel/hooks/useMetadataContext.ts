@@ -1,6 +1,6 @@
 
 import { createContext, useContext } from 'react';
-import { ContentIdValidationResult } from '@/utils/validation/contentIdValidation';
+import { ValidationResult } from '@/utils/validation/types';
 
 interface MetadataContextProps {
   contentId?: string;
@@ -8,7 +8,7 @@ interface MetadataContextProps {
   description?: string;
   contentType?: string;
   sourceUrl?: string;
-  validationResult: ContentIdValidationResult;
+  validationResult: ValidationResult;
   isEditable: boolean;
   isLoading: boolean;
   error: string | null;

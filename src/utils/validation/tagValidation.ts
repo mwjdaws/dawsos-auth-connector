@@ -1,81 +1,76 @@
 
+/**
+ * Tag validation utilities
+ */
 import { ValidationResult, TagValidationOptions } from './types';
 
 /**
- * Validates a list of tags against validation options
+ * Minimum length for valid tag names
+ */
+const MIN_TAG_LENGTH = 2;
+
+/**
+ * Maximum length for valid tag names
+ */
+const MAX_TAG_LENGTH = 50;
+
+/**
+ * Validates a tag name
  */
 export function validateTags(
-  tags: string[],
-  options: TagValidationOptions = {}
+  tagName: string,
+  options?: TagValidationOptions
 ): ValidationResult {
-  const {
-    allowEmpty = true,
-    minLength = 1,
-    maxLength = 50,
-    maxTags = 100,
-    allowDuplicates = false,
-    pattern
-  } = options;
-
-  // Check if empty tags are allowed
-  if (!allowEmpty && tags.length === 0) {
+  const minLength = options?.minLength || MIN_TAG_LENGTH;
+  const maxLength = options?.maxLength || MAX_TAG_LENGTH;
+  const allowSpecialChars = options?.allowSpecialChars || false;
+  
+  if (!tagName || !tagName.trim()) {
     return {
       isValid: false,
-      errorMessage: 'At least one tag is required',
-      message: 'At least one tag is required'
+      errorMessage: 'Tag name is required',
+      message: 'Tag name is required'
     };
   }
-
-  // Check maximum number of tags
-  if (tags.length > maxTags) {
+  
+  if (tagName.length < minLength) {
     return {
       isValid: false,
-      errorMessage: `Maximum of ${maxTags} tags allowed`,
-      message: `Maximum of ${maxTags} tags allowed`
+      errorMessage: `Tag name must be at least ${minLength} characters`,
+      message: `Tag name must be at least ${minLength} characters`
     };
   }
-
-  // Check for duplicates
-  if (!allowDuplicates) {
-    const uniqueTags = new Set(tags);
-    if (uniqueTags.size !== tags.length) {
+  
+  if (tagName.length > maxLength) {
+    return {
+      isValid: false,
+      errorMessage: `Tag name cannot exceed ${maxLength} characters`,
+      message: `Tag name cannot exceed ${maxLength} characters`
+    };
+  }
+  
+  if (!allowSpecialChars) {
+    // Check for special characters
+    const specialCharsRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
+    if (specialCharsRegex.test(tagName)) {
       return {
         isValid: false,
-        errorMessage: 'Duplicate tags are not allowed',
-        message: 'Duplicate tags are not allowed'
+        errorMessage: 'Tag name should not contain special characters',
+        message: 'Tag name should not contain special characters'
       };
     }
   }
-
-  // Validate individual tags
-  for (const tag of tags) {
-    // Check length
-    if (tag.length < minLength) {
-      return {
-        isValid: false,
-        errorMessage: `Tags must be at least ${minLength} characters`,
-        message: `Tags must be at least ${minLength} characters`
-      };
-    }
-
-    if (tag.length > maxLength) {
-      return {
-        isValid: false,
-        errorMessage: `Tags must be no more than ${maxLength} characters`,
-        message: `Tags must be no more than ${maxLength} characters`
-      };
-    }
-
-    // Check pattern if specified
-    if (pattern && !pattern.test(tag)) {
-      return {
-        isValid: false,
-        errorMessage: 'Tag contains invalid characters',
-        message: 'Tag contains invalid characters'
-      };
-    }
+  
+  // Check for spaces
+  if (tagName.includes(' ')) {
+    return {
+      isValid: false,
+      errorMessage: 'Tag name should not contain spaces',
+      message: 'Tag name should not contain spaces'
+    };
   }
-
+  
+  // All checks have passed
   return {
     isValid: true,
     errorMessage: null,

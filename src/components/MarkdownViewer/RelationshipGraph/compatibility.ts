@@ -2,7 +2,7 @@
 /**
  * Compatibility utilities for RelationshipGraph component
  */
-import { GraphNode, GraphLink, GraphData } from './types';
+import { GraphNode, GraphLink, GraphData, RelationshipGraphProps } from './types';
 
 /**
  * Create compatibility layer for different GraphRenderer versions
@@ -28,9 +28,26 @@ export function createCompatibleGraphRef(modernRef: any) {
 }
 
 /**
- * Ensure GraphData is valid and contains required properties
+ * Create safe props for the RelationshipGraph component
  */
-export function ensureValidGraphData(data: any): GraphData {
+export function createSafeGraphProps(props: {
+  startingNodeId?: string | undefined | null;
+  width?: number | undefined;
+  height?: number | undefined;
+  hasAttemptedRetry?: boolean | undefined;
+}): RelationshipGraphProps {
+  return {
+    startingNodeId: props.startingNodeId || '',
+    width: props.width || 800,
+    height: props.height || 600,
+    hasAttemptedRetry: props.hasAttemptedRetry || false
+  };
+}
+
+/**
+ * Sanitize graph data to ensure it's valid
+ */
+export function sanitizeGraphData(data: any): GraphData {
   if (!data) {
     return { nodes: [], links: [] };
   }
@@ -56,4 +73,11 @@ export function ensureValidGraphData(data: any): GraphData {
     nodes: validNodes,
     links: validLinks
   };
+}
+
+/**
+ * Ensure GraphData is valid and contains required properties
+ */
+export function ensureValidGraphData(data: any): GraphData {
+  return sanitizeGraphData(data);
 }

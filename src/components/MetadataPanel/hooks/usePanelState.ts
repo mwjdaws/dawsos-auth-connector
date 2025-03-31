@@ -4,7 +4,7 @@ import { isValidContentId } from '@/utils/validation/contentIdValidation';
 
 export interface UsePanelStateProps {
   contentId: string;
-  onMetadataChange?: (() => void);
+  onMetadataChange?: (() => void) | undefined;
   isCollapsible?: boolean;
   initialCollapsed?: boolean;
 }

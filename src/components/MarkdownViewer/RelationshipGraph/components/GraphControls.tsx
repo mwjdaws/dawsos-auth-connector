@@ -28,7 +28,7 @@ export function GraphControls({
     <div className="flex items-center justify-between p-2 border-t border-b bg-muted/20">
       <GraphSearch 
         graphData={graphData} 
-        onNodeFound={onNodeFound} 
+        onNodeSelect={onNodeFound} 
       />
       
       <GraphZoomControl 

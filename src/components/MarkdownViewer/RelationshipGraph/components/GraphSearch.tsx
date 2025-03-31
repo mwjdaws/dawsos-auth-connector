@@ -15,9 +15,9 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { GraphData, GraphNode } from './graph-renderer/GraphRendererTypes';
+import { GraphData, GraphNode } from '../types';
 
-interface GraphSearchProps {
+export interface GraphSearchProps {
   graphData: GraphData;
   onNodeSelect: (nodeId: string) => void;
 }

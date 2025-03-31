@@ -77,3 +77,8 @@ export const isValidContentId = (contentId?: string | null): boolean => {
   if (!contentId) return false;
   return validateContentId(contentId).isValid;
 }
+
+/**
+ * Get detailed validation result for content ID
+ */
+export const getContentIdValidationResult = validateContentId;

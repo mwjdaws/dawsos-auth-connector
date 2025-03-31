@@ -19,7 +19,7 @@ export interface SourceMetadata {
 
 // Simplified source metadata for hooks that only use a subset of fields
 export interface SimpleSourceMetadata {
-  id?: string;  
+  id: string;  // Made required to match SourceMetadata
   title?: string;  
   content?: string;  
   created_at?: string;  
@@ -66,7 +66,7 @@ export interface MetadataPanelProps {
 
 // Props for the MetadataContent component
 export interface MetadataContentProps {
-  data: SimpleSourceMetadata | null;
+  data: SourceMetadata | null;
   contentId: string;
   error: any;
   tags: Tag[];

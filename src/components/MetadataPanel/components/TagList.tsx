@@ -12,7 +12,7 @@ import { Tag } from "../hooks/tag-operations/types";
 interface TagListProps {
   tags: Tag[];
   editable: boolean;
-  onDeleteTag: (tagId: string) => void;
+  onDeleteTag: (tagId: string) => Promise<void> | void;
   onReorderTags?: (tags: Tag[]) => void;
   className?: string;
 }
@@ -24,11 +24,20 @@ export const TagList: React.FC<TagListProps> = ({
   onReorderTags = () => {},
   className = ""
 }) => {
+  // Create a Promise-compatible wrapper for onDeleteTag
+  const handleDeleteTag = async (tagId: string): Promise<void> => {
+    const result = onDeleteTag(tagId);
+    if (result instanceof Promise) {
+      return result;
+    }
+    return Promise.resolve();
+  };
+
   return (
     <DraggableTagList
       tags={tags}
       editable={editable}
-      onDeleteTag={onDeleteTag}
+      onDeleteTag={handleDeleteTag}
       onReorderTags={onReorderTags}
       className={className}
     />
