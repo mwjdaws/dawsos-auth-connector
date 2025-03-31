@@ -4,11 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
-import { Tag, SourceMetadata } from "../types";
+import { Tag } from "@/types/tag";
+import { SourceMetadata } from "../types";
 import { ContentIdSection } from "../sections/ContentIdSection";
 import { ExternalSourceSection } from "../sections/ExternalSourceSection";
 import { TagsSection } from "../sections/TagsSection";
 import { OntologySection } from "../sections/OntologySection";
+import { DomainSection } from "../sections/DomainSection";
 
 export interface MetadataContentProps {
   data: SourceMetadata | null;
@@ -26,6 +28,8 @@ export interface MetadataContentProps {
   needsExternalReview: boolean;
   onMetadataChange?: (() => void) | undefined;
   showOntologyTerms: boolean;
+  domain?: string | null;
+  showDomain?: boolean;
 }
 
 export function MetadataContent({
@@ -43,7 +47,9 @@ export function MetadataContent({
   lastCheckedAt,
   needsExternalReview,
   onMetadataChange,
-  showOntologyTerms
+  showOntologyTerms,
+  domain,
+  showDomain = false
 }: MetadataContentProps) {
   // Display error if there's an error
   if (error) {
@@ -97,13 +103,17 @@ export function MetadataContent({
           className="mt-6"
         />
         
+        {/* Domain Section (conditionally rendered) */}
+        {showDomain && domain && (
+          <DomainSection domain={domain} />
+        )}
+        
         {/* Ontology Terms Section (conditionally rendered) */}
         {showOntologyTerms && (
-          <div>
-            {/* Replace with proper OntologySection implementation once available */}
-            <h3 className="text-sm font-medium mb-2">Ontology Terms</h3>
-            <p className="text-muted-foreground text-sm">No ontology terms assigned.</p>
-          </div>
+          <OntologySection
+            sourceId={contentId}
+            editable={editable}
+          />
         )}
       </CardContent>
     </Card>
