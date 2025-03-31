@@ -1,86 +1,78 @@
 
 /**
- * Error handling wrapper functions
+ * Error handling wrappers
  * 
- * Provides higher-order functions for wrapping code with error handling
+ * Provides utility functions to wrap code with standardized error handling.
  */
-import { handleError } from './handle';
-import { ErrorLevel } from './types';
+import { handleError, handleErrorSafe } from './handle';
+import { ErrorHandlingOptions } from './types';
 
 /**
- * Wraps a function with error handling
+ * Wrap an async function with standardized error handling
  * 
- * @param fn Function to wrap
- * @param options Error handling options
- * @returns Wrapped function that handles errors
+ * @param fn The async function to wrap
+ * @param userMessage Optional user-friendly error message
+ * @param options Additional error handling options
+ * @returns A wrapped function with error handling
  */
-export function withErrorHandling<T extends (...args: any[]) => any>(
+export function withErrorHandling<T extends (...args: any[]) => Promise<any>>(
   fn: T,
-  options: {
-    errorMessage?: string;
-    level?: ErrorLevel;
-    silent?: boolean;
-    technical?: boolean;
-    deduplicate?: boolean;
-    context?: Record<string, any>;
-  } = {}
-) {
-  return async (...args: Parameters<T>): Promise<ReturnType<T>> => {
+  userMessage?: string,
+  options?: Partial<ErrorHandlingOptions>
+): (...args: Parameters<T>) => Promise<Awaited<ReturnType<T>>> {
+  return async (...args: Parameters<T>) => {
     try {
       return await fn(...args);
     } catch (error) {
-      handleError(
-        error,
-        options.errorMessage || 'An operation failed',
-        {
-          level: options.level || 'warning',
-          context: { ...options.context, args },
-          silent: options.silent ?? false,
-          technical: options.technical ?? true,
-          deduplicate: options.deduplicate ?? true
-        }
-      );
-      throw error; // Re-throw so calling code can handle it if needed
+      handleError(error, userMessage, options);
+      throw error; // Re-throw after handling
     }
   };
 }
 
 /**
- * Wraps a function with error handling and returns a fallback value on error
+ * Wrap an async function with error handling that doesn't re-throw
  * 
- * @param fn Function to wrap
- * @param fallbackValue Value to return on error
- * @param options Error handling options
- * @returns Wrapped function that handles errors and returns fallback value
+ * @param fn The async function to wrap
+ * @param userMessage Optional user-friendly error message
+ * @param options Additional error handling options
+ * @returns A wrapped function with error handling that returns null on error
  */
-export function withErrorFallback<T extends (...args: any[]) => any>(
+export function withSafeErrorHandling<T extends (...args: any[]) => Promise<any>>(
   fn: T,
-  fallbackValue: ReturnType<T>,
-  options: {
-    errorMessage?: string;
-    level?: ErrorLevel;
-    silent?: boolean;
-    technical?: boolean;
-    deduplicate?: boolean;
-    context?: Record<string, any>;
-  } = {}
-) {
-  return async (...args: Parameters<T>): Promise<ReturnType<T>> => {
+  userMessage?: string,
+  options?: Partial<ErrorHandlingOptions>
+): (...args: Parameters<T>) => Promise<Awaited<ReturnType<T>> | null> {
+  return async (...args: Parameters<T>) => {
     try {
       return await fn(...args);
     } catch (error) {
-      handleError(
-        error,
-        options.errorMessage || 'An operation failed',
-        {
-          level: options.level || 'warning',
-          context: { ...options.context, args },
-          silent: options.silent ?? false,
-          technical: options.technical ?? true,
-          deduplicate: options.deduplicate ?? true
-        }
-      );
-      return fallbackValue;
+      handleErrorSafe(error, userMessage, options);
+      return null; // Return null instead of throwing
     }
+  };
+}
+
+/**
+ * Create a function that handles errors with predefined context
+ * 
+ * @param componentName The name of the component or module
+ * @param defaultOptions Default options for all errors handled by this function
+ * @returns An error handler function with predefined context
+ */
+export function createErrorHandler(
+  componentName: string,
+  defaultOptions?: Partial<ErrorHandlingOptions>
+) {
+  return (error: unknown, userMessage?: string, options?: Partial<ErrorHandlingOptions>) => {
+    handleError(error, userMessage, {
+      ...defaultOptions,
+      ...options,
+      context: {
+        ...(defaultOptions?.context || {}),
+        ...(options?.context || {}),
+        componentName
+      }
+    });
   };
 }

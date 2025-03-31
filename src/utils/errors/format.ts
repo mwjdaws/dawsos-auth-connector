@@ -2,61 +2,65 @@
 /**
  * Error formatting utilities
  * 
- * Consistently format errors for logging and display.
+ * Provides utilities for formatting errors for display to users
+ * based on error type and context.
  */
+import { ErrorHandlingOptions } from './types';
 
 /**
- * Format an unknown error into a consistent error object
+ * Format an error for display to the user
  * 
- * @param error The error to format (could be any type)
- * @returns A formatted Error object
+ * @param error The error to format
+ * @param options Options that influence formatting
+ * @returns A user-friendly error message
  */
-export function formatError(error: unknown): Error {
-  if (error instanceof Error) {
-    return error;
+export function formatErrorForDisplay(error: Error, options?: Partial<ErrorHandlingOptions>): string {
+  // For technical users, we can provide more details
+  if (options?.technical) {
+    return `${error.name}: ${error.message}`;
   }
   
-  if (typeof error === 'string') {
-    return new Error(error);
+  // For regular users, try to provide a friendly message
+  if (error.message.includes('permission denied') || error.message.includes('unauthorized')) {
+    return 'You don\'t have permission to perform this action. Please try logging in again.';
   }
   
-  if (typeof error === 'object' && error !== null) {
-    // Try to extract message or convert to string
-    const message = (error as any).message || JSON.stringify(error);
-    const formattedError = new Error(message);
-    
-    // Copy stack if available
-    if ((error as any).stack) {
-      formattedError.stack = (error as any).stack;
-    }
-    
-    // Copy other properties for debugging
-    Object.assign(formattedError, {
-      originalError: error 
-    });
-    
-    return formattedError;
+  if (error.message.includes('not found') || error.message.includes('does not exist')) {
+    return 'The requested resource could not be found. It may have been moved or deleted.';
   }
   
-  return new Error(`Unknown error: ${String(error)}`);
+  if (error.message.includes('timeout') || error.message.includes('timed out')) {
+    return 'The operation took too long to complete. Please try again.';
+  }
+  
+  if (error.message.includes('network') || error.message.includes('offline')) {
+    return 'There was a problem with your internet connection. Please check your connection and try again.';
+  }
+  
+  if (error.message.includes('validation') || error.message.includes('invalid')) {
+    return 'Some of the information provided is not valid. Please check your input and try again.';
+  }
+  
+  // Default friendly message
+  return error.message || 'An unexpected error occurred. Please try again.';
 }
 
 /**
- * Get a user-friendly error message
+ * Format error for reporting to analytics or logging systems
  * 
- * @param error The error to get a message from
- * @param defaultMessage Default message if no user-friendly message can be extracted
- * @returns A user-friendly error message
+ * @param error The error to format
+ * @param options Options that influence formatting
+ * @returns A structured error report
  */
-export function getUserFriendlyMessage(error: unknown, defaultMessage = 'An unexpected error occurred'): string {
-  const formattedError = formatError(error);
-  
-  // Return the error message if it's likely human-readable
-  if (formattedError.message && 
-     !formattedError.message.includes('Exception') && 
-     !formattedError.message.includes('Error:')) {
-    return formattedError.message;
-  }
-  
-  return defaultMessage;
+export function formatErrorForReporting(error: Error, options?: Partial<ErrorHandlingOptions>) {
+  return {
+    name: error.name,
+    message: error.message,
+    stack: error.stack,
+    timestamp: new Date().toISOString(),
+    level: options?.level || 'error',
+    source: options?.source || 'unknown',
+    context: options?.context || {},
+    fingerprint: options?.fingerprint || ''
+  };
 }

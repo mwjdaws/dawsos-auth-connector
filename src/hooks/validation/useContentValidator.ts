@@ -1,39 +1,58 @@
 
 /**
- * useContentValidator Hook
- * 
- * Validates content IDs and checks if content exists in the database
+ * useContentValidator - Hook to validate content IDs and existence
  */
-import { useMemo } from 'react';
-import { isValidContentId, getContentIdValidationResult } from '@/utils/validation/contentIdValidation';
+import { useState, useEffect } from 'react';
 import { useContentExists } from '@/hooks/metadata/useContentExists';
+import { isValidContentId } from '@/utils/validation/contentIdValidation';
+
+interface ContentValidationResult {
+  isValid: boolean;
+  contentExists: boolean;
+  errorMessage: string | null;
+}
 
 /**
- * Hook for validating content IDs
+ * Validates a content ID and checks if it exists in the database
  * 
  * @param contentId The content ID to validate
- * @returns Validation state for the content ID
+ * @returns Validation result with status and error message
  */
-export function useContentValidator(contentId?: string | null) {
-  // Check if the content ID is valid
-  const validationResult = useMemo(() => {
-    return getContentIdValidationResult(contentId || null);
-  }, [contentId]);
+export function useContentValidator(contentId: string | null | undefined): ContentValidationResult {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  // Check if the content exists in the database
-  const { data: exists, isLoading, error } = useContentExists(
-    contentId && validationResult.isValid ? contentId : null
-  );
+  // First check if content ID format is valid
+  const isValid = contentId ? isValidContentId(contentId) : false;
   
-  // Combine validation and existence check
-  return {
-    isValid: validationResult.isValid,
-    isTemp: validationResult.isTemp,
-    isUuid: validationResult.isUuid,
-    contentExists: !!exists,
+  // If valid format, check if it exists in the database
+  const { 
+    data: exists = false, 
     isLoading,
-    error,
-    errorMessage: validationResult.errorMessage
+    error
+  } = useContentExists(isValid ? contentId : null, {
+    enabled: isValid,
+    retry: 1
+  });
+  
+  // Update error message based on validation status
+  useEffect(() => {
+    if (!contentId) {
+      setErrorMessage('No content ID provided');
+    } else if (!isValid) {
+      setErrorMessage(`Invalid content ID format: ${contentId}`);
+    } else if (error) {
+      setErrorMessage(`Error checking content existence: ${error.message}`);
+    } else if (!isLoading && !exists) {
+      setErrorMessage(`Content with ID ${contentId} does not exist`);
+    } else {
+      setErrorMessage(null);
+    }
+  }, [contentId, isValid, exists, isLoading, error]);
+  
+  return {
+    isValid,
+    contentExists: exists,
+    errorMessage
   };
 }
 

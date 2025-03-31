@@ -2,60 +2,90 @@
 /**
  * Error deduplication utilities
  * 
- * Prevents flooding users with duplicate error messages in short succession.
+ * Prevents flooding users with the same errors in a short period of time.
  */
 
-// Store for recently shown errors (message -> timestamp)
-const recentErrors = new Map<string, number>();
+// Map to track recent errors by fingerprint and their count
+const recentErrors = new Map<string, { count: number, timestamp: number }>();
 
-// Deduplication window in milliseconds (default: 5 seconds)
-const DEDUPLICATION_WINDOW_MS = 5000;
+// Cleanup interval for expired errors (10 minutes)
+const CLEANUP_INTERVAL = 10 * 60 * 1000;
+
+// Time window for considering errors as duplicates (30 seconds)
+const DEDUPLICATION_WINDOW = 30 * 1000;
+
+// Maximum number of identical errors to show in a time window
+const MAX_DUPLICATE_ERRORS = 3;
+
+// Setup cleanup interval
+setInterval(() => {
+  const now = Date.now();
+  recentErrors.forEach((value, key) => {
+    if (now - value.timestamp > DEDUPLICATION_WINDOW) {
+      recentErrors.delete(key);
+    }
+  });
+}, CLEANUP_INTERVAL);
 
 /**
- * Check if an error is a duplicate of a recent error
+ * Check if an error should be deduplicated
  * 
- * @param errorMessage The error message to check
- * @param windowMs Optional custom deduplication window in milliseconds
- * @returns Whether the error is a duplicate that should be suppressed
+ * @param fingerprint Unique identifier for the error
+ * @returns true if the error is a duplicate and should be suppressed, false otherwise
  */
-export function deduplicateError(errorMessage: string, windowMs = DEDUPLICATION_WINDOW_MS): boolean {
+export function deduplicateError(fingerprint: string): boolean {
   const now = Date.now();
-  const lastShown = recentErrors.get(errorMessage);
+  const errorRecord = recentErrors.get(fingerprint);
   
-  // If this error was shown recently, consider it a duplicate
-  if (lastShown && now - lastShown < windowMs) {
-    return true;
+  if (!errorRecord) {
+    // First occurrence of this error
+    recentErrors.set(fingerprint, { count: 1, timestamp: now });
+    return false;
   }
   
-  // Update the last shown time for this error
-  recentErrors.set(errorMessage, now);
-  
-  // Clean up old entries every so often to prevent memory leaks
-  if (recentErrors.size > 50) {
-    cleanupOldErrors(now, windowMs);
+  // Check if within deduplication window
+  if (now - errorRecord.timestamp <= DEDUPLICATION_WINDOW) {
+    // Increment count
+    errorRecord.count += 1;
+    errorRecord.timestamp = now;
+    
+    // Deduplicate if we've shown this error too many times
+    if (errorRecord.count > MAX_DUPLICATE_ERRORS) {
+      return true;
+    }
+  } else {
+    // Error is outside the window, reset counter
+    errorRecord.count = 1;
+    errorRecord.timestamp = now;
   }
   
+  // Don't deduplicate
   return false;
 }
 
 /**
- * Remove errors that are older than the deduplication window
+ * Get the count of a specific error in the deduplication window
  * 
- * @param now Current timestamp
- * @param windowMs Deduplication window in milliseconds
+ * @param fingerprint The error fingerprint to check
+ * @returns Number of occurrences within the window
  */
-function cleanupOldErrors(now: number, windowMs: number): void {
-  for (const [message, timestamp] of recentErrors.entries()) {
-    if (now - timestamp > windowMs) {
-      recentErrors.delete(message);
-    }
-  }
+export function getErrorCount(fingerprint: string): number {
+  const errorRecord = recentErrors.get(fingerprint);
+  return errorRecord?.count || 0;
 }
 
 /**
- * Clear all tracked errors
- * Useful when changing routes to prevent errors from persisting
+ * Reset the deduplication counter for a specific error
+ * 
+ * @param fingerprint The error fingerprint to reset
  */
-export function clearErrorCache(): void {
+export function resetErrorCount(fingerprint: string): void {
+  recentErrors.delete(fingerprint);
+}
+
+/**
+ * Clear all error deduplication counters
+ */
+export function clearAllErrorCounts(): void {
   recentErrors.clear();
 }

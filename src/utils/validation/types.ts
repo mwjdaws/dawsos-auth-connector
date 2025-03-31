@@ -1,98 +1,43 @@
 
 /**
- * Types for validation utilities
+ * Shared validation types
  */
 
-// Generic validation result
+// Basic validation result interface
 export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
-  message?: string | null; // For backward compatibility 
+  message?: string;
+  warnings?: string[];
 }
 
-// Create a valid result helper
-export function createValidResult(message?: string): ValidationResult {
-  return {
-    isValid: true,
-    errorMessage: null,
-    message: message || null
-  };
+// Content validation result with existence checks
+export interface ContentValidationResult extends ValidationResult {
+  contentExists: boolean;
+  contentId: string | null;
 }
 
-// Create an invalid result helper
-export function createInvalidResult(message: string): ValidationResult {
-  return {
-    isValid: false,
-    errorMessage: message,
-    message
-  };
-}
-
-// Content ID validation types
-export interface ContentIdValidationResult {
-  isValid: boolean;
-  isTemp: boolean;
-  isUuid: boolean;
-  errorMessage: string | null;
-  resultType?: string; // For backward compatibility
-}
-
-// Tag position for reordering
-export interface TagPosition {
-  id: string;
-  position: number;
-}
-
-// Document validation options
-export interface DocumentValidationOptions {
-  requireTitle?: boolean;
-  minTitleLength?: number;
-  maxTitleLength?: number;
-  requireContent?: boolean;
-  minContentLength?: number;
-}
-
-// Document validation result
-export interface DocumentValidationResult extends ValidationResult {
-  // Additional fields can be added for specific document validation
-}
-
-// Tag validation options
-export interface TagValidationOptions {
-  minLength?: number;
-  maxLength?: number;
-  allowSpecialChars?: boolean;
-  allowDuplicates?: boolean;
-}
-
-// Tag validation result
+// Tag validation result with specific tag error types
 export interface TagValidationResult extends ValidationResult {
-  // Additional fields can be added for specific tag validation
+  tagExists?: boolean;
+  isDuplicate?: boolean;
+  isReserved?: boolean;
 }
 
-// Error types for validation
-export class ValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ValidationError';
-  }
+// Form field validation result
+export interface FieldValidationResult extends ValidationResult {
+  fieldName: string;
+  value: any;
 }
 
-// API error
-export class ApiError extends Error {
-  status: number;
-  
-  constructor(message: string, status: number = 500) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-  }
+// Form validation result containing field validations
+export interface FormValidationResult extends ValidationResult {
+  fields: Record<string, FieldValidationResult>;
 }
 
-// Content ID validation result types
-export enum ContentIdValidationResultType {
-  VALID_UUID = 'VALID_UUID',
-  VALID_TEMP = 'VALID_TEMP',
-  INVALID_FORMAT = 'INVALID_FORMAT',
-  EMPTY = 'EMPTY'
+// External source validation result
+export interface ExternalSourceValidationResult extends ValidationResult {
+  isValidUrl: boolean;
+  isAccessible?: boolean;
+  lastCheckedAt?: string | null;
 }

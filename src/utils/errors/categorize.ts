@@ -1,98 +1,128 @@
 
 /**
  * Error categorization utilities
- * 
- * Functions for identifying and categorizing errors.
  */
+import { ErrorHandlingOptions, ErrorSource } from './types';
+
+// Common error patterns for different sources
+const errorPatterns = {
+  network: [
+    /network/i,
+    /offline/i,
+    /failed to fetch/i,
+    /request timed out/i,
+    /cors/i,
+    /^\d{3}$/  // HTTP status codes
+  ],
+  server: [
+    /server/i,
+    /500/i,
+    /503/i,
+    /unavailable/i,
+    /internal server error/i
+  ],
+  database: [
+    /database/i,
+    /sql/i,
+    /query/i,
+    /constraint/i,
+    /transaction/i,
+    /supabase/i,
+    /foreign key/i
+  ],
+  auth: [
+    /auth/i,
+    /unauthorized/i,
+    /forbidden/i,
+    /permission/i,
+    /login/i,
+    /token/i,
+    /401/i,
+    /403/i
+  ],
+  validation: [
+    /validation/i,
+    /invalid/i,
+    /required/i,
+    /must be/i,
+    /cannot be/i,
+    /too (long|short|small|large)/i,
+    /bad format/i,
+    /not found/i,
+    /doesn't exist/i
+  ],
+  user: [
+    /user canceled/i,
+    /user aborted/i,
+    /user rejected/i,
+    /user denied/i,
+    /permission denied/i
+  ]
+};
 
 /**
- * Check if an error is a network error
- * 
- * @param error The error to check
- * @returns True if the error is likely a network error
- */
-export function isNetworkError(error: unknown): boolean {
-  if (!error) return false;
-  
-  // Check for common network error messages
-  const errorMessage = error instanceof Error 
-    ? error.message.toLowerCase() 
-    : String(error).toLowerCase();
-  
-  return (
-    errorMessage.includes('network') ||
-    errorMessage.includes('connection') ||
-    errorMessage.includes('offline') ||
-    errorMessage.includes('failed to fetch') ||
-    errorMessage.includes('cors') ||
-    (error instanceof TypeError && errorMessage.includes('fetch'))
-  );
-}
-
-/**
- * Check if an error is an authentication error
- * 
- * @param error The error to check
- * @returns True if the error is likely an authentication error
- */
-export function isAuthError(error: unknown): boolean {
-  if (!error) return false;
-  
-  // Check for common auth error patterns
-  const errorMessage = error instanceof Error 
-    ? error.message.toLowerCase() 
-    : String(error).toLowerCase();
-  
-  const statusCode = (error as any)?.status || (error as any)?.statusCode;
-  
-  return (
-    statusCode === 401 ||
-    statusCode === 403 ||
-    errorMessage.includes('unauthorized') ||
-    errorMessage.includes('forbidden') ||
-    errorMessage.includes('authentication') ||
-    errorMessage.includes('not logged in') ||
-    errorMessage.includes('permission denied') ||
-    errorMessage.includes('invalid token') ||
-    errorMessage.includes('token expired')
-  );
-}
-
-/**
- * Categorize an error into common types
+ * Categorize an error based on its message and stack
  * 
  * @param error The error to categorize
- * @returns The error category
+ * @param options Options to influence categorization
+ * @returns The categorized error with source property
  */
-export function categorizeError(error: unknown): 'network' | 'auth' | 'validation' | 'database' | 'unknown' {
-  if (isNetworkError(error)) {
-    return 'network';
+export function categorizeError(error: Error, options?: Partial<ErrorHandlingOptions>): Error & { source: ErrorSource } {
+  // If source is explicitly provided in options, use it
+  if (options?.source) {
+    return { ...error, source: options.source };
   }
   
-  if (isAuthError(error)) {
-    return 'auth';
+  const errorString = `${error.message} ${error.stack || ''}`.toLowerCase();
+  
+  // Try to match error patterns to determine source
+  if (errorPatterns.network.some(pattern => pattern.test(errorString))) {
+    return { ...error, source: 'network' };
   }
   
-  const errorMessage = error instanceof Error 
-    ? error.message.toLowerCase() 
-    : String(error).toLowerCase();
-  
-  if (
-    errorMessage.includes('validation') ||
-    errorMessage.includes('invalid') ||
-    errorMessage.includes('required field')
-  ) {
-    return 'validation';
+  if (errorPatterns.server.some(pattern => pattern.test(errorString))) {
+    return { ...error, source: 'server' };
   }
   
-  if (
-    errorMessage.includes('database') ||
-    errorMessage.includes('sql') ||
-    errorMessage.includes('query') ||
-    errorMessage.includes('constraint')
-  ) {
-    return 'database';
+  if (errorPatterns.database.some(pattern => pattern.test(errorString))) {
+    return { ...error, source: 'database' };
   }
   
-  return 'unknown';
+  if (errorPatterns.auth.some(pattern => pattern.test(errorString))) {
+    return { ...error, source: 'user' };
+  }
+  
+  if (errorPatterns.validation.some(pattern => pattern.test(errorString))) {
+    return { ...error, source: 'application' };
+  }
+  
+  if (errorPatterns.user.some(pattern => pattern.test(errorString))) {
+    return { ...error, source: 'user' };
+  }
+  
+  // Default to unknown source
+  return { ...error, source: 'unknown' };
+}
+
+/**
+ * Get a user-friendly explanation based on error category
+ * 
+ * @param error The categorized error
+ * @returns A user-friendly explanation
+ */
+export function getErrorExplanation(error: Error & { source: ErrorSource }): string {
+  switch (error.source) {
+    case 'network':
+      return 'There was a problem connecting to the server. Please check your internet connection and try again.';
+    case 'server':
+      return 'The server encountered an error while processing your request. Please try again later.';
+    case 'database':
+      return 'There was a problem accessing the required data. Please try again later.';
+    case 'user':
+      return 'The action could not be completed due to an authentication or permission issue.';
+    case 'application':
+      return 'The application encountered an unexpected error. Please try again.';
+    default:
+      return 'An unexpected error occurred. Please try again later.';
+  }
 }
