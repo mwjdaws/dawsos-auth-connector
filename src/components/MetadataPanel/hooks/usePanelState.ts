@@ -9,6 +9,12 @@ export interface UsePanelStateProps {
   contentExists?: boolean;
 }
 
+/**
+ * Hook for managing panel state in metadata components
+ * 
+ * @param props Configuration options
+ * @returns State and handlers for the panel
+ */
 export function usePanelState({
   contentId,
   onMetadataChange = null,
@@ -31,12 +37,22 @@ export function usePanelState({
       onMetadataChange();
     }
   }, [onMetadataChange]);
+
+  // Toggle collapsed state
+  const toggleCollapsed = useCallback(() => {
+    if (isCollapsible) {
+      setIsCollapsed(prev => !prev);
+    }
+  }, [isCollapsible]);
   
   return {
     isCollapsed,
     setIsCollapsed,
+    toggleCollapsed,
     isCollapsible,
     onMetadataChange: handleMetadataChange,
     contentExists
   };
 }
+
+export default usePanelState;

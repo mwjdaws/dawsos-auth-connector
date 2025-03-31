@@ -3,12 +3,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { SourceMetadata, SimpleSourceMetadata } from '../types';
 import { handleError } from '@/utils/errors/handle';
+import { tryAction } from '@/utils/errors/wrappers';
 
 interface UseSourceMetadataProps {
   contentId: string;
   enabled?: boolean;
 }
 
+/**
+ * Hook for fetching and managing source metadata
+ * 
+ * @param props Configuration for the hook
+ * @returns Source metadata state and operations
+ */
 export const useSourceMetadata = ({ contentId, enabled = true }: UseSourceMetadataProps) => {
   const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
   const [externalSourceUrl, setExternalSourceUrl] = useState<string | null>(null);
@@ -19,7 +26,7 @@ export const useSourceMetadata = ({ contentId, enabled = true }: UseSourceMetada
     data,
     isLoading,
     error,
-    refetch: fetchSourceMetadata
+    refetch
   } = useQuery({
     queryKey: ['sourceMetadata', contentId],
     queryFn: async () => {
@@ -50,15 +57,17 @@ export const useSourceMetadata = ({ contentId, enabled = true }: UseSourceMetada
         return mockData;
       } catch (err) {
         console.error("Error fetching source metadata:", err);
-        const error = err instanceof Error ? err : new Error(String(err));
         
         handleError(
-          error, 
-          "Failed to fetch metadata", 
-          { level: "warning" }
+          err, 
+          "Failed to fetch source metadata", 
+          { 
+            level: "warning",
+            context: { contentId }
+          }
         );
         
-        throw error;
+        throw err;
       }
     },
     enabled: enabled && !!contentId
@@ -73,6 +82,39 @@ export const useSourceMetadata = ({ contentId, enabled = true }: UseSourceMetada
     }
   }, [data]);
 
+  // Safely fetch source metadata with error handling
+  const fetchSourceMetadata = useCallback(async () => {
+    return tryAction(
+      () => refetch(),
+      {
+        errorMessage: "Failed to refresh source metadata",
+        context: { contentId },
+        level: "warning"
+      }
+    );
+  }, [refetch, contentId]);
+
+  // Mark the external source as checked
+  const markExternalSourceChecked = useCallback(async () => {
+    // This would be an API call in a real implementation
+    console.log("Marking external source as checked:", contentId);
+    
+    setLastCheckedAt(new Date().toISOString());
+    setNeedsExternalReview(false);
+    
+    return true;
+  }, [contentId]);
+
+  // Update the external source URL
+  const updateExternalSourceUrl = useCallback(async (url: string | null) => {
+    // This would be an API call in a real implementation
+    console.log("Updating external source URL:", url);
+    
+    setExternalSourceUrl(url);
+    
+    return true;
+  }, []);
+
   return {
     isLoading,
     error,
@@ -80,6 +122,10 @@ export const useSourceMetadata = ({ contentId, enabled = true }: UseSourceMetada
     externalSourceUrl,
     lastCheckedAt,
     needsExternalReview,
-    fetchSourceMetadata
+    fetchSourceMetadata,
+    markExternalSourceChecked,
+    updateExternalSourceUrl
   };
 };
+
+export default useSourceMetadata;
