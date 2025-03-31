@@ -8,16 +8,16 @@
 import { useMemo } from 'react';
 import { 
   isValidContentId, 
-  isTemporaryContentId, 
-  isUuidContentId,
-  tryParseContentIdAsUUID,
+  isTempId as isTemporaryContentId, 
+  isUUID as isUuidContentId,
+  tryConvertToUUID,
   isStorableContentId,
-  validateContentId
-} from '@/utils/content-validation';
+  getContentIdValidationResult
+} from '@/utils/validation/contentIdValidation';
 
 export function useContentIdValidation(contentId?: string | null) {
   const validation = useMemo(() => {
-    return validateContentId(contentId);
+    return getContentIdValidationResult(contentId);
   }, [contentId]);
 
   const isValid = useMemo(() => {
@@ -25,11 +25,11 @@ export function useContentIdValidation(contentId?: string | null) {
   }, [contentId]);
 
   const isUuid = useMemo(() => {
-    return isUuidContentId(contentId);
+    return isUuidContentId(contentId || '');
   }, [contentId]);
 
   const isTemporary = useMemo(() => {
-    return isTemporaryContentId(contentId);
+    return isTemporaryContentId(contentId || '');
   }, [contentId]);
 
   const isStorable = useMemo(() => {
@@ -37,7 +37,7 @@ export function useContentIdValidation(contentId?: string | null) {
   }, [contentId]);
 
   const convertToUuid = useMemo(() => {
-    return tryParseContentIdAsUUID(contentId);
+    return tryConvertToUUID(contentId);
   }, [contentId]);
 
   return {

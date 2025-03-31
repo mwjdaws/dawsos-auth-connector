@@ -2,120 +2,94 @@
 /**
  * Tag validation utilities
  * 
- * Provides functions for validating tag data
+ * Functions for validating tag names, uniqueness, and formats.
  */
 
 import { ValidationResult } from './types';
+import { createValidResult, createInvalidResult } from './utils';
 import { Tag } from '@/types/tag';
 
 /**
- * Validate a tag name
+ * Validates a tag name based on a set of rules
  * 
  * @param tagName The tag name to validate
- * @returns Validation result with isValid flag and any error messages
+ * @param options Validation options
+ * @returns Validation result
  */
-export function validateTagName(tagName: string): ValidationResult {
+export function validateTagName(
+  tagName: string,
+  options: {
+    minLength?: number;
+    maxLength?: number;
+    disallowSpecialChars?: boolean;
+  } = {}
+): ValidationResult {
+  const {
+    minLength = 1,
+    maxLength = 50,
+    disallowSpecialChars = true
+  } = options;
+  
+  // Check if tag is empty
   if (!tagName || tagName.trim() === '') {
-    return {
-      isValid: false,
-      message: null,
-      errorMessage: 'Tag name cannot be empty'
-    };
+    return createInvalidResult('Tag name cannot be empty');
   }
-
-  if (tagName.trim().length < 2) {
-    return {
-      isValid: false,
-      message: null,
-      errorMessage: 'Tag name must be at least 2 characters long'
-    };
+  
+  // Check length constraints
+  if (tagName.length < minLength) {
+    return createInvalidResult(`Tag must be at least ${minLength} characters long`);
   }
-
-  if (tagName.trim().length > 50) {
-    return {
-      isValid: false,
-      message: null,
-      errorMessage: 'Tag name cannot exceed 50 characters'
-    };
+  
+  if (tagName.length > maxLength) {
+    return createInvalidResult(`Tag cannot exceed ${maxLength} characters`);
   }
-
-  // Check for invalid characters
-  if (/[^\w\s\-\.]/i.test(tagName)) {
-    return {
-      isValid: false,
-      message: null,
-      errorMessage: 'Tag name contains invalid characters'
-    };
+  
+  // Check for special characters if disallowed
+  if (disallowSpecialChars && /[^\w\s-]/.test(tagName)) {
+    return createInvalidResult('Tag contains invalid characters. Use only letters, numbers, spaces, and hyphens.');
   }
-
-  return {
-    isValid: true,
-    message: 'Tag name is valid',
-    errorMessage: null
-  };
+  
+  return createValidResult();
 }
 
 /**
- * Check if a tag already exists in a collection
+ * Validates that a tag name is unique among existing tags
  * 
  * @param tagName The tag name to check
- * @param existingTags Collection of existing tags
- * @returns Validation result with isValid flag and any error messages
+ * @param existingTags Array of existing tags
+ * @returns Validation result
  */
 export function validateTagUniqueness(tagName: string, existingTags: Tag[]): ValidationResult {
-  if (!existingTags || !Array.isArray(existingTags)) {
-    return {
-      isValid: true,
-      message: 'No existing tags to check against',
-      errorMessage: null
-    };
+  const normalizedName = tagName.trim().toLowerCase();
+  
+  if (existingTags.some(tag => tag.name.trim().toLowerCase() === normalizedName)) {
+    return createInvalidResult('Tag already exists');
   }
-
-  const normalizedNewTag = tagName.trim().toLowerCase();
-  const tagExists = existingTags.some(tag => 
-    tag.name.trim().toLowerCase() === normalizedNewTag
-  );
-
-  if (tagExists) {
-    return {
-      isValid: false,
-      message: null,
-      errorMessage: `Tag "${tagName}" already exists`
-    };
-  }
-
-  return {
-    isValid: true,
-    message: 'Tag is unique',
-    errorMessage: null
-  };
+  
+  return createValidResult();
 }
 
 /**
- * Comprehensive tag validation
+ * Validates a tag name with combined rules
  * 
  * @param tagName The tag name to validate
- * @param existingTags Optional collection of existing tags to check uniqueness
- * @returns Validation result with isValid flag and any error messages
+ * @param existingTags Optional array of existing tags for uniqueness check
+ * @returns Validation result
  */
 export function validateTag(tagName: string, existingTags?: Tag[]): ValidationResult {
-  // First validate the tag name format
-  const nameValidation = validateTagName(tagName);
-  if (!nameValidation.isValid) {
-    return nameValidation;
+  // First check basic tag name validity
+  const nameResult = validateTagName(tagName);
+  if (!nameResult.isValid) {
+    return nameResult;
   }
-
-  // Then check for uniqueness if existing tags are provided
+  
+  // If existing tags are provided, check uniqueness
   if (existingTags) {
-    const uniquenessValidation = validateTagUniqueness(tagName, existingTags);
-    if (!uniquenessValidation.isValid) {
-      return uniquenessValidation;
+    const uniquenessResult = validateTagUniqueness(tagName, existingTags);
+    if (!uniquenessResult.isValid) {
+      return uniquenessResult;
     }
   }
-
-  return {
-    isValid: true,
-    message: 'Tag is valid',
-    errorMessage: null
-  };
+  
+  return createValidResult();
 }

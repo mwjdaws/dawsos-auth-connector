@@ -1,28 +1,28 @@
 
 /**
- * Validation types and interfaces
+ * Validation Types
+ * 
+ * Shared type definitions for validation functions and hooks.
  */
 
-/**
- * Generic validation result interface
- */
+// Basic validation result
 export interface ValidationResult {
   isValid: boolean;
+  message?: string | null;
+  errorMessage?: string | null;
+}
+
+// Content ID validation result types
+export type ContentIdResultType = 'uuid' | 'temp' | 'invalid';
+
+// Content ID validation result (extends basic validation result)
+export interface ContentIdValidationResult extends ValidationResult {
+  resultType: ContentIdResultType;
   message: string | null;
   errorMessage: string | null;
 }
 
-/**
- * Content ID validation result with additional type information
- */
-export interface ContentIdValidationResult extends ValidationResult {
-  resultType: 'valid' | 'invalid' | 'uuid' | 'temp';
-}
-
-/**
- * Tag position type for reordering operations
- */
-export interface TagPosition {
-  id: string;
-  position: number;
+// Tag validation result
+export interface TagValidationResult extends ValidationResult {
+  tag?: string;
 }

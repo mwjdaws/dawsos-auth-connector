@@ -1,4 +1,3 @@
-
 /**
  * MetadataContext Hook
  * 
@@ -9,7 +8,7 @@ import { createContext, useContext, useRef, useState } from 'react';
 import { useMetadataPanel } from './useMetadataPanel';
 import { Tag } from '@/types/tag';
 import { OntologyTerm } from '../types';
-import { isValidContentId, validateContentId } from '@/utils/content-validation';
+import { isValidContentId } from '@/utils/validation/contentIdValidation';
 
 // Define the metadata context shape
 export interface MetadataContextType {
