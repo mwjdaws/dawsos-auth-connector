@@ -8,6 +8,7 @@ import React from 'react';
 import { GraphSearch } from './GraphSearch';
 import { GraphZoomControl } from './GraphZoomControl';
 import { GraphData } from '../types';
+import { ensureValidZoom } from '../compatibility';
 
 interface GraphControlsProps {
   graphData: GraphData;
@@ -24,6 +25,9 @@ export function GraphControls({
   onZoomChange,
   onResetZoom
 }: GraphControlsProps) {
+  // Ensure zoom is valid
+  const safeZoom = ensureValidZoom(zoom);
+  
   return (
     <div className="flex items-center justify-between p-2 border-t border-b bg-muted/20">
       <GraphSearch 
@@ -32,7 +36,7 @@ export function GraphControls({
       />
       
       <GraphZoomControl 
-        zoom={zoom} 
+        zoom={safeZoom} 
         onZoomChange={onZoomChange} 
         onResetZoom={onResetZoom} 
       />

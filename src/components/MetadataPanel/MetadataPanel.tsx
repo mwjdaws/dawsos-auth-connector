@@ -7,6 +7,7 @@ import { MetadataContent } from './components/MetadataContent';
 import { ContentAlert } from './components/ContentAlert';
 import { useMetadataPanel } from './hooks/useMetadataPanel';
 import { MetadataPanelProps } from './types';
+import { safeCallback } from '@/utils/type-compatibility';
 
 /**
  * MetadataPanel Component
@@ -17,7 +18,7 @@ import { MetadataPanelProps } from './types';
 const MetadataPanel: React.FC<MetadataPanelProps> = ({
   contentId,
   editable = false,
-  onMetadataChange,
+  onMetadataChange = null,
   isCollapsible = false,
   initialCollapsed = false,
   showOntologyTerms = true,
@@ -47,7 +48,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     handleMetadataChange
   } = useMetadataPanel({
     contentId,
-    onMetadataChange: onMetadataChange || undefined,
+    onMetadataChange,
     isCollapsible,
     initialCollapsed
   });
@@ -86,8 +87,8 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     );
   }
   
-  // Create a safe wrapper for onMetadataChange that won't be undefined
-  const handleMetadataChangeCallback = onMetadataChange || (() => {});
+  // Create a safe wrapper for onMetadataChange
+  const metadataChangeCallback = safeCallback(handleMetadataChange, () => {});
   
   return (
     <Card className={className}>
@@ -102,7 +103,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
       
       {!isCollapsed && (
         <MetadataContent
-          data={data as any} // Type cast as any to bypass type check temporarily
+          data={data}
           contentId={contentId}
           error={error}
           tags={tags}
@@ -115,7 +116,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
           externalSourceUrl={externalSourceUrl}
           lastCheckedAt={lastCheckedAt}
           needsExternalReview={needsExternalReview}
-          onMetadataChange={handleMetadataChangeCallback}
+          onMetadataChange={metadataChangeCallback}
           showOntologyTerms={showOntologyTerms}
         />
       )}

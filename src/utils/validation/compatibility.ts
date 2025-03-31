@@ -9,13 +9,6 @@
 import { ValidationResult, ContentIdValidationResult, ContentIdValidationResultType } from './types';
 
 /**
- * Ensure a value is a string
- */
-export function ensureString(value: string | null | undefined): string {
-  return value ?? '';
-}
-
-/**
  * Convert null to undefined
  */
 export function nullToUndefined<T>(value: T | null): T | undefined {
@@ -33,13 +26,15 @@ export function undefinedToNull<T>(value: T | undefined): T | null {
  * Execute a callback safely, handling potential undefined values
  */
 export function safeCallback<T extends (...args: any[]) => any>(
-  callback: T | undefined,
+  callback: T | undefined | null,
   ...args: Parameters<T>
 ): ReturnType<T> | undefined {
   return callback ? callback(...args) : undefined;
 }
 
-// Standard validation result options
+/**
+ * Standard validation result options
+ */
 export const VALIDATION_RESULTS = {
   VALID: { isValid: true, errorMessage: null },
   INVALID: { isValid: false, errorMessage: 'Invalid input' },
@@ -48,14 +43,31 @@ export const VALIDATION_RESULTS = {
 };
 
 /**
- * Create a compatible validation result
+ * Create a validation result with backward compatibility
  */
-export function createCompatibleValidationResult(
+export function createValidationResult(
   isValid: boolean, 
-  errorMessage?: string | null
-): { isValid: boolean; errorMessage: string | null } {
+  errorMessage: string | null = null
+): ValidationResult {
   return { 
     isValid, 
-    errorMessage: errorMessage || null
+    errorMessage,
+    message: errorMessage // For backward compatibility
+  };
+}
+
+/**
+ * Create a content ID validation result
+ */
+export function createContentIdValidationResult(
+  type: ContentIdValidationResultType,
+  isValid: boolean,
+  message: string | null = null
+): ContentIdValidationResult {
+  return {
+    type,
+    isValid,
+    message,
+    errorMessage: message // For backward compatibility
   };
 }

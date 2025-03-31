@@ -14,6 +14,7 @@ export interface ContentIdValidationResult {
   type: ContentIdValidationResultType;
   isValid: boolean;
   message: string | null;
+  errorMessage?: string | null; // For backward compatibility
 }
 
 export interface ValidationResult {
@@ -32,7 +33,17 @@ export interface TagPosition {
 }
 
 export interface TagValidationOptions {
-  maxLength?: number;
-  minLength?: number;
-  allowSpecialChars?: boolean;
+  maxLength?: number | null;
+  minLength?: number | null;
+  allowSpecialChars?: boolean | null;
+}
+
+// Type guard to ensure consistency across validation results
+export function isValidationResult(value: any): value is ValidationResult {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof value.isValid === 'boolean' &&
+    (value.errorMessage === null || typeof value.errorMessage === 'string')
+  );
 }

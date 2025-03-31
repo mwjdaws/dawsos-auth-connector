@@ -2,73 +2,70 @@
 /**
  * GraphZoomControl Component
  * 
- * Controls for adjusting the zoom level of the graph visualization
+ * Provides controls for adjusting the zoom level of the graph
  */
 import React from 'react';
-import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { MinusIcon, PlusIcon, RefreshCwIcon } from 'lucide-react';
+import { ensureValidZoom } from '../compatibility';
 
-export interface GraphZoomControlProps {
+interface GraphZoomControlProps {
   zoom: number;
   onZoomChange: (newZoom: number) => void;
   onResetZoom: () => void;
 }
 
-export function GraphZoomControl({ 
-  zoom = 1, 
-  onZoomChange, 
-  onResetZoom 
+export function GraphZoomControl({
+  zoom,
+  onZoomChange,
+  onResetZoom
 }: GraphZoomControlProps) {
-  const handleSliderChange = (values: number[]) => {
-    if (values.length > 0) {
-      onZoomChange(values[0]);
+  // Ensure zoom is a valid number
+  const safeZoom = ensureValidZoom(zoom);
+  
+  const handleSliderChange = (value: number[]) => {
+    if (value && value.length > 0) {
+      onZoomChange(value[0]);
     }
   };
-  
-  // Ensure zoom is never undefined
-  const safeZoom = typeof zoom === 'number' ? zoom : 1;
-  
+
   return (
-    <div className="flex items-center space-x-2 px-2 py-1 bg-background/60 backdrop-blur-sm rounded-lg shadow-sm">
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        className="h-7 w-7" 
-        onClick={() => onZoomChange(Math.max(0.1, safeZoom - 0.2))}
-        aria-label="Zoom out"
+    <div className="flex items-center gap-2">
+      <Button
+        onClick={() => onZoomChange(Math.max(0.1, safeZoom - 0.1))}
+        size="sm"
+        variant="outline"
+        className="h-8 w-8 p-0"
       >
-        <ZoomOut size={16} />
+        <MinusIcon className="h-4 w-4" />
       </Button>
       
       <Slider
         value={[safeZoom]}
         min={0.1}
-        max={2}
+        max={3}
         step={0.1}
         onValueChange={handleSliderChange}
-        className="w-28"
-        aria-label="Zoom level"
+        className="w-24 mx-2"
       />
       
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        className="h-7 w-7" 
-        onClick={() => onZoomChange(Math.min(2, safeZoom + 0.2))}
-        aria-label="Zoom in"
+      <Button
+        onClick={() => onZoomChange(Math.min(3, safeZoom + 0.1))}
+        size="sm"
+        variant="outline"
+        className="h-8 w-8 p-0"
       >
-        <ZoomIn size={16} />
+        <PlusIcon className="h-4 w-4" />
       </Button>
       
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        className="h-7 w-7" 
+      <Button
         onClick={onResetZoom}
-        aria-label="Reset zoom"
+        size="sm"
+        variant="outline"
+        className="h-8 w-8 p-0 ml-2"
       >
-        <RotateCcw size={16} />
+        <RefreshCwIcon className="h-4 w-4" />
       </Button>
     </div>
   );

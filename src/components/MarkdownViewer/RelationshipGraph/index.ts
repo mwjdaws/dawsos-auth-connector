@@ -30,4 +30,9 @@ export { useRelationshipGraph } from './hooks/useRelationshipGraph';
 export { useGraphData } from './hooks/graph-data';
 
 // Export utilities
-export { createCompatibleGraphRef, createSafeGraphProps, ensureValidGraphData } from './compatibility';
+export { 
+  createCompatibleGraphRef, 
+  createSafeGraphProps, 
+  ensureValidGraphData,
+  sanitizeGraphData
+} from './compatibility';

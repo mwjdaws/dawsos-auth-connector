@@ -1,83 +1,80 @@
 
 /**
- * Compatibility utilities for RelationshipGraph component
+ * Compatibility utilities for the RelationshipGraph component
  */
-import { GraphNode, GraphLink, GraphData, RelationshipGraphProps } from './types';
+import { GraphData, GraphNode, GraphLink, GraphProps } from './types';
 
 /**
- * Create compatibility layer for different GraphRenderer versions
+ * Convert potentially undefined zoom to a safe number
  */
-export function createCompatibleGraphRef(modernRef: any) {
-  return {
-    centerOn: (nodeId: string) => {
-      if (modernRef.centerOnNode) {
-        modernRef.centerOnNode(nodeId);
-      }
-    },
-    setZoom: (zoomLevel: number) => {
-      if (modernRef.setZoom) {
-        modernRef.setZoom(zoomLevel);
-      }
-    },
-    zoomToFit: () => {
-      if (modernRef.zoomToFit) {
-        modernRef.zoomToFit();
-      }
-    }
-  };
+export function ensureValidZoom(zoom: number | undefined): number {
+  if (typeof zoom !== 'number' || isNaN(zoom)) {
+    return 1; // Default zoom
+  }
+  return Math.max(0.1, Math.min(3, zoom)); // Clamp between 0.1 and 3
 }
 
 /**
- * Create safe props for the RelationshipGraph component
+ * Ensures graph data is never undefined or null
  */
-export function createSafeGraphProps(props: {
-  startingNodeId?: string | undefined | null;
-  width?: number | undefined;
-  height?: number | undefined;
-  hasAttemptedRetry?: boolean | undefined;
-}): RelationshipGraphProps {
-  return {
-    startingNodeId: props.startingNodeId || '',
-    width: props.width || 800,
-    height: props.height || 600,
-    hasAttemptedRetry: props.hasAttemptedRetry || false
-  };
-}
-
-/**
- * Sanitize graph data to ensure it's valid
- */
-export function sanitizeGraphData(data: any): GraphData {
+export function ensureValidGraphData(data: GraphData | null | undefined): GraphData {
   if (!data) {
     return { nodes: [], links: [] };
   }
   
-  // Ensure nodes have required properties
-  const validNodes = Array.isArray(data.nodes) ? data.nodes.map((node: any) => ({
-    id: node.id || String(Math.random()),
-    name: node.name || node.title || 'Unnamed',
-    title: node.title || node.name || 'Unnamed',
-    type: node.type || 'unknown',
-    ...node
-  })) : [];
-  
-  // Ensure links have required properties
-  const validLinks = Array.isArray(data.links) ? data.links.map((link: any) => ({
-    source: link.source,
-    target: link.target,
-    type: link.type || 'default',
-    ...link
-  })) : [];
-  
   return {
-    nodes: validNodes,
-    links: validLinks
+    nodes: Array.isArray(data.nodes) ? data.nodes : [],
+    links: Array.isArray(data.links) ? data.links : []
   };
 }
 
 /**
- * Ensure GraphData is valid and contains required properties
+ * Creates a compatibility layer for graph props
  */
-export function ensureValidGraphData(data: any): GraphData {
-  return sanitizeGraphData(data);
+export function createSafeGraphProps(props: Partial<GraphProps> | null | undefined): GraphProps {
+  return {
+    startingNodeId: props?.startingNodeId || undefined,
+    width: typeof props?.width === 'number' ? props.width : 800,
+    height: typeof props?.height === 'number' ? props.height : 600,
+    hasAttemptedRetry: !!props?.hasAttemptedRetry
+  };
+}
+
+/**
+ * Creates a safe reference for graph node operations
+ */
+export function createCompatibleGraphRef(ref: any): any {
+  if (!ref) {
+    return {
+      centerOn: () => {},
+      setZoom: () => {},
+      zoomToFit: () => {}
+    };
+  }
+  
+  return ref;
+}
+
+/**
+ * Sanitizes graph data to ensure all required properties exist
+ */
+export function sanitizeGraphData(data: GraphData): GraphData {
+  // Ensure nodes have all required properties
+  const nodes = (data.nodes || []).map((node) => ({
+    id: String(node.id || ''),
+    name: String(node.name || node.title || ''),
+    title: String(node.title || node.name || ''),
+    type: String(node.type || 'default'),
+    ...node
+  }));
+  
+  // Ensure links have all required properties
+  const links = (data.links || []).map((link) => ({
+    source: String(link.source || ''),
+    target: String(link.target || ''),
+    type: String(link.type || 'default'),
+    ...link
+  }));
+  
+  return { nodes, links };
 }

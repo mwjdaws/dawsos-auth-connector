@@ -1,84 +1,80 @@
 
-/**
- * Content ID validation utilities
- */
-
 import { ContentIdValidationResult, ContentIdValidationResultType } from './types';
+import { createContentIdValidationResult } from './compatibility';
 
 /**
- * Check if a content ID is a valid UUID
+ * Validates if a string is a valid content ID
+ * @param contentId The content ID to validate
+ * @returns True if the content ID is valid
  */
-const isUuid = (id: string): boolean => {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(id);
-}
-
-/**
- * Check if a content ID is a valid temporary ID
- */
-const isTempId = (id: string): boolean => {
-  return id.startsWith('temp-') && id.length > 5;
-}
-
-/**
- * Check if a content ID is a valid string ID (used for legacy purposes)
- */
-const isStringId = (id: string): boolean => {
-  return id.length > 3 && id.startsWith('content-');
-}
-
-/**
- * Validate a content ID and return detailed validation result
- */
-export const validateContentId = (contentId?: string | null): ContentIdValidationResult => {
-  if (!contentId) {
-    return {
-      type: ContentIdValidationResultType.INVALID,
-      isValid: false,
-      message: 'Content ID is required'
-    };
-  }
-  
-  if (isUuid(contentId)) {
-    return {
-      type: ContentIdValidationResultType.UUID,
-      isValid: true,
-      message: null
-    };
-  }
-  
-  if (isTempId(contentId)) {
-    return {
-      type: ContentIdValidationResultType.TEMP,
-      isValid: true,
-      message: null
-    };
-  }
-  
-  if (isStringId(contentId)) {
-    return {
-      type: ContentIdValidationResultType.STRING,
-      isValid: true,
-      message: null
-    };
-  }
-  
-  return {
-    type: ContentIdValidationResultType.INVALID,
-    isValid: false,
-    message: 'Invalid content ID format'
-  };
-}
-
-/**
- * Simple check if a content ID is valid (for quick validation)
- */
-export const isValidContentId = (contentId?: string | null): boolean => {
+export function isValidContentId(contentId?: string | null): boolean {
   if (!contentId) return false;
-  return validateContentId(contentId).isValid;
+  
+  // UUID format check
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuid = uuidPattern.test(contentId);
+  
+  // Temporary ID format check
+  const isTempId = contentId.startsWith('temp-');
+  
+  return isUuid || isTempId;
 }
 
 /**
- * Get detailed validation result for content ID
+ * Gets more detailed validation result for a content ID
+ * @param contentId The content ID to validate
+ * @returns A validation result object with type information
  */
-export const getContentIdValidationResult = validateContentId;
+export function getContentIdValidationResult(contentId?: string | null): ContentIdValidationResult {
+  if (!contentId) {
+    return createContentIdValidationResult(
+      ContentIdValidationResultType.INVALID,
+      false,
+      'Content ID is required'
+    );
+  }
+  
+  // UUID format check
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidPattern.test(contentId)) {
+    return createContentIdValidationResult(
+      ContentIdValidationResultType.UUID,
+      true,
+      null
+    );
+  }
+  
+  // Temporary ID format check
+  if (contentId.startsWith('temp-')) {
+    return createContentIdValidationResult(
+      ContentIdValidationResultType.TEMP,
+      true,
+      null
+    );
+  }
+  
+  // String ID format check (for backward compatibility)
+  if (typeof contentId === 'string' && contentId.trim().length > 0) {
+    return createContentIdValidationResult(
+      ContentIdValidationResultType.STRING,
+      true,
+      null
+    );
+  }
+  
+  // Invalid format
+  return createContentIdValidationResult(
+    ContentIdValidationResultType.INVALID,
+    false,
+    'Invalid content ID format'
+  );
+}
+
+/**
+ * Simple validation that only returns a boolean result
+ * @param contentId The content ID to validate
+ * @returns True if valid, false otherwise
+ */
+export function validateContentId(contentId?: string | null): boolean {
+  return isValidContentId(contentId);
+}

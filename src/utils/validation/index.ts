@@ -1,10 +1,5 @@
 
 // Re-export all validation utilities for easy access
-export { validateContentId, isValidContentId, getContentIdValidationResult } from './contentIdValidation';
-export { validateTags } from './tagValidation';
-export * from './documentValidation';
-
-// Export all types
 export type { 
   ValidationResult, 
   DocumentValidationResult, 
@@ -13,6 +8,19 @@ export type {
   ContentIdValidationResult,
   ContentIdValidationResultType
 } from './types';
+
+// Export validation functions
+export { validateContentId, isValidContentId, getContentIdValidationResult } from './contentIdValidation';
+export { validateTag, validateTags } from './tagValidation';
+export * from './documentValidation';
+
+// Export compatibility helpers
+export { 
+  nullToUndefined, 
+  undefinedToNull, 
+  createValidationResult,
+  VALIDATION_RESULTS
+} from './compatibility';
 
 // Add document title validation placeholder
 export const validateDocumentTitle = (title: string): ValidationResult => {

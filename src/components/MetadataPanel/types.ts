@@ -1,13 +1,13 @@
 
 import { ReactNode } from 'react';
 
-// Source metadata type - updated to make non-optional fields nullable to match database
+// Source metadata type - standardize nullability
 export interface SourceMetadata {
   id: string;
   title: string;
   content: string;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
   external_source_url: string | null;
   external_source_checked_at: string | null;
   external_content_hash: string | null;
@@ -19,11 +19,11 @@ export interface SourceMetadata {
 
 // Simplified source metadata for hooks that only use a subset of fields
 export interface SimpleSourceMetadata {
-  id: string;  // Made required to match SourceMetadata
+  id: string;
   title?: string;  
   content?: string;  
-  created_at?: string;  
-  updated_at?: string;  
+  created_at?: string | null;  
+  updated_at?: string | null;  
   external_source_url: string | null;
   external_source_checked_at: string | null;
   external_content_hash: string | null;
@@ -33,28 +33,29 @@ export interface SimpleSourceMetadata {
   template_id?: string | null;
 }
 
-// Tag type
+// Tag type with standardized nullability
 export interface Tag {
   id: string;
   name: string;
   content_id: string;
   type_id: string | null;
+  type_name?: string | null;
 }
 
-// Ontology term type
+// Ontology term type with standardized nullability
 export interface OntologyTerm {
   id: string;
   term: string;
-  description?: string | null;
-  domain?: string | null;
-  review_required?: boolean;
+  description: string | null;
+  domain: string | null;
+  review_required?: boolean | null;
 }
 
 // Props for the main MetadataPanel component
 export interface MetadataPanelProps {
   contentId: string;
   editable?: boolean;
-  onMetadataChange?: (() => void);
+  onMetadataChange?: (() => void) | null;
   isCollapsible?: boolean;
   initialCollapsed?: boolean;
   showOntologyTerms?: boolean;
@@ -90,7 +91,7 @@ export interface HeaderSectionProps {
   isLoading?: boolean;
   isCollapsible?: boolean;
   isCollapsed?: boolean;
-  setIsCollapsed?: ((value: boolean) => void);
+  setIsCollapsed?: ((value: boolean) => void) | null;
   className?: string;
 }
 
@@ -99,7 +100,7 @@ export interface ExternalSourceSectionProps {
   externalSourceUrl: string | null;
   lastCheckedAt: string | null;
   editable: boolean;
-  onMetadataChange?: (() => void);
+  onMetadataChange?: (() => void) | null;
   contentId: string;
 }
 
@@ -112,7 +113,7 @@ export interface TagsSectionProps {
   setNewTag: (value: string) => void;
   onAddTag: (typeId?: string | null) => Promise<void>;
   onDeleteTag: (tagId: string) => Promise<void>;
-  onMetadataChange?: (() => void);
+  onMetadataChange?: (() => void) | null;
   className?: string;
 }
 
@@ -127,7 +128,7 @@ export interface OntologyTermsSectionProps {
   contentId: string;
   sourceId?: string;
   editable?: boolean;
-  onMetadataChange?: (() => void);
+  onMetadataChange?: (() => void) | null;
   className?: string;
   ontologyTerms?: OntologyTerm[]; 
 }
@@ -143,4 +144,12 @@ export interface ContentAlertProps {
 export interface DomainSectionProps {
   domain: string | null;
   className?: string;
+}
+
+// State management props for useMetadataPanel hook
+export interface UsePanelStateProps {
+  contentId: string;
+  onMetadataChange?: (() => void) | null;
+  isCollapsible?: boolean;
+  initialCollapsed?: boolean;
 }
