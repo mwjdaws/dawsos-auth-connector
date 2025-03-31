@@ -71,6 +71,9 @@ export interface RelationshipGraphPanelProps {
   height?: number;
 }
 
+// Import error level type from the main error types
+import { ErrorLevel } from '@/utils/errors/types';
+
 // For error handling with graph operations
 export interface WithErrorHandlingOptions {
   errorMessage?: string;

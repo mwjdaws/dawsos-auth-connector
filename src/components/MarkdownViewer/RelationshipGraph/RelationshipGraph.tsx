@@ -89,8 +89,8 @@ export function RelationshipGraph(props: GraphProps) {
         
         <GraphContent
           graphData={graphData}
-          width={width}
-          height={height}
+          width={width || 800}
+          height={height || 600}
           highlightedNodeId={highlightedNodeId}
           zoomLevel={zoomLevel || 1}
           isPending={isPending}

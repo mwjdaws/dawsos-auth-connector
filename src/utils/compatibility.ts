@@ -1,62 +1,64 @@
 
 /**
- * Compatibility utilities for handling various undefined/null scenarios
- * 
- * These utilities are designed to handle cases where a function expects a certain type
- * but might receive undefined or null, providing safe defaults.
+ * Utility functions for ensuring compatibility with different types
+ * and handling null/undefined values safely.
  */
 
 /**
- * Convert undefined to null for APIs that expect null
+ * Ensures a value is a string or empty string if undefined/null
  */
-export function undefinedToNull<T>(value: T | undefined): T | null {
-  return value === undefined ? null : value;
+export function ensureString(value?: string | null): string {
+  return value !== undefined && value !== null ? value : '';
 }
 
 /**
- * Convert null to undefined for APIs that expect undefined
+ * Ensures a value is a number or returns a default value
+ */
+export function ensureNumber(value?: number | null, defaultValue: number = 0): number {
+  return (value !== undefined && value !== null) ? value : defaultValue;
+}
+
+/**
+ * Ensures a value is a boolean or returns a default value
+ */
+export function ensureBoolean(value?: boolean | null, defaultValue: boolean = false): boolean {
+  return (value !== undefined && value !== null) ? value : defaultValue;
+}
+
+/**
+ * Ensures an object is not null or undefined, returning an empty object if it is
+ */
+export function ensureObject<T extends object>(obj?: T | null, defaultValue: T = {} as T): T {
+  return (obj !== undefined && obj !== null) ? obj : defaultValue;
+}
+
+/**
+ * Ensures an array is not null or undefined, returning an empty array if it is
+ */
+export function ensureArray<T>(arr?: T[] | null): T[] {
+  return (arr !== undefined && arr !== null) ? arr : [];
+}
+
+/**
+ * Safely get a property from an object, handling null/undefined
+ */
+export function safeGet<T, K extends keyof T>(obj: T | null | undefined, key: K, defaultValue: T[K]): T[K] {
+  if (obj === null || obj === undefined) {
+    return defaultValue;
+  }
+  return obj[key] !== undefined ? obj[key] : defaultValue;
+}
+
+/**
+ * Converts null to undefined for optional parameters
  */
 export function nullToUndefined<T>(value: T | null): T | undefined {
   return value === null ? undefined : value;
 }
 
 /**
- * Ensure a value is a string, with an empty string as fallback
+ * Converts undefined to null for API compatibility
  */
-export function ensureString(value: string | null | undefined, defaultValue: string = ''): string {
-  if (value === null || value === undefined) {
-    return defaultValue;
-  }
-  return value;
-}
-
-/**
- * Ensure a value is a number, with a default fallback
- */
-export function ensureNumber(value: number | null | undefined, defaultValue: number = 0): number {
-  if (value === null || value === undefined) {
-    return defaultValue;
-  }
-  return value;
-}
-
-/**
- * Ensure a value is a boolean, with a default fallback
- */
-export function ensureBoolean(value: boolean | null | undefined, defaultValue: boolean = false): boolean {
-  if (value === null || value === undefined) {
-    return defaultValue;
-  }
-  return value;
-}
-
-/**
- * Helper for error handling compatibility
- */
-export interface ErrorHandlingCompatOptions {
-  title?: string;
-  level?: 'info' | 'warning' | 'error';
-  duration?: number;
-  variant?: 'default' | 'destructive';
-  context?: Record<string, any>;
+export function undefinedToNull<T>(value: T | undefined): T | null {
+  return value === undefined ? null : value;
 }

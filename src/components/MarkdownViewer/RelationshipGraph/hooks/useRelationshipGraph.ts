@@ -1,3 +1,4 @@
+
 /**
  * useRelationshipGraph Hook
  * 
@@ -14,7 +15,7 @@ import { useGraphData } from './graph-data';
 import { GraphData, GraphRendererRef } from '../types';
 import { toast } from '@/hooks/use-toast';
 
-interface UseRelationshipGraphProps {
+export interface UseRelationshipGraphProps {
   startingNodeId?: string;
   hasAttemptedRetry?: boolean;
 }

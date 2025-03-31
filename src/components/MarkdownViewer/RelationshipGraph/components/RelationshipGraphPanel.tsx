@@ -27,6 +27,9 @@ export function RelationshipGraphPanel({
     );
   }
 
+  // Determine the ID to use for the starting node
+  const startingNodeId = sourceId || contentId;
+
   return (
     <ErrorBoundary fallback={
       <Card className="p-4 text-center text-destructive">
@@ -36,7 +39,7 @@ export function RelationshipGraphPanel({
       <Card className="overflow-hidden">
         <div className="w-full h-full">
           <RelationshipGraph 
-            startingNodeId={sourceId || contentId}
+            startingNodeId={startingNodeId}
             width={width}
             height={height}
             hasAttemptedRetry={hasAttemptedRetry}

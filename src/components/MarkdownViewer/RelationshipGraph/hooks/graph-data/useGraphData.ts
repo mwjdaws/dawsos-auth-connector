@@ -1,4 +1,3 @@
-
 /**
  * useGraphData Hook
  * 
@@ -156,7 +155,7 @@ export function useGraphData(startingNodeId?: string) {
     fetchAttempts.current = 0;
     withErrorHandling(fetchGraphData, {
       errorMessage: "Failed to refresh graph data",
-      level: "error" as const
+      level: "error"
     })(true); // Skip cache on manual refresh
   }, [fetchGraphData]);
 
