@@ -3,8 +3,14 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSourceMetadata } from './useSourceMetadata';
 import { useTagOperations } from './tag-operations/useTagOperations';
 import { usePanelState } from './usePanelState';
-import { MetadataPanelProps, OntologyTerm, Tag } from '../types';
+import { MetadataPanelProps } from '../types';
 import { safeCallback } from '@/utils/compatibility';
+import { useContentValidator } from '@/hooks/validation/useContentValidator';
+import { createComponentErrorHandler, tryAction } from '@/utils/errors/wrappers';
+import { ContentValidationResult } from '@/utils/validation/types';
+
+// Component-specific error handler
+const handleError = createComponentErrorHandler('MetadataPanel');
 
 /**
  * Custom hook for managing the metadata panel state and operations
@@ -15,11 +21,15 @@ export const useMetadataPanel = ({
   isCollapsible = false,
   initialCollapsed = false
 }: MetadataPanelProps) => {
+  // Validate the content ID
+  const contentValidationResult = useContentValidator(contentId);
+  const isValidContent = contentValidationResult.isValid;
+  const contentExists = contentValidationResult.contentExists;
+  
   // Panel state management
   const { 
     isCollapsed, 
     setIsCollapsed,
-    contentExists,
     isCollapsible: isPanelCollapsible, 
     onMetadataChange: panelMetadataChange
   } = usePanelState({
@@ -27,12 +37,8 @@ export const useMetadataPanel = ({
     onMetadataChange,
     isCollapsible,
     initialCollapsed,
-    contentExists: true
+    contentExists
   });
-
-  // Handle validation states
-  const isValidContent = true; // Simplified for now
-  const contentValidationResult = null; // Simplified for now
 
   // Source metadata management
   const {
@@ -44,13 +50,9 @@ export const useMetadataPanel = ({
     data: sourceData,
     fetchSourceMetadata
   } = useSourceMetadata({
-    contentId
+    contentId,
+    enabled: isValidContent
   });
-
-  // Source metadata update functions (simplified)
-  const setExternalSourceUrl = () => {}; // Placeholder
-  const setNeedsExternalReview = () => {}; // Placeholder
-  const updateSourceMetadataState = () => {}; // Placeholder
 
   // Tag operations management
   const {
@@ -82,7 +84,7 @@ export const useMetadataPanel = ({
 
   // Handle metadata changes
   const handleMetadataChange = useCallback(() => {
-    if (isMounted.current && onMetadataChange) {
+    if (isMounted.current && typeof onMetadataChange === 'function') {
       onMetadataChange();
     }
   }, [onMetadataChange]);
@@ -99,9 +101,30 @@ export const useMetadataPanel = ({
       
       handleMetadataChange();
     } catch (err) {
-      console.error('Error refreshing metadata:', err);
+      handleError(err, 'Error refreshing metadata', {
+        context: { contentId },
+        level: 'warning'
+      });
     }
   }, [contentId, isValidContent, fetchSourceMetadata, refreshTags, handleMetadataChange]);
+
+  // Safe add tag with error handling
+  const safeAddTag = useCallback(async (tagName: string, typeId?: string | null) => {
+    return tryAction(
+      () => handleAddTag(tagName, typeId),
+      `Failed to add tag "${tagName}"`,
+      { context: { contentId, tagName, typeId } }
+    );
+  }, [contentId, handleAddTag]);
+
+  // Safe delete tag with error handling
+  const safeDeleteTag = useCallback(async (tagId: string) => {
+    return tryAction(
+      () => handleDeleteTag(tagId),
+      `Failed to delete tag`,
+      { context: { contentId, tagId } }
+    );
+  }, [contentId, handleDeleteTag]);
 
   // Initialize data on mount and when contentId changes
   useEffect(() => {
@@ -136,12 +159,9 @@ export const useMetadataPanel = ({
     tags,
     newTag,
     setNewTag,
-    handleAddTag,
-    handleDeleteTag,
+    handleAddTag: safeAddTag,
+    handleDeleteTag: safeDeleteTag,
     handleReorderTags,
-    
-    // User info (to be implemented)
-    user: { id: 'user-1' },
     
     // Operations
     handleRefresh,
@@ -150,15 +170,6 @@ export const useMetadataPanel = ({
     // Additional states for operations
     isAddingTag,
     isDeletingTag,
-    isReordering,
-    
-    // Additional source operations
-    fetchSourceMetadata,
-    updateSourceMetadataState,
-    setExternalSourceUrl,
-    setNeedsExternalReview,
-    
-    // Empty ontology terms array (to be implemented)
-    ontologyTerms: [] as OntologyTerm[]
+    isReordering
   };
 };

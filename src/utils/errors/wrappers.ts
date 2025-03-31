@@ -2,65 +2,40 @@
 /**
  * Error handling wrappers
  * 
- * Provides utility functions to wrap code with standardized error handling.
+ * Provides consistent error handling patterns for different contexts
  */
 import { handleError, handleErrorSafe } from './handle';
 import { ErrorHandlingOptions } from './types';
 
 /**
- * Wrap an async function with standardized error handling
+ * Try to execute an action and handle any errors that occur
  * 
- * @param fn The async function to wrap
- * @param userMessage Optional user-friendly error message
- * @param options Additional error handling options
- * @returns A wrapped function with error handling
+ * @param action The function to execute
+ * @param errorMessage User-friendly error message
+ * @param options Error handling options
+ * @returns Promise that resolves to the result of the action or undefined if an error occurs
  */
-export function withErrorHandling<T extends (...args: any[]) => Promise<any>>(
-  fn: T,
-  userMessage?: string,
+export async function tryAction<T>(
+  action: () => Promise<T>,
+  errorMessage: string,
   options?: Partial<ErrorHandlingOptions>
-): (...args: Parameters<T>) => Promise<Awaited<ReturnType<T>>> {
-  return async (...args: Parameters<T>) => {
-    try {
-      return await fn(...args);
-    } catch (error) {
-      handleError(error, userMessage, options);
-      throw error; // Re-throw after handling
-    }
-  };
+): Promise<T | undefined> {
+  try {
+    return await action();
+  } catch (error) {
+    handleError(error, errorMessage, options);
+    return undefined;
+  }
 }
 
 /**
- * Wrap an async function with error handling that doesn't re-throw
+ * Create an error handler for a specific component
  * 
- * @param fn The async function to wrap
- * @param userMessage Optional user-friendly error message
- * @param options Additional error handling options
- * @returns A wrapped function with error handling that returns null on error
+ * @param componentName Name of the component for error context
+ * @param defaultOptions Default options for all errors
+ * @returns Error handler function bound to the component
  */
-export function withSafeErrorHandling<T extends (...args: any[]) => Promise<any>>(
-  fn: T,
-  userMessage?: string,
-  options?: Partial<ErrorHandlingOptions>
-): (...args: Parameters<T>) => Promise<Awaited<ReturnType<T>> | null> {
-  return async (...args: Parameters<T>) => {
-    try {
-      return await fn(...args);
-    } catch (error) {
-      handleErrorSafe(error, userMessage, options);
-      return null; // Return null instead of throwing
-    }
-  };
-}
-
-/**
- * Create a function that handles errors with predefined context
- * 
- * @param componentName The name of the component or module
- * @param defaultOptions Default options for all errors handled by this function
- * @returns An error handler function with predefined context
- */
-export function createErrorHandler(
+export function createComponentErrorHandler(
   componentName: string,
   defaultOptions?: Partial<ErrorHandlingOptions>
 ) {
@@ -71,8 +46,31 @@ export function createErrorHandler(
       context: {
         ...(defaultOptions?.context || {}),
         ...(options?.context || {}),
-        componentName
+        component: componentName
       }
     });
+  };
+}
+
+/**
+ * A higher-order function that wraps an async function with error handling
+ * 
+ * @param fn The function to wrap
+ * @param errorMessage The error message to display
+ * @param options Error handling options
+ * @returns A wrapped function that handles errors
+ */
+export function withErrorHandling<T extends (...args: any[]) => Promise<any>>(
+  fn: T,
+  errorMessage: string,
+  options?: Partial<ErrorHandlingOptions>
+): (...args: Parameters<T>) => Promise<ReturnType<T> | undefined> {
+  return async (...args: Parameters<T>): Promise<ReturnType<T> | undefined> => {
+    try {
+      return await fn(...args);
+    } catch (error) {
+      handleError(error, errorMessage, options);
+      return undefined;
+    }
   };
 }
