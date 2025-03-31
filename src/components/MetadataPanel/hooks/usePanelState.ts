@@ -9,6 +9,7 @@ export interface UsePanelStateProps {
   onMetadataChange: (() => void) | null;
   isCollapsible?: boolean;
   initialCollapsed?: boolean;
+  contentExists?: boolean;
 }
 
 /**
@@ -18,7 +19,8 @@ export const usePanelState = ({
   contentId,
   onMetadataChange,
   isCollapsible = true,
-  initialCollapsed = false
+  initialCollapsed = false,
+  contentExists = false
 }: UsePanelStateProps) => {
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed && isCollapsible);
 
@@ -27,6 +29,7 @@ export const usePanelState = ({
     isCollapsed,
     setIsCollapsed,
     isCollapsible,
-    onMetadataChange
+    onMetadataChange,
+    contentExists
   };
 };

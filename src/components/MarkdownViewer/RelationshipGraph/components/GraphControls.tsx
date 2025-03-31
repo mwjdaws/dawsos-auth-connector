@@ -1,14 +1,8 @@
 
-/**
- * GraphControls Component
- * 
- * Provides controls for searching, navigating, and adjusting the graph view
- */
 import React from 'react';
+import { GraphData } from '../types';
 import { GraphSearch } from './GraphSearch';
 import { GraphZoomControl } from './GraphZoomControl';
-import { GraphData } from '../types';
-import { ensureValidZoom } from '../compatibility';
 
 interface GraphControlsProps {
   graphData: GraphData;
@@ -18,6 +12,12 @@ interface GraphControlsProps {
   onResetZoom: () => void;
 }
 
+/**
+ * GraphControls Component
+ * 
+ * This component provides control elements for the graph, such as search
+ * and zoom controls.
+ */
 export function GraphControls({
   graphData,
   onNodeFound,
@@ -25,22 +25,23 @@ export function GraphControls({
   onZoomChange,
   onResetZoom
 }: GraphControlsProps) {
-  // Ensure zoom is valid
-  const safeZoom = ensureValidZoom(zoom);
-  
   return (
-    <div className="flex items-center justify-between p-2 border-t border-b bg-muted/20">
-      <GraphSearch 
-        graphData={graphData} 
-        onNodeSelect={onNodeFound} 
-      />
+    <div className="flex justify-between items-center p-3 border-b">
+      <div className="flex-1 max-w-md">
+        <GraphSearch 
+          graphData={graphData}
+          onNodeFound={onNodeFound}
+        />
+      </div>
       
-      <GraphZoomControl 
-        zoom={safeZoom} 
-        setZoom={onZoomChange} 
-        onZoomChange={onZoomChange}
-        onResetZoom={onResetZoom}
-      />
+      <div className="ml-auto">
+        <GraphZoomControl 
+          zoom={zoom} 
+          setZoom={onZoomChange} 
+          onResetZoom={onResetZoom}
+          onZoomChange={onZoomChange}
+        />
+      </div>
     </div>
   );
 }

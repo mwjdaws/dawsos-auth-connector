@@ -36,22 +36,22 @@ export function createSafeGraphProps(props: {
 export function createCompatibleGraphRef(modernRef: any): GraphRendererRef {
   return {
     centerOn: (nodeId: string) => {
-      if (modernRef.centerOnNode) {
+      if (modernRef && modernRef.centerOnNode) {
         modernRef.centerOnNode(nodeId);
       }
     },
     setZoom: (zoomLevel: number) => {
-      if (modernRef.setZoom) {
+      if (modernRef && modernRef.setZoom) {
         modernRef.setZoom(zoomLevel);
       }
     },
     zoomToFit: () => {
-      if (modernRef.zoomToFit) {
+      if (modernRef && modernRef.zoomToFit) {
         modernRef.zoomToFit();
       }
     },
     findNode: (id: string) => {
-      if (modernRef.getGraphData) {
+      if (modernRef && modernRef.getGraphData) {
         const data = modernRef.getGraphData();
         return data.nodes.find((node: GraphNode) => node.id === id);
       }
@@ -140,8 +140,44 @@ export function ensureNumber(value: number | undefined | null, defaultValue = 0)
 }
 
 /**
+ * Ensures a value is a valid string, with a default fallback
+ */
+export function ensureString(value: string | undefined | null, defaultValue: string = ''): string {
+  if (typeof value !== 'string') {
+    return defaultValue;
+  }
+  return value;
+}
+
+/**
  * Creates a safe node renderer function
  */
 export function createSafeHighlightNodeId(highlightedNodeId: string | null | undefined): string | null {
   return highlightedNodeId === undefined ? null : highlightedNodeId;
+}
+
+/**
+ * Ensures a value is a boolean with a default fallback
+ */
+export function ensureBoolean(value: boolean | undefined | null, defaultValue: boolean = false): boolean {
+  return typeof value === 'boolean' ? value : defaultValue;
+}
+
+/**
+ * Ensures an array has a fallback value
+ */
+export function ensureArray<T>(value: T[] | undefined | null, defaultValue: T[] = []): T[] {
+  return Array.isArray(value) ? value : defaultValue;
+}
+
+/**
+ * Ensures a valid zoom level within reasonable bounds
+ */
+export function ensureValidZoom(zoom: number | undefined, defaultValue: number = 1): number {
+  if (typeof zoom !== 'number' || isNaN(zoom) || zoom <= 0) {
+    return defaultValue;
+  }
+  
+  // Constrain zoom to reasonable bounds
+  return Math.max(0.1, Math.min(5, zoom));
 }

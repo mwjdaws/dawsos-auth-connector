@@ -33,11 +33,14 @@ export type { RelationshipGraphPanelProps } from './RelationshipGraphPanel';
 export { useRelationshipGraph } from './hooks/useRelationshipGraph';
 export { useGraphData } from './hooks/graph-data';
 
-// Export utilities
+// Export compatibility utilities
 export { 
   createCompatibleGraphRef, 
   createSafeGraphProps, 
   ensureValidGraphData,
   sanitizeGraphData,
   ensureNumber,
+  ensureString,
+  ensureBoolean,
+  ensureValidZoom
 } from './compatibility';

@@ -77,3 +77,25 @@ export function ensureBoolean(value: boolean | undefined | null, defaultValue: b
   }
   return value;
 }
+
+/**
+ * Ensures a value is an object with a default fallback
+ */
+export function ensureObject<T extends object>(value: T | undefined | null, defaultValue: T): T {
+  if (!value || typeof value !== 'object') {
+    return defaultValue;
+  }
+  return value;
+}
+
+/**
+ * Create a safe callback function
+ */
+export function createSafeCallback<T extends (...args: any[]) => any>(fn: T | undefined | null): T {
+  return ((...args: any[]) => {
+    if (typeof fn === 'function') {
+      return fn(...args);
+    }
+    return undefined;
+  }) as T;
+}

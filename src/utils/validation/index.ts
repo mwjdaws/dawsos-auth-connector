@@ -14,7 +14,9 @@ export {
   ensureString,
   nullToUndefined,
   undefinedToNull,
-  ensureBoolean
+  ensureBoolean,
+  createSafeCallback,
+  ensureObject
 } from './compatibility';
 
 // Export type definitions
