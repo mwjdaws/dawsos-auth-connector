@@ -11,50 +11,54 @@ export interface Tag {
   type_name?: string | null;
 }
 
-export interface TagQueryOptions {
-  enabled?: boolean;
-}
-
-export function useTagsQuery(contentId?: string, options: TagQueryOptions = {}) {
+export function useTagsQuery(contentId: string, options?: { enabled?: boolean; includeTypeInfo?: boolean; }) {
   return useQuery({
-    queryKey: contentId ? ['tags', contentId] : null,
-    queryFn: async () => {
-      if (!contentId || !isValidContentId(contentId)) {
+    queryKey: ['tags', contentId],
+    queryFn: async (): Promise<Tag[]> => {
+      if (!isValidContentId(contentId)) {
         return [];
       }
-      
+
       try {
+        const selectClause = options?.includeTypeInfo 
+          ? 'tags.id, tags.name, tags.content_id, tags.type_id, tag_types(name)' 
+          : 'tags.id, tags.name, tags.content_id, tags.type_id';
+        
         const { data, error } = await supabase
           .from('tags')
-          .select('id, name, content_id, type_id, tag_types:type_id (name)')
-          .eq('content_id', contentId);
-        
+          .select(selectClause)
+          .eq('content_id', contentId)
+          .order('name', { ascending: true });
+
         if (error) throw error;
-        
-        return (data || []).map(tag => {
-          // Handle the case where tag might have ParserError properties
-          // by defensive programming
-          const processedTag: Tag = {
-            id: typeof tag.id === 'string' ? tag.id : '',
-            name: typeof tag.name === 'string' ? tag.name : '',
-            content_id: typeof tag.content_id === 'string' ? tag.content_id : '',
-            type_id: typeof tag.type_id === 'string' ? tag.type_id : null
-          };
-          
-          // Safely handle the tag_types property
-          if (tag.tag_types && typeof tag.tag_types === 'object') {
-            processedTag.type_name = typeof tag.tag_types.name === 'string' 
-              ? tag.tag_types.name 
-              : null;
+        if (!data || !Array.isArray(data)) {
+          if (isParserError(data)) {
+            throw new Error(`Parser error: ${data.message}`);
           }
-          
-          return processedTag;
+          return [];
+        }
+
+        return data.filter(isValidTag).map(tag => {
+          const baseTag: Tag = {
+            id: tag.id,
+            name: tag.name,
+            content_id: tag.content_id,
+            type_id: tag.type_id
+          };
+          if (options?.includeTypeInfo && tag.tag_types) {
+            return { ...baseTag, type_name: tag.tag_types.name };
+          }
+          return baseTag;
         });
-      } catch (error) {
-        console.error('Error fetching tags:', error);
-        throw error;
+      } catch (err) {
+        handleError(
+          err instanceof Error ? err : new Error('Failed to fetch tags'),
+          'Could not load tags for this content'
+        );
+        throw err;
       }
     },
-    enabled: options.enabled !== undefined ? options.enabled : !!contentId && isValidContentId(contentId)
+    enabled: options?.enabled !== false && isValidContentId(contentId),
+    staleTime: 30000
   });
 }
