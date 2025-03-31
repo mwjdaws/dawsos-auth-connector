@@ -4,7 +4,7 @@
  */
 
 // Import and re-export the Tag type from the centralized definition
-export { Tag, AugmentedTag, TagPosition } from './tag';
+export type { Tag, AugmentedTag, TagPosition } from './tag';
 
 // Knowledge Source type definition
 export interface KnowledgeSource {
@@ -33,7 +33,7 @@ export interface ExternalSourceMetadata {
 export interface OntologyTerm {
   id: string;
   term: string;
-  description?: string;
+  description?: string | null;
   domain?: string | null;
   domain_id?: string | null;
 }

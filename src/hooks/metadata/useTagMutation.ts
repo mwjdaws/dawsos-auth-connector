@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/error-handling';
 import { isValidContentId } from '@/utils/content-validation';
 import { toast } from '@/hooks/use-toast';
-import { nullToUndefined } from '@/utils/validation/compatibility';
+import { undefinedToNull } from '@/utils/type-conversions';
 import { Tag } from '@/types/tag';
 
 // Define tag mutation parameters with proper types
@@ -40,7 +40,7 @@ export function useTagMutations() {
         .insert({
           name: name.trim(),
           content_id: contentId,
-          type_id: nullToUndefined(typeId)
+          type_id: undefinedToNull(typeId)
         })
         .select()
         .single();

@@ -3,22 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { isValidContentId } from '@/utils/validation';
 import { toast } from '@/hooks/use-toast';
-import { Tag } from '@/types/tag';
+import { Tag, isValidTag } from '@/types/tag';
 
 // Type guard for parser errors
 function isParserError(data: any): data is { message: string } {
   return data && typeof data === 'object' && 'message' in data;
-}
-
-// Type guard for valid tags
-function isValidTag(tag: any): tag is Tag {
-  return (
-    tag &&
-    typeof tag === 'object' &&
-    typeof tag.id === 'string' &&
-    typeof tag.name === 'string' &&
-    typeof tag.content_id === 'string'
-  );
 }
 
 export function useTagsQuery(contentId: string, options?: { enabled?: boolean; includeTypeInfo?: boolean; }) {
@@ -43,21 +32,33 @@ export function useTagsQuery(contentId: string, options?: { enabled?: boolean; i
         if (error) throw error;
         if (!data || !Array.isArray(data)) {
           if (isParserError(data)) {
-            throw new Error(`Parser error: ${data.message}`);
+            throw new Error(`Parser error: ${data.message || 'Unknown parser error'}`);
           }
           return [];
         }
 
-        return data.filter(isValidTag).map(tag => {
+        return data.filter(item => {
+          // Basic type check before attempting to create a Tag
+          if (!item || typeof item !== 'object') return false;
+          
+          return true;
+        }).map(tag => {
           const baseTag: Tag = {
-            id: tag.id,
-            name: tag.name,
-            content_id: tag.content_id,
-            type_id: tag.type_id
+            id: tag.id || '',
+            name: tag.name || '',
+            content_id: tag.content_id || '',
+            type_id: tag.type_id || null
           };
+          
           if (options?.includeTypeInfo && tag.tag_types) {
-            return { ...baseTag, type_name: tag.tag_types.name };
+            return { 
+              ...baseTag, 
+              type_name: (tag.tag_types && typeof tag.tag_types.name === 'string')
+                ? tag.tag_types.name 
+                : null 
+            };
           }
+          
           return baseTag;
         });
       } catch (err) {

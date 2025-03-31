@@ -2,8 +2,19 @@
 /**
  * Validation utilities
  */
-import { ValidationResult, ContentIdValidationResult, ContentIdValidationResultType } from './validation/types';
-export { ValidationResult, ContentIdValidationResult };
+import { getContentIdValidationResult as getContentIdValidationResultInternal, isValidContentId as isValidContentIdInternal } from './validation/contentIdValidation';
+
+export interface ValidationResult {
+  isValid: boolean;
+  errorMessage: string | null;
+}
+
+export interface ContentIdValidationResult {
+  isValid: boolean;
+  errorMessage: string | null;
+  message: string | null;
+  resultType: string;
+}
 
 /**
  * Validates if a string is a valid content ID
@@ -11,16 +22,7 @@ export { ValidationResult, ContentIdValidationResult };
  * @returns True if the content ID is valid
  */
 export function isValidContentId(contentId?: string | null): boolean {
-  if (!contentId) return false;
-  
-  // Check if it's a UUID format
-  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const isUuid = uuidPattern.test(contentId);
-  
-  // Check if it's a temporary ID format (starts with temp-)
-  const isTempId = contentId.startsWith('temp-');
-  
-  return isUuid || isTempId;
+  return isValidContentIdInternal(contentId);
 }
 
 /**
@@ -29,25 +31,11 @@ export function isValidContentId(contentId?: string | null): boolean {
  * @returns A validation result object
  */
 export function getContentIdValidationResult(contentId?: string | null): ContentIdValidationResult {
-  if (!contentId) {
-    return {
-      isValid: false,
-      errorMessage: 'Content ID is required',
-      type: 'empty'
-    };
-  }
-  
-  if (!isValidContentId(contentId)) {
-    return {
-      isValid: false,
-      errorMessage: 'Invalid content ID format',
-      type: 'invalid'
-    };
-  }
-  
+  const result = getContentIdValidationResultInternal(contentId);
   return {
-    isValid: true,
-    errorMessage: null,
-    type: 'valid'
+    isValid: result.isValid,
+    errorMessage: result.errorMessage,
+    message: result.message,
+    resultType: result.resultType
   };
 }

@@ -6,9 +6,9 @@
 // Content ID validation
 export interface ContentIdValidationResult {
   isValid: boolean;
-  resultType: keyof typeof ContentIdValidationResultType;
+  resultType: string;
   message: string | null;
-  errorMessage?: string | null;
+  errorMessage: string | null;
 }
 
 export enum ContentIdValidationResultType {

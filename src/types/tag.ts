@@ -22,9 +22,9 @@ export interface Tag {
 export interface AugmentedTag extends Tag {
   confidence: number;       // 0-1 score of how confident the AI is
   source: 'manual' | 'ai' | 'hybrid'; // Provenance
-  explanation?: string;     // Why this tag was suggested
-  alternatives?: string[];  // Other potential tag options
-  context?: string;         // Text snippet that triggered this tag
+  explanation?: string | null;     // Why this tag was suggested
+  alternatives?: string[] | null;  // Other potential tag options
+  context?: string | null;         // Text snippet that triggered this tag
 }
 
 /**
@@ -70,8 +70,8 @@ export function ensureNonNullableTag(tag: {
     id: tag.id,
     name: tag.name,
     content_id: tag.content_id || '',
-    type_id: tag.type_id || null,
-    type_name: undefined
+    type_id: tag.type_id,
+    type_name: null
   };
 }
 
@@ -103,4 +103,17 @@ export function convertTagPositionsToTags(positions: TagPosition[], allTags: Tag
     .sort((a, b) => a.position - b.position)
     .map(pos => tagMap.get(pos.id))
     .filter((tag): tag is Tag => tag !== undefined);
+}
+
+/**
+ * Check if a value is a valid Tag object
+ */
+export function isValidTag(tag: any): tag is Tag {
+  return (
+    tag &&
+    typeof tag === 'object' &&
+    typeof tag.id === 'string' &&
+    typeof tag.name === 'string' &&
+    typeof tag.content_id === 'string'
+  );
 }

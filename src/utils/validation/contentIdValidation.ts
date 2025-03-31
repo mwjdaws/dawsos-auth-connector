@@ -5,11 +5,19 @@
  * Functions for validating content IDs.
  */
 
-import { ContentIdValidationResult, ContentIdValidationResultType } from './types';
+import { ContentIdValidationResult } from './types';
 
 // UUID regex pattern
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TEMP_ID_PATTERN = /^temp-[\w-]+$/;
+
+// Result type enum
+export enum ContentIdValidationResultType {
+  VALID = 'valid',
+  INVALID = 'invalid', 
+  UUID = 'uuid',
+  TEMP = 'temp'
+}
 
 /**
  * Checks if a string is a valid UUID
@@ -32,7 +40,7 @@ export function getContentIdValidationResult(contentId?: string | null): Content
   if (!contentId) {
     return {
       isValid: false,
-      resultType: ContentIdValidationResultType.INVALID,
+      resultType: 'invalid',
       message: 'Content ID is missing',
       errorMessage: 'Content ID is missing'
     };
@@ -41,7 +49,7 @@ export function getContentIdValidationResult(contentId?: string | null): Content
   if (isUUID(contentId)) {
     return {
       isValid: true,
-      resultType: ContentIdValidationResultType.UUID,
+      resultType: 'uuid',
       message: 'Valid UUID',
       errorMessage: null
     };
@@ -50,7 +58,7 @@ export function getContentIdValidationResult(contentId?: string | null): Content
   if (isTempId(contentId)) {
     return {
       isValid: true,
-      resultType: ContentIdValidationResultType.TEMP,
+      resultType: 'temp',
       message: 'Valid temporary ID',
       errorMessage: null
     };
@@ -58,7 +66,7 @@ export function getContentIdValidationResult(contentId?: string | null): Content
   
   return {
     isValid: false,
-    resultType: ContentIdValidationResultType.INVALID,
+    resultType: 'invalid',
     message: 'Invalid content ID format',
     errorMessage: 'Invalid content ID format'
   };

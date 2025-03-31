@@ -1,5 +1,5 @@
 
-import { Tag, TagPosition, mapApiTagToTag, ensureNonNullableTag, convertTagPositionsToTags } from "@/types/tag";
+import { Tag, TagPosition, mapApiTagToTag, ensureNonNullableTag, convertTagPositionsToTags, mapApiTagsToTags } from "@/types/tag";
 
 /**
  * API compatibility layer for tag operations
@@ -15,9 +15,7 @@ export { mapApiTagToTag };
  * Convert API tags to internal Tag format
  * @deprecated Use mapApiTagsToTags from @/types/tag instead
  */
-export function mapApiTagsToTags(apiTags: any[]): Tag[] {
-  return apiTags.map(mapApiTagToTag);
-}
+export { mapApiTagsToTags };
 
 /**
  * Safely convert nullable values to non-nullable

@@ -17,10 +17,13 @@ import {
   convertTagPositionsToTags
 } from '@/types/tag';
 
-export { 
+export type { 
   Tag, 
   TagPosition, 
-  AugmentedTag,
+  AugmentedTag
+};
+
+export {
   mapApiTagToTag,
   mapApiTagsToTags,
   ensureNonNullableTag,
