@@ -1,31 +1,28 @@
 
 /**
- * RelationshipGraph Module Exports
+ * Relationship Graph Component
  * 
- * This file exports the components and types from the RelationshipGraph module,
- * making them available to other parts of the application.
+ * This module provides a complete graph visualization system for viewing
+ * knowledge relationships within the application.
+ * 
+ * Exports:
+ * - RelationshipGraph: Main component for displaying knowledge graphs
+ * - RelationshipGraphPanel: Component for embedding the graph in panels
+ * - Types for extending or integrating with the graph
  */
 
-// Export main components
+// Export the main component and panel
 export { RelationshipGraph } from './RelationshipGraph';
-export { RelationshipGraphPanel } from './RelationshipGraphPanel';
+export { RelationshipGraphPanel } from './components/RelationshipGraphPanel';
 
-// Export utility components
-export { GraphZoomControl } from './components/GraphZoomControl';
-export { GraphControls } from './components/GraphControls';
-export { EmptyGraphState } from './components/EmptyGraphState';
-export { GraphRenderer } from './components/graph-renderer/GraphRenderer';
-
-// Export all types
+// Export types for external use
 export type { 
-  RelationshipGraphProps,
   GraphData,
-  GraphNode,
+  GraphNode, 
   GraphLink,
+  RelationshipGraphProps,
   RelationshipGraphPanelProps,
-  GraphRendererRef,
   GraphRendererProps,
-  NodeRendererProps,
-  LinkRendererProps,
+  GraphRendererRef, 
   WithErrorHandlingOptions
 } from './types';

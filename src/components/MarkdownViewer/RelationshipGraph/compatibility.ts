@@ -1,13 +1,8 @@
 
-/**
- * Compatibility utilities for the relationship graph component
- * These help ensure backward compatibility with older code
- */
-import { GraphProps, GraphRendererRef, RelationshipGraphProps } from './types';
-import { GraphData, GraphNode, GraphLink } from './components/graph-renderer/GraphRendererTypes';
+import { GraphData, GraphNode, GraphLink, GraphProps, RelationshipGraphProps, GraphRendererRef } from './types';
 
 /**
- * Create safe graph properties with defaults for any missing values
+ * Creates safe GraphProps from possibly undefined values
  */
 export function createSafeGraphProps(props: GraphProps): RelationshipGraphProps {
   return {
@@ -19,99 +14,82 @@ export function createSafeGraphProps(props: GraphProps): RelationshipGraphProps 
 }
 
 /**
- * Create a compatibility layer for the GraphRendererRef
- * This allows older code to use the new ref structure
+ * Normalizes node ID types
  */
-export function createCompatibleGraphRef(ref: any): GraphRendererRef {
-  if (!ref) {
-    return {
-      centerOn: () => {},
-      zoomToFit: () => {},
-      resetViewport: () => {},
-      getGraphData: () => ({ nodes: [], links: [] }),
-      setZoom: () => {}
-    };
-  }
-  
-  return {
-    centerOn: (nodeId: string) => {
-      if (typeof ref.centerOnNode === 'function') {
-        ref.centerOnNode(nodeId);
-      }
-    },
-    zoomToFit: (duration?: number) => {
-      if (typeof ref.zoomToFit === 'function') {
-        ref.zoomToFit(duration);
-      }
-    },
-    resetViewport: () => {
-      if (typeof ref.resetZoom === 'function') {
-        ref.resetZoom();
-      }
-    },
-    getGraphData: () => {
-      if (typeof ref.getGraphData === 'function') {
-        return ref.getGraphData() || { nodes: [], links: [] };
-      }
-      return { nodes: [], links: [] };
-    },
-    setZoom: (zoomLevel: number) => {
-      if (typeof ref.setZoom === 'function') {
-        ref.setZoom(zoomLevel);
-      }
-    }
-  };
+export function normalizeNodeId(nodeId: string | null | undefined): string | null {
+  return typeof nodeId === 'string' ? nodeId : null;
 }
 
 /**
- * Convert legacy node data to the new GraphNode format
+ * Safely converts graph data to ensure type compatibility
  */
-export function convertToGraphNode(node: any): GraphNode {
-  return {
-    id: node?.id || '',
-    title: node?.title || node?.name || node?.id || 'Unknown',
-    name: node?.name || node?.title || node?.id || 'Unknown',
-    type: node?.type || 'document',
-    domain: node?.domain || ''
-  };
-}
-
-/**
- * Convert legacy link data to the new GraphLink format
- */
-export function convertToGraphLink(link: any): GraphLink {
-  return {
-    source: link?.source || '',
-    target: link?.target || '',
-    type: link?.type || 'default'
-  };
-}
-
-/**
- * Create safe graph data with proper typing
- */
-export function createSafeGraphData(data: any): GraphData {
+export function sanitizeGraphData(data: any): GraphData {
   if (!data) {
     return { nodes: [], links: [] };
   }
-  
-  const nodes = Array.isArray(data.nodes) ? data.nodes.map(convertToGraphNode) : [];
-  const links = Array.isArray(data.links) ? data.links.map(convertToGraphLink) : [];
-  
+
+  const nodes = Array.isArray(data.nodes) ? data.nodes.map(sanitizeNode) : [];
+  const links = Array.isArray(data.links) ? data.links.map(sanitizeLink) : [];
+
   return { nodes, links };
 }
 
 /**
- * Safely extract a node ID from a node or ID string
+ * Ensures a GraphNode has required properties
  */
-export function getSafeNodeId(nodeOrId: GraphNode | string | undefined | null): string {
-  if (!nodeOrId) {
-    return '';
-  }
+function sanitizeNode(node: any): GraphNode {
+  if (!node) return { id: `node-${Math.random().toString(36).substring(2, 9)}` };
   
-  if (typeof nodeOrId === 'string') {
-    return nodeOrId;
-  }
+  return {
+    id: node.id || `node-${Math.random().toString(36).substring(2, 9)}`,
+    name: node.name || node.title || node.id || 'Unknown',
+    ...node
+  };
+}
+
+/**
+ * Ensures a GraphLink has required properties
+ */
+function sanitizeLink(link: any): GraphLink {
+  if (!link) return { source: '', target: '' };
   
-  return nodeOrId.id || '';
+  return {
+    source: typeof link.source === 'object' ? link.source.id : String(link.source || ''),
+    target: typeof link.target === 'object' ? link.target.id : String(link.target || ''),
+    ...link
+  };
+}
+
+/**
+ * Creates a GraphRendererRef adapter for compatibility with the modern GraphRenderer
+ */
+export function createCompatibleGraphRef(modernRef: any): GraphRendererRef {
+  return {
+    centerOn: (nodeId: string) => {
+      if (modernRef && typeof modernRef.centerOnNode === 'function') {
+        modernRef.centerOnNode(nodeId);
+      }
+    },
+    zoomToFit: (duration?: number) => {
+      if (modernRef && typeof modernRef.zoomToFit === 'function') {
+        modernRef.zoomToFit(duration);
+      }
+    },
+    resetViewport: () => {
+      if (modernRef && typeof modernRef.resetZoom === 'function') {
+        modernRef.resetZoom();
+      }
+    },
+    getGraphData: () => {
+      if (modernRef && typeof modernRef.getGraphData === 'function') {
+        return modernRef.getGraphData();
+      }
+      return { nodes: [], links: [] };
+    },
+    setZoom: (zoomLevel: number) => {
+      if (modernRef && typeof modernRef.setZoom === 'function') {
+        modernRef.setZoom(zoomLevel);
+      }
+    }
+  };
 }

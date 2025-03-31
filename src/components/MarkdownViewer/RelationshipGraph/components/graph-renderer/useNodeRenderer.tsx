@@ -1,110 +1,84 @@
+import { useCallback, useMemo } from 'react';
+import { GraphNode } from '../../types';
 
-/**
- * Custom hook for rendering nodes in the graph
- */
-import React from 'react';
-import { GraphNode } from '../../components/graph-renderer/GraphRendererTypes';
-
-interface NodeRendererConfig {
-  getNodeSize: (node: GraphNode) => number;
-  getNodeColor: (node: GraphNode) => string;
-  nodeCanvasRenderer: (node: GraphNode) => any;
-  renderNode: ({ data, isConnectable }: { data: GraphNode, isConnectable: boolean }) => JSX.Element;
+interface UseNodeRendererProps {
+  nodeColorMap?: Record<string, string>;
+  defaultNodeColor?: string;
+  nodeSizeRange?: [number, number];
+  defaultNodeSize?: number;
 }
 
-export function useNodeRenderer(): NodeRendererConfig {
-  // Get node size based on node type and importance
-  const getNodeSize = (node: GraphNode): number => {
-    const defaultSize = 8;
+export function useNodeRenderer({
+  nodeColorMap = {},
+  defaultNodeColor = '#1f77b4',
+  nodeSizeRange = [4, 12],
+  defaultNodeSize = 8
+}: UseNodeRendererProps = {}) {
+  /**
+   * Get node color based on type or default
+   */
+  const getNodeColor = useCallback((node: GraphNode): string => {
+    // Use explicit color if provided
+    if (node.color) return node.color;
     
-    // Check for explicitly set size
-    if (node.size !== undefined) {
-      return Number(node.size);
-    }
+    // Otherwise map by type
+    const nodeType = node.type || 'default';
+    return nodeColorMap[nodeType] || defaultNodeColor;
+  }, [nodeColorMap, defaultNodeColor]);
+
+  /**
+   * Get node size based on weight or default
+   */
+  const getNodeSize = useCallback((node: GraphNode): number => {
+    // Use explicit size if provided
+    if (typeof node.size === 'number') return node.size;
     
-    // Different sizes based on node type
-    const nodeSizes: Record<string, number> = {
-      document: 10,
-      term: 7,
-      concept: 9,
-      entity: 8,
-      topic: 8
-    };
+    // Otherwise calculate based on weight
+    const weight = typeof node.weight === 'number' ? node.weight : 0.5;
+    const [min, max] = nodeSizeRange;
     
-    return nodeSizes[node.type || ''] || defaultSize;
-  };
-  
-  // Get node color based on node type and domain
-  const getNodeColor = (node: GraphNode): string => {
-    // Default color
-    let defaultColor = '#6b7280'; // gray-500
+    if (weight <= 0) return min;
+    if (weight >= 1) return max;
     
-    // Colors for different types
-    const typeColors: Record<string, string> = {
-      document: '#2563eb', // blue-600
-      term: '#059669', // emerald-600
-      concept: '#7c3aed', // violet-600
-      entity: '#db2777', // pink-600
-      topic: '#ea580c', // orange-600
-      person: '#ef4444', // red-500
-      organization: '#f59e0b' // amber-500
-    };
+    // Linear interpolation between min and max
+    return min + weight * (max - min);
+  }, [nodeSizeRange]);
+
+  /**
+   * Custom node renderer for canvas
+   */
+  const nodeCanvasRenderer = useCallback((ctx: CanvasRenderingContext2D, node: GraphNode) => {
+    const color = getNodeColor(node);
+    const size = getNodeSize(node);
     
-    // If node has a type, use the corresponding color
-    const nodeType = (node.type || '').toLowerCase();
-    defaultColor = typeColors[nodeType] || defaultColor;
+    // Draw circle
+    ctx.beginPath();
+    ctx.arc(node.x || 0, node.y || 0, size, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.fill();
     
-    // If color is explicitly set, use that
-    return node.color || defaultColor;
-  };
-  
-  // Canvas renderer for the node (optimized rendering)
-  const nodeCanvasRenderer = (node: GraphNode) => {
-    // Implementation for canvas rendering
-    return (ctx: CanvasRenderingContext2D, x: number, y: number, radius: number) => {
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, 2 * Math.PI);
-      ctx.fillStyle = getNodeColor(node);
-      ctx.fill();
+    // Draw border
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+    
+    // Draw label if node has a name or title
+    const label = node.name || node.title || '';
+    if (label && typeof label === 'string') {
+      ctx.font = '4px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffffff';
       
-      // Add a border
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    };
-  };
-  
-  // React component for the node (used in detailed view)
-  const renderNode = ({ data, isConnectable }: { data: GraphNode, isConnectable: boolean }) => {
-    const nodeSize = getNodeSize(data);
-    const color = getNodeColor(data);
-    
-    return (
-      <div
-        style={{
-          width: `${nodeSize * 2}px`,
-          height: `${nodeSize * 2}px`,
-          borderRadius: '50%',
-          backgroundColor: color,
-          border: '2px solid white',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center'
-        }}
-      >
-        {data.icon && (
-          <span style={{ color: 'white', fontSize: '0.7em' }}>
-            {data.icon}
-          </span>
-        )}
-      </div>
-    );
-  };
-  
-  return {
-    getNodeSize,
+      // Position text slightly below node
+      ctx.fillText(label, node.x || 0, (node.y || 0) + size + 4);
+    }
+  }, [getNodeColor, getNodeSize]);
+
+  return useMemo(() => ({
     getNodeColor,
+    getNodeSize,
     nodeCanvasRenderer,
-    renderNode
-  };
+    renderNode: ({ data }: { data: GraphNode }) => null // Placeholder for custom Node component
+  }), [getNodeColor, getNodeSize, nodeCanvasRenderer]);
 }

@@ -1,56 +1,43 @@
 
-/**
- * Utility functions for graph operations
- */
-import { 
-  GraphNode, 
-  GraphLink, 
-  GraphData 
-} from '../components/graph-renderer/GraphRendererTypes';
+import { GraphNode, GraphLink, GraphData } from '../types';
 
 /**
- * Create a new node with default values if needed
+ * Custom graph node color mappings
  */
-export function createNode(id: string, data: Partial<GraphNode> = {}): GraphNode {
-  return {
-    id,
-    title: data.title || data.name || id,
-    name: data.name || data.title || id,
-    type: data.type || 'document',
-    domain: data.domain || '',
-    ...data
-  };
-}
+export const NODE_COLOR_MAP: Record<string, string> = {
+  document: '#4f46e5', // indigo
+  category: '#10b981', // emerald
+  concept: '#f59e0b', // amber
+  person: '#ef4444',  // red
+  organization: '#6366f1', // indigo
+  default: '#6b7280'  // gray
+};
 
 /**
- * Create a link between nodes with default values
+ * Custom graph link color mappings
  */
-export function createLink(source: string, target: string, type = 'default'): GraphLink {
-  return { source, target, type };
-}
+export const LINK_COLOR_MAP: Record<string, string> = {
+  related: '#9ca3af',  // gray
+  contains: '#4f46e5', // indigo
+  references: '#10b981', // emerald
+  created: '#f59e0b',  // amber
+  default: '#d1d5db'   // light gray
+};
 
 /**
- * Calculate statistics for a graph (node count, link count, etc.)
+ * Calculate statistics for a graph
  */
-export function calculateGraphStats(graph: GraphData) {
-  if (!graph) {
-    return {
-      nodeCount: 0,
-      linkCount: 0,
-      density: 0
-    };
+export function calculateGraphStats(graphData: GraphData) {
+  if (!graphData) {
+    return { nodeCount: 0, linkCount: 0, density: 0 };
   }
+
+  const nodeCount = (graphData.nodes || []).length;
+  const linkCount = (graphData.links || []).length;
   
-  const nodeCount = graph.nodes.length;
-  const linkCount = graph.links.length;
-  
-  // Calculate graph density (ratio of actual links to possible links)
-  let density = 0;
-  if (nodeCount > 1) {
-    // Maximum possible links for directed graph: n(n-1)
-    const maxLinks = nodeCount * (nodeCount - 1);
-    density = maxLinks > 0 ? linkCount / maxLinks : 0;
-  }
+  // Calculate graph density (ratio of actual connections to possible connections)
+  const possibleConnections = nodeCount * (nodeCount - 1);
+  const density = possibleConnections > 0 ? linkCount / possibleConnections : 0;
   
   return {
     nodeCount,
@@ -60,31 +47,59 @@ export function calculateGraphStats(graph: GraphData) {
 }
 
 /**
- * Get node style configuration based on node properties
+ * Find a node by ID
  */
-export function getNodeStyle(node: GraphNode, config?: any) {
-  if (!node) {
-    return { color: '#6b7280', size: 8 }; // Default style
+export function findNodeById(graphData: GraphData, nodeId: string): GraphNode | undefined {
+  if (!graphData || !graphData.nodes || !nodeId) {
+    return undefined;
   }
   
-  // Apply configuration if provided
-  const styleConfig = config || {};
+  return graphData.nodes.find(node => node.id === nodeId);
+}
+
+/**
+ * Get node title or fallback
+ */
+export function getNodeTitle(node: GraphNode | null | undefined): string {
+  if (!node) return 'Unknown';
   
-  // Node color based on type with fallbacks
-  const typeColors = styleConfig.typeColors || {
-    document: '#2563eb',
-    term: '#059669',
-    concept: '#7c3aed',
-    entity: '#db2777',
-    topic: '#ea580c',
-    person: '#ef4444',
-    organization: '#f59e0b'
-  };
+  return node.title || node.name || node.id || 'Unnamed Node';
+}
+
+/**
+ * Get node type with fallback
+ */
+export function getNodeType(node: GraphNode | null | undefined): string {
+  if (!node) return 'unknown';
   
-  const type = (node.type || 'document').toLowerCase();
+  return node.type || 'default';
+}
+
+/**
+ * Process raw graph data into a normalized format
+ */
+export function normalizeGraphData(rawData: any): GraphData {
+  if (!rawData) {
+    return { nodes: [], links: [] };
+  }
   
-  return {
-    color: node.color || typeColors[type] || styleConfig.defaultColor || '#6b7280',
-    size: node.size || styleConfig.sizes?.[type] || styleConfig.defaultSize || 8
-  };
+  // Extract and normalize nodes
+  const nodes = Array.isArray(rawData.nodes) 
+    ? rawData.nodes.map((node: any) => ({
+        id: String(node.id || ''),
+        name: node.name || node.title || String(node.id || ''),
+        ...node
+      }))
+    : [];
+  
+  // Extract and normalize links
+  const links = Array.isArray(rawData.links) 
+    ? rawData.links.map((link: any) => ({
+        source: typeof link.source === 'object' ? link.source.id : String(link.source || ''),
+        target: typeof link.target === 'object' ? link.target.id : String(link.target || ''),
+        ...link
+      }))
+    : [];
+  
+  return { nodes, links };
 }

@@ -1,106 +1,72 @@
 
-import { useState, useCallback } from "react";
-import { TagGenerator } from "./TagGenerator";
-import { toast } from "@/hooks/use-toast";
-import { handleError } from "@/utils/error-handling";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import React, { useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { withErrorHandling } from "@/utils/errors";
 
 interface TagContentGeneratorProps {
-  isLoading: boolean;
-  contentId: string;
-  handleGenerateTags: (text: string) => Promise<string | undefined>;
-  setLastSavedContentId: (id: string | null) => void;
-  isPending: boolean;
+  onGenerate: (content: string) => void;
+  disabled?: boolean;
+  isLoading?: boolean;
 }
 
-export function TagContentGenerator({
-  isLoading,
-  contentId,
-  handleGenerateTags,
-  setLastSavedContentId,
-  isPending
-}: TagContentGeneratorProps) {
-  const [error, setError] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+export function TagContentGenerator({ onGenerate, disabled = false, isLoading = false }: TagContentGeneratorProps) {
+  const [content, setContent] = useState<string>("");
   
-  // Handle tag generation from content
-  const handleTagging = useCallback(async (text: string) => {
-    if (!text.trim()) {
-      toast({
-        title: "Empty Content",
-        description: "Please provide some content to generate tags",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    console.log("TagContentGenerator: Handling tag generation for content:", text.substring(0, 50) + "...");
-    setError(null);
-    setIsProcessing(true);
+  const handleGenerateClick = () => {
+    if (!content.trim()) return;
     
     try {
-      // Use startTransition to avoid UI freezing during processing
-      const newContentId = await handleGenerateTags(text);
-      console.log("TagContentGenerator: handleTagging completed with contentId:", newContentId);
-      
-      // Store the new contentId but don't notify parent yet (wait for save)
-      if (newContentId) {
-        setLastSavedContentId(newContentId);
-        toast({
-          title: "Tags Generated",
-          description: "Tags were successfully generated from your content",
-        });
-      } else {
-        setError("No content ID was returned. Tag generation may have failed.");
-        toast({
-          title: "Warning",
-          description: "Tags were generated but may be incomplete",
-          variant: "default"
-        });
-      }
+      onGenerate(content);
     } catch (error) {
-      console.error("TagContentGenerator: Error generating tags:", error);
-      
-      let errorMessage = "Failed to generate tags";
-      if (error instanceof Error) {
-        errorMessage += `: ${error.message}`;
-      }
-      
-      setError(errorMessage);
-      
-      handleError(
-        error, 
-        "Failed to generate tags", 
-        {
-          actionLabel: "Try Again",
-          action: () => handleTagging(text)
-        }
-      );
-    } finally {
-      setIsProcessing(false);
+      console.error("Error generating tags:", error);
     }
-  }, [handleGenerateTags, setLastSavedContentId]);
-
+  };
+  
+  // Wrap generation with error handling
+  const safeGenerateClick = withErrorHandling(handleGenerateClick, {
+    errorMessage: "Failed to generate tags from content",
+    level: "error"
+  });
+  
   return (
-    <>
-      <TagGenerator 
-        isLoading={isLoading || isProcessing} 
-        onGenerateTags={handleTagging} 
-      />
-      
-      {isPending && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Processing content...
+    <Card className="p-4">
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-sm font-medium mb-2">Generate Tags from Content</h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Enter text content below to automatically generate relevant tags.
+          </p>
         </div>
-      )}
-      
-      {error && (
-        <Alert variant="destructive" className="mt-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-    </>
+        
+        <Textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Paste content here to generate tags..."
+          className="min-h-[120px]"
+          disabled={disabled || isLoading}
+        />
+        
+        <div className="flex justify-end">
+          <Button
+            onClick={safeGenerateClick}
+            disabled={!content.trim() || disabled || isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              "Generate Tags"
+            )}
+          </Button>
+        </div>
+      </div>
+    </Card>
   );
 }
+
+export default TagContentGenerator;

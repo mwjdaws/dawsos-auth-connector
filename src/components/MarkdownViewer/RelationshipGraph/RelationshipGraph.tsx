@@ -6,8 +6,9 @@
  * This component manages data loading states and renders the appropriate
  * subcomponents based on the current state.
  */
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { GraphData, GraphRendererRef, GraphProps } from './types';
 import { GraphHeader } from './components/GraphHeader';
 import { GraphLoading } from './components/GraphLoading';
 import { GraphError } from './components/GraphError';
@@ -17,13 +18,15 @@ import { GraphContent } from './components/GraphContent';
 import { ErrorFallback } from './components/ErrorFallback';
 import { useRelationshipGraph } from './hooks/useRelationshipGraph';
 import { createSafeGraphProps } from './compatibility';
-import { GraphProps, RelationshipGraphProps } from './types';
 
 // Export the main component
 export function RelationshipGraph(props: GraphProps) { 
   // Convert props to safe values using our compatibility layer
   const safeProps = createSafeGraphProps(props);
-  const { startingNodeId, width = 800, height = 600, hasAttemptedRetry = false } = safeProps;
+  const { startingNodeId, width, height, hasAttemptedRetry } = safeProps;
+  
+  // Create a ref for the graph renderer
+  const graphRendererRef = useRef<GraphRendererRef>(null);
   
   // Use the custom hook to manage graph state and behavior
   const {
@@ -34,14 +37,13 @@ export function RelationshipGraph(props: GraphProps) {
     highlightedNodeId,
     zoomLevel,
     isPending,
-    graphRendererRef,
     graphStats,
     handleNodeFound,
     handleZoomChange,
     handleResetZoom,
     handleRetry
   } = useRelationshipGraph({
-    startingNodeId: startingNodeId || '',
+    startingNodeId,
     hasAttemptedRetry
   });
   
@@ -98,3 +100,5 @@ export function RelationshipGraph(props: GraphProps) {
     </ErrorBoundary>
   );
 }
+
+export default RelationshipGraph;

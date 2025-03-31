@@ -6,9 +6,8 @@
  * and loading indicator when processing updates.
  */
 import React from 'react';
-import { GraphData } from '../types';
+import { GraphData, GraphRendererRef } from '../types';
 import { GraphRenderer } from './graph-renderer/GraphRenderer';
-import { GraphRendererRef } from '../types';
 import { createCompatibleGraphRef } from '../compatibility';
 
 interface GraphContentProps {

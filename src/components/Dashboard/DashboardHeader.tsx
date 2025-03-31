@@ -1,94 +1,77 @@
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { handleError } from "@/utils/errors";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { PlusCircle, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { withErrorHandling } from '@/utils/errors';
 
 interface DashboardHeaderProps {
-  contentId: string;
-  isRefreshingStats: boolean;
-  setIsRefreshingStats: (value: boolean) => void;
+  title: string;
+  description?: string;
+  isLoading?: boolean;
+  onRefresh?: () => void;
+  showCreateButton?: boolean;
+  createButtonLabel?: string;
+  createButtonHref?: string;
 }
 
-export function DashboardHeader({ 
-  contentId, 
-  isRefreshingStats, 
-  setIsRefreshingStats 
+export function DashboardHeader({
+  title,
+  description,
+  isLoading = false,
+  onRefresh,
+  showCreateButton = true,
+  createButtonLabel = 'Create Knowledge',
+  createButtonHref = '/create'
 }: DashboardHeaderProps) {
-  const refreshTagStats = async () => {
-    try {
-      setIsRefreshingStats(true);
-      
-      // Use a direct SQL query instead of calling the function through RPC
-      // This will work better with RLS policies
-      const { error } = await supabase.from('tag_summary')
-        .select('count(*)', { count: 'exact', head: true });
-      
-      if (error) {
-        throw error;
-      }
-      
-      toast({
-        title: "Statistics Updated",
-        description: "Tag usage statistics have been refreshed.",
-      });
-    } catch (error) {
-      console.error("Error refreshing tag statistics:", error);
-      handleError(error, "Failed to refresh tag statistics. Please try again.", {
-        title: "Refresh Error",
-        actionLabel: "Try Again",
-        onRetry: refreshTagStats
-      });
-    } finally {
-      setIsRefreshingStats(false);
-    }
-  };
+  // Wrap the refresh handler with error handling
+  const handleRefresh = onRefresh
+    ? withErrorHandling(onRefresh, {
+        errorMessage: 'Failed to refresh data',
+        level: 'error'
+      })
+    : undefined;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-      <div className="lg:col-span-2">
-        <TagSummaryWrapper />
+    <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        {description && (
+          <p className="text-muted-foreground mt-1">{description}</p>
+        )}
       </div>
-      <div className="lg:col-span-1">
-        <Card className="h-full">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xl">Tag Statistics</CardTitle>
-              <Button 
-                onClick={refreshTagStats} 
-                size="sm" 
-                variant="outline"
-                disabled={isRefreshingStats}
-                className="h-8"
-              >
-                <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshingStats ? 'animate-spin' : ''}`} />
+
+      <div className="flex items-center gap-2">
+        {onRefresh && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6 pt-2">
-            <p className="text-muted-foreground text-sm mb-4">
-              The tag usage statistics are automatically updated on a schedule.
-              You can manually refresh the view to see the latest data.
-            </p>
-            
-            <div className="mt-4 text-sm text-muted-foreground">
-              <p>Current Content ID: <span className="font-mono">{contentId}</span></p>
-            </div>
-          </CardContent>
-        </Card>
+              </>
+            )}
+          </Button>
+        )}
+
+        {showCreateButton && (
+          <Button asChild size="sm">
+            <Link to={createButtonHref}>
+              <PlusCircle className="h-4 w-4 mr-2" />
+              {createButtonLabel}
+            </Link>
+          </Button>
+        )}
       </div>
     </div>
   );
 }
-
-// Add a simple wrapper to handle the TagSummary's Suspense
-function TagSummaryWrapper() {
-  return <TagSummary />;
-}
-
-// Importing at the end to avoid circular dependencies
-import { TagSummary } from "@/components/TagSummary";
