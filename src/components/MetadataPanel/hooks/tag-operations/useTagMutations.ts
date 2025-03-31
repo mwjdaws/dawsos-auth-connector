@@ -29,7 +29,8 @@ export function useTagMutations({
         .insert([{
           name: name.trim().toLowerCase(),
           content_id: tagContentId,
-          type_id: typeId || null
+          type_id: typeId || null,
+          display_order: tags.length // Add at the end by default
         }])
         .select();
       
@@ -44,8 +45,9 @@ export function useTagMutations({
       const newTag: Tag = {
         id: data[0].id,
         name: data[0].name,
-        content_id: data[0].content_id || '', // Handle null for backward compatibility
-        type_id: data[0].type_id
+        content_id: data[0].content_id,
+        type_id: data[0].type_id,
+        display_order: data[0].display_order || 0
       };
       
       // Update the local tags state
@@ -117,8 +119,18 @@ export function useTagMutations({
     try {
       setIsReordering(true);
       
-      // For now, just update the local state based on position
-      // A more complete implementation would persist this to the database
+      // Update each tag's display_order in the database
+      const updates = positions.map(pos => 
+        supabase
+          .from('tags')
+          .update({ display_order: pos.position })
+          .eq('id', pos.id)
+      );
+      
+      // Execute all updates in parallel
+      await Promise.all(updates);
+      
+      // Update local state
       const positionMap = new Map<string, number>();
       positions.forEach(pos => positionMap.set(pos.id, pos.position));
       

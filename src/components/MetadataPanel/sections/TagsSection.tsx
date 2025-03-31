@@ -3,12 +3,14 @@
  * TagsSection Component
  * 
  * Displays tags and provides functionality to add and remove them.
- * Uses the TagList component for tag display
+ * Uses the TagList component for tag display and supports drag-and-drop reordering.
  */
-import React from "react";
+import React, { useCallback } from "react";
 import { TagInput } from "@/components/MarkdownViewer/TagInput";
 import { TagList } from "../components/TagList";
 import { Tag, TagPosition } from "@/types/tag";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 export interface TagsSectionProps {
   tags: Tag[];
@@ -33,8 +35,8 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
   onMetadataChange,
   className = ""
 }) => {
-  // Handle tag reordering with proper types
-  const handleReorderTags = (reorderedTags: Tag[]) => {
+  // Handle tag reordering with proper database update
+  const handleReorderTags = useCallback(async (reorderedTags: Tag[]) => {
     // Convert to TagPosition type for compatibility
     const positions: TagPosition[] = reorderedTags.map((tag, index) => ({
       id: tag.id,
@@ -43,10 +45,38 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
     
     console.log("Reordering tags:", positions);
     
-    if (onMetadataChange) {
-      onMetadataChange();
+    // Save the new tag order to the database
+    try {
+      // Update each tag's display_order in the database
+      const updates = positions.map(pos => 
+        supabase
+          .from('tags')
+          .update({ display_order: pos.position })
+          .eq('id', pos.id)
+      );
+      
+      // Execute all updates in parallel
+      await Promise.all(updates);
+      
+      // Notify about successful reordering
+      toast({
+        title: "Tags Reordered",
+        description: "Tag order has been updated",
+      });
+      
+      // Trigger metadata change callback if provided
+      if (onMetadataChange) {
+        onMetadataChange();
+      }
+    } catch (error) {
+      console.error("Error saving tag order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save tag order",
+        variant: "destructive"
+      });
     }
-  };
+  }, [contentId, onMetadataChange]);
   
   return (
     <div className={className}>
@@ -73,5 +103,5 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
   );
 }
 
-// For backward compatibility
+// For backward compatibility (can be removed in the future once all imports are updated)
 export const TagsContent = TagsSection;

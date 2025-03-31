@@ -528,19 +528,22 @@ export type Database = {
       }
       tags: {
         Row: {
-          content_id: string | null
+          content_id: string
+          display_order: number
           id: string
           name: string
           type_id: string | null
         }
         Insert: {
-          content_id?: string | null
+          content_id: string
+          display_order?: number
           id?: string
           name: string
           type_id?: string | null
         }
         Update: {
-          content_id?: string | null
+          content_id?: string
+          display_order?: number
           id?: string
           name?: string
           type_id?: string | null

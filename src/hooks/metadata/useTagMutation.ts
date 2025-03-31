@@ -22,11 +22,17 @@ export interface DeleteTagParams {
   tagId: string;
 }
 
+export interface UpdateTagOrderParams {
+  contentId: string;
+  tagPositions: { id: string; position: number }[];
+}
+
 /**
- * Hook for handling tag mutations (add, delete)
+ * Hook for handling tag mutations (add, delete, reorder)
  */
-export function useTagMutations() {
+export function useTagMutations(contentId?: string) {
   const queryClient = useQueryClient();
+  const validContentId = contentId && isValidContentId(contentId) ? contentId : undefined;
 
   // Add tag mutation
   const addTagMutation = useMutation({
@@ -54,7 +60,7 @@ export function useTagMutations() {
         name: data.name,
         content_id: data.content_id,
         type_id: data.type_id,
-        display_order: data.display_order
+        display_order: data.display_order || 0
       } as Tag;
     },
     onSuccess: (_, variables) => {
@@ -96,18 +102,81 @@ export function useTagMutations() {
     }
   });
 
-  // Add helper methods to the mutation objects
-  const addTag = (params: AddTagParams) => addTagMutation.mutateAsync(params);
-  const deleteTag = (params: DeleteTagParams) => deleteTagMutation.mutateAsync(params);
+  // Update tag order mutation
+  const updateTagOrderMutation = useMutation({
+    mutationFn: async ({ tagPositions, contentId }: UpdateTagOrderParams): Promise<boolean> => {
+      if (!isValidContentId(contentId)) {
+        throw new Error('Invalid content ID');
+      }
+
+      // Update each tag's display_order in sequence
+      const updates = tagPositions.map(position => 
+        supabase
+          .from('tags')
+          .update({ display_order: position.position })
+          .eq('id', position.id)
+      );
+      
+      // Execute all updates in parallel
+      await Promise.all(updates);
+      return true;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tags', variables.contentId] });
+      toast({
+        title: 'Tags Reordered',
+        description: 'Tag order has been updated successfully',
+      });
+    },
+    onError: (error) => {
+      handleError(error, 'Failed to update tag order', { level: 'error' });
+    }
+  });
+
+  // Add helper methods
+  const addTag = (params: AddTagParams) => {
+    return addTagMutation.mutateAsync({
+      ...params,
+      contentId: params.contentId || contentId || ''
+    });
+  };
+  
+  const deleteTag = (params: DeleteTagParams | string) => {
+    // Support both object params and just the tagId string for convenience
+    const tagId = typeof params === 'string' ? params : params.tagId;
+    const targetContentId = typeof params === 'string' 
+      ? validContentId || '' 
+      : params.contentId || validContentId || '';
+      
+    return deleteTagMutation.mutateAsync({ 
+      tagId, 
+      contentId: targetContentId 
+    });
+  };
+  
+  const updateTagOrder = (tagPositions: { id: string; position: number }[]) => {
+    if (!validContentId) {
+      console.error('Cannot update tag order: No valid content ID provided');
+      return Promise.reject('No valid content ID');
+    }
+    
+    return updateTagOrderMutation.mutateAsync({
+      tagPositions,
+      contentId: validContentId
+    });
+  };
   
   // Return everything including enhanced mutations
   return {
     addTag,
     deleteTag,
+    updateTagOrder,
     isAddingTag: addTagMutation.isPending,
     isDeletingTag: deleteTagMutation.isPending,
+    isUpdatingOrder: updateTagOrderMutation.isPending,
     addTagMutation,
-    deleteTagMutation
+    deleteTagMutation,
+    updateTagOrderMutation
   };
 }
 
