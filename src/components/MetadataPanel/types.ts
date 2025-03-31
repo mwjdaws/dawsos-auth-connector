@@ -30,6 +30,9 @@ export interface SimpleSourceMetadata {
   title: string;
   updated_at: string | null;
   published: boolean;
+  external_source_url?: string | null;
+  external_source_checked_at?: string | null;
+  needs_external_review?: boolean;
 }
 
 /**
@@ -63,6 +66,10 @@ export interface OntologyTermsSectionProps {
   editable?: boolean;
   onAdd?: (term: OntologyTerm) => Promise<void>;
   onDelete?: (termId: string) => Promise<void>;
+  sourceId?: string;
+  onMetadataChange?: () => void;
+  className?: string;
+  ontologyTerms?: OntologyTerm[];
 }
 
 /**
@@ -75,5 +82,13 @@ export interface MetadataPanelProps {
   initialCollapsed?: boolean;
   showOntologyTerms?: boolean;
   className?: string;
-  onMetadataChange?: () => void;
+  onMetadataChange?: (() => void) | null;
+  showDomain?: boolean;
+  domain?: string | null;
+  children?: React.ReactNode;
 }
+
+/**
+ * Re-export Tag from @/types/tag to avoid circular dependencies
+ */
+export type { Tag };

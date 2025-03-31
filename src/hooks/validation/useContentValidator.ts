@@ -17,7 +17,7 @@ import { useContentExists } from '@/hooks/metadata/useContentExists';
 export function useContentValidator(contentId?: string | null) {
   // Check if the content ID is valid
   const validationResult = useMemo(() => {
-    return getContentIdValidationResult(contentId);
+    return getContentIdValidationResult(contentId || null);
   }, [contentId]);
   
   // Check if the content exists in the database

@@ -12,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export function useContentExists(contentId: string | null) {
   return useQuery({
-    queryKey: contentId ? ['content', 'exists', contentId] : undefined,
+    queryKey: contentId ? ['content', 'exists', contentId] : ['content', 'exists', 'none'],
     queryFn: async () => {
       if (!contentId) return false;
       

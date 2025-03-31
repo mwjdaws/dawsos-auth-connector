@@ -8,16 +8,25 @@ import { Tag } from '@/types/tag';
 export interface HeaderSectionTestProps {
   title: string;
   lastUpdated?: string;
+  handleRefresh?: () => void;
+  setIsCollapsed?: (value: boolean) => void;
+  isCollapsed?: boolean;
 }
 
 export interface TagsSectionTestProps {
   tags: Tag[];
   editable?: boolean;
+  newTag?: string;
+  setNewTag?: (value: string) => void;
+  onAddTag?: (typeId?: string | null) => Promise<void>;
+  onDeleteTag?: (tagId: string) => Promise<void>;
+  contentId?: string;
 }
 
 export interface OntologySectionTestProps {
   terms: { id: string; term: string; description: string }[];
   editable?: boolean;
+  sourceId?: string;
 }
 
 export interface ContentIdSectionTestProps {
@@ -28,6 +37,9 @@ export interface ExternalSourceSectionTestProps {
   url: string;
   checkedAt?: string;
   isValid?: boolean;
+  externalSourceUrl?: string | null;
+  editable?: boolean;
+  contentId?: string;
 }
 
 export interface DomainSectionTestProps {

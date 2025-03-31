@@ -60,3 +60,29 @@ export function ensureBoolean(value: unknown, defaultValue: boolean = false): bo
   
   return defaultValue;
 }
+
+/**
+ * Safely calls a callback function
+ * 
+ * @param callback The callback function to call
+ * @param args Arguments to pass to the callback
+ * @returns The result of the callback, or undefined if the callback is not a function
+ */
+export function safeCallback<T extends (...args: any[]) => any>(
+  callback: T | null | undefined,
+  ...args: Parameters<T>
+): ReturnType<T> | undefined {
+  if (typeof callback === 'function') {
+    return callback(...args);
+  }
+  return undefined;
+}
+
+/**
+ * Creates a no-op function that can be used as a safe default
+ * 
+ * @returns A function that does nothing
+ */
+export function noOp(): () => void {
+  return () => {};
+}
