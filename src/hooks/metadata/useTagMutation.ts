@@ -103,6 +103,4 @@ export function useTagMutations() {
 }
 
 // For backward compatibility
-export function useTagMutations as useAddTagMutation() {
-  return useTagMutations();
-}
+export const useAddTagMutation = useTagMutations;
