@@ -7,7 +7,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/error-handling';
 import { isValidContentId } from '@/utils/content-validation';
 import { toast } from '@/hooks/use-toast';
-import { undefinedToNull } from '@/types/compat';
 import { Tag } from '@/types/tag';
 
 // Define tag mutation parameters with proper types
@@ -41,14 +40,22 @@ export function useTagMutations() {
         .insert({
           name: name.trim(),
           content_id: contentId,
-          type_id: undefinedToNull(typeId),
+          type_id: typeId === undefined ? null : typeId,
           display_order: display_order || 0
         })
         .select()
         .single();
 
       if (error) throw error;
-      return data as Tag;
+      if (!data) throw new Error('No data returned from insert operation');
+      
+      return {
+        id: data.id,
+        name: data.name,
+        content_id: data.content_id,
+        type_id: data.type_id,
+        display_order: data.display_order
+      } as Tag;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tags', variables.contentId] });

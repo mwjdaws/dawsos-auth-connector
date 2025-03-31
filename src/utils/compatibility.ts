@@ -70,12 +70,15 @@ export function ensureBoolean(value: any, defaultValue = false): boolean {
 
 /**
  * Safe callback function invocation with null/undefined handling
+ * 
+ * Returns a function that will call the original function if it exists,
+ * or return the provided default value if the function is null/undefined.
  */
 export function safeCallback<T extends (...args: any[]) => any>(
   fn: T | null | undefined,
   defaultValue?: ReturnType<T>
 ): (...args: Parameters<T>) => ReturnType<T> | undefined {
-  return (...args: Parameters<T>) => {
+  return (...args: Parameters<T>): ReturnType<T> | undefined => {
     if (typeof fn === 'function') {
       return fn(...args);
     }

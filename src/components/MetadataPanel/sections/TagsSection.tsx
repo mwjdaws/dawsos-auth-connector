@@ -33,15 +33,14 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
   onMetadataChange,
   className = ""
 }) => {
-  // Updated to handle tag reordering with the correct types
+  // Handle tag reordering with proper types
   const handleReorderTags = (reorderedTags: Tag[]) => {
-    // For compatibility with both function signatures (Tag[] or TagPosition[])
+    // Convert to TagPosition type for compatibility
     const positions: TagPosition[] = reorderedTags.map((tag, index) => ({
       id: tag.id,
       position: index
     }));
     
-    // For demonstration/compatibility, just log the action
     console.log("Reordering tags:", positions);
     
     if (onMetadataChange) {
@@ -72,7 +71,7 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
       )}
     </div>
   );
-};
+}
 
 // For backward compatibility
 export const TagsContent = TagsSection;

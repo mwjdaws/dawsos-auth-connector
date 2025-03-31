@@ -11,7 +11,7 @@ export interface Tag {
   content_id: string;
   type_id: string | null;
   type_name?: string | null;
-  display_order?: number; // Added to match design vision
+  display_order?: number;
 }
 
 /**
@@ -34,6 +34,21 @@ export interface AugmentedTag extends Tag {
 export interface TagPosition {
   id: string;
   position: number;
+}
+
+/**
+ * Check if a value is a valid Tag object
+ */
+export function isValidTag(tag: any): tag is Tag {
+  return (
+    tag &&
+    typeof tag === 'object' &&
+    typeof tag.id === 'string' &&
+    typeof tag.name === 'string' &&
+    typeof tag.content_id === 'string' &&
+    (tag.type_id === null || typeof tag.type_id === 'string') &&
+    (tag.display_order === undefined || typeof tag.display_order === 'number')
+  );
 }
 
 /**
@@ -73,7 +88,6 @@ export function ensureNonNullableTag(tag: {
     name: tag.name,
     content_id: tag.content_id || '',
     type_id: tag.type_id,
-    type_name: null,
     display_order: 0
   };
 }
@@ -106,19 +120,4 @@ export function convertTagPositionsToTags(positions: TagPosition[], allTags: Tag
     .sort((a, b) => a.position - b.position)
     .map(pos => tagMap.get(pos.id))
     .filter((tag): tag is Tag => tag !== undefined);
-}
-
-/**
- * Check if a value is a valid Tag object
- */
-export function isValidTag(tag: any): tag is Tag {
-  return (
-    tag &&
-    typeof tag === 'object' &&
-    typeof tag.id === 'string' &&
-    typeof tag.name === 'string' &&
-    typeof tag.content_id === 'string' &&
-    (tag.type_id === null || typeof tag.type_id === 'string') &&
-    (tag.display_order === undefined || typeof tag.display_order === 'number')
-  );
 }

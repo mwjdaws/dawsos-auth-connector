@@ -1,12 +1,15 @@
 
+/**
+ * Hook for fetching tags with proper type handling
+ */
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { isValidContentId } from '@/utils/validation';
 import { toast } from '@/hooks/use-toast';
-import { Tag, isValidTag } from '@/types/tag';
+import { Tag, isValidTag, mapApiTagToTag } from '@/types/tag';
 
 // Type guard for parser errors
-function isParserError(data: any): data is { message: string } {
+function isParserError(data: any): boolean {
   return data && typeof data === 'object' && 'message' in data;
 }
 
@@ -31,37 +34,20 @@ export function useTagsQuery(contentId: string, options?: { enabled?: boolean; i
           .order('name', { ascending: true });
 
         if (error) throw error;
-        if (!data || !Array.isArray(data)) {
-          if (isParserError(data)) {
-            throw new Error(`Parser error: ${data.message || 'Unknown parser error'}`);
-          }
-          return [];
+        if (!data) return [];
+        
+        if (isParserError(data)) {
+          const errorMsg = data.message ? String(data.message) : 'Unknown parser error';
+          throw new Error(`Parser error: ${errorMsg}`);
         }
 
         return data.filter(item => {
           // Basic type check before attempting to create a Tag
           if (!item || typeof item !== 'object') return false;
           
-          return true;
-        }).map(tag => {
-          const baseTag: Tag = {
-            id: tag.id || '',
-            name: tag.name || '',
-            content_id: tag.content_id || '',
-            type_id: tag.type_id || null,
-            display_order: typeof tag.display_order === 'number' ? tag.display_order : 0
-          };
-          
-          if (options?.includeTypeInfo && tag.tag_types) {
-            return { 
-              ...baseTag, 
-              type_name: (tag.tag_types && typeof tag.tag_types.name === 'string')
-                ? tag.tag_types.name 
-                : null 
-            };
-          }
-          
-          return baseTag;
+          // Convert to Tag and validate
+          const tag = mapApiTagToTag(item);
+          return isValidTag(tag);
         });
       } catch (err) {
         // Handle error with a toast notification
@@ -78,3 +64,6 @@ export function useTagsQuery(contentId: string, options?: { enabled?: boolean; i
     staleTime: 30000
   });
 }
+
+// Export the Tag type for convenience
+export type { Tag } from '@/types/tag';
