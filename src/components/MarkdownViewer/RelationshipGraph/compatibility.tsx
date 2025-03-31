@@ -39,6 +39,8 @@ export function ensureValidNode(node: Partial<GraphNode>): GraphNode {
     title: node.title || node.name || 'Untitled',
     name: node.name || node.title || 'Unnamed',
     type: node.type || 'document',
+    ...(node.val !== undefined ? { val: node.val } : {}),
+    ...(node.color !== undefined ? { color: node.color } : {}),
     ...node
   };
 }
@@ -51,6 +53,7 @@ export function ensureValidLink(link: Partial<GraphLink>): GraphLink {
     source: link.source || '',
     target: link.target || '',
     type: link.type || 'default',
+    ...(link.value !== undefined ? { value: link.value } : {}),
     ...link
   };
 }
@@ -98,4 +101,27 @@ export function ensureNumber(value: number | undefined | null, defaultValue = 0)
  */
 export function createSafeHighlightNodeId(highlightedNodeId: string | null | undefined): string | null {
   return highlightedNodeId === undefined ? null : highlightedNodeId;
+}
+
+/**
+ * Creates a compatible ref implementation for legacy components
+ */
+export function createCompatibleGraphRef(modernRef: any) {
+  return {
+    centerOn: (nodeId: string) => {
+      if (modernRef.centerOnNode) {
+        modernRef.centerOnNode(nodeId);
+      }
+    },
+    setZoom: (zoomLevel: number) => {
+      if (modernRef.setZoom) {
+        modernRef.setZoom(zoomLevel);
+      }
+    },
+    zoomToFit: () => {
+      if (modernRef.zoomToFit) {
+        modernRef.zoomToFit();
+      }
+    }
+  };
 }

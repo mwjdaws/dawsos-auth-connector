@@ -86,8 +86,8 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     );
   }
   
-  // Safe wrapper for onMetadataChange to handle undefined
-  const safeOnMetadataChange = onMetadataChange || (() => {});
+  // Create a safe wrapper for onMetadataChange that won't be undefined
+  const handleMetadataChangeCallback = onMetadataChange || (() => {});
   
   return (
     <Card className={className}>
@@ -115,7 +115,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
           externalSourceUrl={externalSourceUrl}
           lastCheckedAt={lastCheckedAt}
           needsExternalReview={needsExternalReview}
-          onMetadataChange={safeOnMetadataChange}
+          onMetadataChange={handleMetadataChangeCallback}
           showOntologyTerms={showOntologyTerms}
         />
       )}

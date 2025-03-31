@@ -11,11 +11,11 @@ import { OntologyTermsSectionProps } from "../types";
 
 export const OntologyTermsSection: React.FC<OntologyTermsSectionProps> = ({ 
   contentId,
-  editable,
+  editable = false,
   sourceId,
   onMetadataChange,
-  className,
-  ontologyTerms = []  // Provide a default value
+  className = "",
+  ontologyTerms = []
 }) => {
   // Use sourceId if provided, otherwise fall back to contentId
   const effectiveSourceId = sourceId || contentId;
@@ -25,7 +25,7 @@ export const OntologyTermsSection: React.FC<OntologyTermsSectionProps> = ({
       {effectiveSourceId && (
         <OntologySection 
           sourceId={effectiveSourceId} 
-          editable={editable || false} 
+          editable={editable} 
         />
       )}
     </div>

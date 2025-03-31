@@ -11,7 +11,7 @@ export interface GraphNode {
   type: string;
   description?: string;
   val?: number;
-  color?: string | null; // Changed from string | undefined to string | null
+  color?: string | null;
   [key: string]: any;
 }
 

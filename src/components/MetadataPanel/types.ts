@@ -19,18 +19,18 @@ export interface SourceMetadata {
 
 // Simplified source metadata for hooks that only use a subset of fields
 export interface SimpleSourceMetadata {
-  id: string;  // Making this required to match SourceMetadata
-  title: string;  // Making this required to match SourceMetadata
-  content: string;  // Making this required to match SourceMetadata
-  created_at: string;  // Making this required to match SourceMetadata
-  updated_at: string;  // Making this required to match SourceMetadata
+  id?: string;  
+  title?: string;  
+  content?: string;  
+  created_at?: string;  
+  updated_at?: string;  
   external_source_url: string | null;
   external_source_checked_at: string | null;
   external_content_hash: string | null;
   needs_external_review: boolean;
   is_published: boolean;
-  published_at: string | null;
-  template_id: string | null;
+  published_at?: string | null;
+  template_id?: string | null;
 }
 
 // Tag type
@@ -129,7 +129,7 @@ export interface OntologyTermsSectionProps {
   editable?: boolean;
   onMetadataChange?: (() => void);
   className?: string;
-  ontologyTerms?: OntologyTerm[]; // Added this to fix the error
+  ontologyTerms?: OntologyTerm[]; 
 }
 
 // Props for the ContentAlert component

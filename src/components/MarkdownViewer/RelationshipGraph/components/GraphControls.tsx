@@ -1,73 +1,41 @@
 
-import React, { useState } from 'react';
-import { Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { GraphData } from '../types';
-import { GraphZoomControl } from './GraphZoomControl';
-
-interface GraphControlsProps {
-  graphData: GraphData;
-  zoom: number;
-  onZoomChange: (newZoom: number) => void;
-  onResetZoom: () => void;
-  onNodeFound: (nodeId: string) => void;
-}
-
 /**
  * GraphControls Component
  * 
- * Provides controls for interacting with the graph, including search, zoom, and reset.
+ * Provides controls for searching, navigating, and adjusting the graph view
  */
+import React from 'react';
+import { GraphSearch } from './GraphSearch';
+import { GraphZoomControl } from './GraphZoomControl';
+import { GraphData } from '../types';
+
+interface GraphControlsProps {
+  graphData: GraphData;
+  onNodeFound: (nodeId: string) => void;
+  zoom: number;
+  onZoomChange: (newZoom: number) => void;
+  onResetZoom: () => void;
+}
+
 export function GraphControls({
   graphData,
+  onNodeFound,
   zoom,
   onZoomChange,
-  onResetZoom,
-  onNodeFound
+  onResetZoom
 }: GraphControlsProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  // Search for a node by name or title
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!searchTerm.trim()) return;
-    
-    // Find a node that matches the search term
-    const foundNode = graphData.nodes.find(node => 
-      (node.name && node.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (node.title && node.title.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-    
-    if (foundNode) {
-      onNodeFound(foundNode.id);
-    }
-  };
-  
   return (
-    <div className="px-4 py-2 border-t border-b flex flex-wrap items-center justify-between gap-2">
-      <form onSubmit={handleSearch} className="flex items-center space-x-2 flex-1">
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search nodes..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8 h-8 text-sm"
-          />
-        </div>
-        <Button type="submit" variant="outline" size="sm">Find</Button>
-      </form>
+    <div className="flex items-center justify-between p-2 border-t border-b bg-muted/20">
+      <GraphSearch 
+        graphData={graphData} 
+        onNodeFound={onNodeFound} 
+      />
       
       <GraphZoomControl 
-        zoomLevel={zoom}
-        onZoomChange={onZoomChange}
-        onResetZoom={onResetZoom}
+        zoom={zoom} 
+        onZoomChange={onZoomChange} 
+        onResetZoom={onResetZoom} 
       />
     </div>
   );
 }
-
-export default GraphControls;

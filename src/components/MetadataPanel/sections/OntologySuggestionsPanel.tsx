@@ -1,148 +1,123 @@
 
-/**
- * OntologySuggestionsPanel Component
- * 
- * Provides an enrichment UI for AI-suggested ontology terms.
- * Used to display, review, and add AI-generated ontology term suggestions.
- * 
- * @example
- * ```tsx
- * <OntologySuggestionsPanel
- *   contentId="ks-123456"
- *   onTermsAdded={() => refresh()}
- * />
- * ```
- */
 import React, { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, RefreshCw, Search } from "lucide-react";
-import { useOntologyTerms } from '@/hooks/markdown-editor/useOntologyTerms';
-import { useOntologySuggestions } from '@/hooks/markdown-editor/useOntologySuggestions';
+import { Check, X } from "lucide-react";
+import { useOntologySuggestions } from "@/hooks/markdown-editor/useOntologySuggestions";
+import { OntologySuggestion } from "@/hooks/markdown-editor/types/ontology-suggestions";
 
 interface OntologySuggestionsPanelProps {
   contentId: string;
-  onTermsAdded?: () => void;
-  className?: string;
+  onApplySuggestion?: (termId: string) => void;
 }
 
 export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> = ({
   contentId,
-  onTermsAdded,
-  className
+  onApplySuggestion
 }) => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const { addTerm, addTermByName } = useOntologyTerms(contentId);
-  
-  // Use the correct hook for suggestions with empty content
-  const {
-    suggestions,
-    isLoading,
-    analyzeContent
-  } = useOntologySuggestions();
+  const [appliedSuggestions, setAppliedSuggestions] = useState<Set<string>>(new Set());
+  const [rejectedSuggestions, setRejectedSuggestions] = useState<Set<string>>(new Set());
 
-  // Get current content for the source
-  useEffect(() => {
-    if (contentId) {
-      // We would normally fetch content here, for now just analyze with empty content
-      analyzeContent("", "", contentId);
-    }
-  }, [contentId, analyzeContent]);
+  // Fetch suggestions
+  const { suggestions, isLoading, error, refreshSuggestions } = useOntologySuggestions(contentId);
 
-  // Filter terms based on search query
-  const filteredTerms = suggestions.terms ? suggestions.terms.filter(term => 
-    term.term.toLowerCase().includes(searchQuery.toLowerCase())
-  ) : [];
-
-  // Function to add a term
-  const handleAddTerm = async (termId: string) => {
-    await addTerm(termId);
-    if (onTermsAdded) {
-      onTermsAdded();
+  const handleApplySuggestion = (suggestion: OntologySuggestion) => {
+    setAppliedSuggestions(prev => {
+      const newSet = new Set(prev);
+      newSet.add(suggestion.id);
+      return newSet;
+    });
+    
+    if (onApplySuggestion) {
+      onApplySuggestion(suggestion.id);
     }
   };
 
-  // Function to add a new term by name
-  const handleAddNewTerm = async (termName: string) => {
-    await addTermByName(termName);
-    setSearchQuery("");
-    if (onTermsAdded) {
-      onTermsAdded();
-    }
+  const handleRejectSuggestion = (suggestionId: string) => {
+    setRejectedSuggestions(prev => {
+      const newSet = new Set(prev);
+      newSet.add(suggestionId);
+      return newSet;
+    });
   };
 
-  // Function to refresh suggestions
-  const refreshSuggestions = () => {
-    analyzeContent("", "", contentId);
-  };
+  if (isLoading) {
+    return (
+      <Card className="p-4">
+        <p className="text-sm text-muted-foreground">Loading suggestions...</p>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-4">
+        <p className="text-sm text-destructive">Error loading suggestions</p>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="mt-2"
+          onClick={() => refreshSuggestions && refreshSuggestions()}
+        >
+          Retry
+        </Button>
+      </Card>
+    );
+  }
+
+  const availableSuggestions = suggestions?.filter(
+    s => !appliedSuggestions.has(s.id) && !rejectedSuggestions.has(s.id)
+  ) || [];
+
+  if (availableSuggestions.length === 0) {
+    return (
+      <Card className="p-4">
+        <p className="text-sm text-muted-foreground">No suggestions available</p>
+      </Card>
+    );
+  }
 
   return (
-    <div className={className}>
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="text-sm font-medium">AI-Suggested Terms</h3>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={refreshSuggestions}
-          disabled={isLoading}
-        >
-          <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
-
-      <div className="relative mb-3">
-        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Search or add new term..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-8"
-        />
-        {searchQuery && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute right-2 top-1/2 transform -translate-y-1/2"
-            onClick={() => handleAddNewTerm(searchQuery)}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add
-          </Button>
-        )}
-      </div>
-
-      {isLoading ? (
-        <div className="space-y-2">
-          <Skeleton className="h-6 w-20" />
-          <Skeleton className="h-6 w-24" />
-          <Skeleton className="h-6 w-16" />
-        </div>
-      ) : filteredTerms.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {filteredTerms.map((term) => (
-            <Badge
-              key={term.id}
-              variant="outline"
-              className="cursor-pointer flex items-center gap-1 py-1"
-              onClick={() => handleAddTerm(term.id)}
+    <Card className="p-4">
+      <h3 className="text-sm font-medium mb-2">Suggested Ontology Terms</h3>
+      <div className="space-y-2">
+        {availableSuggestions.map((suggestion) => (
+          <div key={suggestion.id} className="flex items-center justify-between">
+            <Badge 
+              variant="outline" 
+              className="px-2 py-1 bg-background/50"
             >
-              <Plus className="h-3 w-3" />
-              {term.term}
+              {suggestion.term}
+              {suggestion.domain && (
+                <span className="ml-1 text-xs text-muted-foreground">
+                  ({suggestion.domain})
+                </span>
+              )}
             </Badge>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center text-muted-foreground text-sm py-3">
-          {searchQuery
-            ? "No matching terms found. Click 'Add' to create a new term."
-            : "No suggested terms available. Try refreshing."}
-        </div>
-      )}
-    </div>
+            <div className="flex space-x-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0 text-green-500 hover:text-green-600 hover:bg-green-50"
+                onClick={() => handleApplySuggestion(suggestion)}
+                aria-label={`Apply ${suggestion.term}`}
+              >
+                <Check size={14} />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0 text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                onClick={() => handleRejectSuggestion(suggestion.id)}
+                aria-label={`Reject ${suggestion.term}`}
+              >
+                <X size={14} />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
-}
+};

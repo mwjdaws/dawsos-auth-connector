@@ -15,7 +15,7 @@ export const usePanelState = ({
   isCollapsible = false,
   initialCollapsed = false
 }: UsePanelStateProps) => {
-  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed || false);
+  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
   const [contentExists, setContentExists] = useState(true);
 
   // Check if the content ID is valid
