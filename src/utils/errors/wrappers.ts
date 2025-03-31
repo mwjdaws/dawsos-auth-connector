@@ -1,76 +1,47 @@
 
-/**
- * Error handling wrappers
- * 
- * Provides consistent error handling patterns for different contexts
- */
-import { handleError, handleErrorSafe } from './handle';
-import { ErrorHandlingOptions } from './types';
+import { handleError } from './handle';
+
+interface ErrorOptions {
+  context?: Record<string, any>;
+  level?: 'debug' | 'info' | 'warning' | 'error';
+  silent?: boolean;
+}
 
 /**
- * Try to execute an action and handle any errors that occur
+ * Try an action and handle any errors
  * 
- * @param action The function to execute
- * @param errorMessage User-friendly error message
- * @param options Error handling options
- * @returns Promise that resolves to the result of the action or undefined if an error occurs
+ * @param action The action to try
+ * @param errorMessage The message to display if an error occurs
+ * @param options Options for error handling
+ * @returns The result of the action
  */
 export async function tryAction<T>(
   action: () => Promise<T>,
   errorMessage: string,
-  options?: Partial<ErrorHandlingOptions>
-): Promise<T | undefined> {
+  options?: ErrorOptions
+): Promise<T> {
   try {
     return await action();
-  } catch (error) {
-    handleError(error, errorMessage, options);
-    return undefined;
+  } catch (err) {
+    handleError(err, errorMessage, options);
+    throw err;
   }
 }
 
 /**
  * Create an error handler for a specific component
  * 
- * @param componentName Name of the component for error context
- * @param defaultOptions Default options for all errors
- * @returns Error handler function bound to the component
+ * @param componentName The name of the component
+ * @returns An error handler function for that component
  */
-export function createComponentErrorHandler(
-  componentName: string,
-  defaultOptions?: Partial<ErrorHandlingOptions>
-) {
-  return (error: unknown, userMessage?: string, options?: Partial<ErrorHandlingOptions>) => {
-    handleError(error, userMessage, {
-      ...defaultOptions,
+export function createComponentErrorHandler(componentName: string) {
+  return (error: unknown, message?: string, options?: ErrorOptions) => {
+    handleError(error, message, {
       ...options,
       context: {
-        ...(defaultOptions?.context || {}),
         ...(options?.context || {}),
         component: componentName
       }
     });
-  };
-}
-
-/**
- * A higher-order function that wraps an async function with error handling
- * 
- * @param fn The function to wrap
- * @param errorMessage The error message to display
- * @param options Error handling options
- * @returns A wrapped function that handles errors
- */
-export function withErrorHandling<T extends (...args: any[]) => Promise<any>>(
-  fn: T,
-  errorMessage: string,
-  options?: Partial<ErrorHandlingOptions>
-): (...args: Parameters<T>) => Promise<ReturnType<T> | undefined> {
-  return async (...args: Parameters<T>): Promise<ReturnType<T> | undefined> => {
-    try {
-      return await fn(...args);
-    } catch (error) {
-      handleError(error, errorMessage, options);
-      return undefined;
-    }
   };
 }

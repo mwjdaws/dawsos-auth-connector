@@ -11,6 +11,7 @@ import { ExternalSourceSection } from "../sections/ExternalSourceSection";
 import { TagsSection } from "../sections/TagsSection";
 import { OntologySection } from "../sections/OntologySection";
 import { DomainSection } from "../sections/DomainSection";
+import { useMetadataContext } from "../hooks/useMetadataContext";
 
 export interface MetadataContentProps {
   data: SourceMetadata | null;
@@ -51,6 +52,9 @@ export function MetadataContent({
   domain,
   showDomain = false
 }: MetadataContentProps) {
+  // Get the context for access to additional metadata if needed
+  const metadataContext = useMetadataContext();
+  
   // Display error if there's an error
   if (error) {
     return (

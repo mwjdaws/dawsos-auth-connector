@@ -5,6 +5,7 @@
  * Wraps tag operations with validation to ensure tag operations 
  * only proceed when validation passes.
  */
+import { useCallback } from 'react';
 import { useTagOperations } from '@/components/MetadataPanel/hooks/tag-operations/useTagOperations';
 import { useTagValidation } from './useTagValidation';
 import { useContentValidator } from './useContentValidator';
@@ -32,7 +33,7 @@ export function useValidatedTagOperations({ contentId }: UseValidatedTagOperatio
   /**
    * Add a tag with validation
    */
-  const handleAddTag = async (typeId?: string | null) => {
+  const handleAddTag = useCallback(async (typeId?: string | null) => {
     if (!tagOperations.newTag.trim()) return;
     
     // Validate content ID and tag
@@ -58,12 +59,12 @@ export function useValidatedTagOperations({ contentId }: UseValidatedTagOperatio
     
     // Proceed with adding the tag
     await tagOperations.handleAddTag(typeId);
-  };
+  }, [tagOperations, validateTag, isValidContent, errorMessage]);
   
   /**
    * Delete a tag with validation
    */
-  const handleDeleteTag = async (tagId: string) => {
+  const handleDeleteTag = useCallback(async (tagId: string) => {
     if (!isValidContent) {
       handleError(
         new Error(errorMessage || 'Invalid content ID'),
@@ -74,12 +75,12 @@ export function useValidatedTagOperations({ contentId }: UseValidatedTagOperatio
     }
     
     await tagOperations.handleDeleteTag(tagId);
-  };
+  }, [tagOperations, isValidContent, errorMessage]);
   
   /**
    * Reorder tags with validation
    */
-  const handleReorderTags = async (updatedTags: Tag[]) => {
+  const handleReorderTags = useCallback(async (updatedTags: Tag[]) => {
     if (!isValidContent) {
       handleError(
         new Error(errorMessage || 'Invalid content ID'),
@@ -90,7 +91,7 @@ export function useValidatedTagOperations({ contentId }: UseValidatedTagOperatio
     }
     
     await tagOperations.handleReorderTags(updatedTags);
-  };
+  }, [tagOperations, isValidContent, errorMessage]);
   
   return {
     ...tagOperations,

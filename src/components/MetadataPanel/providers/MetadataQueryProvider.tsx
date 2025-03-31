@@ -1,11 +1,11 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useTagsQuery, useTagMutations } from '@/hooks/metadata';
 import { useSourceMetadata } from '../hooks/useSourceMetadata';
 import { useContentValidator } from '@/hooks/validation/useContentValidator';
 import { MetadataProvider, MetadataContextProps } from '../hooks/useMetadataContext';
 import { createValidResult } from '@/utils/validation/types';
-import { handleError } from '@/utils/error-handling';
+import { handleError } from '@/utils/errors/handle';
 
 interface MetadataQueryProviderProps {
   contentId: string;
@@ -29,7 +29,8 @@ export const MetadataQueryProvider: React.FC<MetadataQueryProviderProps> = ({
   const { 
     data: tags = [], 
     isLoading: isTagsLoading,
-    error: tagsError
+    error: tagsError,
+    refetch: refetchTags
   } = useTagsQuery(contentId, {
     enabled: validationResult.isValid
   });
@@ -58,7 +59,7 @@ export const MetadataQueryProvider: React.FC<MetadataQueryProviderProps> = ({
   const error = tagsError || sourceError;
 
   // Handle tag addition
-  const handleAddTag = async (tagName: string, typeId?: string | null) => {
+  const handleAddTag = useCallback(async (tagName: string, typeId?: string | null) => {
     if (!validationResult.isValid) {
       throw new Error(`Cannot add tag to invalid content: ${validationResult.errorMessage}`);
     }
@@ -78,10 +79,10 @@ export const MetadataQueryProvider: React.FC<MetadataQueryProviderProps> = ({
       });
       throw err;
     }
-  };
+  }, [contentId, addTag, validationResult]);
 
   // Handle tag deletion
-  const handleDeleteTag = async (tagId: string) => {
+  const handleDeleteTag = useCallback(async (tagId: string) => {
     if (!validationResult.isValid) {
       throw new Error(`Cannot delete tag from invalid content: ${validationResult.errorMessage}`);
     }
@@ -100,15 +101,16 @@ export const MetadataQueryProvider: React.FC<MetadataQueryProviderProps> = ({
       });
       throw err;
     }
-  };
+  }, [contentId, deleteTag, validationResult]);
 
   // Refresh metadata
-  const refreshMetadata = async () => {
+  const refreshMetadata = useCallback(async () => {
     if (!validationResult.isValid) return;
     
     try {
       await Promise.all([
-        fetchSourceMetadata()
+        fetchSourceMetadata(),
+        refetchTags()
       ]);
     } catch (err) {
       handleError(err, 'Error refreshing metadata', {
@@ -116,13 +118,13 @@ export const MetadataQueryProvider: React.FC<MetadataQueryProviderProps> = ({
         level: 'warning'
       });
     }
-  };
+  }, [contentId, validationResult.isValid, fetchSourceMetadata, refetchTags]);
 
   // Fetch tags manually (useful for imperative calls)
-  const fetchTags = async (): Promise<any[]> => {
-    // Implementation will be handled by the React Query cache
+  const fetchTags = useCallback(async (): Promise<any[]> => {
+    await refetchTags();
     return tags;
-  };
+  }, [refetchTags, tags]);
 
   // Construct the context value
   const contextValue: MetadataContextProps = {

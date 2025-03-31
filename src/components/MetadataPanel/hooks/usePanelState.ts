@@ -1,35 +1,42 @@
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from 'react';
 
-/**
- * Props for the usePanelState hook
- */
 export interface UsePanelStateProps {
   contentId: string;
-  onMetadataChange: (() => void) | null;
+  onMetadataChange?: (() => void) | null;
   isCollapsible?: boolean;
   initialCollapsed?: boolean;
   contentExists?: boolean;
 }
 
-/**
- * Custom hook to manage panel state (collapsed/expanded)
- */
-export const usePanelState = ({
+export function usePanelState({
   contentId,
-  onMetadataChange,
-  isCollapsible = true,
+  onMetadataChange = null,
+  isCollapsible = false,
   initialCollapsed = false,
-  contentExists = false
-}: UsePanelStateProps) => {
+  contentExists = true
+}: UsePanelStateProps) {
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed && isCollapsible);
-
+  
+  // Reset collapsed state when content ID changes
+  useEffect(() => {
+    if (isCollapsible) {
+      setIsCollapsed(initialCollapsed);
+    }
+  }, [contentId, initialCollapsed, isCollapsible]);
+  
+  // Handle metadata changes safely
+  const handleMetadataChange = useCallback(() => {
+    if (onMetadataChange) {
+      onMetadataChange();
+    }
+  }, [onMetadataChange]);
+  
   return {
-    contentId,
     isCollapsed,
     setIsCollapsed,
     isCollapsible,
-    onMetadataChange,
+    onMetadataChange: handleMetadataChange,
     contentExists
   };
-};
+}
