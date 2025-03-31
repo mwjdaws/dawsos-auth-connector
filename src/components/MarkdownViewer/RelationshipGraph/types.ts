@@ -10,8 +10,8 @@ export interface GraphNode {
   title: string;
   type: string;
   description?: string;
-  val?: number | undefined;
-  color?: string | undefined;
+  val?: number;
+  color?: string | null; // Changed from string | undefined to string | null
   [key: string]: any;
 }
 
@@ -21,7 +21,7 @@ export interface GraphLink {
   target: string;
   type?: string;
   label?: string;
-  value?: number | undefined;
+  value?: number;
   [key: string]: any;
 }
 
@@ -44,6 +44,9 @@ export interface GraphProps {
   height?: number;
   hasAttemptedRetry?: boolean;
 }
+
+// Also using RelationshipGraphProps for backward compatibility
+export interface RelationshipGraphProps extends GraphProps {}
 
 // Props types for RelationshipGraphPanel component
 export interface RelationshipGraphPanelProps {

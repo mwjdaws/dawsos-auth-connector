@@ -10,7 +10,7 @@ export interface GraphNode {
   name?: string;
   type?: string;
   domain?: string;
-  color?: string;
+  color?: string | null; // Changed from string to string | null to be compatible
   size?: number;
   icon?: string;
   weight?: number;

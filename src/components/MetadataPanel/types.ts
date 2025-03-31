@@ -1,7 +1,7 @@
 
 import { ReactNode } from 'react';
 
-// Source metadata type
+// Source metadata type - updated to make non-optional fields nullable to match database
 export interface SourceMetadata {
   id: string;
   title: string;
@@ -17,6 +17,13 @@ export interface SourceMetadata {
   template_id: string | null;
 }
 
+// Simplified source metadata for hooks that only use a subset of fields
+export interface SimpleSourceMetadata {
+  external_source_url: string | null;
+  needs_external_review: boolean;
+  external_source_checked_at: string | null;
+}
+
 // Tag type
 export interface Tag {
   id: string;
@@ -29,8 +36,8 @@ export interface Tag {
 export interface OntologyTerm {
   id: string;
   term: string;
-  description?: string;
-  domain?: string;
+  description?: string | null;
+  domain?: string | null;
   review_required?: boolean;
 }
 
@@ -94,7 +101,7 @@ export interface TagsSectionProps {
   setNewTag: (value: string) => void;
   onAddTag: (typeId?: string | null) => Promise<void>;
   onDeleteTag: (tagId: string) => Promise<void>;
-  onMetadataChange: (() => void);
+  onMetadataChange?: (() => void);
   className?: string;
 }
 
@@ -109,8 +116,9 @@ export interface OntologyTermsSectionProps {
   contentId: string;
   sourceId: string;
   editable: boolean;
-  onMetadataChange: (() => void);
+  onMetadataChange?: (() => void);
   className?: string;
+  ontologyTerms?: OntologyTerm[];
 }
 
 // Props for the ContentAlert component

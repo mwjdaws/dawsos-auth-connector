@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isValidContentId } from "@/utils/validation/contentIdValidation";
 import { handleError } from "@/utils/errors";
-import { SourceMetadata } from "../types";
+import { SimpleSourceMetadata } from "../types";
 
 export interface UseSourceMetadataProps {
   contentId?: string;
@@ -15,9 +15,9 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
   const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<SourceMetadata | null>(null);
+  const [data, setData] = useState<SimpleSourceMetadata | null>(null);
 
-  const fetchSourceMetadata = async (): Promise<SourceMetadata | null> => {
+  const fetchSourceMetadata = async (): Promise<SimpleSourceMetadata | null> => {
     if (!contentId) {
       console.log("No contentId provided for fetching source metadata");
       return null;
@@ -48,7 +48,7 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
         console.log("Source metadata fetched:", sourceData);
         
         // Create a properly typed metadata object
-        const metadata: SourceMetadata = {
+        const metadata: SimpleSourceMetadata = {
           external_source_url: sourceData?.external_source_url || null,
           needs_external_review: sourceData?.needs_external_review || false,
           external_source_checked_at: sourceData?.external_source_checked_at || null
@@ -60,7 +60,7 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
         return metadata;
       }
       
-      const defaultData: SourceMetadata = {
+      const defaultData: SimpleSourceMetadata = {
         external_source_url: null,
         needs_external_review: false,
         external_source_checked_at: null
@@ -83,7 +83,7 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
     }
   };
 
-  const updateSourceMetadataState = (sourceData: SourceMetadata | null) => {
+  const updateSourceMetadataState = (sourceData: SimpleSourceMetadata | null) => {
     if (sourceData) {
       setExternalSourceUrl(sourceData.external_source_url);
       setNeedsExternalReview(sourceData.needs_external_review);

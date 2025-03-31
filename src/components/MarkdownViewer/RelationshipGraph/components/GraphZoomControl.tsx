@@ -1,89 +1,85 @@
 
+/**
+ * GraphZoomControl Component
+ * 
+ * Renders a slider for controlling the zoom level of the graph.
+ */
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface GraphZoomControlProps {
-  zoom: number;
-  onZoomChange: (value: number) => void;
-  onReset: () => void;
-  min?: number;
-  max?: number;
+  zoom?: number;
+  onZoomChange: (zoom: number) => void;
+  onResetZoom: () => void;
+  className?: string;
 }
 
-export function GraphZoomControl({
-  zoom,
+export const GraphZoomControl: React.FC<GraphZoomControlProps> = ({
+  zoom = 1,
   onZoomChange,
-  onReset,
-  min = 0.1,
-  max = 2
-}: GraphZoomControlProps) {
-  // Ensure zoom has a valid value to prevent undefined values
-  const safeZoom = typeof zoom === 'number' ? zoom : 1;
+  onResetZoom,
+  className = ''
+}) => {
+  // Ensure zoom is a valid number
+  const safeZoom = typeof zoom === 'number' && !isNaN(zoom) ? zoom : 1;
   
-  // Handle zoom in button click
-  const handleZoomIn = () => {
-    const newZoom = Math.min(safeZoom + 0.1, max);
-    onZoomChange(newZoom);
-  };
-
-  // Handle zoom out button click
-  const handleZoomOut = () => {
-    const newZoom = Math.max(safeZoom - 0.1, min);
-    onZoomChange(newZoom);
-  };
-
-  // Handle slider change
-  const handleSliderChange = (value: number[]) => {
-    if (value && value.length > 0) {
-      onZoomChange(value[0]);
+  // Handle zoom slider change
+  const handleZoomChange = (values: number[]) => {
+    const newZoom = values[0];
+    if (typeof newZoom === 'number' && !isNaN(newZoom)) {
+      onZoomChange(newZoom);
     }
+  };
+  
+  // Handle reset button click
+  const handleResetClick = () => {
+    onResetZoom();
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className={`flex items-center gap-2 ${className}`}>
       <Button 
-        variant="outline" 
-        size="sm" 
-        onClick={handleZoomOut}
-        disabled={safeZoom <= min}
-        className="h-8 w-8 p-0 rounded-full"
+        variant="ghost" 
+        size="icon" 
+        className="h-8 w-8" 
+        onClick={() => onZoomChange(Math.max(0.1, safeZoom - 0.1))}
+        title="Zoom out"
       >
         <ZoomOut className="h-4 w-4" />
-        <span className="sr-only">Zoom out</span>
       </Button>
       
       <Slider
-        defaultValue={[safeZoom]}
         value={[safeZoom]}
-        max={max}
-        min={min}
-        step={0.05}
-        onValueChange={handleSliderChange}
-        className="w-28"
+        min={0.1}
+        max={2}
+        step={0.1}
+        onValueChange={handleZoomChange}
+        className="w-32"
       />
       
       <Button 
-        variant="outline" 
-        size="sm" 
-        onClick={handleZoomIn}
-        disabled={safeZoom >= max}
-        className="h-8 w-8 p-0 rounded-full"
+        variant="ghost" 
+        size="icon" 
+        className="h-8 w-8" 
+        onClick={() => onZoomChange(Math.min(2, safeZoom + 0.1))}
+        title="Zoom in"
       >
         <ZoomIn className="h-4 w-4" />
-        <span className="sr-only">Zoom in</span>
       </Button>
       
       <Button 
-        variant="outline" 
-        size="sm" 
-        onClick={onReset}
-        className="h-8 w-8 p-0 rounded-full ml-2"
+        variant="ghost" 
+        size="icon" 
+        className="h-8 w-8 ml-2" 
+        onClick={handleResetClick}
+        title="Reset zoom"
       >
-        <RotateCcw className="h-4 w-4" />
-        <span className="sr-only">Reset view</span>
+        <Maximize className="h-4 w-4" />
       </Button>
     </div>
   );
-}
+};
+
+export default GraphZoomControl;

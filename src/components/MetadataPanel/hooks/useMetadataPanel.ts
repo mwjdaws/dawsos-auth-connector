@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSourceMetadata } from './useSourceMetadata';
 import { useTagOperations } from './tag-operations/useTagOperations';
 import { usePanelState } from './usePanelState';
-import { MetadataPanelProps, SourceMetadata, Tag, OntologyTerm } from '../types';
+import { MetadataPanelProps, SourceMetadata, Tag, OntologyTerm, SimpleSourceMetadata } from '../types';
 
 export const useMetadataPanel = (props: MetadataPanelProps) => {
   const { contentId, onMetadataChange, isCollapsible, initialCollapsed } = props;
@@ -15,7 +15,7 @@ export const useMetadataPanel = (props: MetadataPanelProps) => {
   // Use source metadata hook
   const sourceMetadata = useSourceMetadata({ contentId });
   
-  // Panel state
+  // Panel state with properly typed props
   const panelState = usePanelState({ 
     contentId, 
     onMetadataChange,
@@ -89,7 +89,7 @@ export const useMetadataPanel = (props: MetadataPanelProps) => {
     setNewTag: tagOperations.setNewTag,
     handleAddTag: tagOperations.handleAddTag,
     handleDeleteTag: tagOperations.handleDeleteTag,
-    handleUpdateTagOrder: tagOperations.handleUpdateTagOrder,
+    handleReorderTags: tagOperations.handleReorderTags,
     
     // Panel state
     ...panelState,
