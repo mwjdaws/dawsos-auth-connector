@@ -1,29 +1,32 @@
 
 /**
- * Utility functions for validation
+ * Validation utility functions
+ * 
+ * Common utilities for creating and manipulating validation results.
  */
+import { ValidationResult } from './types';
 
 /**
- * Creates a validation result with a valid status
+ * Creates a valid validation result
  * 
- * @param message Optional message to include with the result
- * @returns A validation result object with isValid=true
+ * @param message Optional success message
+ * @returns A valid validation result
  */
-export function createValidResult(message?: string) {
+export function createValidResult(message?: string | null): ValidationResult {
   return {
     isValid: true,
-    message: message || null,
+    message: message || 'Valid',
     errorMessage: null
   };
 }
 
 /**
- * Creates a validation result with an invalid status
+ * Creates an invalid validation result
  * 
- * @param errorMessage The error message explaining why validation failed
- * @returns A validation result object with isValid=false
+ * @param errorMessage Error message explaining the validation failure
+ * @returns An invalid validation result
  */
-export function createInvalidResult(errorMessage: string) {
+export function createInvalidResult(errorMessage: string): ValidationResult {
   return {
     isValid: false,
     message: null,
@@ -32,36 +35,70 @@ export function createInvalidResult(errorMessage: string) {
 }
 
 /**
- * Safely checks if a value is defined (not null or undefined)
+ * Combines multiple validation results into a single result
+ * 
+ * @param results Array of validation results to combine
+ * @returns A combined validation result
+ */
+export function combineValidationResults(results: ValidationResult[]): ValidationResult {
+  const invalidResult = results.find(result => !result.isValid);
+  
+  if (invalidResult) {
+    return invalidResult;
+  }
+  
+  return createValidResult();
+}
+
+/**
+ * Validates that a value is not empty
  * 
  * @param value The value to check
- * @returns True if the value is defined
+ * @param errorMessage Optional custom error message
+ * @returns A validation result
  */
-export function isDefined<T>(value: T | null | undefined): value is T {
-  return value !== null && value !== undefined;
-}
-
-/**
- * Safely checks if a string is empty
- * 
- * @param value The string to check
- * @returns True if the string is undefined, null, or empty
- */
-export function isEmpty(value?: string | null): boolean {
-  return value === undefined || value === null || value.trim() === '';
-}
-
-/**
- * Safe JSON parsing with error handling
- * 
- * @param str String to parse as JSON
- * @param fallback Optional fallback value if parsing fails
- * @returns Parsed JSON object or the fallback value
- */
-export function safeParseJson<T>(str: string, fallback: T): T {
-  try {
-    return JSON.parse(str) as T;
-  } catch (e) {
-    return fallback;
+export function validateNotEmpty(value: string | null | undefined, errorMessage = 'Value cannot be empty'): ValidationResult {
+  if (!value || value.trim() === '') {
+    return createInvalidResult(errorMessage);
   }
+  
+  return createValidResult();
+}
+
+/**
+ * Validates a value against minimum and maximum length constraints
+ * 
+ * @param value The value to check
+ * @param options Length validation options
+ * @returns A validation result
+ */
+export function validateLength(
+  value: string,
+  { min = 0, max = Infinity, minMessage, maxMessage }: { min?: number; max?: number; minMessage?: string; maxMessage?: string }
+): ValidationResult {
+  if (value.length < min) {
+    return createInvalidResult(minMessage || `Must be at least ${min} characters`);
+  }
+  
+  if (value.length > max) {
+    return createInvalidResult(maxMessage || `Cannot exceed ${max} characters`);
+  }
+  
+  return createValidResult();
+}
+
+/**
+ * Validates a value against a regular expression pattern
+ * 
+ * @param value The value to check
+ * @param pattern The regex pattern to match against
+ * @param errorMessage Error message for failed validation
+ * @returns A validation result
+ */
+export function validatePattern(value: string, pattern: RegExp, errorMessage: string): ValidationResult {
+  if (!pattern.test(value)) {
+    return createInvalidResult(errorMessage);
+  }
+  
+  return createValidResult();
 }
