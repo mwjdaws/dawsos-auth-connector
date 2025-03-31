@@ -29,7 +29,7 @@ export function toTag(testTag: TestTag): Tag {
     name: testTag.name,
     content_id: testTag.content_id,
     type_id: testTag.type_id || null,
-    type_name: testTag.type_name
+    type_name: testTag.type_name || null
   };
 }
 

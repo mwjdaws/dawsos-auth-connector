@@ -101,3 +101,8 @@ export function useTagMutations() {
     deleteTagMutation
   };
 }
+
+// For backward compatibility
+export function useTagMutations as useAddTagMutation() {
+  return useTagMutations();
+}

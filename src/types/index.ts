@@ -1,49 +1,47 @@
+// filepath: /dawsos-web-app/dawsos-web-app/src/types/index.ts
+// Re-export the Tag types from the centralized location
+export { 
+  Tag, 
+  AugmentedTag, 
+  TagPosition, 
+  mapApiTagToTag, 
+  mapApiTagsToTags,
+  ensureNonNullableTag,
+  filterDuplicateTags,
+  convertTagPositionsToTags,
+  isValidTag
+} from './tag';
 
-/**
- * Common type definitions shared across the application
- */
-
-// Import and re-export the Tag type from the centralized definition
-export type { Tag, AugmentedTag, TagPosition } from './tag';
-
-// Knowledge Source type definition
 export interface KnowledgeSource {
-  id: string;
-  title: string;
-  content: string;
-  created_at?: string | null;
-  updated_at?: string | null;
-  user_id: string;
-  template_id?: string | null;
-  external_source_url?: string | null;
-  external_source_checked_at?: string | null;
-  external_content_hash?: string | null;
-  needs_external_review?: boolean;
+    id: string;
+    title: string;
+    content: string;
+    createdAt: string;
+    updatedAt: string;
+    externalSourceUrl?: string;
+    externalSourceCheckedAt?: string;
+    externalContentHash?: string;
+    needsExternalReview?: boolean;
 }
 
-// External Source Metadata
-export interface ExternalSourceMetadata {
-  url: string | null;
-  lastCheckedAt: string | null;
-  contentHash: string | null;
-  needsReview: boolean;
+export interface Template {
+    id: string;
+    name: string;
+    description: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
-// Ontology Term definition
-export interface OntologyTerm {
-  id: string;
-  term: string;
-  description?: string | null;
-  domain?: string | null;
-  domain_id?: string | null;
+export interface User {
+    id: string;
+    email: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
-// API Response wrapper type
 export interface ApiResponse<T> {
-  success: boolean;
-  data: T | null;
-  error: string | null;
+    data: T;
+    error: string | null;
 }
 
-// Status types for async operations
-export type AsyncStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
+export type FetchStatus = 'idle' | 'loading' | 'succeeded' | 'failed';

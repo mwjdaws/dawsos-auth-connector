@@ -1,99 +1,54 @@
 
 /**
- * Utility functions to ensure backward compatibility
+ * Compatibility utilities for handling type differences
  */
 
 /**
- * Create a safe callback function that won't error if the 
- * original function is undefined or null
- * 
- * @param fn - The original function
- * @param defaultFn - Default function to use if original is not valid
- * @returns A safe function that won't throw if called
+ * Convert undefined to null - useful for database operations where null is expected
  */
-export function safeCallback<T extends any[], R>(
-  fn: ((...args: T) => R) | undefined | null,
-  defaultFn: (...args: T) => R
-): (...args: T) => R {
-  return (...args: T) => {
+export function undefinedToNull<T>(value: T | undefined): T | null {
+  return value === undefined ? null : value;
+}
+
+/**
+ * Convert null to undefined - useful for UI components where undefined is expected
+ */
+export function nullToUndefined<T>(value: T | null): T | undefined {
+  return value === null ? undefined : value;
+}
+
+/**
+ * Convert a null or undefined value to a default value
+ */
+export function nullOrUndefinedToDefault<T>(value: T | null | undefined, defaultValue: T): T {
+  return (value === null || value === undefined) ? defaultValue : value;
+}
+
+/**
+ * Check if a value is null or undefined
+ */
+export function isNullOrUndefined(value: any): value is null | undefined {
+  return value === null || value === undefined;
+}
+
+/**
+ * Ensure a value is not null or undefined, using a default value if it is
+ */
+export function ensureValue<T>(value: T | null | undefined, defaultValue: T): T {
+  return isNullOrUndefined(value) ? defaultValue : value;
+}
+
+/**
+ * Safe callback function invocation with null/undefined handling
+ */
+export function safeCallback<T extends (...args: any[]) => any>(
+  fn: T | null | undefined,
+  defaultValue?: ReturnType<T>
+): (...args: Parameters<T>) => ReturnType<T> | undefined {
+  return (...args: Parameters<T>) => {
     if (typeof fn === 'function') {
       return fn(...args);
     }
-    return defaultFn(...args);
+    return defaultValue;
   };
-}
-
-/**
- * Ensures a value is a string, providing a default if it's undefined or null
- * 
- * @param value - The value to check
- * @param defaultValue - Default value to use if original is not valid
- * @returns A valid string
- */
-export function ensureString(value: any, defaultValue: string = ''): string {
-  if (value === undefined || value === null) {
-    return defaultValue;
-  }
-  
-  return String(value);
-}
-
-/**
- * Ensures a value is a number, providing a default if it's not a valid number
- * 
- * @param value - The value to check
- * @param defaultValue - Default value to use if original is not valid
- * @returns A valid number
- */
-export function ensureNumber(value: any, defaultValue: number = 0): number {
-  if (value === undefined || value === null || isNaN(Number(value))) {
-    return defaultValue;
-  }
-  
-  return Number(value);
-}
-
-/**
- * Ensures a value is a boolean, providing a default if it's not a valid boolean
- * 
- * @param value - The value to check
- * @param defaultValue - Default value to use if original is not valid
- * @returns A valid boolean
- */
-export function ensureBoolean(value: any, defaultValue: boolean = false): boolean {
-  if (value === undefined || value === null) {
-    return defaultValue;
-  }
-  
-  return Boolean(value);
-}
-
-/**
- * Ensures a value is an array, providing a default if it's not a valid array
- * 
- * @param value - The value to check
- * @param defaultValue - Default value to use if original is not valid
- * @returns A valid array
- */
-export function ensureArray<T>(value: any, defaultValue: T[] = []): T[] {
-  if (!Array.isArray(value)) {
-    return defaultValue;
-  }
-  
-  return value;
-}
-
-/**
- * Ensures a value is an object, providing a default if it's not a valid object
- * 
- * @param value - The value to check
- * @param defaultValue - Default value to use if original is not valid
- * @returns A valid object
- */
-export function ensureObject<T extends object>(value: any, defaultValue: T): T {
-  if (value === undefined || value === null || typeof value !== 'object' || Array.isArray(value)) {
-    return defaultValue;
-  }
-  
-  return value as T;
 }
