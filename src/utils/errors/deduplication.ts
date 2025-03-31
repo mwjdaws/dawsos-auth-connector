@@ -1,60 +1,61 @@
 
 /**
  * Error deduplication utilities
+ * 
+ * Prevents flooding users with duplicate error messages in short succession.
  */
 
-// Store for recently seen errors
-const recentErrors = new Map<string, { count: number, timestamp: number }>();
-const MAX_STORED_ERRORS = 50;
-const DEDUPLICATION_WINDOW_MS = 5000; // 5 seconds
+// Store for recently shown errors (message -> timestamp)
+const recentErrors = new Map<string, number>();
+
+// Deduplication window in milliseconds (default: 5 seconds)
+const DEDUPLICATION_WINDOW_MS = 5000;
 
 /**
- * Check if an error is a duplicate of a recent error 
+ * Check if an error is a duplicate of a recent error
  * 
- * @param errorMessage Error message to check for duplicates
- * @returns True if this is a duplicate error that should be suppressed
+ * @param errorMessage The error message to check
+ * @param windowMs Optional custom deduplication window in milliseconds
+ * @returns Whether the error is a duplicate that should be suppressed
  */
-export function deduplicateError(errorMessage: string): boolean {
+export function deduplicateError(errorMessage: string, windowMs = DEDUPLICATION_WINDOW_MS): boolean {
   const now = Date.now();
-  const errorKey = errorMessage.trim();
+  const lastShown = recentErrors.get(errorMessage);
   
-  // Clean up old errors
-  cleanupOldErrors(now);
-  
-  // Check for existing error
-  const existingError = recentErrors.get(errorKey);
-  
-  if (existingError && (now - existingError.timestamp) < DEDUPLICATION_WINDOW_MS) {
-    // Update count and timestamp for existing error
-    existingError.count += 1;
-    existingError.timestamp = now;
-    
-    // Return true to indicate this is a duplicate
+  // If this error was shown recently, consider it a duplicate
+  if (lastShown && now - lastShown < windowMs) {
     return true;
   }
   
-  // Add new error to tracking
-  recentErrors.set(errorKey, { count: 1, timestamp: now });
+  // Update the last shown time for this error
+  recentErrors.set(errorMessage, now);
   
-  // Return false to indicate this is not a duplicate
+  // Clean up old entries every so often to prevent memory leaks
+  if (recentErrors.size > 50) {
+    cleanupOldErrors(now, windowMs);
+  }
+  
   return false;
 }
 
 /**
- * Remove old errors from tracking
+ * Remove errors that are older than the deduplication window
+ * 
+ * @param now Current timestamp
+ * @param windowMs Deduplication window in milliseconds
  */
-function cleanupOldErrors(now: number): void {
-  if (recentErrors.size <= MAX_STORED_ERRORS) {
-    return;
+function cleanupOldErrors(now: number, windowMs: number): void {
+  for (const [message, timestamp] of recentErrors.entries()) {
+    if (now - timestamp > windowMs) {
+      recentErrors.delete(message);
+    }
   }
-  
-  // Remove oldest errors
-  const errors = Array.from(recentErrors.entries());
-  errors.sort((a, b) => a[1].timestamp - b[1].timestamp);
-  
-  // Remove oldest 20% of errors
-  const removeCount = Math.ceil(errors.length * 0.2);
-  for (let i = 0; i < removeCount; i++) {
-    recentErrors.delete(errors[i][0]);
-  }
+}
+
+/**
+ * Clear all tracked errors
+ * Useful when changing routes to prevent errors from persisting
+ */
+export function clearErrorCache(): void {
+  recentErrors.clear();
 }

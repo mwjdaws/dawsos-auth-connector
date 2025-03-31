@@ -1,87 +1,63 @@
 
 /**
- * Hook for content validation
+ * Hook for enhanced content validation
  * 
- * Provides utilities for validating content identifiers and metadata
- * with support for both UUID and temporary ID formats.
+ * Combines content ID validation with content existence check
  */
-import { useMemo } from 'react';
-import { useContentIdValidation } from './useContentIdValidation';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useValidateContentId } from './useValidateContentId';
+import { useContentExists } from '@/hooks/metadata/useContentExists';
 
-interface ContentValidatorProps {
-  contentId?: string | null;
-  validateExists?: boolean;
-}
-
-export function useContentValidator({
-  contentId,
-  validateExists = false
-}: ContentValidatorProps) {
-  // Use the underlying content ID validation
+/**
+ * Enhanced content validation hook
+ * 
+ * @param contentId Content ID to validate
+ * @returns Object with validation and existence information
+ */
+export function useContentValidator(contentId?: string | null) {
+  const [isValidating, setIsValidating] = useState(false);
+  
+  // Basic content ID validation
   const {
     isValid,
-    isUuid,
     isTemporary,
-    isStorable,
-    convertToUuid,
-    validation,
-    error
-  } = useContentIdValidation(contentId);
+    isUuid,
+    validationResult,
+    errorMessage
+  } = useValidateContentId(contentId);
   
-  // Check if content exists in database if requested
-  const { data: contentExists, isLoading: checkingExistence } = useQuery({
-    queryKey: validateExists && isValid && contentId ? ['content-exists', contentId] : null,
-    queryFn: async () => {
-      if (!contentId || !isValid) return false;
-      
-      const { count, error } = await supabase
-        .from('knowledge_sources')
-        .select('id', { count: 'exact', head: true })
-        .eq('id', convertToUuid || contentId);
-        
-      if (error) {
-        console.error('Error checking content existence:', error);
-        return false;
-      }
-      
-      return count ? count > 0 : false;
-    },
-    enabled: validateExists && isValid && !!contentId
+  // Check if content exists in the database (only for UUID content IDs)
+  const {
+    exists: contentExists,
+    isLoading: isCheckingExistence,
+    error: existenceError
+  } = useContentExists(contentId, {
+    enabled: isValid && isUuid, // Only check existence for valid UUIDs
+    retry: 1, // Limit retries to avoid excessive database queries
   });
   
-  // Create a comprehensive validation message
-  const validationMessage = useMemo(() => {
-    if (!isValid) {
-      return validation.errorMessage || 'Invalid content ID format';
-    }
-    
-    if (validateExists && !checkingExistence) {
-      if (contentExists === false) {
-        return 'Content does not exist in database';
-      }
-    }
-    
-    if (isTemporary) {
-      return 'Using temporary content ID';
-    }
-    
-    return null;
-  }, [isValid, validation.errorMessage, validateExists, checkingExistence, contentExists, isTemporary]);
+  // Set validating state when checking existence
+  useEffect(() => {
+    setIsValidating(isCheckingExistence);
+  }, [isCheckingExistence]);
+  
+  // For temporary IDs, we don't check existence
+  const exists = isTemporary ? true : contentExists;
   
   return {
+    // Base validation properties
     isValid,
-    isUuid,
     isTemporary,
-    isStorable,
-    convertToUuid,
-    validation,
-    contentExists: validateExists ? contentExists : undefined,
-    checkingExistence,
-    validationMessage,
-    error: validationMessage || error
+    isUuid,
+    validationResult,
+    errorMessage,
+    
+    // Existence check properties
+    contentExists: exists,
+    isValidating,
+    existenceError
   };
 }
 
+// Default export
 export default useContentValidator;

@@ -7,7 +7,7 @@
  */
 import { useState, useCallback } from 'react';
 import { useTagValidation } from './useTagValidation';
-import { useContentIdValidation } from './useContentIdValidation';
+import { useContentValidator } from './useContentValidator';
 import { toast } from 'sonner';
 import { Tag } from '@/types/tag';
 import { handleError } from '@/utils/errors';
@@ -28,7 +28,10 @@ export function useValidatedTagOperations({
   onMetadataChange
 }: ValidatedTagOperationsProps) {
   // Get content validation info
-  const { isValid: isValidContent, isTemporary } = useContentIdValidation(contentId);
+  const { 
+    isValid: isValidContent, 
+    isTemporary 
+  } = useContentValidator(contentId);
   
   // Get tag validation utilities
   const { validateTag, isDuplicateTag } = useTagValidation(contentId, { existingTags: tags });
@@ -78,7 +81,7 @@ export function useValidatedTagOperations({
     } finally {
       setIsAddingTag(false);
     }
-  }, [newTag, isValidContent, onAddTag, onMetadataChange, validateTag]);
+  }, [newTag, isValidContent, onAddTag, onMetadataChange, validateTag, contentId]);
 
   // Validated delete tag handler
   const handleDeleteTag = useCallback(async (tagId: string) => {
@@ -109,7 +112,7 @@ export function useValidatedTagOperations({
     } finally {
       setIsDeletingTag(false);
     }
-  }, [isValidContent, onDeleteTag, onMetadataChange]);
+  }, [isValidContent, onDeleteTag, onMetadataChange, contentId]);
 
   return {
     newTag,

@@ -6,12 +6,11 @@
  * and checking for duplicate tags.
  */
 import { useMemo } from 'react';
-import { validateTag, validateTagName, validateTagUniqueness } from '@/utils/validation/tagValidation';
+import { validateTag as validateTagCore, validateTagName, validateTagUniqueness } from '@/utils/validation/tagValidation';
 import { ValidationResult } from '@/utils/validation/types';
 import { Tag } from '@/types/tag';
 
 interface UseTagValidationOptions {
-  contentId?: string | null;
   existingTags?: Tag[];
 }
 
@@ -19,7 +18,7 @@ export function useTagValidation(contentId?: string | null, options: UseTagValid
   const { existingTags = [] } = options;
   
   // Validate a tag with all rules
-  const validateTagWithContext = useMemo(() => {
+  const validateTag = useMemo(() => {
     return (tagName: string, opts: { checkDuplicates?: boolean } = {}) => {
       const { checkDuplicates = true } = opts;
       
@@ -54,7 +53,7 @@ export function useTagValidation(contentId?: string | null, options: UseTagValid
   }, [existingTags]);
   
   return {
-    validateTag: validateTagWithContext,
+    validateTag,
     isDuplicateTag,
     hasExistingTags: existingTags.length > 0
   };

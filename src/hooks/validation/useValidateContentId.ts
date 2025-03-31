@@ -1,80 +1,53 @@
 
 /**
- * Hook for validating content IDs in different contexts
+ * Hook for content ID validation only 
  * 
- * This hook provides validation utilities specifically for content IDs,
- * with appropriate error handling and user feedback.
+ * This is a simplified hook that only validates content IDs,
+ * useful for components that only need basic validation.
  */
-import { useState, useEffect } from 'react';
-import { useContentIdValidation } from './useContentIdValidation';
-import { toast } from 'sonner';
+import { useMemo } from 'react';
+import { 
+  isValidContentId, 
+  isTempId, 
+  isUUID, 
+  getContentIdValidationResult 
+} from '@/utils/validation/contentIdValidation';
 
-interface ValidateContentIdOptions {
-  showToasts?: boolean;
-  validateExists?: boolean;
-  allowTemporary?: boolean;
-  onValidationChange?: (isValid: boolean) => void;
-}
+/**
+ * Validates a content ID and provides validation information
+ * 
+ * @param contentId The content ID to validate
+ * @returns Object with validation information
+ */
+export function useValidateContentId(contentId?: string | null) {
+  // Memorize the validation result 
+  const result = useMemo(() => {
+    return getContentIdValidationResult(contentId);
+  }, [contentId]);
 
-export function useValidateContentId(
-  contentId: string | undefined | null,
-  options: ValidateContentIdOptions = {}
-) {
-  const {
-    showToasts = true,
-    validateExists = false,
-    allowTemporary = true,
-    onValidationChange
-  } = options;
+  // Determine if the content ID is valid
+  const isValid = useMemo(() => {
+    return isValidContentId(contentId);
+  }, [contentId]);
 
-  // Use the base content ID validation hook
-  const {
-    isValid,
-    isUuid,
-    isTemporary,
-    isStorable,
-    error,
-    validation
-  } = useContentIdValidation(contentId);
+  // Determine if the content ID is a temporary ID
+  const isTemporary = useMemo(() => {
+    return isValidContentId(contentId) && isTempId(contentId || '');
+  }, [contentId]);
 
-  const [hasDisplayedWarning, setHasDisplayedWarning] = useState(false);
-
-  // Handle validation effects
-  useEffect(() => {
-    // Call the onValidationChange callback if provided
-    if (onValidationChange) {
-      onValidationChange(isValid);
-    }
-
-    // Show toast notifications if enabled and there's an error
-    if (showToasts) {
-      if (!isValid && contentId) {
-        toast.error(`Invalid content ID: ${error}`, {
-          id: `content-id-error-${contentId}`,
-        });
-      } else if (isTemporary && !allowTemporary && !hasDisplayedWarning) {
-        toast.warning('Using a temporary content ID. Some features may be limited.', {
-          id: `temp-content-id-warning-${contentId}`,
-          duration: 4000,
-        });
-        setHasDisplayedWarning(true);
-      }
-    }
-  }, [contentId, isValid, isTemporary, allowTemporary, showToasts, error, hasDisplayedWarning, onValidationChange]);
+  // Determine if the content ID is a UUID
+  const isUuid = useMemo(() => {
+    return isValidContentId(contentId) && isUUID(contentId || '');
+  }, [contentId]);
 
   return {
     isValid,
-    isUuid,
     isTemporary,
-    isStorable,
-    error,
-    validation,
-    formattedMessage: isValid 
-      ? isTemporary 
-        ? 'Using temporary ID'
-        : 'Valid content ID'
-      : `Invalid content ID: ${error}`
+    isUuid,
+    validationResult: result,
+    errorMessage: result.errorMessage
   };
 }
 
+// Default export
 export default useValidateContentId;

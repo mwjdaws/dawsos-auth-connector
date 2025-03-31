@@ -1,54 +1,102 @@
 
 /**
  * Error categorization utilities
+ * 
+ * Functions for categorizing errors by type and source.
  */
-import { ErrorCategory } from './types';
+import { TaggedError } from './types';
+
+// Error type constants
+export const ERROR_TYPES = {
+  NETWORK: 'network',
+  DATABASE: 'database',
+  AUTH: 'auth',
+  VALIDATION: 'validation',
+  PERMISSION: 'permission',
+  NOT_FOUND: 'not_found',
+  TIMEOUT: 'timeout',
+  API: 'api',
+  UNKNOWN: 'unknown'
+};
 
 /**
- * Categorize errors to help with handling strategies
+ * Categorize an error by analyzing its properties and message
+ * 
+ * @param error The error to categorize
+ * @returns The categorized error with an errorType property
  */
-export const categorizeError = (error: unknown): ErrorCategory => {
-  const errorMessage = error instanceof Error 
-    ? error.message.toLowerCase() 
-    : typeof error === 'string' 
-      ? error.toLowerCase() 
-      : '';
-
-  if (errorMessage.includes('network') || 
-      errorMessage.includes('fetch') || 
-      errorMessage.includes('connection')) {
-    return 'network';
+export function categorizeError(error: unknown): TaggedError {
+  // If already categorized, return as is
+  if (error instanceof Error && (error as TaggedError).errorType) {
+    return error as TaggedError;
   }
   
-  if (errorMessage.includes('auth') || 
-      errorMessage.includes('permission') || 
-      errorMessage.includes('unauthorized')) {
-    return 'authentication';
+  const err = error instanceof Error ? error : new Error(String(error));
+  const taggedError = err as TaggedError;
+  
+  // Check for network errors
+  if (
+    !navigator.onLine || 
+    err.message.includes('network') ||
+    err.message.includes('Network') ||
+    err.message.includes('fetch') ||
+    err.message.includes('Failed to fetch')
+  ) {
+    taggedError.errorType = ERROR_TYPES.NETWORK;
+    return taggedError;
   }
   
-  if (errorMessage.includes('timeout') || 
-      errorMessage.includes('time out') || 
-      errorMessage.includes('timed out')) {
-    return 'timeout';
+  // Check for database errors
+  if (
+    err.message.includes('database') ||
+    err.message.includes('Database') ||
+    err.message.includes('DB') ||
+    err.message.includes('SQL') ||
+    err.message.includes('query')
+  ) {
+    taggedError.errorType = ERROR_TYPES.DATABASE;
+    return taggedError;
   }
   
-  if (errorMessage.includes('not found') || 
-      errorMessage.includes('404') || 
-      errorMessage.includes('missing')) {
-    return 'not_found';
+  // Check for authentication errors
+  if (
+    err.message.includes('auth') ||
+    err.message.includes('Auth') ||
+    err.message.includes('token') ||
+    err.message.includes('credentials') ||
+    err.message.includes('permission') ||
+    err.message.includes('unauthorized') ||
+    err.message.includes('not authorized') ||
+    err.message.includes('login') ||
+    err.message.toLowerCase().includes('access denied')
+  ) {
+    taggedError.errorType = ERROR_TYPES.AUTH;
+    return taggedError;
   }
   
-  if (errorMessage.includes('validation') || 
-      errorMessage.includes('invalid') || 
-      errorMessage.includes('required')) {
-    return 'validation';
+  // Check for validation errors
+  if (
+    err.message.includes('validation') ||
+    err.message.includes('invalid') ||
+    err.message.includes('not valid') ||
+    err.message.includes('schema') ||
+    err.message.includes('required field')
+  ) {
+    taggedError.errorType = ERROR_TYPES.VALIDATION;
+    return taggedError;
   }
   
-  if (errorMessage.includes('database') || 
-      errorMessage.includes('db') || 
-      errorMessage.includes('supabase')) {
-    return 'database';
+  // Check for not found errors
+  if (
+    err.message.includes('not found') ||
+    err.message.includes('404') ||
+    err.message.includes('does not exist')
+  ) {
+    taggedError.errorType = ERROR_TYPES.NOT_FOUND;
+    return taggedError;
   }
   
-  return 'unknown';
+  // Default to unknown
+  taggedError.errorType = ERROR_TYPES.UNKNOWN;
+  return taggedError;
 }
