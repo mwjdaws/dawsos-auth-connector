@@ -1,8 +1,9 @@
 
 /**
- * Type definitions for validation utilities
+ * Common validation types used across the application
  */
 
+// Content ID validation result types
 export enum ContentIdValidationResultType {
   UUID = 'uuid',
   TEMP = 'temp',
@@ -10,34 +11,43 @@ export enum ContentIdValidationResultType {
   INVALID = 'invalid'
 }
 
+// Basic validation result
 export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
-  message?: string | null; // For backward compatibility
 }
 
-export interface DocumentValidationResult extends ValidationResult {
-  isPublishable: boolean;
-}
-
-export interface TagPosition {
-  id: string;
-  position: number;
-}
-
+// Tag validation options
 export interface TagValidationOptions {
-  maxLength?: number | null;
-  minLength?: number | null;
-  allowSpecialChars?: boolean | null;
-  allowEmpty?: boolean | null;
+  minLength?: number;
+  maxLength?: number;
+  allowEmpty?: boolean;
+  allowSpecialChars?: boolean;
+  allowDuplicates?: boolean;
 }
 
-// Type guard to ensure consistency across validation results
-export function isValidationResult(value: any): value is ValidationResult {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof value.isValid === 'boolean' &&
-    (value.errorMessage === null || typeof value.errorMessage === 'string')
-  );
+// Document validation options
+export interface DocumentValidationOptions {
+  titleRequired?: boolean;
+  minTitleLength?: number;
+  maxTitleLength?: number;
+  contentRequired?: boolean;
+  minContentLength?: number;
+  maxContentLength?: number;
 }
+
+// Validation compatibility utilities
+export const createValidationResult = (isValid: boolean, errorMessage: string | null): ValidationResult => ({
+  isValid,
+  errorMessage
+});
+
+// Common validation results
+export const VALIDATION_RESULTS = {
+  VALID: createValidationResult(true, null),
+  INVALID: createValidationResult(false, "Invalid input"),
+  REQUIRED: createValidationResult(false, "This field is required"),
+  TOO_SHORT: createValidationResult(false, "Input is too short"),
+  TOO_LONG: createValidationResult(false, "Input is too long"),
+  INVALID_FORMAT: createValidationResult(false, "Invalid format")
+};

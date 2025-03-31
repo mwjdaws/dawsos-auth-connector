@@ -19,7 +19,7 @@ export interface UsePanelStateProps {
  */
 export const usePanelState = ({
   contentId,
-  onMetadataChange,
+  onMetadataChange = null,
   isCollapsible = false,
   initialCollapsed = false
 }: UsePanelStateProps) => {

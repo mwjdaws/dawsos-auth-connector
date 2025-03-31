@@ -25,9 +25,9 @@ export const useMetadataPanel = (props: UseMetadataPanelProps) => {
   // Panel state with properly typed props
   const panelState = usePanelState({ 
     contentId, 
-    onMetadataChange: onMetadataChange || undefined,
-    isCollapsible,
-    initialCollapsed
+    onMetadataChange: onMetadataChange || null,
+    isCollapsible: isCollapsible || false,
+    initialCollapsed: initialCollapsed || false
   });
 
   // Ontology terms (mock for now, would typically come from another hook)

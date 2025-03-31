@@ -1,6 +1,5 @@
 
 import { useState, useCallback } from 'react';
-import { validateTag, validateTags } from '@/utils/validation/tagValidation';
 import { TagValidationOptions } from '@/utils/validation/types';
 
 /**
@@ -19,9 +18,24 @@ export function useTagValidator() {
    * @returns Whether the tag is valid
    */
   const validateTagText = useCallback((tagText: string, options?: TagValidationOptions): boolean => {
-    const result = validateTag(tagText, options);
-    setValidationMessage(result.errorMessage);
-    return result.isValid;
+    if (!tagText || typeof tagText !== 'string') {
+      setValidationMessage("Tag text is required");
+      return false;
+    }
+    
+    if (options?.minLength && tagText.length < options.minLength) {
+      setValidationMessage(`Tag must be at least ${options.minLength} characters`);
+      return false;
+    }
+    
+    if (options?.maxLength && tagText.length > options.maxLength) {
+      setValidationMessage(`Tag cannot exceed ${options.maxLength} characters`);
+      return false;
+    }
+    
+    // Tag is valid
+    setValidationMessage(null);
+    return true;
   }, []);
 
   /**
@@ -42,10 +56,14 @@ export function useTagValidator() {
     }
 
     // Check each tag
-    const result = validateTags(tags, options);
-    setValidationMessage(result.errorMessage);
-    return { isValid: result.isValid, message: result.errorMessage };
-  }, []);
+    for (const tag of tags) {
+      if (!validateTagText(tag, options)) {
+        return { isValid: false, message: validationMessage };
+      }
+    }
+
+    return { isValid: true, message: null };
+  }, [validateTagText, validationMessage]);
 
   /**
    * Clear any validation messages

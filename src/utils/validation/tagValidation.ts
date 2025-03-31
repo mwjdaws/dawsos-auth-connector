@@ -1,69 +1,47 @@
 
-import { ValidationResult, TagValidationOptions } from './types';
-import { createValidationResult, VALIDATION_RESULTS } from './compatibility';
-
-/**
- * Default validation options for tags
- */
-const DEFAULT_TAG_OPTIONS: Required<TagValidationOptions> = {
-  maxLength: 50,
-  minLength: 1,
-  allowSpecialChars: false,
-  allowEmpty: false
-};
+import { ValidationResult, TagValidationOptions, VALIDATION_RESULTS } from './types';
 
 /**
  * Validates a single tag
  * 
- * @param tag - The tag string to validate
- * @param options - Optional validation options to customize the validation rules
- * @returns ValidationResult indicating if the tag is valid and any error message
+ * @param tag - The tag text to validate
+ * @param options - Optional validation options
+ * @returns Validation result object
  */
 export function validateTag(tag: string, options?: TagValidationOptions): ValidationResult {
-  // Apply default options
-  const opts = { ...DEFAULT_TAG_OPTIONS, ...options };
-  
-  // Check if tag is null or undefined
-  if (tag === undefined || tag === null) {
-    return opts.allowEmpty
-      ? VALIDATION_RESULTS.VALID
-      : VALIDATION_RESULTS.REQUIRED;
+  if (!tag || typeof tag !== 'string') {
+    return {
+      isValid: false,
+      errorMessage: "Tag cannot be empty"
+    };
   }
+
+  const trimmedTag = tag.trim();
   
-  // Check if tag is empty
-  if (tag.trim() === '') {
-    return opts.allowEmpty
-      ? VALIDATION_RESULTS.VALID
-      : VALIDATION_RESULTS.REQUIRED;
+  if (trimmedTag.length === 0) {
+    return {
+      isValid: false,
+      errorMessage: "Tag cannot be empty"
+    };
   }
-  
-  // Check minimum length
-  if (opts.minLength !== null && tag.length < opts.minLength) {
-    return createValidationResult(
-      false,
-      `Tag must be at least ${opts.minLength} character${opts.minLength !== 1 ? 's' : ''} long`
-    );
+
+  // Check min length
+  if (options?.minLength && trimmedTag.length < options.minLength) {
+    return {
+      isValid: false,
+      errorMessage: `Tag must be at least ${options.minLength} characters`
+    };
   }
-  
-  // Check maximum length
-  if (opts.maxLength !== null && tag.length > opts.maxLength) {
-    return createValidationResult(
-      false,
-      `Tag must be ${opts.maxLength} character${opts.maxLength !== 1 ? 's' : ''} or less`
-    );
+
+  // Check max length
+  if (options?.maxLength && trimmedTag.length > options.maxLength) {
+    return {
+      isValid: false,
+      errorMessage: `Tag cannot exceed ${options.maxLength} characters`
+    };
   }
-  
-  // Check for special characters if not allowed
-  if (!opts.allowSpecialChars) {
-    const specialCharsRegex = /[^a-zA-Z0-9\s-_]/;
-    if (specialCharsRegex.test(tag)) {
-      return createValidationResult(
-        false,
-        'Tag contains invalid characters (only letters, numbers, spaces, hyphens, and underscores are allowed)'
-      );
-    }
-  }
-  
+
+  // Default: tag is valid
   return VALIDATION_RESULTS.VALID;
 }
 
@@ -71,24 +49,65 @@ export function validateTag(tag: string, options?: TagValidationOptions): Valida
  * Validates an array of tags
  * 
  * @param tags - Array of tag strings to validate
- * @param options - Optional validation options to customize the validation rules
- * @returns ValidationResult indicating if all tags are valid and any error message
+ * @param options - Optional validation options
+ * @returns Validation result object
  */
 export function validateTags(tags: string[], options?: TagValidationOptions): ValidationResult {
-  // Handle empty tag array
+  // No tags is valid by default, but can be configured with options
   if (!tags || tags.length === 0) {
-    return options?.allowEmpty === false
-      ? createValidationResult(false, 'At least one tag is required')
-      : VALIDATION_RESULTS.VALID;
+    if (options?.allowEmpty === false) {
+      return {
+        isValid: false,
+        errorMessage: "At least one tag is required"
+      };
+    }
+    return VALIDATION_RESULTS.VALID;
   }
-  
-  // Validate each tag
-  for (const tag of tags) {
-    const result = validateTag(tag, options);
+
+  // Check each tag
+  for (let i = 0; i < tags.length; i++) {
+    const result = validateTag(tags[i], options);
     if (!result.isValid) {
-      return result;
+      return {
+        isValid: false,
+        errorMessage: `Tag ${i + 1}: ${result.errorMessage}`
+      };
     }
   }
-  
+
+  // Check duplicates if not allowed
+  if (options?.allowDuplicates === false) {
+    const uniqueTags = new Set(tags.map(tag => tag.trim().toLowerCase()));
+    if (uniqueTags.size !== tags.length) {
+      return {
+        isValid: false,
+        errorMessage: "Duplicate tags are not allowed"
+      };
+    }
+  }
+
+  // Default: all tags are valid
   return VALIDATION_RESULTS.VALID;
+}
+
+/**
+ * Check if a tag is valid
+ * 
+ * @param tag - The tag to check
+ * @param options - Optional validation options
+ * @returns Whether the tag is valid
+ */
+export function isValidTag(tag: string, options?: TagValidationOptions): boolean {
+  return validateTag(tag, options).isValid;
+}
+
+/**
+ * Check if tags are valid
+ * 
+ * @param tags - The tags to check
+ * @param options - Optional validation options
+ * @returns Whether the tags are valid
+ */
+export function areValidTags(tags: string[], options?: TagValidationOptions): boolean {
+  return validateTags(tags, options).isValid;
 }

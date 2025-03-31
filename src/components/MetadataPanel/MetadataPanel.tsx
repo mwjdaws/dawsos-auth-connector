@@ -114,7 +114,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
       
       {!isCollapsed && (
         <MetadataContent
-          data={data as any /* Temporary type cast until we fix the interfaces */}
+          data={data as any} /* Temporary type cast until we fix the interfaces */
           contentId={contentId}
           error={error}
           tags={tags}

@@ -1,93 +1,66 @@
 
-/**
- * Compatibility utilities for the RelationshipGraph component
- */
-import { GraphData, GraphNode, GraphLink, GraphProps } from './types';
+import { GraphProps, GraphData } from './types';
 
 /**
- * Convert potentially undefined zoom to a safe number
+ * Ensures that zoom level is valid
+ * 
+ * @param zoom - The zoom level to validate
+ * @param defaultValue - Default zoom level if invalid
+ * @returns A valid zoom level
  */
-export function ensureValidZoom(zoom: number | undefined): number {
-  if (typeof zoom !== 'number' || isNaN(zoom)) {
-    return 1; // Default zoom
+export function ensureValidZoom(zoom: number | undefined, defaultValue: number = 1): number {
+  if (typeof zoom !== 'number' || isNaN(zoom) || zoom <= 0) {
+    return defaultValue;
   }
-  return Math.max(0.1, Math.min(3, zoom)); // Clamp between 0.1 and 3
+  
+  // Constrain zoom to reasonable bounds
+  return Math.max(0.1, Math.min(5, zoom));
 }
 
 /**
- * Ensures graph data is never undefined or null
+ * Creates safe graph props with defaults
+ * 
+ * @param props - Graph props to sanitize
+ * @returns Safe graph props with defaults for missing values
+ */
+export function createSafeGraphProps(props: GraphProps): GraphProps {
+  return {
+    startingNodeId: props.startingNodeId || '',
+    width: typeof props.width === 'number' ? props.width : 800,
+    height: typeof props.height === 'number' ? props.height : 600,
+    hasAttemptedRetry: !!props.hasAttemptedRetry
+  };
+}
+
+/**
+ * Creates empty graph data
+ * 
+ * @returns Empty graph data structure
+ */
+export function createEmptyGraphData(): GraphData {
+  return {
+    nodes: [],
+    links: []
+  };
+}
+
+/**
+ * Ensures graph data is valid
+ * 
+ * @param data - Graph data to validate
+ * @returns Valid graph data
  */
 export function ensureValidGraphData(data: GraphData | null | undefined): GraphData {
-  if (!data) {
-    return { nodes: [], links: [] };
+  if (!data || !Array.isArray(data.nodes) || !Array.isArray(data.links)) {
+    return createEmptyGraphData();
   }
   
   return {
-    nodes: Array.isArray(data.nodes) ? data.nodes : [],
-    links: Array.isArray(data.links) ? data.links : []
+    nodes: data.nodes.filter(node => node && typeof node.id === 'string'),
+    links: data.links.filter(link => 
+      link && 
+      typeof link.source === 'string' && 
+      typeof link.target === 'string'
+    )
   };
-}
-
-/**
- * Creates a compatibility layer for graph props
- */
-export function createSafeGraphProps(props: Partial<GraphProps> | null | undefined): GraphProps {
-  return {
-    startingNodeId: props?.startingNodeId || '',
-    width: typeof props?.width === 'number' ? props.width : 800,
-    height: typeof props?.height === 'number' ? props.height : 600,
-    hasAttemptedRetry: !!props?.hasAttemptedRetry
-  };
-}
-
-/**
- * Creates a safe reference for graph node operations
- */
-export function createCompatibleGraphRef(ref: any): any {
-  if (!ref) {
-    return {
-      centerOn: () => {},
-      setZoom: () => {},
-      zoomToFit: () => {}
-    };
-  }
-  
-  return ref;
-}
-
-/**
- * Sanitizes graph data to ensure all required properties exist
- */
-export function sanitizeGraphData(data: GraphData): GraphData {
-  // Ensure nodes have all required properties
-  const nodes = (data.nodes || []).map((node) => {
-    const nodeId = String(node.id || '');
-    const nodeName = String(node.name || node.title || '');
-    const nodeTitle = String(node.title || node.name || '');
-    const nodeType = String(node.type || 'default');
-    
-    return {
-      ...node,
-      id: nodeId,
-      name: nodeName,
-      title: nodeTitle,
-      type: nodeType
-    };
-  });
-  
-  // Ensure links have all required properties
-  const links = (data.links || []).map((link) => {
-    const linkSource = String(link.source || '');
-    const linkTarget = String(link.target || '');
-    const linkType = String(link.type || 'default');
-    
-    return {
-      ...link,
-      source: linkSource,
-      target: linkTarget,
-      type: linkType
-    };
-  });
-  
-  return { nodes, links };
 }

@@ -1,88 +1,99 @@
 
 /**
- * General compatibility utilities
- * 
- * These functions help maintain consistent behavior by providing safe
- * conversions between different value types (string/null/undefined).
+ * Utility functions to ensure backward compatibility
  */
 
 /**
- * Ensures a value is a string, or a default value
+ * Create a safe callback function that won't error if the 
+ * original function is undefined or null
+ * 
+ * @param fn - The original function
+ * @param defaultFn - Default function to use if original is not valid
+ * @returns A safe function that won't throw if called
+ */
+export function safeCallback<T extends any[], R>(
+  fn: ((...args: T) => R) | undefined | null,
+  defaultFn: (...args: T) => R
+): (...args: T) => R {
+  return (...args: T) => {
+    if (typeof fn === 'function') {
+      return fn(...args);
+    }
+    return defaultFn(...args);
+  };
+}
+
+/**
+ * Ensures a value is a string, providing a default if it's undefined or null
  * 
  * @param value - The value to check
- * @param defaultValue - The default value to return if value is null or undefined
- * @returns A string that's never null or undefined
+ * @param defaultValue - Default value to use if original is not valid
+ * @returns A valid string
  */
-export function ensureString(value: string | null | undefined, defaultValue = ''): string {
-  if (value === null || value === undefined) {
+export function ensureString(value: any, defaultValue: string = ''): string {
+  if (value === undefined || value === null) {
     return defaultValue;
   }
+  
   return String(value);
 }
 
 /**
- * Ensures a value is a number, or a default value
+ * Ensures a value is a number, providing a default if it's not a valid number
  * 
  * @param value - The value to check
- * @param defaultValue - The default value to return if value is not a valid number
- * @returns A number that's never NaN, null, or undefined
+ * @param defaultValue - Default value to use if original is not valid
+ * @returns A valid number
  */
-export function ensureNumber(value: number | null | undefined, defaultValue = 0): number {
-  if (value === null || value === undefined || isNaN(value)) {
+export function ensureNumber(value: any, defaultValue: number = 0): number {
+  if (value === undefined || value === null || isNaN(Number(value))) {
     return defaultValue;
   }
+  
   return Number(value);
 }
 
 /**
- * Ensures a value is a boolean, or a default value
+ * Ensures a value is a boolean, providing a default if it's not a valid boolean
  * 
  * @param value - The value to check
- * @param defaultValue - The default value to return if value is null or undefined
- * @returns A boolean that's never null or undefined
+ * @param defaultValue - Default value to use if original is not valid
+ * @returns A valid boolean
  */
-export function ensureBoolean(value: boolean | null | undefined, defaultValue = false): boolean {
-  if (value === null || value === undefined) {
+export function ensureBoolean(value: any, defaultValue: boolean = false): boolean {
+  if (value === undefined || value === null) {
     return defaultValue;
   }
+  
   return Boolean(value);
 }
 
 /**
- * Converts null to undefined
+ * Ensures a value is an array, providing a default if it's not a valid array
  * 
- * @param value - The value to convert
- * @returns The original value, or undefined if value was null
+ * @param value - The value to check
+ * @param defaultValue - Default value to use if original is not valid
+ * @returns A valid array
  */
-export function nullToUndefined<T>(value: T | null): T | undefined {
-  return value === null ? undefined : value;
+export function ensureArray<T>(value: any, defaultValue: T[] = []): T[] {
+  if (!Array.isArray(value)) {
+    return defaultValue;
+  }
+  
+  return value;
 }
 
 /**
- * Converts undefined to null
+ * Ensures a value is an object, providing a default if it's not a valid object
  * 
- * @param value - The value to convert
- * @returns The original value, or null if value was undefined
+ * @param value - The value to check
+ * @param defaultValue - Default value to use if original is not valid
+ * @returns A valid object
  */
-export function undefinedToNull<T>(value: T | undefined): T | null {
-  return value === undefined ? null : value;
-}
-
-/**
- * Safely calls a callback function if it exists
- * 
- * @param callback - The callback to call
- * @param fallback - The fallback function to call if callback is undefined
- * @returns A function that will call callback if it exists, or fallback otherwise
- */
-export function safeCallback<T extends any[], R>(
-  callback: ((...args: T) => R) | undefined | null,
-  fallback: (...args: T) => R
-): (...args: T) => R {
-  return (...args: T) => {
-    if (typeof callback === 'function') {
-      return callback(...args);
-    }
-    return fallback(...args);
-  };
+export function ensureObject<T extends object>(value: any, defaultValue: T): T {
+  if (value === undefined || value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return defaultValue;
+  }
+  
+  return value as T;
 }
