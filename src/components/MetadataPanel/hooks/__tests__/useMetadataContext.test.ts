@@ -1,5 +1,5 @@
 
-import { renderHook } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react-hooks';
 import { MetadataProvider, useMetadataContext } from '../useMetadataContext';
 import { mockMetadataContext } from './setup/test-types';
 import { ValidationResult } from '@/utils/validation/types';
