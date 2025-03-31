@@ -21,6 +21,7 @@ import MetadataPanel from "@/components/MetadataPanel";
 
 - Display and edit content metadata (tags, external sources, ontology terms)
 - Collapsible panel with refresh functionality
+- Tag drag-and-drop reordering with database persistence
 - Loading and error states
 - Modular section components that can be used independently
 - Type safety with comprehensive TypeScript interfaces
@@ -32,11 +33,46 @@ The MetadataPanel is composed of modular sections that can be imported separatel
 
 - `HeaderSection`: Panel title and controls
 - `ExternalSourceSection`: External source URL and last checked date
-- `TagsSection`: Content tags with add/delete functionality
+- `TagsSection`: Content tags with add/delete/reorder functionality
 - `OntologyTermsSection`: Ontology terms associated with the content
 - `DomainSection`: Content domain information
 - `ContentIdSection`: Display content ID
 - `LoadingState`: Loading skeleton UI
+
+## Tag System
+
+The MetadataPanel includes a complete tag management system with:
+
+- Tag creation with optional type assignment
+- Tag deletion with confirmation
+- Tag reordering via drag-and-drop
+- Tag filtering and grouping by type
+- Database syncing for all operations
+
+### Using Tag Reordering
+
+Tag reordering is implemented using the `DraggableTagList` component:
+
+```tsx
+<DraggableTagList
+  tags={tags}
+  onReorder={handleReorderTags}
+  editable={editable}
+  onDelete={handleDeleteTag}
+/>
+```
+
+This component uses `@dnd-kit` for drag-and-drop functionality and automatically updates the `display_order` field in the database when tags are reordered.
+
+### Tag Hooks
+
+The following hooks are available for working with tags:
+
+- `useTagOperations`: Main hook for all tag operations
+- `useTagState`: Manages tag state (loading, error, etc.)
+- `useTagFetch`: Fetches tags from the database
+- `useTagMutations`: Performs tag CRUD operations
+- `useTagReordering`: Handles tag reordering logic
 
 ## Accessing Metadata State
 
@@ -52,10 +88,34 @@ function MyComponent({ contentId }) {
   console.log(metadata.tags);
   
   // Perform operations
-  metadata.handleAddTag();
+  metadata.handleAddTag("new-tag");
   metadata.handleDeleteTag(tagId);
+  metadata.handleReorderTags(updatedTags);
   
   // Refresh metadata
-  metadata.refreshMetadata();
+  metadata.handleRefresh();
 }
 ```
+
+## Error Handling
+
+The MetadataPanel uses centralized error handling through the `handleError` utility:
+
+```tsx
+try {
+  // Perform operation
+} catch (err) {
+  handleError(
+    err,
+    "User-friendly error message",
+    { level: "warning", technical: false }
+  );
+}
+```
+
+## Performance Considerations
+
+- Tags are fetched only when needed and cached in state
+- Reordering operations use optimistic UI updates for responsiveness
+- Loading states are displayed during asynchronous operations
+- Components are memoized to prevent unnecessary re-renders

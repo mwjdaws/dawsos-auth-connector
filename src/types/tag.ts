@@ -1,9 +1,15 @@
 
 /**
- * Core Tag type definition
+ * Tag Type Definitions
  * 
- * This is the centralized definition of a Tag used throughout the application.
- * All components and hooks should import this type rather than defining their own.
+ * This file defines the Tag interface and related utilities for working with tags
+ * throughout the application. It serves as the single source of truth for tag types.
+ */
+
+/**
+ * Tag Interface
+ * 
+ * Core tag data structure used throughout the application
  */
 export interface Tag {
   id: string;
@@ -11,25 +17,19 @@ export interface Tag {
   content_id: string;
   type_id: string | null;
   type_name?: string | null;
-  display_order?: number;
+  display_order: number;
 }
 
 /**
- * Extended Tag interface for AI-generated tags
- * 
- * Adds additional properties for AI-generated tags to support
- * confidence scoring, provenance tracking, and explanations.
+ * Tag with additional properties for UI display
  */
 export interface AugmentedTag extends Tag {
-  confidence: number;       // 0-1 score of how confident the AI is
-  source: 'manual' | 'ai' | 'hybrid'; // Provenance
-  explanation?: string | null;     // Why this tag was suggested
-  alternatives?: string[] | null;  // Other potential tag options
-  context?: string | null;         // Text snippet that triggered this tag
+  isDragging?: boolean;
+  isNew?: boolean;
 }
 
 /**
- * Tag position for ordering tags
+ * Tag position for reordering operations
  */
 export interface TagPosition {
   id: string;
@@ -37,117 +37,116 @@ export interface TagPosition {
 }
 
 /**
- * Check if a value is a valid Tag object
+ * Tag group for categorized display
  */
-export function isValidTag(tag: any): tag is Tag {
-  return (
-    tag &&
-    typeof tag === 'object' &&
-    typeof tag.id === 'string' &&
-    typeof tag.name === 'string' &&
-    typeof tag.content_id === 'string' &&
-    (tag.type_id === null || typeof tag.type_id === 'string') &&
-    (tag.display_order === undefined || typeof tag.display_order === 'number')
-  );
+export interface TagGroup {
+  type_id: string | null;
+  type_name: string | null;
+  tags: Tag[];
 }
 
 /**
- * Utility function to map API tag data to the standard Tag interface
+ * Maps API response tag to the application Tag interface
+ * 
+ * @param apiTag Tag data from API
+ * @returns Formatted Tag object
  */
 export function mapApiTagToTag(apiTag: any): Tag {
-  if (!apiTag) {
+  return {
+    id: apiTag.id || '',
+    name: apiTag.name || '',
+    content_id: apiTag.content_id || '',
+    type_id: apiTag.type_id || null,
+    type_name: apiTag.type_name || null,
+    display_order: typeof apiTag.display_order === 'number' ? apiTag.display_order : 0
+  };
+}
+
+/**
+ * Maps API response tags array to application Tag[] interface
+ * 
+ * @param apiTags Array of tag data from API
+ * @returns Array of formatted Tag objects
+ */
+export function mapApiTagsToTags(apiTags: any[]): Tag[] {
+  if (!apiTags || !Array.isArray(apiTags)) return [];
+  return apiTags.map(mapApiTagToTag);
+}
+
+/**
+ * Ensures a tag is non-nullable with default values for missing fields
+ * 
+ * @param tag Tag data that might be incomplete
+ * @returns Complete Tag object with defaults for missing values
+ */
+export function ensureNonNullableTag(tag: Partial<Tag> | null | undefined): Tag {
+  if (!tag) {
     return {
-      id: '',
+      id: `temp-${Date.now()}`,
       name: '',
       content_id: '',
       type_id: null,
       display_order: 0
     };
   }
-
-  return {
-    id: typeof apiTag.id === 'string' ? apiTag.id : '',
-    name: typeof apiTag.name === 'string' ? apiTag.name : '',
-    content_id: typeof apiTag.content_id === 'string' ? apiTag.content_id : '',
-    type_id: typeof apiTag.type_id === 'string' ? apiTag.type_id : null,
-    type_name: apiTag.tag_types && typeof apiTag.tag_types.name === 'string' 
-      ? apiTag.tag_types.name 
-      : null,
-    display_order: typeof apiTag.display_order === 'number' ? apiTag.display_order : 0
-  };
-}
-
-/**
- * Utility function to map API tags to internal Tag format
- */
-export function mapApiTagsToTags(apiTags: any[]): Tag[] {
-  if (!Array.isArray(apiTags)) {
-    return [];
-  }
   
-  return apiTags.map(apiTag => mapApiTagToTag(apiTag));
-}
-
-/**
- * Safely convert nullable values to non-nullable in a tag
- */
-export function ensureNonNullableTag(tag: {
-  content_id: string | null;
-  id: string;
-  name: string;
-  type_id: string | null;
-}): Tag {
   return {
-    id: tag.id || '',
+    id: tag.id || `temp-${Date.now()}`,
     name: tag.name || '',
     content_id: tag.content_id || '',
-    type_id: tag.type_id,
-    display_order: 0
+    type_id: tag.type_id || null,
+    display_order: typeof tag.display_order === 'number' ? tag.display_order : 0
   };
 }
 
 /**
- * Filter out duplicate tags from an array based on name
+ * Filters out duplicate tags based on name (case insensitive)
+ * 
+ * @param tags Array of tags to filter
+ * @returns Filtered array with no duplicate names
  */
 export function filterDuplicateTags(tags: Tag[]): Tag[] {
-  if (!Array.isArray(tags)) {
-    return [];
-  }
+  if (!tags || !Array.isArray(tags)) return [];
   
-  const seen = new Set<string>();
-  return tags.filter(tag => {
-    if (!tag || typeof tag.name !== 'string') {
-      return false;
+  const uniqueTags: Tag[] = [];
+  const tagNames = new Set<string>();
+  
+  tags.forEach(tag => {
+    const normalizedName = tag.name.toLowerCase().trim();
+    if (!tagNames.has(normalizedName)) {
+      tagNames.add(normalizedName);
+      uniqueTags.push(tag);
     }
-    
-    const normalizedName = tag.name.trim().toLowerCase();
-    if (seen.has(normalizedName)) {
-      return false;
-    }
-    seen.add(normalizedName);
-    return true;
   });
+  
+  return uniqueTags;
 }
 
 /**
- * Convert tag positions to tag array
+ * Converts an array of TagPosition objects to an array of Tags
+ * by mapping positions to the corresponding tags
+ * 
+ * @param positions Array of position data
+ * @param currentTags Current tags to map positions to
+ * @returns Array of Tags with updated display_order
  */
-export function convertTagPositionsToTags(positions: TagPosition[], allTags: Tag[]): Tag[] {
-  if (!Array.isArray(positions) || !Array.isArray(allTags)) {
-    return [];
-  }
+export function convertTagPositionsToTags(positions: TagPosition[], currentTags: Tag[]): Tag[] {
+  if (!positions || !Array.isArray(positions)) return currentTags;
   
-  // Create a mapping of tag IDs to tags
+  // Create a lookup map for current tags
   const tagMap = new Map<string, Tag>();
-  allTags.forEach(tag => {
-    if (tag && typeof tag.id === 'string') {
-      tagMap.set(tag.id, tag);
-    }
-  });
+  currentTags.forEach(tag => tagMap.set(tag.id, tag));
   
-  // Convert positions to ordered tags
-  return positions
-    .sort((a, b) => a.position - b.position)
-    .map(pos => tagMap.get(pos.id))
-    .filter((tag): tag is Tag => tag !== undefined);
+  // Map positions to tags and update display_order
+  return positions.map((position, index) => {
+    const tag = tagMap.get(position.id);
+    if (!tag) {
+      console.error(`Tag with id ${position.id} not found in current tags`);
+      return null;
+    }
+    return {
+      ...tag,
+      display_order: position.position !== undefined ? position.position : index
+    };
+  }).filter((tag): tag is Tag => tag !== null);
 }

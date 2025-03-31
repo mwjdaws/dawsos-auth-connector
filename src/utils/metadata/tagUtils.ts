@@ -1,8 +1,18 @@
 
+/**
+ * Tag Utility Functions
+ * 
+ * This file provides utilities for working with tag data throughout the application,
+ * ensuring consistent transformation and handling of tags from various sources.
+ */
+
 import { Tag, filterDuplicateTags } from '@/types/tag';
 
 /**
  * Transforms tag data from various formats into a standard Tag object
+ * 
+ * This function handles different input formats and normalizes them into
+ * a consistent Tag object format for use throughout the application.
  * 
  * @param tagData Raw tag data in various potential formats
  * @returns Standardized Tag object
@@ -51,3 +61,37 @@ export function transformTagData(tagData: any): Tag {
  * @deprecated Use filterDuplicateTags from @/types/tag instead
  */
 export { filterDuplicateTags };
+
+/**
+ * Sorts tags by their display_order field
+ * 
+ * @param tags Array of tags to sort
+ * @returns Sorted array of tags
+ */
+export function sortTagsByDisplayOrder(tags: Tag[]): Tag[] {
+  if (!tags || !Array.isArray(tags)) return [];
+  
+  return [...tags].sort((a, b) => {
+    // Primary sort by display_order
+    const orderDiff = (a.display_order || 0) - (b.display_order || 0);
+    if (orderDiff !== 0) return orderDiff;
+    
+    // Secondary sort by name for consistent ordering when display_order is the same
+    return a.name.localeCompare(b.name);
+  });
+}
+
+/**
+ * Generates updated display order values for an array of tags
+ * 
+ * @param tags Array of tags to update
+ * @returns Tags with sequential display_order values
+ */
+export function generateDisplayOrder(tags: Tag[]): Tag[] {
+  if (!tags || !Array.isArray(tags)) return [];
+  
+  return tags.map((tag, index) => ({
+    ...tag,
+    display_order: index
+  }));
+}
