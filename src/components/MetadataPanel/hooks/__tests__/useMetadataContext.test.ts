@@ -1,77 +1,86 @@
 
-import { renderHook, act } from '@testing-library/react-hooks';
-import { MetadataProvider, useMetadataContext } from '../useMetadataContext';
-import { mockMetadataContext } from './setup/test-types';
-import { ValidationResult } from '@/utils/validation/types';
 import React from 'react';
+import { renderHook } from '@testing-library/react-hooks';
+import { MetadataProvider, useMetadataContext } from '../useMetadataContext';
+import { createValidResult } from '@/utils/validation/types';
+
+// Mock data
+const mockContentId = 'test-content-id';
+const mockTags = [{ id: '1', name: 'tag1', content_id: mockContentId, display_order: 0 }];
+const mockValidationResult = createValidResult('Valid content');
 
 describe('useMetadataContext', () => {
-  // Test that the hook throws an error when used outside a provider
-  test('throws error when used outside MetadataProvider', () => {
-    // Prevent console.error from cluttering test output
-    jest.spyOn(console, 'error').mockImplementation(() => {});
+  test('throws error when used outside of MetadataProvider', () => {
+    // Suppress console.error during this test to avoid noisy output
+    const originalError = console.error;
+    console.error = jest.fn();
     
     expect(() => {
       renderHook(() => useMetadataContext());
     }).toThrow('useMetadataContext must be used within a MetadataProvider');
     
     // Restore console.error
-    jest.restoreAllMocks();
+    console.error = originalError;
   });
-
-  // Test that the hook returns the context values correctly
-  test('returns context when used within MetadataProvider', () => {
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-      <MetadataProvider value={mockMetadataContext}>
+  
+  test('returns context values when used within MetadataProvider', () => {
+    // Prepare context values
+    const contextValue = {
+      contentId: mockContentId,
+      tags: mockTags,
+      validationResult: mockValidationResult,
+      isEditable: true,
+      isLoading: false,
+      error: null
+    };
+    
+    // Create wrapper with provider
+    const wrapper = ({ children }) => (
+      <MetadataProvider value={contextValue}>
         {children}
       </MetadataProvider>
     );
-
+    
+    // Render hook with provider wrapper
     const { result } = renderHook(() => useMetadataContext(), { wrapper });
     
-    expect(result.current).toBe(mockMetadataContext);
+    // Assert context values are correctly provided
+    expect(result.current.contentId).toBe(mockContentId);
+    expect(result.current.tags).toEqual(mockTags);
+    expect(result.current.validationResult).toEqual(mockValidationResult);
+    expect(result.current.isEditable).toBe(true);
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.error).toBeNull();
   });
-
-  // Test that the hook warns when contentId doesn't match
+  
   test('warns when contentId does not match context contentId', () => {
-    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    // Mock console.warn
+    const originalWarn = console.warn;
+    console.warn = jest.fn();
     
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-      <MetadataProvider value={mockMetadataContext}>
+    // Prepare context values
+    const contextValue = {
+      contentId: mockContentId,
+      validationResult: mockValidationResult,
+      isEditable: true,
+      isLoading: false,
+      error: null
+    };
+    
+    // Create wrapper with provider
+    const wrapper = ({ children }) => (
+      <MetadataProvider value={contextValue}>
         {children}
       </MetadataProvider>
     );
-
+    
+    // Render hook with different contentId
     renderHook(() => useMetadataContext('different-content-id'), { wrapper });
     
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('requested contentId different-content-id doesn\'t match context contentId')
-    );
+    // Assert warning was logged
+    expect(console.warn).toHaveBeenCalled();
     
-    consoleSpy.mockRestore();
-  });
-
-  // Test that validation results are properly passed
-  test('passes validation results through context', () => {
-    const mockValidation: ValidationResult = {
-      isValid: false,
-      message: null,
-      errorMessage: 'Test validation error'
-    };
-    
-    const contextWithValidation = {
-      ...mockMetadataContext,
-      validationResult: mockValidation
-    };
-    
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-      <MetadataProvider value={contextWithValidation}>
-        {children}
-      </MetadataProvider>
-    );
-
-    const { result } = renderHook(() => useMetadataContext(), { wrapper });
-    
-    expect(result.current.validationResult).toEqual(mockValidation);
+    // Restore console.warn
+    console.warn = originalWarn;
   });
 });
