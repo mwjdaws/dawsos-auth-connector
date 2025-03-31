@@ -1,16 +1,42 @@
+import { useState, useCallback } from 'react';
+import { validateDocument } from '@/utils/validation/documentValidation';
+import { toast } from '@/hooks/use-toast';
 
-import { validateDocumentTitle } from '@/utils/validation/documentValidation';
-import type { ValidationResult } from '@/utils/validation/types';
+export interface ValidationResult {
+  isValid: boolean;
+  message: string | null;
+  errorMessage: string | null;
+}
 
-/**
- * Hook for publish validation operations
- */
-export const usePublishValidation = () => {
-  /**
-   * Validate a document before publishing
-   */
+export function usePublishValidation() {
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+
+  const validateTitle = useCallback((title: string): ValidationResult => {
+    if (!title || title.trim() === '') {
+      return {
+        isValid: false,
+        message: 'Title is required',
+        errorMessage: 'Title is required before publishing'
+      };
+    }
+
+    if (title.length < 3) {
+      return {
+        isValid: false,
+        message: 'Title must be at least 3 characters',
+        errorMessage: 'Title is too short. Please use at least 3 characters.'
+      };
+    }
+
+    return {
+      isValid: true,
+      message: null,
+      errorMessage: null
+    };
+  }, []);
+
   const validateForPublish = (title: string): ValidationResult => {
-    const titleValidation = validateDocumentTitle(title);
+    const titleValidation = validateTitle(title);
     
     // If title is invalid, return that error
     if (!titleValidation.isValid) {
@@ -23,8 +49,11 @@ export const usePublishValidation = () => {
       message: null
     };
   };
-  
+
   return {
-    validateForPublish
+    validateTitle,
+    validateContent: validateDocument,
+    validateForPublish,
+    validationResult
   };
-};
+}

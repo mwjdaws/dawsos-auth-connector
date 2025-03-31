@@ -9,7 +9,7 @@ interface DashboardHeaderProps {
   title: string;
   description?: string;
   isLoading?: boolean;
-  onRefresh?: () => void;
+  onRefresh?: () => Promise<void> | void; // Updated type to accept both Promise and void
   showCreateButton?: boolean;
   createButtonLabel?: string;
   createButtonHref?: string;
@@ -26,7 +26,10 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   // Wrap the refresh handler with error handling
   const handleRefresh = onRefresh
-    ? withErrorHandling(onRefresh, {
+    ? withErrorHandling(async () => {
+        // Convert regular function to async to satisfy the WrappableFunction type
+        return await Promise.resolve(onRefresh());
+      }, {
         errorMessage: 'Failed to refresh data',
         level: 'error'
       })

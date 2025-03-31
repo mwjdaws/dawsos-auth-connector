@@ -1,16 +1,9 @@
-
 /**
  * useGraphData Hook
  * 
  * This custom hook is responsible for fetching and constructing the graph data
  * from multiple Supabase tables. It combines useGraphState and useFetchGraphData
  * to provide a complete graph data management solution.
- * 
- * Performance optimizations:
- * - Debounced fetching
- * - Cache validation
- * - Error categorization
- * - Request deduplication
  */
 import { useCallback, useEffect, useRef, useMemo } from 'react';
 import { GraphData, WithErrorHandlingOptions } from '../../types';
@@ -167,11 +160,11 @@ export function useGraphData(startingNodeId?: string) {
     fetchAttempts.current = 0;
     withErrorHandling(fetchGraphData, {
       errorMessage: "Failed to refresh graph data",
-      silent: false,
-      level: "error"
+      level: "error",
+      silent: false // Explicitly set silent property
     })(true); // Skip cache on manual refresh
   }, [fetchGraphData]);
-  
+
   return {
     graphData,
     loading,

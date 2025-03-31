@@ -1,4 +1,3 @@
-
 /**
  * useRelationshipGraph Hook
  * 
@@ -128,7 +127,7 @@ export function useRelationshipGraph({ startingNodeId, hasAttemptedRetry = false
       try {
         const node = graphData?.nodes.find(n => n.id === nodeId);
         if (node) {
-          graphRendererRef.current.centerOnNode(nodeId);
+          graphRendererRef.current.centerOn(nodeId);
           console.log(`Centering on node: ${node.name || node.title} (${nodeId})`);
         }
       } catch (err) {

@@ -9,12 +9,21 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import { RefreshCw, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
-import { HeaderSectionProps } from "../types";
+
+export interface HeaderSectionProps {
+  needsExternalReview?: boolean;
+  handleRefresh?: () => void;
+  isLoading?: boolean;
+  isCollapsible?: boolean;
+  isCollapsed?: boolean;
+  setIsCollapsed?: (value: boolean) => void;
+  className?: string;
+}
 
 export const HeaderSection: React.FC<HeaderSectionProps> = ({
-  needsExternalReview,
+  needsExternalReview = false,
   handleRefresh,
-  isLoading,
+  isLoading = false,
   isCollapsible = false,
   isCollapsed = false,
   setIsCollapsed,
@@ -46,15 +55,17 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             )}
           </Button>
         )}
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefresh}
-          disabled={isLoading}
-        >
-          <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-          <span className="sr-only">Refresh</span>
-        </Button>
+        {handleRefresh && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={isLoading}
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            <span className="sr-only">Refresh</span>
+          </Button>
+        )}
       </div>
     </CardHeader>
   );

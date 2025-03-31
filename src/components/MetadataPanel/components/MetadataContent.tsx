@@ -1,15 +1,16 @@
 
-import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { ExternalSourceSection } from '../ExternalSourceSection';
-import { TagsSection } from '../TagsSection';
-import { HeaderSection } from '../HeaderSection';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { SourceMetadata, Tag } from '../types';
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
-interface MetadataContentProps {
+import { Tag, SourceMetadata } from "../types";
+import { ContentIdSection } from "../sections/ContentIdSection";
+import { ExternalSourceSection } from "../sections/ExternalSourceSection";
+import { TagsSection } from "../sections/TagsSection";
+import { OntologySection } from "../sections/OntologySection";
+
+export interface MetadataContentProps {
   data: SourceMetadata | null;
   contentId: string;
   error: any;
@@ -23,39 +24,11 @@ interface MetadataContentProps {
   externalSourceUrl: string | null;
   lastCheckedAt: string | null;
   needsExternalReview: boolean;
-  onMetadataChange?: () => void;
-  showOntologyTerms?: boolean;
-  className?: string;
+  onMetadataChange?: () => void; // Make this optional
+  showOntologyTerms: boolean;
 }
 
-// Error state component
-interface ErrorStateProps {
-  error: Error;
-  title: string;
-  retry?: () => void;
-}
-
-const ErrorState: React.FC<ErrorStateProps> = ({ error, title, retry }) => (
-  <Alert variant="destructive" className="mb-4">
-    <AlertCircle className="h-4 w-4" />
-    <AlertTitle>{title}</AlertTitle>
-    <AlertDescription>
-      {error.message || 'An unexpected error occurred'}
-      {retry && (
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={retry} 
-          className="ml-2 h-7 px-2 text-xs"
-        >
-          <RefreshCw className="h-3 w-3 mr-1" /> Retry
-        </Button>
-      )}
-    </AlertDescription>
-  </Alert>
-);
-
-export const MetadataContent: React.FC<MetadataContentProps> = ({
+export function MetadataContent({
   data,
   contentId,
   error,
@@ -70,36 +43,46 @@ export const MetadataContent: React.FC<MetadataContentProps> = ({
   lastCheckedAt,
   needsExternalReview,
   onMetadataChange,
-  showOntologyTerms = true,
-  className = ""
-}) => {
+  showOntologyTerms
+}: MetadataContentProps) {
+  // Display error if there's an error
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-4">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Error loading metadata: {error.message || "Unknown error"}
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  // Function to ensure we always have a consistent callback
+  const handleMetadataChange = () => {
+    if (onMetadataChange) {
+      onMetadataChange();
+    }
+  };
+
   return (
-    <Card className={className}>
-      <HeaderSection 
-        needsExternalReview={needsExternalReview}
-        handleRefresh={onRefresh}
-        isLoading={false}
-      />
-      
-      <CardContent className="py-2">
-        {error && (
-          <ErrorState
-            error={error instanceof Error ? error : new Error(String(error))}
-            title="Error fetching metadata"
-            retry={onRefresh}
-          />
-        )}
+    <Card>
+      <CardContent className="p-4 space-y-6">
+        {/* Content ID Section */}
+        <ContentIdSection contentId={contentId} />
         
-        {externalSourceUrl && (
-          <ExternalSourceSection
-            contentId={contentId}
-            externalSourceUrl={externalSourceUrl}
-            lastCheckedAt={lastCheckedAt}
-            editable={editable}
-            onMetadataChange={onMetadataChange}
-          />
-        )}
+        {/* External Source Section */}
+        <ExternalSourceSection
+          externalSourceUrl={externalSourceUrl || ""}
+          lastCheckedAt={lastCheckedAt}
+          editable={editable}
+          onMetadataChange={handleMetadataChange}
+        />
         
+        {/* Tags Section */}
         <TagsSection
           tags={tags}
           contentId={contentId}
@@ -108,19 +91,19 @@ export const MetadataContent: React.FC<MetadataContentProps> = ({
           setNewTag={setNewTag}
           onAddTag={onAddTag}
           onDeleteTag={onDeleteTag}
-          onMetadataChange={onMetadataChange}
-          className="mt-4"
+          onMetadataChange={handleMetadataChange}
+          className="mt-6"
         />
         
+        {/* Ontology Terms Section (conditionally rendered) */}
         {showOntologyTerms && (
-          <div className="mt-4">
-            <h3 className="text-sm font-medium mb-2">Ontology Terms</h3>
-            <p className="text-sm text-muted-foreground">
-              No ontology terms attached to this content
-            </p>
-          </div>
+          <OntologySection
+            contentId={contentId}
+            editable={editable}
+            onMetadataChange={handleMetadataChange}
+          />
         )}
       </CardContent>
     </Card>
   );
-};
+}

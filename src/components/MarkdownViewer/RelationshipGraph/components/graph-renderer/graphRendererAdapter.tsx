@@ -7,9 +7,9 @@ import { GraphNode, GraphLink, GraphData } from '../../types';
  */
 export function adaptNodeData(node: GraphNode): GraphNode {
   return {
+    ...node, // Use spread first to avoid overwriting properties
     id: node.id,
-    name: node.name || node.title || node.id,
-    ...node
+    name: node.name || node.title || node.id
   };
 }
 
@@ -18,9 +18,9 @@ export function adaptNodeData(node: GraphNode): GraphNode {
  */
 export function adaptLinkData(link: GraphLink): GraphLink {
   return {
+    ...link, // Use spread first to avoid overwriting properties
     source: typeof link.source === 'object' ? (link.source as any).id : link.source,
-    target: typeof link.target === 'object' ? (link.target as any).id : link.target,
-    ...link
+    target: typeof link.target === 'object' ? (link.target as any).id : link.target
   };
 }
 

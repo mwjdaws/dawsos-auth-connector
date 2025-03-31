@@ -60,3 +60,27 @@ export interface ApplicationError extends Error {
   context?: Record<string, any>;
   timestamp: number;
 }
+
+/**
+ * Standardized error type
+ */
+export type StandardizedError = ApiError | ValidationError | ApplicationError;
+
+/**
+ * Type for withErrorHandling function
+ */
+export type WrappableFunction<T> = (...args: any[]) => Promise<T>;
+
+/**
+ * Type for error handling options
+ */
+export type WithErrorHandlingOptions = ErrorHandlingCompatOptions;
+
+/**
+ * Result of validation
+ */
+export interface ValidationResult {
+  isValid: boolean;
+  message: string | null;
+  errorMessage: string | null;
+}
