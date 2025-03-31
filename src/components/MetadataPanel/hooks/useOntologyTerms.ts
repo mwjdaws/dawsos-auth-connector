@@ -22,9 +22,10 @@ export const useOntologyTerms = ({ contentId }: UseOntologyTermsProps) => {
       
       // Query ontology terms linked to this content
       const { data, error } = await supabase
-        .from('content_ontology_terms')
+        .from('knowledge_source_ontology_terms')
         .select(`
           ontology_term_id,
+          review_required,
           ontology_terms (
             id,
             term,
@@ -45,7 +46,8 @@ export const useOntologyTerms = ({ contentId }: UseOntologyTermsProps) => {
           id: item.ontology_terms.id,
           term: item.ontology_terms.term || '',
           description: item.ontology_terms.description || '',
-          domain: item.ontology_terms.domain || ''
+          domain: item.ontology_terms.domain || '',
+          review_required: !!item.review_required
         }));
       
       setTerms(formattedTerms);

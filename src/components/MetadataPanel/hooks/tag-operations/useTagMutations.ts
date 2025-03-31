@@ -30,7 +30,7 @@ export function useTagMutations({
           name: name.trim().toLowerCase(),
           content_id: tagContentId,
           type_id: typeId || null,
-          display_order: tags.length // Add at the end by default
+          display_order: tags ? tags.length : 0 // Add at the end by default
         }])
         .select();
       
@@ -51,7 +51,9 @@ export function useTagMutations({
       };
       
       // Update the local tags state
-      setTags([...tags, newTag]);
+      if (setTags && tags) {
+        setTags([...tags, newTag]);
+      }
       
       toast({
         title: 'Tag added',
@@ -93,7 +95,9 @@ export function useTagMutations({
       }
       
       // Update the local tags state
-      setTags(tags.filter(tag => tag.id !== tagId));
+      if (setTags && tags) {
+        setTags(tags.filter(tag => tag.id !== tagId));
+      }
       
       toast({
         title: 'Tag deleted',
@@ -116,6 +120,10 @@ export function useTagMutations({
   
   // Reorder tags
   const reorderTags = useCallback(async (positions: TagPosition[]): Promise<boolean> => {
+    if (!positions.length) {
+      return false;
+    }
+    
     try {
       setIsReordering(true);
       
@@ -130,17 +138,19 @@ export function useTagMutations({
       // Execute all updates in parallel
       await Promise.all(updates);
       
-      // Update local state
-      const positionMap = new Map<string, number>();
-      positions.forEach(pos => positionMap.set(pos.id, pos.position));
-      
-      const sortedTags = [...tags].sort((a, b) => {
-        const posA = positionMap.get(a.id) || 0;
-        const posB = positionMap.get(b.id) || 0;
-        return posA - posB;
-      });
-      
-      setTags(sortedTags);
+      // Update local state if setTags and tags are provided
+      if (setTags && tags) {
+        const positionMap = new Map<string, number>();
+        positions.forEach(pos => positionMap.set(pos.id, pos.position));
+        
+        const sortedTags = [...tags].sort((a, b) => {
+          const posA = positionMap.get(a.id) ?? 0;
+          const posB = positionMap.get(b.id) ?? 0;
+          return posA - posB;
+        });
+        
+        setTags(sortedTags);
+      }
       
       toast({
         title: 'Tags reordered',

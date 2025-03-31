@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -60,7 +60,6 @@ export const DraggableTagList: React.FC<DraggableTagListProps> = ({
   onReorderTags,
   className = ""
 }) => {
-  // Safe handling of non-existent tags
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
@@ -84,7 +83,12 @@ export const DraggableTagList: React.FC<DraggableTagListProps> = ({
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={tags.map(tag => tag.id)} strategy={verticalListSortingStrategy}>
           {tags.map(tag => (
-            <SortableTag key={tag.id} tag={tag} onDelete={onDeleteTag} editable={editable} />
+            <SortableTag 
+              key={tag.id} 
+              tag={tag} 
+              onDelete={onDeleteTag} 
+              editable={editable} 
+            />
           ))}
         </SortableContext>
       </DndContext>

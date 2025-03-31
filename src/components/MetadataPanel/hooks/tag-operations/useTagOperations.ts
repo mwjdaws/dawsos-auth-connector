@@ -61,7 +61,12 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
   };
   
   // Handle reordering tags
-  const handleReorderTags = async (tagPositions: TagPosition[]) => {
+  const handleReorderTags = async (updatedTags: Tag[]) => {
+    const tagPositions: TagPosition[] = updatedTags.map((tag, index) => ({
+      id: tag.id,
+      position: index
+    }));
+    
     await reorderTags(tagPositions);
   };
   

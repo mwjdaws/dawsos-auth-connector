@@ -8,8 +8,8 @@
 import React, { useCallback } from "react";
 import { TagInput } from "@/components/MarkdownViewer/TagInput";
 import { TagList } from "../components/TagList";
-import { Tag, TagPosition } from "@/types/tag";
-import { supabase } from "@/integrations/supabase/client";
+import { Tag } from "@/types/tag";
+import { useTagMutations } from "@/hooks/metadata/useTagMutation";
 import { toast } from "@/hooks/use-toast";
 
 export interface TagsSectionProps {
@@ -35,28 +35,24 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
   onMetadataChange,
   className = ""
 }) => {
+  // Use the unified tag mutations hook
+  const { updateTagOrder, isUpdatingOrder } = useTagMutations(contentId);
+  
   // Handle tag reordering with proper database update
   const handleReorderTags = useCallback(async (reorderedTags: Tag[]) => {
+    if (!contentId || reorderedTags.length === 0) return;
+    
     // Convert to TagPosition type for compatibility
-    const positions: TagPosition[] = reorderedTags.map((tag, index) => ({
+    const positions = reorderedTags.map((tag, index) => ({
       id: tag.id,
       position: index
     }));
     
     console.log("Reordering tags:", positions);
     
-    // Save the new tag order to the database
     try {
-      // Update each tag's display_order in the database
-      const updates = positions.map(pos => 
-        supabase
-          .from('tags')
-          .update({ display_order: pos.position })
-          .eq('id', pos.id)
-      );
-      
-      // Execute all updates in parallel
-      await Promise.all(updates);
+      // Use the React Query mutation to update tag order
+      await updateTagOrder(positions);
       
       // Notify about successful reordering
       toast({
@@ -76,7 +72,7 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
         variant: "destructive"
       });
     }
-  }, [contentId, onMetadataChange]);
+  }, [contentId, updateTagOrder, onMetadataChange]);
   
   return (
     <div className={className}>
