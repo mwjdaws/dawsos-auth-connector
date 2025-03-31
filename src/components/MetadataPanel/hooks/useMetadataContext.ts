@@ -1,66 +1,83 @@
 
-import React, { createContext, useContext, useEffect } from 'react';
-import { Tag } from '@/types/tag';
-import { ValidationResult } from '@/utils/validation/types';
-
 /**
- * Metadata Context interface
+ * MetadataContext Provider
+ * 
+ * This context provides metadata information to the entire Metadata Panel
+ * and its child components. It includes tags, ontology terms, and external
+ * source information.
  */
-export interface MetadataContextProps {
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { Tag } from "@/types/tag";
+import { OntologyTerm } from "../types";
+import { isValidContentId } from "@/utils/content-validation";
+
+// Define the context value shape
+interface MetadataContextValue {
   contentId: string;
+  isValidContent: boolean;
   tags: Tag[];
-  isEditable: boolean;
-  isLoading: boolean;
-  error: Error | null;
-  validationResult: ValidationResult;
+  setTags: React.Dispatch<React.SetStateAction<Tag[]>>;
+  ontologyTerms: OntologyTerm[];
+  setOntologyTerms: React.Dispatch<React.SetStateAction<OntologyTerm[]>>;
+  externalSourceUrl: string | null;
+  setExternalSourceUrl: React.Dispatch<React.SetStateAction<string | null>>;
+  needsExternalReview: boolean;
+  setNeedsExternalReview: React.Dispatch<React.SetStateAction<boolean>>;
+  lastCheckedAt: string | null;
+  setLastCheckedAt: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-/**
- * Create context with a meaningful error message for when it's used outside of provider
- */
-const MetadataContext = createContext<MetadataContextProps | undefined>(undefined);
+// Create the actual context
+const MetadataContext = createContext<MetadataContextValue | undefined>(undefined);
 
-/**
- * MetadataProvider component
- * 
- * Provides metadata context to its children
- */
-export const MetadataProvider: React.FC<{ value: MetadataContextProps; children: React.ReactNode }> = ({
-  value,
-  children
-}) => {
+// Provider component
+export const MetadataProvider: React.FC<{
+  contentId: string;
+  children: React.ReactNode;
+}> = ({ contentId, children }) => {
+  const [isValidContent] = useState(() => isValidContentId(contentId));
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [ontologyTerms, setOntologyTerms] = useState<OntologyTerm[]>([]);
+  const [externalSourceUrl, setExternalSourceUrl] = useState<string | null>(null);
+  const [needsExternalReview, setNeedsExternalReview] = useState(false);
+  const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
+
+  // Reset the state when the contentId changes
+  useEffect(() => {
+    setTags([]);
+    setOntologyTerms([]);
+    setExternalSourceUrl(null);
+    setNeedsExternalReview(false);
+    setLastCheckedAt(null);
+  }, [contentId]);
+
   return (
-    <MetadataContext.Provider value={value}>
+    <MetadataContext.Provider
+      value={{
+        contentId,
+        isValidContent,
+        tags,
+        setTags,
+        ontologyTerms,
+        setOntologyTerms,
+        externalSourceUrl,
+        setExternalSourceUrl,
+        needsExternalReview,
+        setNeedsExternalReview,
+        lastCheckedAt,
+        setLastCheckedAt
+      }}
+    >
       {children}
     </MetadataContext.Provider>
   );
 };
 
-/**
- * useMetadataContext hook
- * 
- * Provides access to the metadata context
- * @param providedContentId Optional content ID to verify against the context
- * @returns Metadata context values
- */
-export function useMetadataContext(providedContentId?: string): MetadataContextProps {
+// Custom hook to use the context
+export const useMetadataContext = () => {
   const context = useContext(MetadataContext);
-  
-  // Throw a helpful error if the hook is used outside of a provider
-  if (context === undefined) {
-    throw new Error('useMetadataContext must be used within a MetadataProvider');
+  if (!context) {
+    throw new Error("useMetadataContext must be used within a MetadataProvider");
   }
-  
-  // Optional validation to ensure the component using the context is working with the expected content
-  useEffect(() => {
-    if (providedContentId && providedContentId !== context.contentId) {
-      console.warn(
-        `Content ID mismatch: Component is using content ID "${providedContentId}" but the MetadataProvider has "${context.contentId}"`
-      );
-    }
-  }, [providedContentId, context.contentId]);
-  
   return context;
-}
-
-export default useMetadataContext;
+};

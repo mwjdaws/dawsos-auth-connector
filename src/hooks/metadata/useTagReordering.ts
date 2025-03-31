@@ -1,85 +1,102 @@
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+/**
+ * Hook for managing tag reordering
+ * 
+ * This hook provides a consistent interface for handling tag reordering
+ * operations, including optimistic updates and server synchronization.
+ */
+import { useCallback, useState } from 'react';
+import { Tag } from '@/types/tag';
+import { isValidContentId } from '@/utils/content-validation';
 import { toast } from '@/hooks/use-toast';
-import { handleError } from '@/utils/errors';
-import { isValidContentId } from '@/utils/validation';
-
-interface TagPosition {
-  id: string;
-  position: number;
-}
+import { supabase } from '@/integrations/supabase/client';
+import { handleError } from '@/utils/error-handling';
 
 interface UseTagReorderingProps {
   contentId: string;
-  onMetadataChange?: () => void;
+  tags: Tag[];
+  onSuccess?: () => void;
 }
 
 export function useTagReordering({
   contentId,
-  onMetadataChange
+  tags: initialTags,
+  onSuccess
 }: UseTagReorderingProps) {
-  const queryClient = useQueryClient();
+  const [isReordering, setIsReordering] = useState(false);
+  const [localTags, setLocalTags] = useState<Tag[]>(initialTags);
   
-  const { mutate: reorderTagsMutation, isPending: isReordering } = useMutation({
-    mutationFn: async (tagPositions: TagPosition[]) => {
-      if (!contentId || !isValidContentId(contentId)) {
-        throw new Error('Invalid content ID');
-      }
-      
-      if (!tagPositions.length) {
-        return { success: true };
-      }
-      
-      try {
-        // In a real implementation, this would update the positions in the database
-        // For this example, we'll just simulate success
-        console.log('Reordering tags:', tagPositions);
-        
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        return { success: true };
-      } catch (error) {
-        console.error('Error reordering tags:', error);
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      // Invalidate tags query to trigger refetch
-      queryClient.invalidateQueries({ queryKey: ['tags', contentId] });
-      
-      if (onMetadataChange) {
-        onMetadataChange();
-      }
-      
-      toast({
-        title: 'Tags Reordered',
-        description: 'Tags were successfully reordered',
-      });
-    },
-    onError: (error) => {
-      console.error('Error reordering tags:', error);
-      
-      handleError(error, 'Failed to reorder tags', {
-        context: { contentId },
-        level: 'error'
-      });
-      
-      toast({
-        title: 'Error',
-        description: 'Failed to reorder tags',
-        variant: 'destructive',
-      });
-    }
+  // Update local tags when props change
+  useState(() => {
+    setLocalTags(initialTags);
   });
   
-  const handleReorderTags = async (tagPositions: TagPosition[]) => {
-    reorderTagsMutation(tagPositions);
-  };
+  /**
+   * Reorder tags and update in database
+   */
+  const reorderTags = useCallback(async (reorderedTags: Tag[]) => {
+    if (!isValidContentId(contentId)) {
+      toast({
+        title: "Invalid Content ID",
+        description: "Cannot reorder tags for invalid content",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    // Apply optimistic update
+    setLocalTags(reorderedTags);
+    setIsReordering(true);
+    
+    try {
+      // Prepare the positions for update
+      const positions = reorderedTags.map((tag, index) => ({
+        id: tag.id,
+        position: index
+      }));
+      
+      // Update each tag in parallel
+      const updatePromises = positions.map(pos => 
+        supabase
+          .from('tags')
+          .update({ display_order: pos.position })
+          .eq('id', pos.id)
+      );
+      
+      await Promise.all(updatePromises);
+      
+      // Notify success
+      toast({
+        title: "Tags Reordered",
+        description: "The tag order has been saved",
+      });
+      
+      // Call success callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
+      
+      return true;
+    } catch (error) {
+      // Revert optimistic update on error
+      setLocalTags(initialTags);
+      
+      handleError(
+        error, 
+        "Failed to update tag order", 
+        { level: "warning", category: "tags" }
+      );
+      
+      return false;
+    } finally {
+      setIsReordering(false);
+    }
+  }, [contentId, initialTags, onSuccess]);
   
   return {
-    handleReorderTags,
+    tags: localTags,
+    setTags: setLocalTags,
+    reorderTags,
     isReordering
   };
 }
