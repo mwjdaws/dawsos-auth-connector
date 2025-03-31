@@ -98,8 +98,7 @@ export interface UseTagOperationsResult {
   setNewTag: (value: string) => void;
   handleAddTag: (typeId?: string | null) => Promise<void>;
   handleDeleteTag: (tagId: string) => Promise<void>;
-  handleUpdateTagOrder?: (tagPositions: TagPosition[]) => Promise<void>;
-  handleReorderTags: (tagPositions: TagPosition[]) => Promise<void>;
+  handleReorderTags: (updatedTags: Tag[]) => Promise<void>;
   handleRefresh: () => Promise<void>;
   isAddingTag: boolean;
   isDeletingTag: boolean;

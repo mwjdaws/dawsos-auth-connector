@@ -43,9 +43,9 @@ export function useTagMutations({
       }
       
       const newTag: Tag = {
-        id: data[0].id,
-        name: data[0].name,
-        content_id: data[0].content_id,
+        id: data[0].id || '',
+        name: data[0].name || '',
+        content_id: data[0].content_id || '',
         type_id: data[0].type_id,
         display_order: data[0].display_order || 0
       };

@@ -14,7 +14,8 @@ export function transformTagData(tagData: any): Tag {
       id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: tagData.trim().toLowerCase(),
       content_id: '',
-      type_id: null
+      type_id: null,
+      display_order: 0
     };
   }
   
@@ -30,7 +31,8 @@ export function transformTagData(tagData: any): Tag {
       name,
       content_id: tagData.content_id || '',
       type_id: tagData.type_id || null,
-      type_name: tagData.type_name || null
+      type_name: tagData.type_name || null,
+      display_order: typeof tagData.display_order === 'number' ? tagData.display_order : 0
     };
   }
   
@@ -39,7 +41,8 @@ export function transformTagData(tagData: any): Tag {
     id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     name: String(tagData).trim().toLowerCase(),
     content_id: '',
-    type_id: null
+    type_id: null,
+    display_order: 0
   };
 }
 

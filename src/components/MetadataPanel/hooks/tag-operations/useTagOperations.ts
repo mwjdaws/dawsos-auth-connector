@@ -3,7 +3,7 @@ import { useState, useCallback } from 'react';
 import { useTagState } from './useTagState';
 import { useTagFetch } from './useTagFetch';
 import { useTagMutations } from './useTagMutations';
-import { UseTagOperationsProps, UseTagOperationsResult, TagPosition, Tag } from './types';
+import { UseTagOperationsResult, Tag, TagPosition } from './types';
 
 /**
  * Main hook for tag operations that combines state, fetching, and mutations
@@ -62,6 +62,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
   
   // Handle reordering tags
   const handleReorderTags = async (updatedTags: Tag[]) => {
+    // Convert tags to positions
     const tagPositions: TagPosition[] = updatedTags.map((tag, index) => ({
       id: tag.id,
       position: index

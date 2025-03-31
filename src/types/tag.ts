@@ -55,6 +55,16 @@ export function isValidTag(tag: any): tag is Tag {
  * Utility function to map API tag data to the standard Tag interface
  */
 export function mapApiTagToTag(apiTag: any): Tag {
+  if (!apiTag) {
+    return {
+      id: '',
+      name: '',
+      content_id: '',
+      type_id: null,
+      display_order: 0
+    };
+  }
+
   return {
     id: typeof apiTag.id === 'string' ? apiTag.id : '',
     name: typeof apiTag.name === 'string' ? apiTag.name : '',
@@ -71,7 +81,11 @@ export function mapApiTagToTag(apiTag: any): Tag {
  * Utility function to map API tags to internal Tag format
  */
 export function mapApiTagsToTags(apiTags: any[]): Tag[] {
-  return Array.isArray(apiTags) ? apiTags.map(mapApiTagToTag) : [];
+  if (!Array.isArray(apiTags)) {
+    return [];
+  }
+  
+  return apiTags.map(apiTag => mapApiTagToTag(apiTag));
 }
 
 /**
@@ -84,8 +98,8 @@ export function ensureNonNullableTag(tag: {
   type_id: string | null;
 }): Tag {
   return {
-    id: tag.id,
-    name: tag.name,
+    id: tag.id || '',
+    name: tag.name || '',
     content_id: tag.content_id || '',
     type_id: tag.type_id,
     display_order: 0
@@ -96,8 +110,16 @@ export function ensureNonNullableTag(tag: {
  * Filter out duplicate tags from an array based on name
  */
 export function filterDuplicateTags(tags: Tag[]): Tag[] {
+  if (!Array.isArray(tags)) {
+    return [];
+  }
+  
   const seen = new Set<string>();
   return tags.filter(tag => {
+    if (!tag || typeof tag.name !== 'string') {
+      return false;
+    }
+    
     const normalizedName = tag.name.trim().toLowerCase();
     if (seen.has(normalizedName)) {
       return false;
@@ -111,9 +133,17 @@ export function filterDuplicateTags(tags: Tag[]): Tag[] {
  * Convert tag positions to tag array
  */
 export function convertTagPositionsToTags(positions: TagPosition[], allTags: Tag[]): Tag[] {
+  if (!Array.isArray(positions) || !Array.isArray(allTags)) {
+    return [];
+  }
+  
   // Create a mapping of tag IDs to tags
   const tagMap = new Map<string, Tag>();
-  allTags.forEach(tag => tagMap.set(tag.id, tag));
+  allTags.forEach(tag => {
+    if (tag && typeof tag.id === 'string') {
+      tagMap.set(tag.id, tag);
+    }
+  });
   
   // Convert positions to ordered tags
   return positions

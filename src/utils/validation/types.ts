@@ -1,30 +1,19 @@
 
 /**
- * Common validation types
+ * Types for validation utilities
  */
 
-/**
- * Basic validation result interface
- */
+// Generic validation result type
 export interface ValidationResult {
   isValid: boolean;
-  errorMessage: string | null;
-}
-
-/**
- * More detailed validation result for content IDs
- */
-export interface ContentIdValidationResult {
-  isValid: boolean;
-  errorMessage: string | null;
   message: string | null;
-  resultType: string;
+  errorMessage?: string;
 }
 
-/**
- * Tag position for ordering tags
- */
+// Tag position for reordering
 export interface TagPosition {
   id: string;
   position: number;
 }
+
+// Export other validation types as needed
