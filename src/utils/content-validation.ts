@@ -73,3 +73,7 @@ export function isUuidContentId(contentId?: string | null): boolean {
 export function isStorableContentId(contentId?: string | null): boolean {
   return isStorableContentIdInternal(contentId);
 }
+
+// Backward compatibility aliases
+export const isContentIdValid = isValidContentId;
+export const isUuidValid = isUuidContentId;

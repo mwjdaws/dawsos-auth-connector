@@ -5,7 +5,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { handleError } from '@/utils/error-handling';
-import { isValidContentId } from '@/utils/validation/contentIdValidation';
+import { isValidContentId, tryParseContentIdAsUUID } from '@/utils/content-validation';
 import { toast } from '@/hooks/use-toast';
 import { Tag } from '@/types/tag';
 
@@ -41,11 +41,14 @@ export function useTagMutations(contentId?: string) {
         throw new Error('Invalid content ID');
       }
 
+      // Convert temporary IDs to UUID if possible
+      const dbContentId = tryParseContentIdAsUUID(contentId) || contentId;
+
       const { data, error } = await supabase
         .from('tags')
         .insert({
           name: name.trim(),
-          content_id: contentId,
+          content_id: dbContentId,
           type_id: typeId === undefined ? null : typeId,
           display_order: display_order || 0
         })
@@ -133,7 +136,7 @@ export function useTagMutations(contentId?: string) {
     }
   });
 
-  // Add helper methods
+  // Add helper methods for simpler API
   const addTag = (params: AddTagParams) => {
     return addTagMutation.mutateAsync({
       ...params,

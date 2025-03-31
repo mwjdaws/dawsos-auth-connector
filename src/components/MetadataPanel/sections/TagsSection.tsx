@@ -5,11 +5,12 @@
  * Displays tags and provides functionality to add and remove them.
  * Uses the TagList component for tag display and supports drag-and-drop reordering.
  */
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import { TagInput } from "@/components/MarkdownViewer/TagInput";
 import { TagList } from "../components/TagList";
 import { Tag } from "@/types/tag";
 import { useTagMutations } from "@/hooks/metadata/useTagMutation";
+import { useContentIdValidation } from "@/hooks/validation/useContentIdValidation";
 import { toast } from "@/hooks/use-toast";
 
 export interface TagsSectionProps {
@@ -35,12 +36,22 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
   onMetadataChange,
   className = ""
 }) => {
+  // Validate content ID
+  const { isValid, isTemporary } = useContentIdValidation(contentId);
+  
+  // Show warning if using temporary ID
+  useEffect(() => {
+    if (isTemporary && tags.length > 0) {
+      console.warn("Using temporary content ID with tags. Tags may not persist until content is saved.");
+    }
+  }, [isTemporary, tags.length]);
+  
   // Use the unified tag mutations hook
   const { updateTagOrder, isUpdatingOrder } = useTagMutations(contentId);
   
   // Handle tag reordering with proper database update
   const handleReorderTags = useCallback(async (reorderedTags: Tag[]) => {
-    if (!contentId || reorderedTags.length === 0) return;
+    if (!contentId || reorderedTags.length === 0 || !isValid) return;
     
     // Convert to TagPosition type for compatibility
     const positions = reorderedTags.map((tag, index) => ({
@@ -72,17 +83,23 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
         variant: "destructive"
       });
     }
-  }, [contentId, updateTagOrder, onMetadataChange]);
+  }, [contentId, updateTagOrder, onMetadataChange, isValid]);
   
   return (
     <div className={className}>
       <h3 className="text-sm font-medium mb-2">Tags</h3>
       
+      {isTemporary && editable && tags.length > 0 && (
+        <div className="bg-yellow-50 text-yellow-800 p-2 rounded-md text-xs mb-2">
+          Using temporary content ID. Save the content to ensure tags are permanently saved.
+        </div>
+      )}
+      
       <TagList
         tags={tags}
         editable={editable}
         onDeleteTag={onDeleteTag}
-        onReorderTags={handleReorderTags}
+        onReorderTags={isValid ? handleReorderTags : undefined}
       />
       
       {editable && (
@@ -92,6 +109,7 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
             newTag={newTag} 
             setNewTag={setNewTag} 
             aria-label="Add a new tag"
+            disabled={!isValid}
           />
         </div>
       )}
