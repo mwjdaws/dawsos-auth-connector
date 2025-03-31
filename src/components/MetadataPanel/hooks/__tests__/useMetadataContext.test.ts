@@ -1,12 +1,19 @@
 
-import { renderHook } from '@testing-library/react-hooks';
 import React from 'react';
+import { renderHook } from '@testing-library/react-hooks';
 import { MetadataProvider, useMetadataContext } from '../useMetadataContext';
 import { createValidResult } from '@/utils/validation/types';
+import { Tag } from '@/types/tag';
 
 // Mock data
 const mockContentId = 'test-content-id';
-const mockTags = [{ id: '1', name: 'tag1', content_id: mockContentId, display_order: 0 }];
+const mockTags: Tag[] = [{ 
+  id: '1', 
+  name: 'tag1', 
+  content_id: mockContentId, 
+  display_order: 0,
+  type_id: null 
+}];
 const mockValidationResult = createValidResult('Valid content');
 
 describe('useMetadataContext', () => {
@@ -35,7 +42,7 @@ describe('useMetadataContext', () => {
     };
     
     // Create wrapper with provider
-    const wrapper = ({ children }) => (
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
       React.createElement(MetadataProvider, { value: contextValue }, children)
     );
     
@@ -66,7 +73,7 @@ describe('useMetadataContext', () => {
     };
     
     // Create wrapper with provider
-    const wrapper = ({ children }) => (
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
       React.createElement(MetadataProvider, { value: contextValue }, children)
     );
     
