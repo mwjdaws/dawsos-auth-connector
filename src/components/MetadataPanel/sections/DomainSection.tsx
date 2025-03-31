@@ -1,20 +1,23 @@
 
-import React from "react";
+import React from 'react';
+import { Badge } from '@/components/ui/badge';
 
 interface DomainSectionProps {
-  domain: string | null;
-  className?: string;
+  domain: string;
 }
 
-export function DomainSection({ domain, className = "" }: DomainSectionProps) {
-  if (!domain) return null;
-  
+/**
+ * Section that displays the domain information for a content item
+ */
+export const DomainSection: React.FC<DomainSectionProps> = ({
+  domain
+}) => {
   return (
-    <div className={className}>
+    <div className="mb-4">
       <h3 className="text-sm font-medium mb-2">Domain</h3>
-      <div className="text-sm">
+      <Badge variant="secondary" className="text-xs py-1">
         {domain}
-      </div>
+      </Badge>
     </div>
   );
-}
+};

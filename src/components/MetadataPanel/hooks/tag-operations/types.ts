@@ -1,40 +1,9 @@
 
+import { Tag } from '@/types/tag';
+
 /**
- * Tag operations types
- * 
- * @deprecated Import Tag types from @/types/tag instead
+ * Result of the useTagState hook
  */
-
-// Re-export the unified types
-import { 
-  Tag, 
-  TagPosition, 
-  AugmentedTag,
-  mapApiTagToTag,
-  mapApiTagsToTags,
-  ensureNonNullableTag,
-  filterDuplicateTags,
-  convertTagPositionsToTags
-} from '@/types/tag';
-
-export type { 
-  Tag, 
-  TagPosition, 
-  AugmentedTag
-};
-
-export {
-  mapApiTagToTag,
-  mapApiTagsToTags,
-  ensureNonNullableTag,
-  filterDuplicateTags,
-  convertTagPositionsToTags
-};
-
-export interface UseTagStateProps {
-  initialTags?: Tag[];
-}
-
 export interface UseTagStateResult {
   tags: Tag[];
   setTags: (tags: Tag[]) => void;
@@ -43,67 +12,63 @@ export interface UseTagStateResult {
   error: Error | null;
   setError: (error: Error | null) => void;
   newTag: string;
-  setNewTag: (value: string) => void;
+  setNewTag: (newTag: string) => void;
 }
 
-export interface UseTagFetchProps {
-  contentId: string;
-  setTags: (tags: Tag[]) => void;
-  setIsLoading: (isLoading: boolean) => void;
-  setError: (error: Error | null) => void;
-}
-
+/**
+ * Result of the useTagFetch hook
+ */
 export interface UseTagFetchResult {
   fetchTags: () => Promise<Tag[]>;
   isLoading: boolean;
   error: Error | null;
-  tags?: Tag[]; // Added for compatibility
 }
 
-export interface UseTagMutationsProps {
-  contentId: string;
-  setTags: (tags: Tag[]) => void;
-  tags: Tag[];
-}
-
-export interface AddTagParams {
-  name: string;
-  contentId: string;
-  typeId?: string | null;
-}
-
-export interface DeleteTagParams {
-  tagId: string;
-  contentId: string;
-}
-
+/**
+ * Result of the useTagMutations hook
+ */
 export interface UseTagMutationsResult {
-  addTag: (params: AddTagParams) => Promise<boolean>;
-  deleteTag: (params: DeleteTagParams) => Promise<boolean>;
-  reorderTags: (positions: TagPosition[]) => Promise<boolean>;
+  addTag: (params: { name: string; contentId: string; typeId?: string | null }) => Promise<Tag | null>;
+  deleteTag: (params: { tagId: string; contentId: string }) => Promise<boolean>;
+  reorderTags: (positions: { id: string; position: number }[]) => Promise<boolean>;
   isAddingTag: boolean;
   isDeletingTag: boolean;
   isReordering: boolean;
 }
 
-export interface UseTagOperationsProps {
-  contentId: string;
-}
-
+/**
+ * Result of the useTagOperations hook
+ */
 export interface UseTagOperationsResult {
   tags: Tag[];
   isLoading: boolean;
   error: Error | null;
   newTag: string;
-  setNewTag: (value: string) => void;
+  setNewTag: (tag: string) => void;
   handleAddTag: (typeId?: string | null) => Promise<void>;
   handleDeleteTag: (tagId: string) => Promise<void>;
-  handleReorderTags: (updatedTags: Tag[]) => Promise<void>;
+  handleReorderTags: (tags: Tag[]) => Promise<void>;
   handleRefresh: () => Promise<void>;
   isAddingTag: boolean;
   isDeletingTag: boolean;
   isReordering: boolean;
-  // Added for backward compatibility
-  isTagsLoading?: boolean; 
-  tagsError?: Error | null;
+}
+
+/**
+ * Position information for tag reordering
+ */
+export interface TagPosition {
+  id: string;
+  position: number;
+}
+
+/**
+ * Tag representation
+ */
+export interface Tag {
+  id: string;
+  name: string;
+  content_id: string;
+  type_id?: string | null;
+  display_order?: number;
 }

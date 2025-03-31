@@ -1,55 +1,43 @@
 
-/**
- * useTagState Hook
- * 
- * Manages the state for tags within the MetadataPanel
- */
-
 import { useState } from 'react';
 import { Tag } from '@/types/tag';
 
-interface TagStateOptions {
+export interface UseTagStateProps {
   initialTags?: Tag[];
   initialLoading?: boolean;
   initialError?: Error | null;
   initialNewTag?: string;
 }
 
+export interface UseTagStateResult {
+  tags: Tag[];
+  setTags: (tags: Tag[]) => void;
+  isLoading: boolean;
+  setIsLoading: (isLoading: boolean) => void;
+  error: Error | null;
+  setError: (error: Error | null) => void;
+  newTag: string;
+  setNewTag: (newTag: string) => void;
+}
+
 /**
  * Hook for managing tag state
  * 
- * @param options Configuration options for initializing tag state
- * @returns Object containing tag state and setter functions
+ * @param props Initial state properties
+ * @returns Tag state and setters
  */
-export const useTagState = (options: TagStateOptions = {}) => {
-  const {
-    initialTags = [],
-    initialLoading = false,
-    initialError = null,
-    initialNewTag = ''
-  } = options;
-
-  // State for tag data
+export const useTagState = ({
+  initialTags = [],
+  initialLoading = false,
+  initialError = null,
+  initialNewTag = ''
+}: UseTagStateProps = {}): UseTagStateResult => {
   const [tags, setTags] = useState<Tag[]>(initialTags);
   const [isLoading, setIsLoading] = useState<boolean>(initialLoading);
   const [error, setError] = useState<Error | null>(initialError);
   const [newTag, setNewTag] = useState<string>(initialNewTag);
-
-  // Reset all state
-  const resetState = () => {
-    setTags(initialTags);
-    setIsLoading(initialLoading);
-    setError(initialError);
-    setNewTag(initialNewTag);
-  };
-
-  // Reset error state
-  const clearError = () => {
-    setError(null);
-  };
-
+  
   return {
-    // State
     tags,
     setTags,
     isLoading,
@@ -57,10 +45,6 @@ export const useTagState = (options: TagStateOptions = {}) => {
     error,
     setError,
     newTag,
-    setNewTag,
-
-    // Utility functions
-    resetState,
-    clearError
+    setNewTag
   };
 };

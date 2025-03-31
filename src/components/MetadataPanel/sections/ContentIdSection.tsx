@@ -1,42 +1,39 @@
 
-import React from "react";
-import { Clipboard, CheckCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import React from 'react';
+import { Copy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ContentIdSectionProps {
   contentId: string;
-  className?: string;
 }
 
-export function ContentIdSection({ contentId, className = "" }: ContentIdSectionProps) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopyId = () => {
+/**
+ * Displays the content ID with a copy button
+ */
+export const ContentIdSection: React.FC<ContentIdSectionProps> = ({
+  contentId
+}) => {
+  const handleCopyClick = () => {
     navigator.clipboard.writeText(contentId);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
-
+  
   return (
-    <div className={className}>
-      <h3 className="text-sm font-medium mb-2">Content ID</h3>
+    <div className="mb-4">
+      <h3 className="text-sm font-medium mb-1">Content ID</h3>
       <div className="flex items-center gap-2">
-        <code className="text-xs bg-muted p-1 rounded">{contentId}</code>
+        <code className="bg-secondary p-1 rounded text-xs font-mono flex-1 overflow-x-auto">
+          {contentId}
+        </code>
         <Button 
           variant="ghost" 
-          size="sm" 
-          onClick={handleCopyId}
-          className="h-6 w-6 p-0"
+          size="icon" 
+          className="h-6 w-6" 
+          onClick={handleCopyClick}
         >
-          {copied ? (
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-          ) : (
-            <Clipboard className="h-4 w-4" />
-          )}
+          <Copy className="h-3 w-3" />
           <span className="sr-only">Copy ID</span>
         </Button>
       </div>
     </div>
   );
-}
+};
