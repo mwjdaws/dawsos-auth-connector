@@ -4,9 +4,16 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSourceMetadata } from './useSourceMetadata';
 import { useTagOperations } from './tag-operations/useTagOperations';
 import { usePanelState } from './usePanelState';
-import { MetadataPanelProps, SourceMetadata, Tag, OntologyTerm, SimpleSourceMetadata } from '../types';
+import { MetadataPanelProps, SourceMetadata, Tag, OntologyTerm } from '../types';
 
-export const useMetadataPanel = (props: MetadataPanelProps) => {
+export interface UseMetadataPanelProps {
+  contentId: string;
+  onMetadataChange?: (() => void) | null;
+  isCollapsible?: boolean;
+  initialCollapsed?: boolean;
+}
+
+export const useMetadataPanel = (props: UseMetadataPanelProps) => {
   const { contentId, onMetadataChange, isCollapsible, initialCollapsed } = props;
   
   // Use the tag operations hook
@@ -18,7 +25,7 @@ export const useMetadataPanel = (props: MetadataPanelProps) => {
   // Panel state with properly typed props
   const panelState = usePanelState({ 
     contentId, 
-    onMetadataChange,
+    onMetadataChange: onMetadataChange || undefined,
     isCollapsible,
     initialCollapsed
   });

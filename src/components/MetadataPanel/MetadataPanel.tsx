@@ -7,7 +7,7 @@ import { MetadataContent } from './components/MetadataContent';
 import { ContentAlert } from './components/ContentAlert';
 import { useMetadataPanel } from './hooks/useMetadataPanel';
 import { MetadataPanelProps } from './types';
-import { safeCallback } from '@/utils/type-compatibility';
+import { safeCallback } from '@/utils/compatibility';
 
 /**
  * MetadataPanel Component
@@ -103,7 +103,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
       
       {!isCollapsed && (
         <MetadataContent
-          data={data}
+          data={data as any} {/* Temporary type cast until we fix the interfaces */}
           contentId={contentId}
           error={error}
           tags={tags}

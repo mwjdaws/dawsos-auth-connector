@@ -33,7 +33,7 @@ export function ensureValidGraphData(data: GraphData | null | undefined): GraphD
  */
 export function createSafeGraphProps(props: Partial<GraphProps> | null | undefined): GraphProps {
   return {
-    startingNodeId: props?.startingNodeId || undefined,
+    startingNodeId: props?.startingNodeId || '',
     width: typeof props?.width === 'number' ? props.width : 800,
     height: typeof props?.height === 'number' ? props.height : 600,
     hasAttemptedRetry: !!props?.hasAttemptedRetry
@@ -60,21 +60,34 @@ export function createCompatibleGraphRef(ref: any): any {
  */
 export function sanitizeGraphData(data: GraphData): GraphData {
   // Ensure nodes have all required properties
-  const nodes = (data.nodes || []).map((node) => ({
-    id: String(node.id || ''),
-    name: String(node.name || node.title || ''),
-    title: String(node.title || node.name || ''),
-    type: String(node.type || 'default'),
-    ...node
-  }));
+  const nodes = (data.nodes || []).map((node) => {
+    const nodeId = String(node.id || '');
+    const nodeName = String(node.name || node.title || '');
+    const nodeTitle = String(node.title || node.name || '');
+    const nodeType = String(node.type || 'default');
+    
+    return {
+      ...node,
+      id: nodeId,
+      name: nodeName,
+      title: nodeTitle,
+      type: nodeType
+    };
+  });
   
   // Ensure links have all required properties
-  const links = (data.links || []).map((link) => ({
-    source: String(link.source || ''),
-    target: String(link.target || ''),
-    type: String(link.type || 'default'),
-    ...link
-  }));
+  const links = (data.links || []).map((link) => {
+    const linkSource = String(link.source || '');
+    const linkTarget = String(link.target || '');
+    const linkType = String(link.type || 'default');
+    
+    return {
+      ...link,
+      source: linkSource,
+      target: linkTarget,
+      type: linkType
+    };
+  });
   
   return { nodes, links };
 }

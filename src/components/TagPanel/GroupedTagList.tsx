@@ -1,154 +1,141 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { safeCallback } from '@/types/compat';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
+import { Tag } from '@/types/tag';
+import { TagCard } from './TagCard';
+import { safeCallback } from '@/utils/compatibility';
 
-interface TagsGroup {
-  title: string;
-  tags: string[];
+interface TagGroup {
+  [key: string]: string[];
+}
+
+interface TagsByType {
+  typedTags: TagGroup;
+  uncategorized: string[];
 }
 
 interface TagCardsProps {
   key: string;
   title: string;
   tags: string[];
-  onTagClick?: (tag: string) => void;
+  onTagClick: (tag: string) => void;
 }
-
-// Component for a single group of tags
-const TagCards = ({ title, tags, onTagClick }: TagCardsProps) => {
-  // Safe wrapper for the tag click handler
-  const handleTagClick = safeCallback(onTagClick);
-  
-  return (
-    <Card className="mb-4">
-      <CardHeader className="py-4 px-5">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="py-2 px-5">
-        <div className="flex flex-wrap gap-2">
-          {tags.map((tag) => (
-            <Badge
-              key={tag}
-              variant="secondary"
-              className="cursor-pointer"
-              onClick={() => handleTagClick(tag)}
-            >
-              {tag}
-            </Badge>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
 
 interface GroupedTagListProps {
-  tags: string[];
-  onTagClick?: (tag: string) => void;
+  tags: Tag[];
+  isLoading?: boolean;
+  onTagClick?: (tag: string) => void; 
+  refreshTrigger?: number;
 }
 
-/**
- * Grouped Tag List Component
- * 
- * Displays tags grouped by categories like "Development", "Features", etc.
- */
-export function GroupedTagList({ tags, onTagClick }: GroupedTagListProps) {
-  // Group the tags by category
-  const groupedTags = React.useMemo(() => {
-    // Define groups and their keywords
-    const groups: Record<string, { title: string; keywords: string[] }> = {
-      development: {
-        title: "Development",
-        keywords: ["react", "typescript", "javascript", "angular", "vue", "html", "css", "scss", "node", "express", "api", "backend", "frontend", "fullstack", "webpack", "babel", "vite", "npm", "yarn"]
-      },
-      features: {
-        title: "Features",
-        keywords: ["feature", "component", "hook", "context", "state", "props", "ref", "memo", "callback", "effect", "reducer", "provider", "consumer"]
-      },
-      design: {
-        title: "Design",
-        keywords: ["ui", "ux", "design", "theme", "interface", "responsive", "mobile", "desktop", "layout", "grid", "flex", "style", "color", "typography", "dark mode"]
-      },
-      content: {
-        title: "Content",
-        keywords: ["markdown", "text", "image", "video", "audio", "media", "content", "document", "file", "upload", "download"]
-      },
-      functionality: {
-        title: "Functionality",
-        keywords: ["authentication", "authorization", "user", "login", "signup", "register", "password", "security", "form", "validation", "input", "button", "modal", "dialog", "notification", "toast", "alert"]
-      },
-      data: {
-        title: "Data",
-        keywords: ["database", "api", "fetch", "axios", "http", "rest", "graphql", "query", "mutation", "subscription", "cache", "storage", "local", "session", "cookie"]
-      }
-    };
-    
-    // Initialize result with uncategorized group
-    const result: Record<string, string[]> = {
-      uncategorized: []
-    };
-    
-    // Process each tag
-    tags.forEach(tag => {
-      let categorized = false;
-      
-      // Check if tag belongs to any group
-      for (const [key, group] of Object.entries(groups)) {
-        if (group.keywords.some(keyword => tag.toLowerCase().includes(keyword.toLowerCase()))) {
-          if (!result[key]) {
-            result[key] = [];
-          }
-          result[key].push(tag);
-          categorized = true;
-          break;
-        }
-      }
-      
-      // If no group matches, add to uncategorized
-      if (!categorized) {
-        result.uncategorized.push(tag);
-      }
-    });
-    
-    // Transform to tag groups array
-    const tagGroups: TagsGroup[] = [];
-    
-    // Add the categorized groups with their titles
-    for (const [key, groupTags] of Object.entries(result)) {
-      if (groupTags.length > 0) {
-        if (key === 'uncategorized') {
-          tagGroups.push({
-            title: "Other Tags",
-            tags: groupTags
-          });
-        } else {
-          tagGroups.push({
-            title: groups[key].title,
-            tags: groupTags
-          });
-        }
-      }
+export function GroupedTagList({ 
+  tags, 
+  isLoading = false,
+  onTagClick,
+  refreshTrigger = 0 
+}: GroupedTagListProps) {
+  // Group tags by type - memoize to avoid recomputing on every render
+  const groupedTags = useMemo(() => {
+    if (!tags || tags.length === 0) {
+      return {
+        typedTags: {},
+        uncategorized: []
+      };
     }
     
-    return tagGroups;
-  }, [tags]);
+    // Create a safe callback for tag clicks
+    const safeTagClickHandler = safeCallback(onTagClick, () => {});
+    
+    // Group tags by their type_id
+    return tags.reduce<TagsByType>(
+      (result, tag) => {
+        const tagName = tag.name;
+        
+        // If the tag has a type ID and it's not blank
+        if (tag.type_id) {
+          // Get the type name if available, otherwise use the type ID
+          const typeName = tag.type_name || tag.type_id;
+          
+          // Initialize the array for this type if it doesn't exist
+          if (!result.typedTags[typeName]) {
+            result.typedTags[typeName] = [];
+          }
+          
+          // Add the tag to its type group
+          result.typedTags[typeName].push(tagName);
+        } else {
+          // Tag has no type, add to uncategorized
+          result.uncategorized.push(tagName);
+        }
+        
+        return result;
+      },
+      { typedTags: {}, uncategorized: [] }
+    );
+  }, [tags, refreshTrigger, onTagClick]);
   
-  if (groupedTags.length === 0) {
-    return null;
+  // Handle click on a tag
+  const handleTagClick = useMemo(() => {
+    return safeCallback(onTagClick, () => {});
+  }, [onTagClick]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          <Skeleton className="h-6 w-16" />
+          <Skeleton className="h-6 w-20" />
+          <Skeleton className="h-6 w-24" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-6 w-16" />
+        </div>
+      </div>
+    );
   }
-  
+
+  if (!tags || tags.length === 0) {
+    return (
+      <div className="text-muted-foreground text-sm italic">
+        No tags available.
+      </div>
+    );
+  }
+
+  // Render the grouped tags
   return (
     <div className="space-y-4">
-      {groupedTags.map(group => (
-        <TagCards
-          key={group.title}
-          title={group.title}
-          tags={group.tags}
-          onTagClick={onTagClick}
+      {/* Render typed tags first, grouped by type */}
+      {Object.keys(groupedTags.typedTags).map((typeKey) => (
+        <TagCard
+          key={typeKey}
+          title={typeKey}
+          tags={groupedTags.typedTags[typeKey]}
+          onTagClick={handleTagClick}
         />
       ))}
+      
+      {/* Render uncategorized tags last, if any */}
+      {groupedTags.uncategorized && groupedTags.uncategorized.length > 0 && (
+        <div>
+          <h3 className="text-sm font-medium mb-2">General</h3>
+          <div className="flex flex-wrap gap-1">
+            {groupedTags.uncategorized.map((tagName) => (
+              <Badge
+                key={tagName}
+                variant="secondary"
+                className="cursor-pointer hover:bg-secondary/80"
+                onClick={() => handleTagClick(tagName)}
+              >
+                {tagName}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

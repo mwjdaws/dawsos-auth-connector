@@ -5,7 +5,6 @@ export type {
   DocumentValidationResult, 
   TagPosition, 
   TagValidationOptions,
-  ContentIdValidationResult,
   ContentIdValidationResultType
 } from './types';
 
@@ -19,7 +18,8 @@ export {
   nullToUndefined, 
   undefinedToNull, 
   createValidationResult,
-  VALIDATION_RESULTS
+  VALIDATION_RESULTS,
+  ensureString
 } from './compatibility';
 
 // Add document title validation placeholder

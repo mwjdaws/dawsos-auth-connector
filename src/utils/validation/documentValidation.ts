@@ -1,66 +1,87 @@
 
-import { ValidationResult } from './types';
+import { ValidationResult, DocumentValidationResult } from './types';
 
 /**
- * Validates a document based on its title and content
+ * Validates a document title
  */
-export function validateDocument(title: string, content: string): ValidationResult {
-  // Validate title
-  if (!title || title.trim() === '') {
+export function validateDocumentTitle(title: string): ValidationResult {
+  if (!title || title.trim().length === 0) {
     return {
       isValid: false,
-      errorMessage: 'Title is required',
-      message: 'Title is required'
+      errorMessage: 'Title is required'
     };
   }
   
   if (title.length > 255) {
     return {
       isValid: false,
-      errorMessage: 'Title cannot exceed 255 characters',
-      message: 'Title cannot exceed 255 characters'
+      errorMessage: 'Title cannot exceed 255 characters'
     };
   }
   
-  // Validate content
-  if (!content || content.trim() === '') {
-    return {
-      isValid: false,
-      errorMessage: 'Content is required',
-      message: 'Content is required'
-    };
-  }
-  
-  // All validation checks passed
   return {
     isValid: true,
-    errorMessage: null,
-    message: null
+    errorMessage: null
   };
 }
 
 /**
- * Determines if a document can be published
+ * Validates document content
  */
-export function canPublishDocument(title: string, content: string): ValidationResult {
-  const baseValidation = validateDocument(title, content);
-  
-  if (!baseValidation.isValid) {
-    return baseValidation;
-  }
-  
-  // Additional publishing criteria
-  if (content.length < 50) {
+export function validateDocumentContent(content: string): ValidationResult {
+  if (!content || content.trim().length === 0) {
     return {
       isValid: false,
-      errorMessage: 'Content must be at least 50 characters to publish',
-      message: 'Content must be at least 50 characters to publish'
+      errorMessage: 'Content is required'
+    };
+  }
+  
+  const contentLength = content.length;
+  
+  if (contentLength < 10) {
+    return {
+      isValid: false,
+      errorMessage: 'Content is too short (minimum 10 characters)'
+    };
+  }
+  
+  if (contentLength > 100000) {
+    return {
+      isValid: false,
+      errorMessage: 'Content is too long (maximum 100,000 characters)'
     };
   }
   
   return {
     isValid: true,
+    errorMessage: null
+  };
+}
+
+/**
+ * Validates a complete document
+ */
+export function validateDocument(title: string, content: string): DocumentValidationResult {
+  const titleValidation = validateDocumentTitle(title);
+  if (!titleValidation.isValid) {
+    return {
+      ...titleValidation,
+      isPublishable: false
+    };
+  }
+  
+  const contentValidation = validateDocumentContent(content);
+  if (!contentValidation.isValid) {
+    return {
+      ...contentValidation,
+      isPublishable: false
+    };
+  }
+  
+  // Document is valid and publishable
+  return {
+    isValid: true,
     errorMessage: null,
-    message: null
+    isPublishable: true
   };
 }

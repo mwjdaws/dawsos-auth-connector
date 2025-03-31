@@ -10,17 +10,10 @@ export enum ContentIdValidationResultType {
   INVALID = 'invalid'
 }
 
-export interface ContentIdValidationResult {
-  type: ContentIdValidationResultType;
-  isValid: boolean;
-  message: string | null;
-  errorMessage?: string | null; // For backward compatibility
-}
-
 export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
-  message?: string | null; // Added for backwards compatibility
+  message?: string | null; // For backward compatibility
 }
 
 export interface DocumentValidationResult extends ValidationResult {
@@ -36,6 +29,7 @@ export interface TagValidationOptions {
   maxLength?: number | null;
   minLength?: number | null;
   allowSpecialChars?: boolean | null;
+  allowEmpty?: boolean | null;
 }
 
 // Type guard to ensure consistency across validation results

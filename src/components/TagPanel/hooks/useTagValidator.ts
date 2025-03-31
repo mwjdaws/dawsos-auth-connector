@@ -1,39 +1,48 @@
 
-import { validateTags } from '@/utils/validation/tagValidation';
-import type { ValidationResult, TagValidationOptions } from '@/utils/validation/types';
+import { useState, useCallback } from "react";
+import { toast } from "@/hooks/use-toast";
+import { validateTag } from "@/utils/validation";
+import { TagValidationOptions } from "@/utils/validation/types";
 
-/**
- * Hook for tag validation functions
- */
-export const useTagValidator = () => {
-  /**
-   * Validate an array of tags
-   * @param tags Array of tag strings to validate
-   * @param options Optional validation options
-   * @returns Validation result with status and message
-   */
-  const validateTagList = (tags: string[], options?: TagValidationOptions): ValidationResult => {
-    return validateTags(tags, options);
-  };
+export function useTagValidator() {
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
   /**
-   * Validate a single tag
-   * @param tag Tag string to validate
-   * @param options Optional validation options
-   * @returns Validation result with status and message
+   * Validates a tag with proper error handling
+   * 
+   * @param tagText The text to validate
+   * @param options Validation options
+   * @returns True if the tag is valid, false otherwise
    */
-  const validateTag = (tag: string, options?: TagValidationOptions): ValidationResult => {
-    return validateTags([tag], {
-      ...options, 
-      allowEmpty: false,
-      maxTags: 1
-    });
-  };
+  const validateTagText = useCallback((tagText: string, options?: TagValidationOptions) => {
+    // Default options
+    const validationOptions: TagValidationOptions = {
+      maxLength: options?.maxLength || 50,
+      minLength: options?.minLength || 1,
+      allowSpecialChars: options?.allowSpecialChars || false,
+      allowEmpty: options?.allowEmpty || false,
+    };
+
+    const result = validateTag(tagText, validationOptions);
+    
+    // Set validation message for UI display
+    setValidationMessage(result.errorMessage || result.message || null);
+    
+    // Show toast for validation errors
+    if (!result.isValid && result.errorMessage) {
+      toast({
+        title: "Invalid Tag",
+        description: result.errorMessage,
+        variant: "destructive",
+      });
+    }
+    
+    return result.isValid;
+  }, []);
 
   return {
-    validateTagList,
-    validateTag
+    validateTagText,
+    validationMessage,
+    clearValidationMessage: () => setValidationMessage(null)
   };
-};
-
-export default useTagValidator;
+}

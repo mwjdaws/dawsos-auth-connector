@@ -2,9 +2,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Card } from '@/components/ui/card';
-import { ensureString } from '@/utils/compatibility';
 import { RelationshipGraph } from '../RelationshipGraph';
 import { GraphProps } from '../types';
+import { createSafeGraphProps } from '../compatibility';
 
 /**
  * Props for the RelationshipGraphPanel component
@@ -12,8 +12,6 @@ import { GraphProps } from '../types';
 export interface RelationshipGraphPanelProps {
   contentId?: string;
   sourceId?: string;
-  width?: number;
-  height?: number;
   hasAttemptedRetry?: boolean;
 }
 
@@ -27,15 +25,13 @@ export interface RelationshipGraphPanelProps {
 export function RelationshipGraphPanel({ 
   contentId, 
   sourceId,
-  width,
-  height,
   hasAttemptedRetry = false
 }: RelationshipGraphPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: width || 800, height: height || 600 });
+  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   
   // Determine the starting node ID - use sourceId if available, otherwise contentId
-  const startingNodeId = ensureString(sourceId || contentId, '');
+  const startingNodeId = sourceId || contentId || '';
   
   // Update dimensions based on container size
   useEffect(() => {
