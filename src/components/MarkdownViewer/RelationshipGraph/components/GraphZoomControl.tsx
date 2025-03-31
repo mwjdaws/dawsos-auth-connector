@@ -1,85 +1,105 @@
 
+import React from 'react';
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+
+export interface GraphZoomControlProps {
+  zoom: number;
+  min?: number;
+  max?: number;
+  step?: number;
+  onZoomChange: (newZoom: number) => void;
+  onResetZoom?: () => void; // Make this prop optional with undefined
+}
+
 /**
  * GraphZoomControl Component
  * 
- * Renders a slider for controlling the zoom level of the graph.
+ * Provides controls for zooming in/out of the graph visualization and resetting the zoom level.
  */
-import React from 'react';
-import { Slider } from '@/components/ui/slider';
-import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-
-interface GraphZoomControlProps {
-  zoom?: number;
-  onZoomChange: (zoom: number) => void;
-  onResetZoom: () => void;
-  className?: string;
-}
-
-export const GraphZoomControl: React.FC<GraphZoomControlProps> = ({
-  zoom = 1,
+export function GraphZoomControl({
+  zoom,
+  min = 0.1,
+  max = 3,
+  step = 0.1,
   onZoomChange,
-  onResetZoom,
-  className = ''
-}) => {
-  // Ensure zoom is a valid number
-  const safeZoom = typeof zoom === 'number' && !isNaN(zoom) ? zoom : 1;
+  onResetZoom // This can be undefined
+}: GraphZoomControlProps) {
+  // Calculate zoom percentage for display 
+  const zoomPercentage = Math.round(zoom * 100);
   
-  // Handle zoom slider change
-  const handleZoomChange = (values: number[]) => {
-    const newZoom = values[0];
-    if (typeof newZoom === 'number' && !isNaN(newZoom)) {
-      onZoomChange(newZoom);
+  // Handle slider change
+  const handleSliderChange = (value: number[]) => {
+    if (value.length > 0) {
+      const newZoom = value[0];
+      if (typeof newZoom === 'number') {
+        onZoomChange(newZoom);
+      }
     }
   };
   
-  // Handle reset button click
-  const handleResetClick = () => {
-    onResetZoom();
+  // Handle zoom in button click
+  const handleZoomIn = () => {
+    const newZoom = Math.min(zoom + step, max);
+    onZoomChange(newZoom);
   };
-
+  
+  // Handle zoom out button click
+  const handleZoomOut = () => {
+    const newZoom = Math.max(zoom - step, min);
+    onZoomChange(newZoom);
+  };
+  
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div className="flex items-center space-x-2">
       <Button 
-        variant="ghost" 
-        size="icon" 
-        className="h-8 w-8" 
-        onClick={() => onZoomChange(Math.max(0.1, safeZoom - 0.1))}
+        variant="outline" 
+        size="sm"
+        onClick={handleZoomOut}
+        disabled={zoom <= min}
         title="Zoom out"
       >
         <ZoomOut className="h-4 w-4" />
       </Button>
       
-      <Slider
-        value={[safeZoom]}
-        min={0.1}
-        max={2}
-        step={0.1}
-        onValueChange={handleZoomChange}
-        className="w-32"
-      />
+      <div className="relative min-w-[100px] w-20">
+        <Slider
+          value={[zoom]}
+          min={min}
+          max={max}
+          step={step}
+          onValueChange={handleSliderChange}
+          aria-label="Zoom level"
+        />
+      </div>
       
       <Button 
-        variant="ghost" 
-        size="icon" 
-        className="h-8 w-8" 
-        onClick={() => onZoomChange(Math.min(2, safeZoom + 0.1))}
+        variant="outline" 
+        size="sm"
+        onClick={handleZoomIn}
+        disabled={zoom >= max}
         title="Zoom in"
       >
         <ZoomIn className="h-4 w-4" />
       </Button>
       
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className="h-8 w-8 ml-2" 
-        onClick={handleResetClick}
-        title="Reset zoom"
-      >
-        <Maximize className="h-4 w-4" />
-      </Button>
+      {onResetZoom && (
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={onResetZoom}
+          title="Reset zoom"
+        >
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+      )}
+      
+      <span className="text-xs text-muted-foreground whitespace-nowrap">
+        {zoomPercentage}%
+      </span>
     </div>
   );
-};
+}
 
 export default GraphZoomControl;

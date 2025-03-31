@@ -1,107 +1,107 @@
 
-import React, { useState } from "react";
-import { usePanelState } from "./hooks/usePanelState";
-import { useTagOperations } from "./hooks/tag-operations/useTagOperations";
-import { useSourceMetadata } from "./hooks/useSourceMetadata";
-import { Spinner } from "@/components/ui/spinner";
-import { ContentAlert } from "./components/ContentAlert";
-import { MetadataContent } from "./components/MetadataContent";
-import { isValidContentId } from "@/utils/validation/contentIdValidation";
-
-export interface MetadataPanelProps {
-  contentId: string;
-  editable?: boolean;
-  onMetadataChange?: (() => void) | undefined;
-  isCollapsible?: boolean;
-  initialCollapsed?: boolean;
-  showOntologyTerms?: boolean;
-  showDomain?: boolean;
-  domain?: string | null;
-  className?: string;
-  children?: React.ReactNode;
-}
+import React from 'react';
+import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { HeaderSection } from './sections/HeaderSection';
+import { MetadataContent } from './components/MetadataContent';
+import { ContentAlert } from './components/ContentAlert';
+import { useMetadataPanel } from './hooks/useMetadataPanel';
+import { MetadataPanelProps } from './types';
 
 /**
- * Metadata Panel Component
+ * MetadataPanel Component
  * 
- * Displays metadata for a knowledge source including tags, ontology terms, 
- * and external source information with editing capabilities.
+ * Displays metadata for a content item including tags, external source
+ * information, and ontology terms.
  */
-export function MetadataPanel({
+const MetadataPanel: React.FC<MetadataPanelProps> = ({
   contentId,
-  editable = true,
+  editable = false,
   onMetadataChange,
   isCollapsible = false,
   initialCollapsed = false,
   showOntologyTerms = true,
   showDomain = false,
   domain = null,
-  className = "",
+  className = '',
   children
-}: MetadataPanelProps) {
+}) => {
+  // Use custom hook for panel state and data
   const {
     isCollapsed,
     setIsCollapsed,
     contentExists,
+    isValidContent,
+    data,
+    isLoading,
+    error,
+    externalSourceUrl,
+    needsExternalReview,
+    lastCheckedAt,
+    tags,
+    newTag,
+    setNewTag,
+    handleAddTag,
+    handleDeleteTag,
+    handleRefresh,
     handleMetadataChange
-  } = usePanelState({
+  } = useMetadataPanel({
     contentId,
     onMetadataChange,
     isCollapsible,
     initialCollapsed
   });
-
-  // Initialize tag operations
-  const {
-    tags,
-    isTagsLoading,
-    tagsError,
-    newTag,
-    setNewTag,
-    handleAddTag,
-    handleDeleteTag,
-    handleRefresh
-  } = useTagOperations(contentId);
-
-  // Use source metadata to get external source details
-  const {
-    data,
-    isLoading: isSourceLoading,
-    error: sourceError,
-    fetchSourceMetadata
-  } = useSourceMetadata({ contentId });
-
-  // Extract external source information
-  const externalSourceUrl = data?.external_source_url || null;
-  const lastCheckedAt = data?.external_source_checked_at || null;
-  const needsExternalReview = data?.needs_external_review || false;
-
-  // Check if content ID is valid
-  const isValidContent = isValidContentId(contentId);
-
-  // Loading state
-  if (isSourceLoading || isTagsLoading) {
+  
+  // Content validation check
+  if (!isValidContent) {
     return (
-      <div className={`flex justify-center items-center p-4 ${className}`}>
-        <Spinner className="h-6 w-6 text-primary" />
-        <span className="ml-2 text-muted-foreground">Loading metadata...</span>
-      </div>
+      <Card className={className}>
+        <ContentAlert 
+          contentId={contentId}
+          isValidContent={isValidContent}
+          contentExists={contentExists}
+        />
+      </Card>
     );
   }
-
+  
+  // Loading state
+  if (isLoading) {
+    return (
+      <Card className={className}>
+        <HeaderSection 
+          needsExternalReview={false}
+          handleRefresh={handleRefresh}
+          isLoading={true}
+          isCollapsible={isCollapsible}
+          isCollapsed={isCollapsed}
+          setIsCollapsed={setIsCollapsed}
+        />
+        <div className="p-4 space-y-4">
+          <Skeleton className="h-8 w-3/4" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      </Card>
+    );
+  }
+  
   return (
-    <div className={className}>
-      <ContentAlert 
-        contentId={contentId} 
-        isValidContent={isValidContent}
-        contentExists={contentExists}
+    <Card className={className}>
+      <HeaderSection 
+        needsExternalReview={needsExternalReview}
+        handleRefresh={handleRefresh}
+        isLoading={isLoading}
+        isCollapsible={isCollapsible}
+        isCollapsed={isCollapsed}
+        setIsCollapsed={setIsCollapsed}
       />
       
-      {isValidContent && contentExists && (
+      {!isCollapsed && (
         <MetadataContent
           data={data}
           contentId={contentId}
-          error={sourceError || tagsError}
+          error={error}
           tags={tags}
           editable={editable}
           newTag={newTag}
@@ -112,14 +112,14 @@ export function MetadataPanel({
           externalSourceUrl={externalSourceUrl}
           lastCheckedAt={lastCheckedAt}
           needsExternalReview={needsExternalReview}
-          onMetadataChange={onMetadataChange}
+          onMetadataChange={handleMetadataChange}
           showOntologyTerms={showOntologyTerms}
         />
       )}
-
+      
       {children}
-    </div>
+    </Card>
   );
-}
+};
 
 export default MetadataPanel;

@@ -10,10 +10,11 @@ export interface GraphNode {
   name?: string;
   type?: string;
   domain?: string;
-  color?: string | null; // Changed from string to string | null to be compatible
+  color?: string | null | undefined; // Updated to support null/undefined
   size?: number;
   icon?: string;
   weight?: number;
+  val?: number; // Added val property to match usage in compatibility.ts
   [key: string]: any;  // Allow for additional properties
 }
 
@@ -25,6 +26,8 @@ export interface GraphLink {
   target: string;
   type?: string;
   weight?: number;
+  value?: number; // Added value property to match usage in compatibility.ts
+  label?: string; // Added label property to match usage in compatibility.ts
   [key: string]: any;  // Allow for additional properties
 }
 

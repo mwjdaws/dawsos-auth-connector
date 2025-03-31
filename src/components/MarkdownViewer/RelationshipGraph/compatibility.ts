@@ -77,9 +77,9 @@ function sanitizeNode(node: GraphNode | null | undefined): GraphNode | null {
   
   return {
     id: ensureString(node.id),
-    name: ensureString(node.name),
-    title: ensureString(node.title),
-    type: ensureString(node.type),
+    name: ensureString(node.name || node.title || ''),
+    title: ensureString(node.title || node.name || ''),
+    type: ensureString(node.type, ''),
     description: ensureString(node.description, ''),
     color: node.color,
     val: node.val
@@ -95,8 +95,13 @@ function sanitizeLink(link: GraphLink | null | undefined, validNodes: GraphNode[
   }
   
   // Check that source and target nodes exist
-  const sourceId = typeof link.source === 'object' && link.source !== null ? link.source.id : String(link.source);
-  const targetId = typeof link.target === 'object' && link.target !== null ? link.target.id : String(link.target);
+  const sourceId = typeof link.source === 'object' && link.source !== null 
+    ? String((link.source as any).id) 
+    : String(link.source);
+    
+  const targetId = typeof link.target === 'object' && link.target !== null 
+    ? String((link.target as any).id) 
+    : String(link.target);
   
   const validNodeIds = validNodes.map(n => n.id);
   

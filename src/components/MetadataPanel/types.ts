@@ -19,9 +19,18 @@ export interface SourceMetadata {
 
 // Simplified source metadata for hooks that only use a subset of fields
 export interface SimpleSourceMetadata {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
   external_source_url: string | null;
-  needs_external_review: boolean;
   external_source_checked_at: string | null;
+  external_content_hash: string | null;
+  needs_external_review: boolean;
+  is_published: boolean;
+  published_at: string | null;
+  template_id: string | null;
 }
 
 // Tag type
@@ -57,7 +66,7 @@ export interface MetadataPanelProps {
 
 // Props for the MetadataContent component
 export interface MetadataContentProps {
-  data: SourceMetadata | null;
+  data: SimpleSourceMetadata | null;
   contentId: string;
   error: any;
   tags: Tag[];
@@ -132,4 +141,12 @@ export interface ContentAlertProps {
 export interface DomainSectionProps {
   domain: string | null;
   className?: string;
+}
+
+// Panel state props
+export interface UsePanelStateProps {
+  contentId: string;
+  onMetadataChange?: (() => void) | undefined;
+  isCollapsible?: boolean;
+  initialCollapsed?: boolean;
 }

@@ -11,7 +11,7 @@ import { useInlineMetadataEdit } from "@/hooks/metadata/useInlineMetadataEdit";
 import { formatRelativeTime } from "@/utils/date-formatting";
 
 interface ExternalSourceSectionProps {
-  externalSourceUrl: string;
+  externalSourceUrl: string | null;
   lastCheckedAt: string | null;
   editable?: boolean;
   className?: string;
@@ -26,7 +26,7 @@ export const ExternalSourceSection: React.FC<ExternalSourceSectionProps> = ({
   onMetadataChange
 }) => {
   // Create a local implementation of useInlineMetadataEdit that doesn't require contentId
-  const handleUpdateExternalSourceUrl = (newUrl: string) => {
+  const handleUpdateExternalSourceUrl = async (newUrl: string): Promise<void> => {
     console.log("External source URL updated:", newUrl);
     // In a real implementation, this would update the database
     
@@ -34,8 +34,6 @@ export const ExternalSourceSection: React.FC<ExternalSourceSectionProps> = ({
     if (onMetadataChange) {
       onMetadataChange();
     }
-    
-    return Promise.resolve(true);
   };
   
   const { isUpdating } = { isUpdating: false }; // Mock implementation

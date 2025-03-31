@@ -1,13 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { isValidContentId } from '@/utils/validation/contentIdValidation';
-
-export interface UsePanelStateProps {
-  contentId: string;
-  onMetadataChange?: (() => void) | undefined;
-  isCollapsible: boolean | undefined;
-  initialCollapsed: boolean | undefined;
-}
+import { UsePanelStateProps } from '../types';
 
 export const usePanelState = ({
   contentId,
@@ -15,7 +9,7 @@ export const usePanelState = ({
   isCollapsible = false,
   initialCollapsed = false
 }: UsePanelStateProps) => {
-  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed ?? false);
+  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed || false);
   const [contentExists, setContentExists] = useState(true);
 
   // Check if the content ID is valid
