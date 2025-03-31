@@ -21,6 +21,8 @@ export type {
   GraphLink, 
   GraphProps, 
   GraphRendererRef,
+  GraphConfig,
+  GraphStats
 } from './types';
 
 // Export types from the graph-renderer module

@@ -1,114 +1,71 @@
 
 /**
- * Markdown editor types
+ * Types for markdown editor hooks
  */
-import { ReactNode } from 'react';
 
-// Tag type
-export interface Tag {
-  id: string;
-  name: string;
-  content_id: string;
-  type_id: string;
-  type_name?: string;
-}
-
-// Tag position type (for reordering)
-export interface TagPosition {
-  id: string;
-  position: number;
-  name: string;
-}
-
-// Ontology term interface
-export interface OntologyTerm {
-  id: string;
-  term: string;
-  description: string;
-  domain: string;
-  review_required?: boolean;
-}
-
-// Related term interface
-export interface RelatedTerm {
-  id: string;
-  term: string;
-  description: string;
-  domain: string;
-  relation_type: string;
-}
-
-// Document operation result
-export interface DocumentOperationResult {
-  success: boolean;
-  documentId?: string;
-  message?: string;
-  error?: Error | null;
-}
-
-// Document operations props
-export interface DocumentOperationsProps {
-  documentId: string | null;
-  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
-  onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
-}
-
-// Suggestion types for ontology enrichment
-export interface OntologySuggestion {
-  id: string;
-  term: string;
-  description?: string;
-  domain?: string;
-  score?: number;
-  applied?: boolean;
-  rejected?: boolean;
-}
-
-export interface RelatedNote {
-  id: string;
+export interface EditorState {
   title: string;
-  score?: number;
-  applied?: boolean;
-  rejected?: boolean;
+  content: string;
+  templateId: string | null;
+  externalSourceUrl: string;
+  isDirty: boolean;
+  isLoading: boolean;
+  error: Error | null;
+  isPublished: boolean;
+  isSaving: boolean;
+  isPublishing: boolean;
+  isLoadingTemplate: boolean;
 }
 
-export interface OntologySuggestions {
-  terms: OntologySuggestion[];
-  relatedNotes: RelatedNote[];
-}
-
-// Markdown editor props
-export interface MarkdownEditorProps {
-  initialTitle?: string;
-  initialContent?: string;
-  initialTemplateId?: string | null;
-  initialExternalSourceUrl?: string;
+export interface DocumentOperationsProps {
   documentId?: string | null;
   sourceId?: string | null;
   onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
   onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
 }
 
-// Tooltip content type for graph renderer
-export type TooltipContent = ReactNode | string | null;
-
-// Graph data types
-export interface GraphNode {
-  id: string;
-  label: string;
-  type: string;
-  color?: string;
-  domain?: string;
+export interface SaveDraftResult {
+  success: boolean;
+  documentId: string | null;
+  error?: any;
 }
 
-export interface GraphLink {
-  source: string;
-  target: string;
-  label?: string;
-  type?: string;
+export interface PublishResult {
+  success: boolean;
+  documentId: string | null;
+  error?: any;
 }
 
-export interface GraphData {
-  nodes: GraphNode[];
-  links: GraphLink[];
+export interface SaveHandlerOptions {
+  isAutoSave?: boolean;
+  isManualSave?: boolean;
+}
+
+export interface UseMarkdownEditorProps {
+  initialTitle: string;
+  initialContent: string;
+  initialTemplateId: string | null;
+  initialExternalSourceUrl: string;
+  documentId?: string | null;
+  sourceId?: string | null;
+  onSaveDraft: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
+  onPublish: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
+}
+
+export interface DraftOperationsContext {
+  sourceId?: string | null;
+  documentId?: string | null;
+  userId?: string;
+  createVersion?: (documentId: string, content: string, metadata?: any) => Promise<void>;
+}
+
+export interface UseDocumentLifecycleProps {
+  createVersion: (documentId: string, content: string, metadata?: any) => Promise<void>;
+  enrichContentWithOntology?: (sourceId: string, content: string, title: string, options?: any) => Promise<any>;
+}
+
+export interface PublishOperationsContext {
+  sourceId?: string | null;
+  documentId?: string | null;
+  userId?: string;
 }

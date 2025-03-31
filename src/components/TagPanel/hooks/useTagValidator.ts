@@ -1,81 +1,123 @@
 
-import { useState, useCallback } from 'react';
-import { TagValidationOptions } from '@/utils/validation/types';
+import { toast } from '@/hooks/use-toast';
+import { Tag } from '@/hooks/metadata/useTagsQuery';
+
+export interface TagValidationOptions {
+  allowEmpty?: boolean;
+  allowDuplicates?: boolean;
+  minLength?: number;
+  maxLength?: number;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  message: string | null;
+}
 
 /**
- * Hook for validating tags with proper error handling and state management
- * 
- * @returns Object containing validation functions and state
+ * Hook for validating tags
  */
 export function useTagValidator() {
-  const [validationMessage, setValidationMessage] = useState<string | null>(null);
-
+  
   /**
-   * Validate a single tag text
-   * 
-   * @param tagText - The tag text to validate
-   * @param options - Optional validation options
-   * @returns Whether the tag is valid
+   * Validates a single tag
    */
-  const validateTagText = useCallback((tagText: string, options?: TagValidationOptions): boolean => {
-    if (!tagText || typeof tagText !== 'string') {
-      setValidationMessage("Tag text is required");
+  const validateTag = (tag: string, options?: TagValidationOptions): ValidationResult => {
+    const opts = {
+      minLength: 1,
+      maxLength: 50,
+      allowEmpty: false,
+      ...options
+    };
+    
+    if (!opts.allowEmpty && (!tag || tag.trim().length === 0)) {
+      return {
+        isValid: false,
+        message: 'Tag cannot be empty'
+      };
+    }
+    
+    if (tag.length < opts.minLength) {
+      return {
+        isValid: false,
+        message: `Tag must be at least ${opts.minLength} characters`
+      };
+    }
+    
+    if (tag.length > opts.maxLength) {
+      return {
+        isValid: false,
+        message: `Tag cannot be longer than ${opts.maxLength} characters`
+      };
+    }
+
+    return {
+      isValid: true,
+      message: null
+    };
+  };
+  
+  /**
+   * Validates a tag against a list of existing tags
+   */
+  const validateTagUniqueness = (tag: string, existingTags: Tag[], options?: TagValidationOptions): ValidationResult => {
+    const opts = {
+      allowDuplicates: false,
+      ...options
+    };
+    
+    if (!opts.allowDuplicates) {
+      const normalizedNewTag = tag.toLowerCase().trim();
+      const isDuplicate = existingTags.some(existing => 
+        existing.name.toLowerCase().trim() === normalizedNewTag
+      );
+      
+      if (isDuplicate) {
+        return {
+          isValid: false,
+          message: 'This tag already exists'
+        };
+      }
+    }
+    
+    return {
+      isValid: true,
+      message: null
+    };
+  };
+  
+  /**
+   * Performs all tag validations and shows a toast on failure
+   */
+  const validateTagWithToast = (tag: string, existingTags: Tag[], options?: TagValidationOptions): boolean => {
+    // First validate the tag format
+    const formatResult = validateTag(tag, options);
+    if (!formatResult.isValid) {
+      toast({
+        title: "Invalid Tag",
+        description: formatResult.message,
+        variant: "destructive"
+      });
       return false;
     }
     
-    if (options?.minLength && tagText.length < options.minLength) {
-      setValidationMessage(`Tag must be at least ${options.minLength} characters`);
+    // Then validate uniqueness
+    const uniquenessResult = validateTagUniqueness(tag, existingTags, options);
+    if (!uniquenessResult.isValid) {
+      toast({
+        title: "Duplicate Tag",
+        description: uniquenessResult.message,
+        variant: "destructive"
+      });
       return false;
     }
     
-    if (options?.maxLength && tagText.length > options.maxLength) {
-      setValidationMessage(`Tag cannot exceed ${options.maxLength} characters`);
-      return false;
-    }
-    
-    // Tag is valid
-    setValidationMessage(null);
     return true;
-  }, []);
-
-  /**
-   * Validate a list of tags
-   * 
-   * @param tags - Array of tag strings to validate
-   * @param options - Optional validation options
-   * @returns Object with validation result and message
-   */
-  const validateTagList = useCallback((tags: string[], options?: TagValidationOptions): { isValid: boolean; message: string | null } => {
-    // No tags is valid by default, but can be configured with options
-    if (!tags || tags.length === 0) {
-      if (options?.allowEmpty === false) {
-        setValidationMessage("At least one tag is required");
-        return { isValid: false, message: "At least one tag is required" };
-      }
-      return { isValid: true, message: null };
-    }
-
-    // Check each tag
-    for (const tag of tags) {
-      if (!validateTagText(tag, options)) {
-        return { isValid: false, message: validationMessage };
-      }
-    }
-
-    return { isValid: true, message: null };
-  }, [validateTagText, validationMessage]);
-
-  /**
-   * Clear any validation messages
-   */
-  const clearValidationMessage = useCallback(() => {
-    setValidationMessage(null);
-  }, []);
-
+  };
+  
   return {
-    validateTagText,
-    validateTagList,
-    validationMessage,
-    clearValidationMessage
+    validateTag,
+    validateTagUniqueness,
+    validateTagWithToast
   };
 }

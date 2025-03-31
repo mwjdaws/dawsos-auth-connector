@@ -1,88 +1,67 @@
 
 /**
- * Validation utility types
+ * Types for validation-related functions
  */
 
-// Basic validation result
-export interface ValidationResult {
-  isValid: boolean;
-  errorMessage: string | null;
-}
-
-// Content ID validation result types
-export enum ContentIdValidationResultType {
-  VALID = 'valid',
-  EMPTY = 'empty',
-  INVALID_FORMAT = 'invalid_format',
-  NOT_FOUND = 'not_found'
-}
-
-// Content ID validation result
+// Content ID validation
 export interface ContentIdValidationResult {
   isValid: boolean;
-  contentExists: boolean;
-  resultType: ContentIdValidationResultType;
+  resultType: keyof typeof ContentIdValidationResultType;
   message: string | null;
+  errorMessage?: string | null;
 }
 
-// Document validation result
+export enum ContentIdValidationResultType {
+  VALID = 'valid',
+  INVALID = 'invalid',
+  UUID = 'uuid',
+  TEMP = 'temp'
+}
+
+// Document validation
 export interface DocumentValidationResult {
   isValid: boolean;
-  contentExists: boolean;
-  resultType: string;
   errorMessage: string | null;
+  field?: string;
+  contentExists?: boolean;
+  resultType?: string;
 }
 
-// Tag validation options
-export interface TagValidationOptions {
-  allowSpaces?: boolean;
-  minLength?: number;
-  maxLength?: number;
-  allowSpecialChars?: boolean;
-}
-
-// Document validation options
 export interface DocumentValidationOptions {
-  requireTitle?: boolean;
-  requireContent?: boolean;
+  titleRequired?: boolean;
+  contentRequired?: boolean;
   minTitleLength?: number;
   maxTitleLength?: number;
   minContentLength?: number;
   maxContentLength?: number;
 }
 
-// Tag position for reordering
-export interface TagPosition {
-  id: string;
-  position: number;
+// Tag validation
+export interface TagValidationResult {
+  isValid: boolean;
+  errorMessage: string | null;
 }
 
-/**
- * Creates a validation result object
- * 
- * @param isValid Whether the validation passed
- * @param errorMessage Error message if validation failed
- * @returns A validation result object
- */
-export function createValidationResult(
-  isValid: boolean,
-  errorMessage: string | null = null
-): ValidationResult {
-  return {
-    isValid,
-    errorMessage: isValid ? null : errorMessage
-  };
+export interface TagValidationOptions {
+  minLength?: number;
+  maxLength?: number;
+  allowEmpty?: boolean;
+  allowDuplicates?: boolean;
 }
 
-// Predefined validation result values
-export const VALIDATION_RESULTS = {
-  VALID: createValidationResult(true, null),
-  EMPTY_TITLE: createValidationResult(false, 'Title cannot be empty'),
-  EMPTY_CONTENT: createValidationResult(false, 'Content cannot be empty'),
-  TITLE_TOO_LONG: createValidationResult(false, 'Title is too long'),
-  TITLE_TOO_SHORT: createValidationResult(false, 'Title is too short'),
-  CONTENT_TOO_LONG: createValidationResult(false, 'Content is too long'),
-  CONTENT_TOO_SHORT: createValidationResult(false, 'Content is too short'),
-  INVALID_FORMAT: createValidationResult(false, 'Invalid format'),
-  NOT_FOUND: createValidationResult(false, 'Not found')
-};
+// Generic validation
+export interface ValidationResult {
+  isValid: boolean;
+  errorMessage: string | null;
+  message?: string | null;
+}
+
+// Errors
+export interface ValidationError extends Error {
+  code: string;
+  field?: string;
+  details?: Record<string, any>;
+}
+
+// Export type aliases for compatibility
+export type ValidationOptions = DocumentValidationOptions | TagValidationOptions;

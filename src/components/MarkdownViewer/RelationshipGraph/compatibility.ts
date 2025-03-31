@@ -13,21 +13,26 @@ import { GraphData, GraphNode, GraphLink, GraphProps, GraphRendererRef } from '.
  */
 export function createCompatibleGraphRef(ref: any): GraphRendererRef {
   return {
+    centerOn: (nodeId: string) => {
+      if (ref?.current?.centerOnNode) {
+        ref.current.centerOnNode(nodeId);
+      }
+    },
+    setZoom: (zoom: number) => {
+      if (ref?.current?.setZoom) {
+        ref.current.setZoom(zoom);
+      }
+    },
     zoomToFit: () => {
       if (ref?.current?.zoomToFit) {
         ref.current.zoomToFit();
-      }
-    },
-    centerGraph: () => {
-      if (ref?.current?.centerGraph) {
-        ref.current.centerGraph();
       }
     },
     findNode: (nodeId: string) => {
       if (ref?.current?.findNode) {
         return ref.current.findNode(nodeId);
       }
-      return null;
+      return undefined;
     }
   };
 }
@@ -71,6 +76,13 @@ export function ensureValidZoom(zoom: any): number {
 }
 
 /**
+ * Ensures graph data is valid
+ */
+export function ensureValidGraphData(data: any): GraphData {
+  return sanitizeGraphData(data);
+}
+
+/**
  * Sanitizes graph data to ensure all required properties are present
  */
 export function sanitizeGraphData(data: any): GraphData {
@@ -106,27 +118,10 @@ export function sanitizeGraphData(data: any): GraphData {
  */
 export function createSafeGraphProps(props: any): GraphProps {
   return {
-    data: sanitizeGraphData(props.data),
+    startingNodeId: ensureString(props.startingNodeId),
     width: ensureNumber(props.width, 800),
     height: ensureNumber(props.height, 600),
-    onNodeClick: props.onNodeClick || (() => {}),
-    onNodeHover: props.onNodeHover || (() => {}),
-    onLinkClick: props.onLinkClick || (() => {}),
-    nodeColor: props.nodeColor || ((node) => '#1f77b4'),
-    linkColor: props.linkColor || ((link) => '#999'),
-    nodeLabel: props.nodeLabel || ((node) => node.name || node.id),
-    linkLabel: props.linkLabel || ((link) => ''),
-    nodeLabelVisibility: props.nodeLabelVisibility || (() => true),
-    linkLabelVisibility: props.linkLabelVisibility || (() => false),
-    nodeSize: props.nodeSize || ((node) => 7),
-    linkWidth: props.linkWidth || ((link) => 1),
-    nodeCanvasObject: props.nodeCanvasObject,
-    linkCanvasObject: props.linkCanvasObject,
-    cooldownTime: ensureNumber(props.cooldownTime, 15000),
-    centerAtInit: ensureBoolean(props.centerAtInit, true),
-    showLabels: ensureBoolean(props.showLabels, true),
-    labelSize: ensureNumber(props.labelSize, 12),
-    defaultNodeColor: ensureString(props.defaultNodeColor, '#1f77b4'),
-    defaultLinkColor: ensureString(props.defaultLinkColor, '#999'),
+    hasAttemptedRetry: ensureBoolean(props.hasAttemptedRetry, false),
   };
 }
+

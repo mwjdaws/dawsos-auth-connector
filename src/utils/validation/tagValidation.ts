@@ -1,120 +1,77 @@
 
 /**
- * Validation utilities for tags
+ * Tag validation utilities
+ * 
+ * Functions for validating tags.
  */
-import { TagValidationOptions, ValidationResult } from './types';
-import { createValidationResult } from './types';
-import { ensureString } from './compatibility';
+
+import { TagValidationOptions, TagValidationResult } from './types';
 
 /**
- * Validates a tag against the specified options
- * @param tag The tag to validate
- * @param options Validation options
- * @returns A validation result
+ * Validates a single tag
  */
 export function validateTag(
-  tag: string, 
-  options: TagValidationOptions = {}
-): ValidationResult {
-  const {
-    minLength = 1,
-    maxLength = 50,
-    allowEmpty = false,
-    allowSpecialChars = true
-  } = options;
-  
-  // Handle empty tags
-  if (!tag || tag.trim().length === 0) {
-    return createValidationResult(
-      allowEmpty,
-      allowEmpty ? null : "Tag cannot be empty"
-    );
+  tag: string,
+  options?: TagValidationOptions
+): TagValidationResult {
+  const opts = {
+    minLength: 1,
+    maxLength: 50,
+    allowEmpty: false,
+    ...options
+  };
+
+  if (!opts.allowEmpty && (!tag || tag.trim().length === 0)) {
+    return {
+      isValid: false,
+      errorMessage: 'Tag is required'
+    };
   }
-  
-  // Check length
-  if (tag.trim().length < minLength) {
-    return createValidationResult(
-      false,
-      `Tag must be at least ${minLength} characters`
-    );
+
+  if (tag && tag.length < opts.minLength) {
+    return {
+      isValid: false,
+      errorMessage: `Tag must be at least ${opts.minLength} characters`
+    };
   }
-  
-  if (tag.length > maxLength) {
-    return createValidationResult(
-      false,
-      `Tag cannot exceed ${maxLength} characters`
-    );
+
+  if (tag && tag.length > opts.maxLength) {
+    return {
+      isValid: false,
+      errorMessage: `Tag must be at most ${opts.maxLength} characters`
+    };
   }
-  
-  // Check for special characters
-  if (!allowSpecialChars && !/^[a-zA-Z0-9\s\-_]+$/.test(tag)) {
-    return createValidationResult(
-      false,
-      "Tag contains invalid characters"
-    );
-  }
-  
-  return createValidationResult(true, null);
+
+  return {
+    isValid: true,
+    errorMessage: null
+  };
 }
 
 /**
- * Validates a list of tags
- * @param tags The tags to validate
- * @param options Validation options
- * @returns A validation result
+ * Validates a list of tags for duplicates
  */
-export function validateTags(
+export function validateTagsList(
   tags: string[],
-  options: TagValidationOptions = {}
-): ValidationResult {
-  const { allowDuplicates = false } = options;
-  
-  // Check for duplicates
-  if (!allowDuplicates) {
-    const uniqueTags = new Set(tags.map(tag => tag.trim().toLowerCase()));
+  options?: TagValidationOptions
+): TagValidationResult {
+  const opts = {
+    allowDuplicates: false,
+    ...options
+  };
+
+  if (!opts.allowDuplicates) {
+    const uniqueTags = new Set(tags.map(t => t.toLowerCase()));
     if (uniqueTags.size !== tags.length) {
-      return createValidationResult(
-        false,
-        "Duplicate tags are not allowed"
-      );
+      return {
+        isValid: false,
+        errorMessage: 'Duplicate tags are not allowed'
+      };
     }
   }
-  
-  // Validate each tag
-  for (const tag of tags) {
-    const result = validateTag(tag, options);
-    if (!result.isValid) {
-      return result;
-    }
-  }
-  
-  return createValidationResult(true, null);
-}
 
-/**
- * Checks if a tag is valid
- * @param tag The tag to validate
- * @param options Validation options
- * @returns True if the tag is valid
- */
-export function isValidTag(
-  tag: string | undefined | null,
-  options: TagValidationOptions = {}
-): boolean {
-  const safeTag = ensureString(tag);
-  return validateTag(safeTag, options).isValid;
-}
-
-/**
- * Checks if all tags in a list are valid
- * @param tags The tags to validate
- * @param options Validation options
- * @returns True if all tags are valid
- */
-export function areValidTags(
-  tags: (string | undefined | null)[],
-  options: TagValidationOptions = {}
-): boolean {
-  const safeTags = tags.map(tag => ensureString(tag));
-  return validateTags(safeTags, options).isValid;
+  return {
+    isValid: true,
+    errorMessage: null
+  };
 }
