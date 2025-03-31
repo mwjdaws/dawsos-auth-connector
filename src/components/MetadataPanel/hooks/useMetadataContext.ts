@@ -1,86 +1,66 @@
 
-/**
- * MetadataContext Hook
- * 
- * Provides a React context for accessing metadata state and operations
- * across components without prop drilling.
- */
-
-import { createContext, useContext } from 'react';
-import { ValidationResult } from '@/utils/validation/types';
+import React, { createContext, useContext, useEffect } from 'react';
 import { Tag } from '@/types/tag';
-import { OntologyTerm } from '../types';
+import { ValidationResult } from '@/utils/validation/types';
 
 /**
- * Metadata context properties interface
+ * Metadata Context interface
  */
-interface MetadataContextProps {
-  // Content information
-  contentId?: string;
-  title?: string;
-  description?: string;
-  contentType?: string;
-  sourceUrl?: string;
-  
-  // Validation state
-  validationResult: ValidationResult;
+export interface MetadataContextProps {
+  contentId: string;
+  tags: Tag[];
   isEditable: boolean;
   isLoading: boolean;
-  error: string | null;
-  
-  // Content metadata
-  tags?: Tag[];
-  ontologyTerms?: OntologyTerm[];
-  
-  // Handlers for content metadata
-  onTitleChange?: (newTitle: string) => void;
-  onDescriptionChange?: (newDescription: string) => void;
-  onContentTypeChange?: (newContentType: string) => void;
-  onSourceUrlChange?: (newSourceUrl: string) => void;
-  
-  // Refresh metadata
-  refreshMetadata?: () => void;
-  handleRefresh?: () => Promise<void>;
-  fetchSourceMetadata?: () => Promise<void>;
-  fetchTags?: () => Promise<Tag[]>;
-  
-  // Tag operations
-  addTag?: (tag: string) => void;
-  removeTag?: (tagId: string) => void;
-  refreshTags?: () => Promise<void>;
-  handleAddTag?: (tag: string, typeId?: string | null) => Promise<void>;
-  handleDeleteTag?: (tagId: string) => Promise<void>;
-  deleteTag?: (params: { tagId: string, contentId: string }) => Promise<boolean>;
+  error: Error | null;
+  validationResult: ValidationResult;
 }
 
 /**
- * Create React context
+ * Create context with a meaningful error message for when it's used outside of provider
  */
 const MetadataContext = createContext<MetadataContextProps | undefined>(undefined);
 
 /**
- * MetadataContext provider
+ * MetadataProvider component
+ * 
+ * Provides metadata context to its children
  */
-export const MetadataProvider = MetadataContext.Provider;
+export const MetadataProvider: React.FC<{ value: MetadataContextProps; children: React.ReactNode }> = ({
+  value,
+  children
+}) => {
+  return (
+    <MetadataContext.Provider value={value}>
+      {children}
+    </MetadataContext.Provider>
+  );
+};
 
 /**
- * Hook for accessing metadata context
+ * useMetadataContext hook
  * 
- * @param contentId Optional content ID to verify context is for the correct content
- * @returns Metadata context object
- * @throws Error if used outside of a MetadataProvider
+ * Provides access to the metadata context
+ * @param providedContentId Optional content ID to verify against the context
+ * @returns Metadata context values
  */
-export function useMetadataContext(contentId?: string) {
+export function useMetadataContext(providedContentId?: string): MetadataContextProps {
   const context = useContext(MetadataContext);
   
-  if (!context) {
+  // Throw a helpful error if the hook is used outside of a provider
+  if (context === undefined) {
     throw new Error('useMetadataContext must be used within a MetadataProvider');
   }
   
-  // If contentId is provided, verify that context is for the correct content
-  if (contentId && context.contentId && contentId !== context.contentId) {
-    console.warn(`useMetadataContext: requested contentId ${contentId} doesn't match context contentId ${context.contentId}`);
-  }
+  // Optional validation to ensure the component using the context is working with the expected content
+  useEffect(() => {
+    if (providedContentId && providedContentId !== context.contentId) {
+      console.warn(
+        `Content ID mismatch: Component is using content ID "${providedContentId}" but the MetadataProvider has "${context.contentId}"`
+      );
+    }
+  }, [providedContentId, context.contentId]);
   
   return context;
 }
+
+export default useMetadataContext;
