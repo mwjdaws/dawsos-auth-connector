@@ -1,87 +1,107 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+/**
+ * GraphSearch Component
+ * 
+ * Provides search functionality for finding nodes within the graph.
+ * Supports auto-complete and dropdown selection.
+ */
+import React, { useState, useMemo, useCallback } from 'react';
 import { Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { 
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover';
-import { GraphNode, GraphSearchProps } from './graph-renderer/GraphRendererTypes';
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { GraphData, GraphNode } from './graph-renderer/GraphRendererTypes';
 
-export function GraphSearch({ nodes, onNodeFound }: GraphSearchProps) {
-  const [open, setOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
+interface GraphSearchProps {
+  graphData: GraphData;
+  onNodeSelect: (nodeId: string) => void;
+}
 
-  // Focus the input when popover opens
-  useEffect(() => {
-    if (open && inputRef.current) {
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
+export function GraphSearch({ 
+  graphData, 
+  onNodeSelect 
+}: GraphSearchProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
+  // Filter nodes based on search term
+  const filteredNodes = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+    
+    const lowercaseTerm = searchTerm.toLowerCase();
+    return graphData.nodes
+      .filter(node => {
+        const title = (node.title || '').toLowerCase();
+        const name = (node.name || '').toLowerCase();
+        return title.includes(lowercaseTerm) || name.includes(lowercaseTerm);
+      })
+      .slice(0, 5); // Limit to 5 results
+  }, [searchTerm, graphData.nodes]);
+  
+  // Handle node selection from dropdown
+  const handleNodeSelect = useCallback((node: GraphNode) => {
+    setSearchTerm(node.title || node.name || '');
+    setIsDropdownOpen(false);
+    onNodeSelect(node.id);
+  }, [onNodeSelect]);
+  
+  // Handle form submission
+  const handleSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!searchTerm.trim()) return;
+    
+    // Find the first matching node
+    const node = graphData.nodes.find(node => {
+      const title = (node.title || '').toLowerCase();
+      const name = (node.name || '').toLowerCase();
+      return title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+             name.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+    
+    if (node) {
+      onNodeSelect(node.id);
     }
-  }, [open]);
-
-  const handleSelectNode = (nodeId: string) => {
-    setOpen(false);
-    setSearchValue('');
-    onNodeFound(nodeId);
-  };
-
-  // Filter nodes based on search query
-  const filteredNodes = nodes.filter(node => 
-    node.title.toLowerCase().includes(searchValue.toLowerCase()) ||
-    node.name.toLowerCase().includes(searchValue.toLowerCase())
-  );
-
+  }, [searchTerm, graphData.nodes, onNodeSelect]);
+  
   return (
-    <div className="relative w-full max-w-xs">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button 
-            variant="outline" 
-            className="w-full justify-start text-sm text-muted-foreground"
-            size="sm"
-          >
-            <Search className="mr-2 h-4 w-4" />
-            Search...
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="p-0 w-full" align="start">
-          <Command>
-            <CommandInput 
-              ref={inputRef}
-              placeholder="Search nodes..." 
-              value={searchValue}
-              onValueChange={setSearchValue}
+    <form className="relative" onSubmit={handleSubmit}>
+      <DropdownMenu open={isDropdownOpen && filteredNodes.length > 0} onOpenChange={setIsDropdownOpen}>
+        <div className="flex gap-1">
+          <DropdownMenuTrigger asChild>
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search nodes..."
+              className="w-full pr-10"
             />
-            <CommandList>
-              <CommandEmpty>No results found</CommandEmpty>
-              <CommandGroup>
-                {filteredNodes.map(node => (
-                  <CommandItem
-                    key={node.id}
-                    value={node.id}
-                    onSelect={handleSelectNode}
-                  >
-                    <span>{node.title || node.name}</span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </div>
+          </DropdownMenuTrigger>
+          
+          <Button type="submit" size="sm" className="px-3">
+            <Search className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        <DropdownMenuContent align="start" className="w-[300px]">
+          {filteredNodes.map((node) => (
+            <DropdownMenuItem 
+              key={node.id}
+              onClick={() => handleNodeSelect(node)}
+              className="flex flex-col items-start"
+            >
+              <span className="font-medium">{node.title || node.name}</span>
+              {node.type && (
+                <span className="text-xs text-muted-foreground">{node.type}</span>
+              )}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </form>
   );
 }

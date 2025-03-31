@@ -8,9 +8,8 @@
 import React from 'react';
 import { GraphData } from '../types';
 import { GraphRenderer } from './graph-renderer/GraphRenderer';
-import { GraphRendererRef as LegacyGraphRendererRef } from '../types';
-import { GraphRendererRef } from './graph-renderer/GraphRendererTypes';
-import { createCompatibleGraphRef } from '@/utils/compatibility';
+import { GraphRendererRef } from '../types';
+import { createCompatibleGraphRef } from '../compatibility';
 
 interface GraphContentProps {
   graphData: GraphData;
@@ -19,7 +18,7 @@ interface GraphContentProps {
   highlightedNodeId?: string | null;
   zoomLevel: number;
   isPending: boolean;
-  graphRendererRef: React.RefObject<LegacyGraphRendererRef>;
+  graphRendererRef: React.RefObject<GraphRendererRef>;
 }
 
 export function GraphContent({
@@ -32,7 +31,7 @@ export function GraphContent({
   graphRendererRef
 }: GraphContentProps) {
   // Create a local ref for the modern GraphRenderer
-  const modernRef = React.useRef<GraphRendererRef>(null);
+  const modernRef = React.useRef<any>(null);
   
   // Set up a ref forwarding mechanism
   React.useEffect(() => {

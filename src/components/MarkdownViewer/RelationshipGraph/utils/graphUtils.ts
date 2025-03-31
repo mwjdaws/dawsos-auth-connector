@@ -1,69 +1,90 @@
 
 /**
- * Graph utility functions for the relationship graph visualization
+ * Utility functions for graph operations
  */
-import { GraphNode, GraphLink } from '../components/graph-renderer/GraphRendererTypes';
+import { 
+  GraphNode, 
+  GraphLink, 
+  GraphData 
+} from '../components/graph-renderer/GraphRendererTypes';
 
 /**
- * Get a unique identifier for a graph link.
+ * Create a new node with default values if needed
  */
-export function getLinkId(link: GraphLink): string {
-  const sourceId = typeof link.source === 'object' && link.source ? link.source.id : link.source;
-  const targetId = typeof link.target === 'object' && link.target ? link.target.id : link.target;
-  return `${sourceId}-${targetId}-${link.type || 'default'}`;
-}
-
-/**
- * Get a human-readable label for a graph node.
- */
-export function getNodeLabel(node: GraphNode): string {
-  return node.title || node.name || node.id || 'Unknown Node';
-}
-
-/**
- * Find a node by its ID in the graph.
- */
-export function findNodeById(nodes: GraphNode[], id: string): GraphNode | undefined {
-  return nodes.find(node => node.id === id);
-}
-
-/**
- * Generate a color for a link based on its type.
- */
-export function getLinkColor(type: string): string {
-  const colorMap: Record<string, string> = {
-    'manual': '#3b82f6',  // blue
-    'wikilink': '#10b981', // green
-    'AI-suggested': '#f59e0b', // amber
-    'default': '#9ca3af'  // gray
+export function createNode(id: string, data: Partial<GraphNode> = {}): GraphNode {
+  return {
+    id,
+    title: data.title || data.name || id,
+    name: data.name || data.title || id,
+    type: data.type || 'document',
+    domain: data.domain || '',
+    ...data
   };
-  
-  return colorMap[type] || colorMap.default;
 }
 
 /**
- * Generate a graph visualization configuration option for a specific entity.
+ * Create a link between nodes with default values
  */
-export function getGraphConfig(entityType: string, isHighlighted: boolean = false): {
-  color: string;
-  size: number;
-} {
-  const configs: Record<string, { color: string; size: number }> = {
-    'document': { color: '#3b82f6', size: 5 },  // blue
-    'term': { color: '#10b981', size: 4 },      // green
-    'entity': { color: '#f59e0b', size: 3.5 },  // amber
-    'concept': { color: '#8b5cf6', size: 4 },   // violet
-    'default': { color: '#6b7280', size: 4 }    // gray
-  };
-  
-  const config = configs[entityType] || configs.default;
-  
-  if (isHighlighted) {
+export function createLink(source: string, target: string, type = 'default'): GraphLink {
+  return { source, target, type };
+}
+
+/**
+ * Calculate statistics for a graph (node count, link count, etc.)
+ */
+export function calculateGraphStats(graph: GraphData) {
+  if (!graph) {
     return {
-      color: '#ff3e00',  // highlight color
-      size: config.size * 1.3
+      nodeCount: 0,
+      linkCount: 0,
+      density: 0
     };
   }
   
-  return config;
+  const nodeCount = graph.nodes.length;
+  const linkCount = graph.links.length;
+  
+  // Calculate graph density (ratio of actual links to possible links)
+  let density = 0;
+  if (nodeCount > 1) {
+    // Maximum possible links for directed graph: n(n-1)
+    const maxLinks = nodeCount * (nodeCount - 1);
+    density = maxLinks > 0 ? linkCount / maxLinks : 0;
+  }
+  
+  return {
+    nodeCount,
+    linkCount,
+    density
+  };
+}
+
+/**
+ * Get node style configuration based on node properties
+ */
+export function getNodeStyle(node: GraphNode, config?: any) {
+  if (!node) {
+    return { color: '#6b7280', size: 8 }; // Default style
+  }
+  
+  // Apply configuration if provided
+  const styleConfig = config || {};
+  
+  // Node color based on type with fallbacks
+  const typeColors = styleConfig.typeColors || {
+    document: '#2563eb',
+    term: '#059669',
+    concept: '#7c3aed',
+    entity: '#db2777',
+    topic: '#ea580c',
+    person: '#ef4444',
+    organization: '#f59e0b'
+  };
+  
+  const type = (node.type || 'document').toLowerCase();
+  
+  return {
+    color: node.color || typeColors[type] || styleConfig.defaultColor || '#6b7280',
+    size: node.size || styleConfig.sizes?.[type] || styleConfig.defaultSize || 8
+  };
 }

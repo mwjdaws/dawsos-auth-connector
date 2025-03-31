@@ -2,12 +2,14 @@
 /**
  * GraphControls Component
  * 
- * A container for search and zoom controls in the graph.
+ * Provides interactive controls for the relationship graph, including:
+ * - Search functionality to find and highlight specific nodes
+ * - Zoom controls to adjust the graph view
  */
 import React from 'react';
+import { GraphData } from '../components/graph-renderer/GraphRendererTypes';
 import { GraphSearch } from './GraphSearch';
 import { GraphZoomControl } from './GraphZoomControl';
-import { GraphData, GraphSearchProps, GraphZoomControlProps } from './graph-renderer/GraphRendererTypes';
 
 interface GraphControlsProps {
   graphData: GraphData;
@@ -17,7 +19,7 @@ interface GraphControlsProps {
   onResetZoom: () => void;
 }
 
-export function GraphControls({ 
+export function GraphControls({
   graphData,
   onNodeFound,
   zoom,
@@ -25,18 +27,20 @@ export function GraphControls({
   onResetZoom
 }: GraphControlsProps) {
   return (
-    <div className="px-3 py-2 border-b flex justify-between items-center flex-wrap gap-2">
-      <GraphSearch 
-        nodes={graphData.nodes}
-        onNodeFound={onNodeFound}
-      />
+    <div className="flex flex-col md:flex-row p-2 gap-2 border-b bg-muted/20">
+      <div className="flex-1">
+        <GraphSearch 
+          graphData={graphData}
+          onNodeSelect={onNodeFound}
+        />
+      </div>
       
       <GraphZoomControl 
         zoom={zoom}
         onZoomChange={onZoomChange}
         onReset={onResetZoom}
-        min={0.5}
-        max={3}
+        min={0.1}
+        max={2}
       />
     </div>
   );

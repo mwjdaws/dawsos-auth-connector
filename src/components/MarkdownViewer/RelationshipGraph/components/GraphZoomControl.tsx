@@ -1,82 +1,109 @@
 
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
-
-interface GraphZoomControlProps {
-  zoom: number;
-  onZoomChange: (zoom: number) => void;
-  onResetZoom: () => void;
-  className?: string;
-}
-
 /**
  * GraphZoomControl Component
  * 
- * A control panel for zooming in, out, and resetting zoom level for the graph visualization
+ * Provides zoom controls for the graph visualization, including:
+ * - Zoom in/out buttons
+ * - Reset zoom button
+ * - Zoom level indicator
  */
-export function GraphZoomControl({ zoom, onZoomChange, onResetZoom, className = '' }: GraphZoomControlProps) {
-  // Normalize zoom for the slider (convert from 0.1-5 range to 0-100)
-  const normalizedZoom = Math.max(0, Math.min(100, ((zoom - 0.1) / 4.9) * 100));
+import React, { useState, useEffect } from 'react';
+import { ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+
+interface GraphZoomControlProps {
+  zoom: number;
+  onZoomChange: (newZoom: number) => void;
+  onReset: () => void;
+  min: number;
+  max: number;
+}
+
+export function GraphZoomControl({
+  zoom,
+  onZoomChange,
+  onReset,
+  min,
+  max
+}: GraphZoomControlProps) {
+  const [sliderValue, setSliderValue] = useState<number[]>([zoom]);
   
-  // Convert slider value back to zoom level
+  // Update slider when zoom changes externally
+  useEffect(() => {
+    setSliderValue([zoom]);
+  }, [zoom]);
+  
+  // Handle slider change
   const handleSliderChange = (value: number[]) => {
-    const sliderValue = value[0];
-    const newZoom = 0.1 + (sliderValue / 100) * 4.9;
-    onZoomChange(newZoom);
+    if (value && value.length > 0) {
+      const newZoom = value[0];
+      setSliderValue([newZoom]);
+      onZoomChange(newZoom);
+    }
   };
   
-  // Zoom in/out with buttons (by 25%)
-  const handleZoomIn = () => {
-    onZoomChange(Math.min(5, zoom * 1.25));
-  };
-  
-  const handleZoomOut = () => {
-    onZoomChange(Math.max(0.1, zoom * 0.8));
-  };
+  // Format zoom percentage for display
+  const formatZoom = (value: number) => `${Math.round(value * 100)}%`;
   
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <Button
-        onClick={handleZoomOut}
-        size="sm"
-        variant="outline"
-        className="p-0 h-8 w-8"
-      >
-        <ZoomOut className="h-4 w-4" />
-        <span className="sr-only">Zoom Out</span>
-      </Button>
+    <div className="flex items-center gap-2">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => onZoomChange(Math.max(min, zoom - 0.1))}
+            disabled={zoom <= min}
+            className="px-2"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Zoom out</TooltipContent>
+      </Tooltip>
       
-      <Slider
-        value={[normalizedZoom]}
-        min={0}
-        max={100}
-        step={1}
-        onValueChange={handleSliderChange}
-        className="w-32 mx-2"
-        aria-label="Zoom level"
-      />
+      <div className="hidden md:flex items-center gap-2 w-40">
+        <Slider
+          value={sliderValue}
+          min={min}
+          max={max}
+          step={0.05}
+          onValueChange={handleSliderChange}
+          className="w-28"
+        />
+        <span className="text-xs w-10 text-right">{formatZoom(zoom)}</span>
+      </div>
       
-      <Button
-        onClick={handleZoomIn}
-        size="sm"
-        variant="outline"
-        className="p-0 h-8 w-8"
-      >
-        <ZoomIn className="h-4 w-4" />
-        <span className="sr-only">Zoom In</span>
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => onZoomChange(Math.min(max, zoom + 0.1))}
+            disabled={zoom >= max}
+            className="px-2"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Zoom in</TooltipContent>
+      </Tooltip>
       
-      <Button
-        onClick={onResetZoom}
-        size="sm"
-        variant="outline"
-        className="p-0 h-8 w-8 ml-2"
-      >
-        <RefreshCw className="h-4 w-4" />
-        <span className="sr-only">Reset Zoom</span>
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={onReset}
+            className="px-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Reset zoom</TooltipContent>
+      </Tooltip>
     </div>
   );
 }

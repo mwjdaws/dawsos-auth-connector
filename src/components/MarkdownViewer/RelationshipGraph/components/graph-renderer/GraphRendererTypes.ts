@@ -10,6 +10,10 @@ export interface GraphNode {
   name?: string;
   type?: string;
   domain?: string;
+  color?: string;
+  size?: number;
+  icon?: string;
+  weight?: number;
   [key: string]: any;  // Allow for additional properties
 }
 
@@ -17,9 +21,10 @@ export interface GraphNode {
  * Core GraphLink representation
  */
 export interface GraphLink {
-  source: string | GraphNode;
-  target: string | GraphNode;
+  source: string;
+  target: string;
   type?: string;
+  weight?: number;
   [key: string]: any;  // Allow for additional properties
 }
 

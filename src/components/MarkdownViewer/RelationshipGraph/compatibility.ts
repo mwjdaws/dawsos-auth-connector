@@ -3,20 +3,15 @@
  * Compatibility utilities for the relationship graph component
  * These help ensure backward compatibility with older code
  */
-import { GraphProps, GraphRendererRef } from './types';
+import { GraphProps, GraphRendererRef, RelationshipGraphProps } from './types';
 import { GraphData, GraphNode, GraphLink } from './components/graph-renderer/GraphRendererTypes';
 
 /**
  * Create safe graph properties with defaults for any missing values
  */
-export function createSafeGraphProps(props: GraphProps): {
-  startingNodeId: string | undefined;
-  width: number;
-  height: number;
-  hasAttemptedRetry: boolean;
-} {
+export function createSafeGraphProps(props: GraphProps): RelationshipGraphProps {
   return {
-    startingNodeId: props.startingNodeId,
+    startingNodeId: props.startingNodeId || '',
     width: props.width || 800,
     height: props.height || 600,
     hasAttemptedRetry: props.hasAttemptedRetry || false
@@ -27,29 +22,44 @@ export function createSafeGraphProps(props: GraphProps): {
  * Create a compatibility layer for the GraphRendererRef
  * This allows older code to use the new ref structure
  */
-export function createCompatibleGraphRef(ref: GraphRendererRef): any {
+export function createCompatibleGraphRef(ref: any): GraphRendererRef {
   if (!ref) {
-    return null;
+    return {
+      centerOn: () => {},
+      zoomToFit: () => {},
+      resetViewport: () => {},
+      getGraphData: () => ({ nodes: [], links: [] }),
+      setZoom: () => {}
+    };
   }
   
   return {
     centerOn: (nodeId: string) => {
-      if (ref.centerOnNode) {
+      if (typeof ref.centerOnNode === 'function') {
         ref.centerOnNode(nodeId);
       }
     },
     zoomToFit: (duration?: number) => {
-      if (ref.zoomToFit) {
+      if (typeof ref.zoomToFit === 'function') {
         ref.zoomToFit(duration);
       }
     },
     resetViewport: () => {
-      if (ref.resetZoom) {
+      if (typeof ref.resetZoom === 'function') {
         ref.resetZoom();
       }
     },
-    getGraphData: ref.getGraphData,
-    setZoom: ref.setZoom
+    getGraphData: () => {
+      if (typeof ref.getGraphData === 'function') {
+        return ref.getGraphData() || { nodes: [], links: [] };
+      }
+      return { nodes: [], links: [] };
+    },
+    setZoom: (zoomLevel: number) => {
+      if (typeof ref.setZoom === 'function') {
+        ref.setZoom(zoomLevel);
+      }
+    }
   };
 }
 
@@ -58,11 +68,11 @@ export function createCompatibleGraphRef(ref: GraphRendererRef): any {
  */
 export function convertToGraphNode(node: any): GraphNode {
   return {
-    id: node.id || '',
-    title: node.title || node.name || node.id || 'Unknown',
-    name: node.name || node.title || node.id || 'Unknown',
-    type: node.type || 'document',
-    domain: node.domain
+    id: node?.id || '',
+    title: node?.title || node?.name || node?.id || 'Unknown',
+    name: node?.name || node?.title || node?.id || 'Unknown',
+    type: node?.type || 'document',
+    domain: node?.domain || ''
   };
 }
 
@@ -71,9 +81,9 @@ export function convertToGraphNode(node: any): GraphNode {
  */
 export function convertToGraphLink(link: any): GraphLink {
   return {
-    source: link.source || '',
-    target: link.target || '',
-    type: link.type || 'default'
+    source: link?.source || '',
+    target: link?.target || '',
+    type: link?.type || 'default'
   };
 }
 
@@ -94,14 +104,14 @@ export function createSafeGraphData(data: any): GraphData {
 /**
  * Safely extract a node ID from a node or ID string
  */
-export function getSafeNodeId(nodeOrId: GraphNode | string | undefined | null): string | null {
+export function getSafeNodeId(nodeOrId: GraphNode | string | undefined | null): string {
   if (!nodeOrId) {
-    return null;
+    return '';
   }
   
   if (typeof nodeOrId === 'string') {
     return nodeOrId;
   }
   
-  return nodeOrId.id || null;
+  return nodeOrId.id || '';
 }

@@ -17,10 +17,10 @@ import { GraphContent } from './components/GraphContent';
 import { ErrorFallback } from './components/ErrorFallback';
 import { useRelationshipGraph } from './hooks/useRelationshipGraph';
 import { createSafeGraphProps } from './compatibility';
-import { RelationshipGraphProps } from './types';
+import { GraphProps, RelationshipGraphProps } from './types';
 
 // Export the main component
-export function RelationshipGraph(props: RelationshipGraphProps) { 
+export function RelationshipGraph(props: GraphProps) { 
   // Convert props to safe values using our compatibility layer
   const safeProps = createSafeGraphProps(props);
   const { startingNodeId, width = 800, height = 600, hasAttemptedRetry = false } = safeProps;
@@ -41,7 +41,7 @@ export function RelationshipGraph(props: RelationshipGraphProps) {
     handleResetZoom,
     handleRetry
   } = useRelationshipGraph({
-    startingNodeId,
+    startingNodeId: startingNodeId || '',
     hasAttemptedRetry
   });
   

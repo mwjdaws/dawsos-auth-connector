@@ -1,58 +1,69 @@
 
-import { GraphLink } from './GraphRendererTypes';
+/**
+ * Custom hook for rendering links in the graph
+ */
+import { useMemo } from 'react';
+import { GraphLink } from '../../components/graph-renderer/GraphRendererTypes';
 
-interface LinkRendererResult {
+interface LinkRendererConfig {
   getLinkColor: (link: GraphLink) => string;
-  getLinkLabel: (link: GraphLink) => string;
   getLinkWidth: (link: GraphLink) => number;
+  getLinkLabel: (link: GraphLink) => string;
 }
 
-export function useLinkRenderer(): LinkRendererResult {
+export function useLinkRenderer(): LinkRendererConfig {
   // Determine link color based on type
   const getLinkColor = (link: GraphLink): string => {
-    const type = link.type || 'default';
+    const linkType = link.type || 'default';
     
-    const colorMap: Record<string, string> = {
-      'manual': '#3b82f6',   // blue
-      'wikilink': '#10b981', // green
-      'AI-suggested': '#f59e0b', // amber
-      'default': '#9ca3af'  // gray
-    };
-    
-    return colorMap[type] || colorMap.default;
+    switch (linkType) {
+      case 'reference':
+        return '#4338ca'; // Indigo
+      case 'parent':
+        return '#0891b2'; // Cyan
+      case 'child':
+        return '#2563eb'; // Blue
+      case 'related':
+        return '#a855f7'; // Purple
+      case 'includes':
+        return '#65a30d'; // Lime
+      case 'mention':
+        return '#f59e0b'; // Amber
+      default:
+        return '#6b7280'; // Gray
+    }
   };
   
-  // Get human-readable label for link
+  // Determine link label based on type
   const getLinkLabel = (link: GraphLink): string => {
-    const type = link.type || 'default';
+    const linkType = link.type || 'related';
     
-    const labelMap: Record<string, string> = {
-      'manual': 'Manual connection',
-      'wikilink': 'Wiki link',
-      'AI-suggested': 'AI-suggested connection',
-      'default': 'Related'
-    };
-    
-    return labelMap[type] || labelMap.default;
+    // Capitalize first letter
+    return linkType.charAt(0).toUpperCase() + linkType.slice(1);
   };
   
-  // Determine link width based on type
+  // Determine link width based on type or weight
   const getLinkWidth = (link: GraphLink): number => {
-    const type = link.type || 'default';
+    // Default link width
+    const defaultWidth = 1.5;
     
-    const widthMap: Record<string, number> = {
-      'manual': 2,
-      'wikilink': 2.5,
-      'AI-suggested': 1.5,
-      'default': 1
-    };
+    // Check if the link has a weight property
+    if (link.weight !== undefined) {
+      // Scale weight between 1 and 3 for visibility
+      return Math.max(1, Math.min(3, (Number(link.weight) * 2) || defaultWidth));
+    }
     
-    return widthMap[type] || widthMap.default;
+    // Different widths based on link type
+    if (link.type === 'reference' || link.type === 'parent') {
+      return 2;
+    }
+    
+    return defaultWidth;
   };
   
-  return {
+  return useMemo(() => ({
     getLinkColor,
-    getLinkLabel,
-    getLinkWidth
-  };
+    getLinkWidth,
+    getLinkLabel
+  }), []);
 }
