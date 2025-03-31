@@ -10,6 +10,7 @@ import { useTagValidation } from './useTagValidation';
 import { useContentIdValidation } from './useContentIdValidation';
 import { toast } from 'sonner';
 import { Tag } from '@/types/tag';
+import { handleError } from '@/utils/errors';
 
 interface ValidatedTagOperationsProps {
   contentId?: string | null;
@@ -30,7 +31,7 @@ export function useValidatedTagOperations({
   const { isValid: isValidContent, isTemporary } = useContentIdValidation(contentId);
   
   // Get tag validation utilities
-  const { validateTag, isDuplicateTag } = useTagValidation(contentId);
+  const { validateTag, isDuplicateTag } = useTagValidation(contentId, { existingTags: tags });
   
   // Local state for tag input
   const [newTag, setNewTag] = useState('');
@@ -47,7 +48,7 @@ export function useValidatedTagOperations({
     
     // Validate tag name
     const trimmedTag = newTag.trim();
-    const validation = validateTag(trimmedTag, { existingTags: tags });
+    const validation = validateTag(trimmedTag, { checkDuplicates: true });
     
     if (!validation.isValid) {
       toast.error(validation.errorMessage || 'Invalid tag');
@@ -69,12 +70,15 @@ export function useValidatedTagOperations({
         toast.success(`Tag "${trimmedTag}" added successfully`);
       }
     } catch (error) {
-      console.error('Error adding tag:', error);
-      toast.error(`Failed to add tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      handleError(
+        error,
+        "Failed to add tag",
+        { level: "warning", technical: false, context: { contentId } }
+      );
     } finally {
       setIsAddingTag(false);
     }
-  }, [newTag, isValidContent, tags, onAddTag, onMetadataChange, validateTag]);
+  }, [newTag, isValidContent, onAddTag, onMetadataChange, validateTag]);
 
   // Validated delete tag handler
   const handleDeleteTag = useCallback(async (tagId: string) => {
@@ -97,8 +101,11 @@ export function useValidatedTagOperations({
         toast.success('Tag deleted successfully');
       }
     } catch (error) {
-      console.error('Error deleting tag:', error);
-      toast.error(`Failed to delete tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      handleError(
+        error,
+        "Failed to delete tag",
+        { level: "warning", technical: false, context: { contentId } }
+      );
     } finally {
       setIsDeletingTag(false);
     }

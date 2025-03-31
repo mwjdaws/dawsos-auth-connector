@@ -6,7 +6,8 @@ import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Tag } from "@/types/tag";
-import { handleError } from "@/utils/error-handling";
+import { handleError } from "@/utils/errors";
+import { useContentIdValidation } from "@/hooks/validation";
 
 interface UseTagOperationsProps {
   contentId?: string;
@@ -22,12 +23,14 @@ export function useTagOperations({
   tags,
   setTags
 }: UseTagOperationsProps) {
+  // Validate content ID
+  const { isValid } = useContentIdValidation(contentId);
   
   /**
    * Add a tag to the content
    */
   const addTag = useCallback(async (name: string, typeId?: string): Promise<Tag | null> => {
-    if (!contentId || !name.trim()) return null;
+    if (!contentId || !isValid || !name.trim()) return null;
     
     try {
       const { data, error } = await supabase
@@ -62,19 +65,19 @@ export function useTagOperations({
         { 
           level: "warning", 
           technical: false,
-          contentId
+          context: { contentId }
         }
       );
       
       return null;
     }
-  }, [contentId, tags, setTags]);
+  }, [contentId, isValid, tags, setTags]);
 
   /**
    * Delete a tag from the content
    */
   const deleteTag = useCallback(async (tagId: string): Promise<boolean> => {
-    if (!contentId || !tagId) return false;
+    if (!contentId || !isValid || !tagId) return false;
     
     try {
       const { error } = await supabase
@@ -100,16 +103,18 @@ export function useTagOperations({
         { 
           level: "warning", 
           technical: false,
-          contentId
+          context: { contentId }
         }
       );
       
       return false;
     }
-  }, [contentId, tags, setTags]);
+  }, [contentId, isValid, tags, setTags]);
 
   return {
     addTag,
     deleteTag
   };
 }
+
+export default useTagOperations;
