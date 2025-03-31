@@ -20,6 +20,9 @@ export interface BaseError {
 export interface StandardizedError extends BaseError {
   handled?: boolean;
   id?: string;
+  code?: string;
+  source?: string;
+  originalError?: unknown;
 }
 
 // API-specific error
@@ -67,4 +70,18 @@ export interface WithErrorHandlingOptions {
   level?: ErrorLevel;
   onError?: (error: any) => void;
   defaultValue?: any;
+}
+
+// Compatible options for error handling across different systems
+export interface ErrorHandlingCompatOptions {
+  context?: Record<string, any>;
+  silent?: boolean;
+  technical?: boolean;
+  title?: string;
+  level?: ErrorLevel;
+  actionLabel?: string;
+  onRetry?: () => void;
+  preventDuplicate?: boolean;
+  deduplicate?: boolean;
+  duration?: number;
 }

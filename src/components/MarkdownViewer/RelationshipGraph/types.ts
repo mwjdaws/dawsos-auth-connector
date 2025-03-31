@@ -10,8 +10,8 @@ export interface GraphNode {
   title: string;
   type: string;
   description?: string;
-  val?: number;
-  color?: string;
+  val?: number | undefined;
+  color?: string | undefined;
   [key: string]: any;
 }
 
@@ -21,7 +21,7 @@ export interface GraphLink {
   target: string;
   type?: string;
   label?: string;
-  value?: number;
+  value?: number | undefined;
   [key: string]: any;
 }
 

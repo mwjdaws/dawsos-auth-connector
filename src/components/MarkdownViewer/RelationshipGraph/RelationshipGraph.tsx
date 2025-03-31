@@ -23,7 +23,7 @@ import { createSafeGraphProps } from './compatibility';
 export function RelationshipGraph(props: GraphProps) { 
   // Convert props to safe values using our compatibility layer
   const safeProps = createSafeGraphProps(props);
-  const { startingNodeId, width, height, hasAttemptedRetry } = safeProps;
+  const { startingNodeId = '', width = 800, height = 600, hasAttemptedRetry = false } = safeProps;
   
   // Create a ref for the graph renderer
   const graphRendererRef = useRef<GraphRendererRef>(null);
@@ -82,7 +82,7 @@ export function RelationshipGraph(props: GraphProps) {
         <GraphControls
           graphData={graphData}
           onNodeFound={handleNodeFound}
-          zoom={zoomLevel}
+          zoom={zoomLevel || 1}
           onZoomChange={handleZoomChange}
           onResetZoom={handleResetZoom}
         />
@@ -92,7 +92,7 @@ export function RelationshipGraph(props: GraphProps) {
           width={width}
           height={height}
           highlightedNodeId={highlightedNodeId}
-          zoomLevel={zoomLevel}
+          zoomLevel={zoomLevel || 1}
           isPending={isPending}
           graphRendererRef={graphRendererRef}
         />

@@ -34,9 +34,9 @@ export function createCompatibleGraphRef(modernRef: any): GraphRendererRef {
 /**
  * Creates safe graph props from potentially unsafe inputs
  */
-export function createSafeGraphProps(props: GraphProps): GraphProps {
+export function createSafeGraphProps(props: Partial<GraphProps>): GraphProps {
   return {
-    startingNodeId: ensureString(props.startingNodeId),
+    startingNodeId: ensureString(props.startingNodeId, ''),
     width: ensureNumber(props.width, 800),
     height: ensureNumber(props.height, 600),
     hasAttemptedRetry: ensureBoolean(props.hasAttemptedRetry)
@@ -80,7 +80,7 @@ function sanitizeNode(node: GraphNode | null | undefined): GraphNode | null {
     name: ensureString(node.name),
     title: ensureString(node.title),
     type: ensureString(node.type),
-    description: ensureString(node.description),
+    description: ensureString(node.description, ''),
     color: node.color,
     val: node.val
   };
@@ -95,8 +95,8 @@ function sanitizeLink(link: GraphLink | null | undefined, validNodes: GraphNode[
   }
   
   // Check that source and target nodes exist
-  const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
-  const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+  const sourceId = typeof link.source === 'object' && link.source !== null ? link.source.id : String(link.source);
+  const targetId = typeof link.target === 'object' && link.target !== null ? link.target.id : String(link.target);
   
   const validNodeIds = validNodes.map(n => n.id);
   

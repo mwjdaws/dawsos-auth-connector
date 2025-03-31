@@ -7,6 +7,7 @@ export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
   message?: string | null; // For backward compatibility
+  type?: string;
 }
 
 // Export tag position interface
@@ -18,9 +19,7 @@ export interface TagPosition {
 // Content ID validation types
 export type ContentIdValidationResultType = 'valid' | 'empty' | 'invalid' | 'not-found';
 
-export interface ContentIdValidationResult {
-  isValid: boolean;
-  errorMessage: string | null;
+export interface ContentIdValidationResult extends ValidationResult {
   type: ContentIdValidationResultType;
 }
 

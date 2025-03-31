@@ -84,3 +84,19 @@ export function toNullableNumber(value: any): number | null {
 export function safeId(id: string | null | undefined): string {
   return ensureString(id);
 }
+
+/**
+ * Ensures a value is either the provided type or null (useful for database fields)
+ */
+export function ensureNullable<T>(value: T | undefined | null): T | null {
+  if (value === undefined) return null;
+  return value;
+}
+
+/**
+ * Safely converts possibly undefined string to string | null
+ */
+export function undefinedToNull(value: string | undefined | null): string | null {
+  if (value === undefined) return null;
+  return value;
+}
