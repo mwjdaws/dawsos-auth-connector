@@ -2,76 +2,120 @@
 /**
  * Tag validation utilities
  * 
- * Functions for validating tags.
+ * Provides functions for validating tag data
  */
 
-import { TagValidationOptions, TagValidationResult } from './types';
+import { ValidationResult } from './types';
+import { Tag } from '@/types/tag';
 
 /**
- * Validates a single tag
+ * Validate a tag name
+ * 
+ * @param tagName The tag name to validate
+ * @returns Validation result with isValid flag and any error messages
  */
-export function validateTag(
-  tag: string,
-  options?: TagValidationOptions
-): TagValidationResult {
-  const opts = {
-    minLength: 1,
-    maxLength: 50,
-    allowEmpty: false,
-    ...options
-  };
-
-  if (!opts.allowEmpty && (!tag || tag.trim().length === 0)) {
+export function validateTagName(tagName: string): ValidationResult {
+  if (!tagName || tagName.trim() === '') {
     return {
       isValid: false,
-      errorMessage: 'Tag is required'
+      message: null,
+      errorMessage: 'Tag name cannot be empty'
     };
   }
 
-  if (tag && tag.length < opts.minLength) {
+  if (tagName.trim().length < 2) {
     return {
       isValid: false,
-      errorMessage: `Tag must be at least ${opts.minLength} characters`
+      message: null,
+      errorMessage: 'Tag name must be at least 2 characters long'
     };
   }
 
-  if (tag && tag.length > opts.maxLength) {
+  if (tagName.trim().length > 50) {
     return {
       isValid: false,
-      errorMessage: `Tag must be at most ${opts.maxLength} characters`
+      message: null,
+      errorMessage: 'Tag name cannot exceed 50 characters'
+    };
+  }
+
+  // Check for invalid characters
+  if (/[^\w\s\-\.]/i.test(tagName)) {
+    return {
+      isValid: false,
+      message: null,
+      errorMessage: 'Tag name contains invalid characters'
     };
   }
 
   return {
     isValid: true,
+    message: 'Tag name is valid',
     errorMessage: null
   };
 }
 
 /**
- * Validates a list of tags for duplicates
+ * Check if a tag already exists in a collection
+ * 
+ * @param tagName The tag name to check
+ * @param existingTags Collection of existing tags
+ * @returns Validation result with isValid flag and any error messages
  */
-export function validateTagsList(
-  tags: string[],
-  options?: TagValidationOptions
-): TagValidationResult {
-  const opts = {
-    allowDuplicates: false,
-    ...options
-  };
+export function validateTagUniqueness(tagName: string, existingTags: Tag[]): ValidationResult {
+  if (!existingTags || !Array.isArray(existingTags)) {
+    return {
+      isValid: true,
+      message: 'No existing tags to check against',
+      errorMessage: null
+    };
+  }
 
-  if (!opts.allowDuplicates) {
-    const uniqueTags = new Set(tags.map(t => t.toLowerCase()));
-    if (uniqueTags.size !== tags.length) {
-      return {
-        isValid: false,
-        errorMessage: 'Duplicate tags are not allowed'
-      };
+  const normalizedNewTag = tagName.trim().toLowerCase();
+  const tagExists = existingTags.some(tag => 
+    tag.name.trim().toLowerCase() === normalizedNewTag
+  );
+
+  if (tagExists) {
+    return {
+      isValid: false,
+      message: null,
+      errorMessage: `Tag "${tagName}" already exists`
+    };
+  }
+
+  return {
+    isValid: true,
+    message: 'Tag is unique',
+    errorMessage: null
+  };
+}
+
+/**
+ * Comprehensive tag validation
+ * 
+ * @param tagName The tag name to validate
+ * @param existingTags Optional collection of existing tags to check uniqueness
+ * @returns Validation result with isValid flag and any error messages
+ */
+export function validateTag(tagName: string, existingTags?: Tag[]): ValidationResult {
+  // First validate the tag name format
+  const nameValidation = validateTagName(tagName);
+  if (!nameValidation.isValid) {
+    return nameValidation;
+  }
+
+  // Then check for uniqueness if existing tags are provided
+  if (existingTags) {
+    const uniquenessValidation = validateTagUniqueness(tagName, existingTags);
+    if (!uniquenessValidation.isValid) {
+      return uniquenessValidation;
     }
   }
 
   return {
     isValid: true,
+    message: 'Tag is valid',
     errorMessage: null
   };
 }

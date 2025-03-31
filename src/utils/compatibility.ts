@@ -1,87 +1,73 @@
 
 /**
- * Compatibility utilities for handling type differences
- */
-
-/**
- * Convert undefined to null - useful for database operations where null is expected
- */
-export function undefinedToNull<T>(value: T | undefined): T | null {
-  return value === undefined ? null : value;
-}
-
-/**
- * Convert null to undefined - useful for UI components where undefined is expected
- */
-export function nullToUndefined<T>(value: T | null): T | undefined {
-  return value === null ? undefined : value;
-}
-
-/**
- * Convert a null or undefined value to a default value
- */
-export function nullOrUndefinedToDefault<T>(value: T | null | undefined, defaultValue: T): T {
-  return (value === null || value === undefined) ? defaultValue : value;
-}
-
-/**
- * Check if a value is null or undefined
- */
-export function isNullOrUndefined(value: any): value is null | undefined {
-  return value === null || value === undefined;
-}
-
-/**
- * Ensure a value is not null or undefined, using a default value if it is
- */
-export function ensureValue<T>(value: T | null | undefined, defaultValue: T): T {
-  return isNullOrUndefined(value) ? defaultValue : value;
-}
-
-/**
- * Ensures a value is a string
- */
-export function ensureString(value: any, defaultValue = ''): string {
-  if (typeof value === 'string') {
-    return value;
-  }
-  return defaultValue;
-}
-
-/**
- * Ensures a value is a number
- */
-export function ensureNumber(value: any, defaultValue = 0): number {
-  if (typeof value === 'number' && !isNaN(value)) {
-    return value;
-  }
-  return defaultValue;
-}
-
-/**
- * Ensures a value is a boolean
- */
-export function ensureBoolean(value: any, defaultValue = false): boolean {
-  if (typeof value === 'boolean') {
-    return value;
-  }
-  return defaultValue;
-}
-
-/**
- * Safe callback function invocation with null/undefined handling
+ * Safe callback function
  * 
- * Returns a function that will call the original function if it exists,
- * or return the provided default value if the function is null/undefined.
+ * Safely invokes a callback function if it exists, with proper TypeScript typing.
+ * Useful for handling optional callbacks in a type-safe way.
+ * 
+ * @param callback The callback function to invoke
+ * @param args Arguments to pass to the callback
+ * @returns The result of the callback, or undefined if the callback doesn't exist
  */
 export function safeCallback<T extends (...args: any[]) => any>(
-  fn: T | null | undefined,
-  defaultValue?: ReturnType<T>
-): (...args: Parameters<T>) => ReturnType<T> | undefined {
-  return (...args: Parameters<T>): ReturnType<T> | undefined => {
-    if (typeof fn === 'function') {
-      return fn(...args);
+  callback: T | undefined | null,
+  ...args: Parameters<T>
+): ReturnType<T> | undefined {
+  if (typeof callback === 'function') {
+    return callback(...args);
+  }
+  return undefined;
+}
+
+/**
+ * Check if a value is defined (not null or undefined)
+ * 
+ * @param value The value to check
+ * @returns True if the value is defined
+ */
+export function isDefined<T>(value: T | null | undefined): value is T {
+  return value !== null && value !== undefined;
+}
+
+/**
+ * Safely access a property from an object, with a default value
+ * 
+ * @param obj The object to access
+ * @param key The property key to access
+ * @param defaultValue The default value to return if the property doesn't exist
+ * @returns The property value or the default value
+ */
+export function safeGet<T, K extends keyof T>(
+  obj: T | null | undefined,
+  key: K,
+  defaultValue: T[K]
+): T[K] {
+  if (!obj) return defaultValue;
+  return obj[key] !== undefined ? obj[key] : defaultValue;
+}
+
+/**
+ * Legacy adapter for tag operations
+ * 
+ * Converts new tag operation signatures to match legacy code
+ * 
+ * @param newFn The new function to adapt
+ * @param mapper Optional mapping function for arguments
+ * @returns A function with the legacy signature
+ */
+export function adaptLegacyTagOperation<T extends (...args: any[]) => Promise<any>>(
+  newFn: T,
+  mapper?: (...args: any[]) => Parameters<T>
+): (...args: any[]) => Promise<any> {
+  return async (...args: any[]) => {
+    try {
+      if (mapper) {
+        return await newFn(...mapper(...args));
+      }
+      return await newFn(...args);
+    } catch (error) {
+      console.error('Error in legacy tag operation:', error);
+      return null;
     }
-    return defaultValue;
   };
 }

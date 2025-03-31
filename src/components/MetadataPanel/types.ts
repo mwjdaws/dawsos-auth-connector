@@ -1,17 +1,26 @@
 
-import { ReactNode } from 'react';
 import { Tag } from '@/types/tag';
+import { ValidationResult } from '@/utils/validation/types';
 
-// Define OntologyTerm
+/**
+ * Ontology term interface
+ * 
+ * Represents a term from the knowledge domain ontology
+ */
 export interface OntologyTerm {
   id: string;
   term: string;
-  description: string;
+  description?: string;
   domain?: string;
-  review_required: boolean;
+  relation_type?: string | null;
+  review_required?: boolean;
 }
 
-// Base metadata panel props
+/**
+ * Metadata panel props interface
+ * 
+ * Props for the MetadataPanel component
+ */
 export interface MetadataPanelProps {
   contentId: string;
   editable?: boolean;
@@ -22,47 +31,26 @@ export interface MetadataPanelProps {
   showDomain?: boolean;
   domain?: string | null;
   className?: string;
-  children?: ReactNode;
+  children?: React.ReactNode;
 }
 
-// Source metadata
-export interface SourceMetadata {
+/**
+ * TagPosition interface
+ * 
+ * Used for tag reordering operations
+ */
+export interface TagPosition {
   id: string;
-  title: string;
-  content: string;
-  external_source_url: string | null;
-  external_source_checked_at: string | null;
-  external_content_hash: string | null;
-  needs_external_review: boolean;
-  is_published: boolean;
+  position: number;
 }
 
-// Simplified source metadata for internal use
-export interface SimpleSourceMetadata {
-  id: string;
-  external_source_url: string | null;
-  external_source_checked_at: string | null;
-  external_content_hash: string | null;
-  needs_external_review: boolean;
-  is_published: boolean;
-}
-
-// External source metadata
+/**
+ * External source metadata interface
+ * 
+ * Information about external sources for content
+ */
 export interface ExternalSourceMetadata {
-  url: string | null;
-  lastChecked: string | null;
-  needsReview: boolean;
+  externalSourceUrl: string | null;
+  needsExternalReview: boolean;
+  lastCheckedAt: string | null;
 }
-
-// Props for the OntologyTermsSection component
-export interface OntologyTermsSectionProps {
-  contentId: string;
-  editable?: boolean;
-  sourceId?: string;
-  onMetadataChange?: (() => void) | null;
-  className?: string;
-  ontologyTerms?: OntologyTerm[];
-}
-
-// Re-export Tag type from the centralized location
-export type { Tag };

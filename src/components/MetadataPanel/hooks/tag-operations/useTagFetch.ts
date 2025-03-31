@@ -1,60 +1,120 @@
 
-import { useState, useCallback } from 'react';
-import { useTagsQuery } from '@/hooks/metadata/useTagsQuery';
-import { Tag, UseTagFetchProps, UseTagFetchResult, mapApiTagToTag } from './types';
+/**
+ * useTagFetch Hook
+ * 
+ * Handles fetching tag data for the MetadataPanel
+ */
 
-export function useTagFetch({
-  contentId,
-  setTags,
-  setIsLoading,
-  setError
-}: UseTagFetchProps): UseTagFetchResult {
-  // We track loading and error state in the parent useTagState
-  // but need local state to manage suspense boundaries
-  const [localLoading, setLocalLoading] = useState(false);
-  const [localError, setLocalError] = useState<Error | null>(null);
-  const [localTags, setLocalTags] = useState<Tag[]>([]);
-  
-  // Direct query hook for backward compatibility
-  const tagsQuery = useTagsQuery(contentId);
-  
-  const fetchTags = useCallback(async (): Promise<Tag[]> => {
-    if (!contentId) {
-      return [];
-    }
-    
-    try {
-      setIsLoading(true);
-      setLocalLoading(true);
-      
-      // Use the refetch method for the latest data
-      await tagsQuery.refetch();
-      
-      // Use the data from the query
-      if (tagsQuery.data) {
-        const formattedTags = tagsQuery.data.map(tag => mapApiTagToTag(tag));
-        setTags(formattedTags);
-        setLocalTags(formattedTags);
-        return formattedTags;
+import { useCallback } from 'react';
+import { Tag } from '@/types/tag';
+import { supabase } from '@/integrations/supabase/client';
+import { handleError } from '@/utils/error-handling';
+import { useTagsQuery } from '@/hooks/metadata';
+
+interface TagFetchOptions {
+  contentId: string;
+  setTags: (tags: Tag[]) => void;
+  setIsLoading: (isLoading: boolean) => void;
+  setError: (error: string | null) => void;
+  retryCount?: number;
+}
+
+/**
+ * Hook for fetching tags from the database
+ * 
+ * @param options Configuration options for fetching tags
+ * @returns Object with fetch functions and state getters
+ */
+export const useTagFetch = (options: TagFetchOptions) => {
+  const {
+    contentId,
+    setTags,
+    setIsLoading,
+    setError,
+    retryCount = 2
+  } = options;
+
+  // Use react-query for data fetching with automatic caching
+  const { data: queryTags, isLoading, error, refetch } = useTagsQuery(contentId, {
+    enabled: !!contentId,
+    onSuccess: (data) => {
+      if (data && Array.isArray(data)) {
+        setTags(data);
       }
-      
-      // If all else fails, return empty array
-      return [];
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to fetch tags');
-      setError(error);
-      setLocalError(error);
-      return [];
-    } finally {
-      setIsLoading(false);
-      setLocalLoading(false);
+    },
+    onError: (err) => {
+      handleError(
+        err,
+        "Failed to fetch tags",
+        { level: "warning", technical: false }
+      );
+      setError(err instanceof Error ? err.message : 'Unknown error fetching tags');
     }
-  }, [contentId, tagsQuery, setTags, setIsLoading, setError]);
-  
+  });
+
+  /**
+   * Fetch tags from the database manually
+   * Includes retry logic and error handling
+   */
+  const fetchTags = useCallback(async (attemptNumber = 0): Promise<Tag[]> => {
+    if (!contentId) {
+      setError('Invalid content ID provided');
+      return [];
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Try to use the refetch function from react-query first
+      if (refetch) {
+        const { data } = await refetch();
+        return data || [];
+      }
+
+      // Fall back to manual fetching if refetch is not available
+      const { data, error } = await supabase
+        .from('tags')
+        .select('*')
+        .eq('content_id', contentId)
+        .order('display_order', { ascending: true });
+
+      if (error) throw error;
+
+      const fetchedTags = data || [];
+      setTags(fetchedTags);
+      setIsLoading(false);
+      return fetchedTags;
+    } catch (err) {
+      // Retry logic for transient errors
+      if (attemptNumber < retryCount) {
+        console.warn(`Error fetching tags, retrying (${attemptNumber + 1}/${retryCount})...`);
+        
+        // Exponential backoff
+        const backoffTime = Math.pow(2, attemptNumber) * 500;
+        await new Promise(resolve => setTimeout(resolve, backoffTime));
+        
+        return fetchTags(attemptNumber + 1);
+      }
+
+      // Handle error after retries are exhausted
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch tags';
+      handleError(
+        err,
+        "Error fetching tags after multiple attempts",
+        { level: "error", technical: true }
+      );
+      
+      setError(errorMessage);
+      setIsLoading(false);
+      return [];
+    }
+  }, [contentId, refetch, retryCount, setError, setIsLoading, setTags]);
+
   return {
     fetchTags,
-    isLoading: localLoading,
-    error: localError,
-    tags: localTags
+    isLoading,
+    error,
+    tags: queryTags || []
   };
-}
+};
