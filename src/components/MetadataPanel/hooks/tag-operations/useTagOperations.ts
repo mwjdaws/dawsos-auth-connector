@@ -25,14 +25,20 @@ import { useTagMutations } from './useTagMutations';
 import { UseTagOperationsResult, Tag, TagPosition } from './types';
 import { handleError } from '@/utils/error-handling';
 import { useValidation } from '@/hooks/markdown-editor/draft-operations/useValidation';
+import { isValidContentId } from '@/utils/validation/contentIdValidation';
 
 /**
  * Main hook for tag operations that combines state, fetching, and mutations
  * 
- * @param contentId ID of the content to operate on
+ * @param contentId ID of the content to operate on (accepts both UUID and temporary IDs)
  * @returns Object containing tag data and functions to manipulate tags
  */
 export const useTagOperations = (contentId: string): UseTagOperationsResult => {
+  // Validate the content ID first
+  if (contentId && !isValidContentId(contentId)) {
+    console.warn(`Invalid content ID format: ${contentId}`);
+  }
+  
   const { tags, setTags, isLoading, setIsLoading, error, setError, newTag, setNewTag } = useTagState({});
   const { isValidTag } = useValidation();
   
@@ -79,14 +85,13 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
   /**
    * Add a new tag to the content
    * 
-   * @param tagName Tag text to add
    * @param typeId Optional type ID for the tag
    */
-  const handleAddTag = async (tagName: string, typeId?: string | null) => {
-    if (!tagName.trim()) return;
+  const handleAddTag = async (typeId?: string | null) => {
+    if (!newTag.trim()) return;
     
     // Validate the tag first
-    const validation = isValidTag(tagName);
+    const validation = isValidTag(newTag);
     if (!validation.isValid) {
       handleError(
         new Error(validation.errorMessage || 'Invalid tag'),
@@ -98,7 +103,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
     
     try {
       const result = await addTag({ 
-        name: tagName, 
+        name: newTag, 
         contentId,
         typeId: typeId || null
       });

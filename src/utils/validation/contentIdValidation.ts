@@ -2,7 +2,7 @@
 /**
  * Content ID validation utilities
  * 
- * Functions for validating content IDs.
+ * Functions for validating content IDs with support for both UUID and temporary IDs.
  */
 
 import { ContentIdValidationResult } from './types';
@@ -35,6 +35,10 @@ export function isTempId(id: string): boolean {
 
 /**
  * Gets the validation result for a content ID
+ * Supports both UUID and temporary IDs
+ * 
+ * @param contentId Content ID to validate
+ * @returns Content ID validation result
  */
 export function getContentIdValidationResult(contentId?: string | null): ContentIdValidationResult {
   if (!contentId) {
@@ -74,8 +78,44 @@ export function getContentIdValidationResult(contentId?: string | null): Content
 
 /**
  * Checks if a content ID is valid
+ * Accepts both UUID and temporary IDs
+ * 
+ * @param contentId Content ID to validate
+ * @returns True if the content ID is valid
  */
 export function isValidContentId(contentId?: string | null): boolean {
   if (!contentId) return false;
   return isUUID(contentId) || isTempId(contentId);
+}
+
+/**
+ * Attempts to convert a string to a UUID
+ * 
+ * @param contentId Content ID to convert
+ * @returns UUID string if conversion is successful, null otherwise
+ */
+export function tryConvertToUUID(contentId?: string | null): string | null {
+  if (!contentId) return null;
+  
+  // If already a UUID, return as is
+  if (isUUID(contentId)) return contentId;
+  
+  try {
+    // Attempt to normalize and convert to UUID format
+    // Remove any non-alphanumeric characters
+    const normalized = contentId.replace(/[^a-f0-9]/gi, '');
+    
+    // Check if we have enough characters for a UUID
+    if (normalized.length >= 32) {
+      const uuid = `${normalized.substring(0, 8)}-${normalized.substring(8, 12)}-${normalized.substring(12, 16)}-${normalized.substring(16, 20)}-${normalized.substring(20, 32)}`;
+      
+      if (isUUID(uuid)) {
+        return uuid;
+      }
+    }
+    
+    return null;
+  } catch {
+    return null;
+  }
 }

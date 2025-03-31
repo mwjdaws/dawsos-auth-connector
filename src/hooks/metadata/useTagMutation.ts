@@ -3,9 +3,9 @@
  * Hook for tag mutations with proper type handling
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
 import { handleError } from '@/utils/error-handling';
-import { isValidContentId } from '@/utils/content-validation';
+import { isValidContentId } from '@/utils/validation/contentIdValidation';
 import { toast } from '@/hooks/use-toast';
 import { Tag } from '@/types/tag';
 
@@ -182,3 +182,4 @@ export function useTagMutations(contentId?: string) {
 
 // For backward compatibility
 export const useAddTagMutation = useTagMutations;
+export const useTagMutation = useTagMutations;

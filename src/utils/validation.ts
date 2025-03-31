@@ -2,7 +2,7 @@
 /**
  * Validation utilities
  */
-import { getContentIdValidationResult as getContentIdValidationResultInternal, isValidContentId as isValidContentIdInternal } from './validation/contentIdValidation';
+import { getContentIdValidationResult as getContentIdValidationResultInternal, isValidContentId as isValidContentIdInternal, tryConvertToUUID } from './validation/contentIdValidation';
 import { ContentIdValidationResult } from './validation/types';
 
 export interface ValidationResult {
@@ -12,6 +12,8 @@ export interface ValidationResult {
 
 /**
  * Validates if a string is a valid content ID
+ * Supports both UUID and temporary ID formats
+ * 
  * @param contentId The content ID to validate
  * @returns True if the content ID is valid
  */
@@ -21,6 +23,7 @@ export function isValidContentId(contentId?: string | null): boolean {
 
 /**
  * Gets a validation result for a content ID
+ * 
  * @param contentId The content ID to validate
  * @returns A validation result object
  */
@@ -32,4 +35,14 @@ export function getContentIdValidationResult(contentId?: string | null): Content
     message: result.message,
     resultType: result.resultType
   };
+}
+
+/**
+ * Attempts to convert a string to a UUID format
+ * 
+ * @param contentId The content ID to convert
+ * @returns UUID string if conversion is successful, null otherwise
+ */
+export function tryConvertContentIdToUUID(contentId?: string | null): string | null {
+  return tryConvertToUUID(contentId);
 }

@@ -9,14 +9,35 @@
 /**
  * Tag interface
  * Represents a tag associated with a content item
+ * Note: content_id is intentionally kept as string to support both UUID and temporary IDs
  */
 export interface Tag {
   id: string;
   name: string;
-  content_id: string;
+  content_id: string; // Kept as string to support both UUID and temporary IDs
   type_id: string | null;
   type_name?: string | null;
   display_order: number;
+}
+
+/**
+ * API Tag interface
+ * Represents a tag as it exists in the database
+ */
+export interface ApiTag {
+  id: string;
+  name: string;
+  content_id: string;
+  type_id: string | null;
+  display_order: number;
+}
+
+/**
+ * Augmented Tag interface with additional properties
+ */
+export interface AugmentedTag extends Tag {
+  type_name?: string;
+  is_new?: boolean;
 }
 
 /**
@@ -64,6 +85,48 @@ export function filterDuplicateTags(tags: Tag[]): Tag[] {
     uniqueNames.add(name);
     return true;
   });
+}
+
+/**
+ * Convert an API tag to the internal Tag format
+ * 
+ * @param apiTag API tag object
+ * @returns Formatted Tag object
+ */
+export function mapApiTagToTag(apiTag: ApiTag): Tag {
+  return {
+    id: apiTag.id,
+    name: apiTag.name,
+    content_id: apiTag.content_id,
+    type_id: apiTag.type_id,
+    display_order: apiTag.display_order || 0
+  };
+}
+
+/**
+ * Convert multiple API tags to internal Tag format
+ * 
+ * @param apiTags Array of API tag objects
+ * @returns Array of formatted Tag objects
+ */
+export function mapApiTagsToTags(apiTags: ApiTag[]): Tag[] {
+  return apiTags.map(mapApiTagToTag);
+}
+
+/**
+ * Ensure a tag has non-nullable properties
+ * 
+ * @param tag Tag to process
+ * @returns Tag with non-nullable properties
+ */
+export function ensureNonNullableTag(tag: Partial<Tag>): Tag {
+  return {
+    id: tag.id || `temp-${Date.now()}`,
+    name: tag.name || '',
+    content_id: tag.content_id || '',
+    type_id: tag.type_id || null,
+    display_order: tag.display_order || 0
+  };
 }
 
 /**
