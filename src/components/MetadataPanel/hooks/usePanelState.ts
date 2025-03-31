@@ -9,6 +9,14 @@ export interface UsePanelStateProps {
   initialCollapsed?: boolean;
 }
 
+/**
+ * Hook for managing panel state
+ * 
+ * Handles collapsible panel state and content validation
+ * 
+ * @param props - Panel state props
+ * @returns Panel state and methods
+ */
 export const usePanelState = ({
   contentId,
   onMetadataChange,

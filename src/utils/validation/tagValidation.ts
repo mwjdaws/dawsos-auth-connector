@@ -1,70 +1,88 @@
 
 import { ValidationResult, TagValidationOptions } from './types';
-import { createValidationResult } from './compatibility';
+import { createValidationResult, VALIDATION_RESULTS } from './compatibility';
 
+/**
+ * Default validation options for tags
+ */
 const DEFAULT_TAG_OPTIONS: Required<TagValidationOptions> = {
   maxLength: 50,
   minLength: 1,
-  allowSpecialChars: true,
-  allowEmpty: true,
+  allowSpecialChars: false,
+  allowEmpty: false
 };
 
 /**
- * Validates a tag string according to specified options
+ * Validates a single tag
+ * 
+ * @param tag - The tag string to validate
+ * @param options - Optional validation options to customize the validation rules
+ * @returns ValidationResult indicating if the tag is valid and any error message
  */
 export function validateTag(tag: string, options?: TagValidationOptions): ValidationResult {
+  // Apply default options
   const opts = { ...DEFAULT_TAG_OPTIONS, ...options };
   
-  // Empty tag validation
-  if (!tag || !tag.trim()) {
-    if (opts.allowEmpty) {
-      return createValidationResult(true);
-    }
-    return createValidationResult(false, "Tag cannot be empty");
+  // Check if tag is null or undefined
+  if (tag === undefined || tag === null) {
+    return opts.allowEmpty
+      ? VALIDATION_RESULTS.VALID
+      : VALIDATION_RESULTS.REQUIRED;
   }
   
-  // Length validation
-  if (opts.minLength && tag.trim().length < opts.minLength) {
+  // Check if tag is empty
+  if (tag.trim() === '') {
+    return opts.allowEmpty
+      ? VALIDATION_RESULTS.VALID
+      : VALIDATION_RESULTS.REQUIRED;
+  }
+  
+  // Check minimum length
+  if (opts.minLength !== null && tag.length < opts.minLength) {
     return createValidationResult(
-      false, 
-      `Tag must be at least ${opts.minLength} characters`
+      false,
+      `Tag must be at least ${opts.minLength} character${opts.minLength !== 1 ? 's' : ''} long`
     );
   }
   
-  if (opts.maxLength && tag.trim().length > opts.maxLength) {
+  // Check maximum length
+  if (opts.maxLength !== null && tag.length > opts.maxLength) {
     return createValidationResult(
-      false, 
-      `Tag must be ${opts.maxLength} characters or less`
+      false,
+      `Tag must be ${opts.maxLength} character${opts.maxLength !== 1 ? 's' : ''} or less`
     );
   }
   
-  // Special character validation
+  // Check for special characters if not allowed
   if (!opts.allowSpecialChars) {
-    const specialCharsRegex = /[^a-zA-Z0-9-_\s]/;
+    const specialCharsRegex = /[^a-zA-Z0-9\s-_]/;
     if (specialCharsRegex.test(tag)) {
       return createValidationResult(
-        false, 
-        "Tag contains special characters that are not allowed"
+        false,
+        'Tag contains invalid characters (only letters, numbers, spaces, hyphens, and underscores are allowed)'
       );
     }
   }
   
-  return createValidationResult(true);
+  return VALIDATION_RESULTS.VALID;
 }
 
 /**
  * Validates an array of tags
+ * 
+ * @param tags - Array of tag strings to validate
+ * @param options - Optional validation options to customize the validation rules
+ * @returns ValidationResult indicating if all tags are valid and any error message
  */
 export function validateTags(tags: string[], options?: TagValidationOptions): ValidationResult {
-  // No tags is valid by default, but can be configured with options
+  // Handle empty tag array
   if (!tags || tags.length === 0) {
-    if (options?.allowEmpty === false) {
-      return createValidationResult(false, "At least one tag is required");
-    }
-    return createValidationResult(true);
+    return options?.allowEmpty === false
+      ? createValidationResult(false, 'At least one tag is required')
+      : VALIDATION_RESULTS.VALID;
   }
   
-  // Check each tag
+  // Validate each tag
   for (const tag of tags) {
     const result = validateTag(tag, options);
     if (!result.isValid) {
@@ -72,5 +90,5 @@ export function validateTags(tags: string[], options?: TagValidationOptions): Va
     }
   }
   
-  return createValidationResult(true);
+  return VALIDATION_RESULTS.VALID;
 }

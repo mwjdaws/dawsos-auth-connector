@@ -7,22 +7,24 @@ import { Tag } from '@/components/MetadataPanel/hooks/tag-operations/types';
 import { TagCard } from './TagCard';
 import { safeCallback } from '@/utils/compatibility';
 
+/**
+ * Interface representing a mapping of tag types to tag names
+ */
 interface TagGroup {
   [key: string]: string[];
 }
 
+/**
+ * Structure for categorized tags
+ */
 interface TagsByType {
   typedTags: TagGroup;
   uncategorized: string[];
 }
 
-interface TagCardsProps {
-  key: string;
-  title: string;
-  tags: string[];
-  onTagClick: (tag: string) => void;
-}
-
+/**
+ * Props for the GroupedTagList component
+ */
 interface GroupedTagListProps {
   tags: Tag[];
   isLoading?: boolean;
@@ -30,6 +32,17 @@ interface GroupedTagListProps {
   refreshTrigger?: number;
 }
 
+/**
+ * GroupedTagList Component
+ * 
+ * Displays tags organized by their types, with a separate section for uncategorized tags.
+ * Provides loading states and empty states.
+ * 
+ * @param tags - Array of Tag objects to display
+ * @param isLoading - Whether tags are currently loading
+ * @param onTagClick - Optional callback for when a tag is clicked
+ * @param refreshTrigger - A number that triggers re-grouping when changed
+ */
 export function GroupedTagList({ 
   tags, 
   isLoading = false,
@@ -113,7 +126,7 @@ export function GroupedTagList({
         <TagCard
           key={typeKey}
           title={typeKey}
-          tags={groupedTags.typedTags[typeKey] || []} {/* Ensure tags is never undefined */}
+          tags={groupedTags.typedTags[typeKey] || []} 
           onTagClick={handleTagClick}
         />
       ))}

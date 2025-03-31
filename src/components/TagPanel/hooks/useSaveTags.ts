@@ -1,127 +1,130 @@
 
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useTagValidator } from './useTagValidator';
-import { handleError } from '@/utils/errors';
+import { useState, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { SaveTagsResult, SaveTagsOptions, PreviousData } from './types';
+import { useTagValidator } from './useTagValidator';
+import { useTagGroups } from './useTagGroups';
+import { SaveTagsOptions, SaveTagsResult, BatchInsertResult } from './types';
+import { TagValidationOptions } from '@/utils/validation/types';
 
-export const useSaveTags = (initialContentId?: string) => {
-  const [isSaving, setIsSaving] = useState(false);
+/**
+ * Hook for saving tags with validation and proper error handling
+ * 
+ * @returns Object containing save function and state
+ */
+export function useSaveTags() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
-  const [previousData, setPreviousData] = useState<PreviousData | null>(null);
-  const tagValidator = useTagValidator();
+  const { validateTagText, validateTagList } = useTagValidator();
+  const { saveTagGroupsToDatabase } = useTagGroups();
 
-  const saveTags = async (
-    text: string, 
-    tags: string[], 
-    options?: SaveTagsOptions
+  /**
+   * Save tags with validation
+   * 
+   * @param text - The content text (optional)
+   * @param tags - Array of tags to save
+   * @param options - Options for saving tags
+   * @returns Result of the save operation
+   */
+  const saveTags = useCallback(async (
+    text: string,
+    tags: string[],
+    options: SaveTagsOptions = {}
   ): Promise<SaveTagsResult> => {
-    const contentId = options?.contentId || initialContentId;
-    
-    if (!contentId) {
-      toast({
-        title: "Error",
-        description: "No content ID provided",
-        variant: "destructive",
-      });
-      return { success: false, message: "No content ID provided" };
-    }
-
-    // Validate tags before saving
-    const validationResult = tagValidator.validateTagList(tags);
-    if (!validationResult.isValid) {
-      toast({
-        title: "Validation Error",
-        description: validationResult.message || "Invalid tags",
-        variant: "destructive",
-      });
-      return { success: false, message: validationResult.message || "Invalid tags" };
-    }
-
-    setIsSaving(true);
     setIsProcessing(true);
+    setIsRetrying(false);
     
-    // Store data for potential retry
-    setPreviousData({
-      options: options || {},
-      tags,
-      result: { success: false }
-    });
-
     try {
-      // First, delete all existing tags for this content
-      const { error: deleteError } = await supabase
-        .from('tags')
-        .delete()
-        .eq('content_id', contentId);
-
-      if (deleteError) {
-        throw deleteError;
-      }
-
-      // Then insert the new tags
-      if (tags.length > 0) {
-        const tagsData = tags.map(tag => ({
-          content_id: contentId,
-          name: tag,
-        }));
-
-        const { error: insertError } = await supabase
-          .from('tags')
-          .insert(tagsData);
-
-        if (insertError) {
-          throw insertError;
-        }
-      }
-
-      toast({
-        title: "Success",
-        description: `${tags.length} tags have been saved successfully.`,
+      // Validate tags
+      const validationResult = validateTagList(tags, {
+        allowEmpty: false,
+        maxLength: 50
       });
       
-      // Update previous data with successful result
-      setPreviousData({
-        options: options || {},
-        tags,
-        result: contentId
+      if (!validationResult.isValid) {
+        toast({
+          title: "Validation Error",
+          description: validationResult.message || "Invalid tags",
+          variant: "destructive"
+        });
+        return { success: false, message: validationResult.message || "Invalid tags" };
+      }
+      
+      // Process and save tags
+      const result = await saveTagGroupsToDatabase(tags, options.contentId || "", {
+        maxRetries: options.maxRetries || 3,
+        skipGenerateFunction: options.skipGenerateFunction
       });
-
-      return contentId;
+      
+      if (result.success) {
+        toast({
+          title: "Tags Saved",
+          description: `Successfully saved ${tags.length} tag${tags.length !== 1 ? 's' : ''}`,
+        });
+        
+        // Return either the contentId or success status
+        return typeof result.contentId === 'string' 
+          ? result.contentId 
+          : { success: true, contentId: options.contentId };
+      } else {
+        // Handle errors
+        toast({
+          title: "Failed to Save Tags",
+          description: result.message || "An error occurred while saving tags",
+          variant: "destructive"
+        });
+        
+        return { 
+          success: false, 
+          contentId: options.contentId,
+          message: result.message || "Failed to save tags" 
+        };
+      }
     } catch (error) {
-      handleError(error, "Failed to save tags", {
-        context: { contentId, tags },
-        level: "error"
+      console.error("Error saving tags:", error);
+      
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : "An unknown error occurred";
+        
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
       });
-      return { success: false, message: "Failed to save tags" };
+      
+      return { 
+        success: false, 
+        contentId: options.contentId,
+        message: errorMessage 
+      };
     } finally {
-      setIsSaving(false);
       setIsProcessing(false);
     }
-  };
+  }, [validateTagList, saveTagGroupsToDatabase]);
 
-  const retryLastSave = async (): Promise<SaveTagsResult> => {
-    if (!previousData) {
-      return { success: false, message: "No previous save attempt to retry" };
-    }
-    
+  /**
+   * Retry saving tags
+   * 
+   * @param text - The content text (optional)
+   * @param tags - Array of tags to save
+   * @param options - Options for saving tags
+   * @returns Result of the save operation
+   */
+  const retrySaveTags = useCallback(async (
+    text: string,
+    tags: string[],
+    options: SaveTagsOptions = {}
+  ): Promise<SaveTagsResult> => {
     setIsRetrying(true);
-    
-    try {
-      return await saveTags('', previousData.tags, previousData.options);
-    } finally {
-      setIsRetrying(false);
-    }
-  };
+    const result = await saveTags(text, tags, options);
+    setIsRetrying(false);
+    return result;
+  }, [saveTags]);
 
   return {
     saveTags,
-    retryLastSave,
-    isSaving,
+    retrySaveTags,
     isProcessing,
-    isRetrying,
-    previousData
+    isRetrying
   };
-};
+}
