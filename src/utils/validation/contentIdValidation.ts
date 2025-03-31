@@ -2,7 +2,7 @@
 /**
  * Content ID validation utilities
  * 
- * Functions for validating content IDs with support for both UUID and temporary IDs.
+ * Enhanced functions for validating content IDs with better support for both UUID and temporary IDs.
  */
 
 import { ContentIdValidationResult } from './types';
@@ -11,7 +11,9 @@ import { ContentIdValidationResult } from './types';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TEMP_ID_PATTERN = /^temp-[\w-]+$/;
 
-// Result type enum
+/**
+ * Enum for content ID validation result types
+ */
 export enum ContentIdValidationResultType {
   VALID = 'valid',
   INVALID = 'invalid', 
@@ -21,6 +23,9 @@ export enum ContentIdValidationResultType {
 
 /**
  * Checks if a string is a valid UUID
+ * 
+ * @param id String to validate as UUID
+ * @returns True if the string is a valid UUID
  */
 export function isUUID(id: string): boolean {
   return UUID_PATTERN.test(id);
@@ -28,17 +33,20 @@ export function isUUID(id: string): boolean {
 
 /**
  * Checks if a string is a valid temporary ID
+ * 
+ * @param id String to validate as temporary ID
+ * @returns True if the string is a valid temporary ID
  */
 export function isTempId(id: string): boolean {
   return TEMP_ID_PATTERN.test(id);
 }
 
 /**
- * Gets the validation result for a content ID
- * Supports both UUID and temporary IDs
+ * Gets detailed validation information for a content ID
+ * Enhanced to better handle both UUID and temporary IDs
  * 
  * @param contentId Content ID to validate
- * @returns Content ID validation result
+ * @returns Content ID validation result with detailed information
  */
 export function getContentIdValidationResult(contentId?: string | null): ContentIdValidationResult {
   if (!contentId) {
@@ -78,7 +86,7 @@ export function getContentIdValidationResult(contentId?: string | null): Content
 
 /**
  * Checks if a content ID is valid
- * Accepts both UUID and temporary IDs
+ * Supports both UUID and temporary IDs
  * 
  * @param contentId Content ID to validate
  * @returns True if the content ID is valid
@@ -90,6 +98,7 @@ export function isValidContentId(contentId?: string | null): boolean {
 
 /**
  * Attempts to convert a string to a UUID
+ * Enhanced with better validation and error handling
  * 
  * @param contentId Content ID to convert
  * @returns UUID string if conversion is successful, null otherwise
@@ -118,4 +127,21 @@ export function tryConvertToUUID(contentId?: string | null): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Determines if a content ID is suitable for direct database storage
+ * Useful for deciding whether to convert string IDs to UUIDs
+ * 
+ * @param contentId Content ID to evaluate
+ * @returns True if the ID is appropriate for database storage
+ */
+export function isStorableContentId(contentId?: string | null): boolean {
+  if (!contentId) return false;
+  
+  // UUIDs are always storable
+  if (isUUID(contentId)) return true;
+  
+  // Temporary IDs should be converted before storage
+  return false;
 }

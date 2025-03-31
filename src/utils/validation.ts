@@ -1,8 +1,14 @@
 
 /**
  * Validation utilities
+ * Compatibility layer for existing code
  */
-import { getContentIdValidationResult as getContentIdValidationResultInternal, isValidContentId as isValidContentIdInternal, tryConvertToUUID } from './validation/contentIdValidation';
+import { 
+  getContentIdValidationResult as getContentIdValidationResultInternal, 
+  isValidContentId as isValidContentIdInternal, 
+  tryConvertToUUID,
+  isStorableContentId as isStorableContentIdInternal
+} from './validation/contentIdValidation';
 import { ContentIdValidationResult } from './validation/types';
 
 export interface ValidationResult {
@@ -45,4 +51,14 @@ export function getContentIdValidationResult(contentId?: string | null): Content
  */
 export function tryConvertContentIdToUUID(contentId?: string | null): string | null {
   return tryConvertToUUID(contentId);
+}
+
+/**
+ * Determines if a content ID is suitable for direct database storage
+ * 
+ * @param contentId The content ID to evaluate
+ * @returns True if the ID is appropriate for database storage
+ */
+export function isStorableContentId(contentId?: string | null): boolean {
+  return isStorableContentIdInternal(contentId);
 }
