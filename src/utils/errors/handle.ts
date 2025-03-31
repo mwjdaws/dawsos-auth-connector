@@ -1,33 +1,127 @@
 
 /**
- * Re-export the handleError function from the JSX implementation
- * This file is maintained for backward compatibility and to avoid
- * breaking existing imports throughout the codebase.
+ * Error handling utilities
  */
-import { handleError as handleErrorJSX } from './handle.jsx';
-
-export { handleErrorJSX as handleError };
+import { toast } from '@/hooks/use-toast';
+import { deduplicateError } from './deduplication';
+import { categorizeError } from './categorize';
+import { ErrorLevel, ErrorContext, ErrorOptions } from './types';
+import { formatError } from './format';
 
 /**
- * Safe handler implementation that doesn't require JSX
+ * Main error handler for the application
+ * 
+ * Handles error logging, notification, and tracking
  */
-export function handleErrorSafe(
+export const handleError = (
   error: unknown,
-  userMessage?: string,
-  options?: any
-): any {
-  try {
-    // Use the imported JSX version if available
-    return handleErrorJSX(error, userMessage, options);
-  } catch (e) {
-    // Fallback implementation for non-JSX environments
-    console.error('Error handling error:', error);
-    console.error('User message:', userMessage);
-    console.error('Options:', options);
-    return {
-      error,
-      message: userMessage || 'An error occurred',
-      handled: true
-    };
+  friendlyMessage?: string,
+  options?: ErrorOptions
+): void => {
+  const { 
+    level = "error", 
+    context = {}, 
+    silent = false,
+    technical = false,
+    deduplicate = true
+  } = options || {};
+  
+  // Format the error for consistent handling
+  const formattedError = formatError(error);
+  
+  // Log errors to console
+  logError(formattedError, level, context);
+  
+  // Show user notification unless silent
+  if (!silent) {
+    notifyUser(formattedError, friendlyMessage, level, deduplicate);
   }
+  
+  // Additional handling for technical errors
+  if (technical) {
+    console.error('[TECHNICAL ERROR]', formattedError, context);
+  }
+}
+
+/**
+ * Safe error handler that won't throw
+ */
+export const handleErrorSafe = (
+  error: unknown,
+  friendlyMessage?: string,
+  options?: ErrorOptions
+): void => {
+  try {
+    handleError(error, friendlyMessage, options);
+  } catch (handlerError) {
+    console.error('Error in error handler:', handlerError);
+    
+    // Last resort error notification
+    try {
+      toast({
+        title: 'Unexpected Error',
+        description: 'Something went wrong',
+        variant: 'destructive',
+      });
+    } catch {
+      // Nothing more we can do
+    }
+  }
+}
+
+/**
+ * Log error to console with appropriate level
+ */
+function logError(
+  error: Error | string,
+  level: ErrorLevel,
+  context: ErrorContext
+): void {
+  const message = error instanceof Error ? error.message : error;
+  const stack = error instanceof Error ? error.stack : undefined;
+  
+  switch (level) {
+    case 'debug':
+      console.debug(`[DEBUG] ${message}`, { context, stack });
+      break;
+    case 'info':
+      console.info(`[INFO] ${message}`, { context, stack });
+      break;
+    case 'warning':
+      console.warn(`[WARNING] ${message}`, { context, stack });
+      break;
+    case 'error':
+    default:
+      console.error(`[ERROR] ${message}`, { context, stack });
+      break;
+  }
+}
+
+/**
+ * Show error notification to user
+ */
+function notifyUser(
+  error: Error | string,
+  friendlyMessage?: string,
+  level: ErrorLevel = 'error',
+  deduplicate = true
+): void {
+  const errorMessage = error instanceof Error ? error.message : error;
+  const message = friendlyMessage || errorMessage;
+  
+  // Skip notification if we should deduplicate and it's a duplicate
+  if (deduplicate && deduplicateError(message)) {
+    console.log('Skipping duplicate error notification:', message);
+    return;
+  }
+  
+  const variant = level === 'error' ? 'destructive' : 
+                 level === 'warning' ? 'warning' : 'default';
+  
+  toast({
+    title: level === 'error' ? 'Error' : 
+          level === 'warning' ? 'Warning' : 'Notice',
+    description: message,
+    variant,
+  });
 }

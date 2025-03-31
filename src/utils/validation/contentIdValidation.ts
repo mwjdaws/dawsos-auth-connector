@@ -3,46 +3,77 @@
  * Content ID validation utilities
  */
 
-export type ContentIdValidationResultType = 'valid' | 'invalid' | 'empty';
+import { ContentIdValidationResult, ContentIdValidationResultType } from './types';
 
-export interface ContentIdValidationResult {
-  isValid: boolean;
-  type: ContentIdValidationResultType;
-  message: string;
+/**
+ * Check if a content ID is a valid UUID
+ */
+const isUuid = (id: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
 }
 
 /**
- * Validates a content ID
+ * Check if a content ID is a valid temporary ID
  */
-export function isValidContentId(contentId: string | undefined | null): boolean {
-  if (!contentId) return false;
-  
-  // Basic format validation (UUID or temp-ID format)
-  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const tempIdPattern = /^temp-\d+$/;
-  
-  return uuidPattern.test(contentId) || tempIdPattern.test(contentId);
+const isTempId = (id: string): boolean => {
+  return id.startsWith('temp-') && id.length > 5;
 }
 
 /**
- * Gets detailed validation result for a content ID
+ * Check if a content ID is a valid string ID (used for legacy purposes)
  */
-export function getContentIdValidationResult(contentId: string | undefined | null): ContentIdValidationResult {
+const isStringId = (id: string): boolean => {
+  return id.length > 3 && id.startsWith('content-');
+}
+
+/**
+ * Validate a content ID and return detailed validation result
+ */
+export const validateContentId = (contentId?: string | null): ContentIdValidationResult => {
   if (!contentId) {
     return {
+      type: ContentIdValidationResultType.INVALID,
       isValid: false,
-      type: 'empty',
-      message: 'Content ID is empty or undefined'
+      message: 'Content ID is required'
     };
   }
   
-  const isValid = isValidContentId(contentId);
+  if (isUuid(contentId)) {
+    return {
+      type: ContentIdValidationResultType.UUID,
+      isValid: true,
+      message: null
+    };
+  }
+  
+  if (isTempId(contentId)) {
+    return {
+      type: ContentIdValidationResultType.TEMP,
+      isValid: true,
+      message: null
+    };
+  }
+  
+  if (isStringId(contentId)) {
+    return {
+      type: ContentIdValidationResultType.STRING,
+      isValid: true,
+      message: null
+    };
+  }
   
   return {
-    isValid,
-    type: isValid ? 'valid' : 'invalid',
-    message: isValid 
-      ? 'Content ID is valid' 
-      : 'Content ID is invalid. Must be a valid UUID or temporary ID'
+    type: ContentIdValidationResultType.INVALID,
+    isValid: false,
+    message: 'Invalid content ID format'
   };
+}
+
+/**
+ * Simple check if a content ID is valid (for quick validation)
+ */
+export const isValidContentId = (contentId?: string | null): boolean => {
+  if (!contentId) return false;
+  return validateContentId(contentId).isValid;
 }

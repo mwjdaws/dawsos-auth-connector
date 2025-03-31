@@ -1,113 +1,54 @@
 
-import { StandardizedError, ApiError, ValidationError, ErrorLevel } from './types';
-import { getErrorMessage } from './format';
+/**
+ * Error categorization utilities
+ */
+import { ErrorCategory } from './types';
 
 /**
- * Categorizes any error into a standardized error object
+ * Categorize errors to help with handling strategies
  */
-export function categorizeError(error: unknown): StandardizedError {
-  if (!error) {
-    return createStandardizedError('Unknown error', 'error');
-  }
+export const categorizeError = (error: unknown): ErrorCategory => {
+  const errorMessage = error instanceof Error 
+    ? error.message.toLowerCase() 
+    : typeof error === 'string' 
+      ? error.toLowerCase() 
+      : '';
 
-  // Already a standardized error
-  if (typeof error === 'object' && error !== null && 'handled' in error) {
-    return error as StandardizedError;
+  if (errorMessage.includes('network') || 
+      errorMessage.includes('fetch') || 
+      errorMessage.includes('connection')) {
+    return 'network';
   }
-
-  // Error instance
-  if (error instanceof Error) {
-    return {
-      name: error.name,
-      message: error.message,
-      stack: error.stack || '',
-      originalError: error,
-      timestamp: Date.now(),
-    };
+  
+  if (errorMessage.includes('auth') || 
+      errorMessage.includes('permission') || 
+      errorMessage.includes('unauthorized')) {
+    return 'authentication';
   }
-
-  // String error
-  if (typeof error === 'string') {
-    return createStandardizedError(error, 'error');
+  
+  if (errorMessage.includes('timeout') || 
+      errorMessage.includes('time out') || 
+      errorMessage.includes('timed out')) {
+    return 'timeout';
   }
-
-  // Object with message
-  if (typeof error === 'object' && error !== null && 'message' in error) {
-    const errorObj = error as any;
-    return createStandardizedError(
-      typeof errorObj.message === 'string' ? errorObj.message : 'Object error',
-      'error',
-      errorObj
-    );
+  
+  if (errorMessage.includes('not found') || 
+      errorMessage.includes('404') || 
+      errorMessage.includes('missing')) {
+    return 'not_found';
   }
-
-  // Default fallback
-  return createStandardizedError(
-    'An unexpected error occurred',
-    'error',
-    error
-  );
+  
+  if (errorMessage.includes('validation') || 
+      errorMessage.includes('invalid') || 
+      errorMessage.includes('required')) {
+    return 'validation';
+  }
+  
+  if (errorMessage.includes('database') || 
+      errorMessage.includes('db') || 
+      errorMessage.includes('supabase')) {
+    return 'database';
+  }
+  
+  return 'unknown';
 }
-
-/**
- * Creates a new standardized error
- */
-export function createStandardizedError(
-  message: string,
-  level: ErrorLevel = 'error',
-  originalError?: unknown
-): StandardizedError {
-  return {
-    name: 'ApplicationError',
-    message,
-    stack: '',
-    level,
-    originalError,
-    timestamp: Date.now(),
-  };
-}
-
-/**
- * Creates a new API error
- */
-export function createApiError(
-  message: string,
-  statusCode?: number,
-  endpoint?: string,
-  responseData?: any
-): ApiError {
-  return {
-    name: 'ApiError',
-    message,
-    stack: '',
-    level: 'error',
-    statusCode,
-    endpoint,
-    responseData,
-    timestamp: Date.now(),
-  };
-}
-
-/**
- * Creates a new validation error
- */
-export function createValidationError(
-  message: string,
-  field?: string,
-  value?: any
-): ValidationError {
-  return {
-    name: 'ValidationError',
-    message,
-    stack: '',
-    level: 'warning',
-    field,
-    value,
-    timestamp: Date.now(),
-  };
-}
-
-/**
- * Gets a user-friendly error message from any error type
- */
-export { getErrorMessage };
