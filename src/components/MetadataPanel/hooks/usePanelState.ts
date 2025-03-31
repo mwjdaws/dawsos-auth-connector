@@ -4,9 +4,9 @@ import { isValidContentId } from '@/utils/validation/contentIdValidation';
 
 export interface UsePanelStateProps {
   contentId: string;
-  onMetadataChange?: (() => void) | undefined;
-  isCollapsible?: boolean | undefined;
-  initialCollapsed?: boolean | undefined;
+  onMetadataChange?: (() => void);
+  isCollapsible?: boolean;
+  initialCollapsed?: boolean;
 }
 
 export const usePanelState = ({

@@ -19,18 +19,18 @@ export interface SourceMetadata {
 
 // Simplified source metadata for hooks that only use a subset of fields
 export interface SimpleSourceMetadata {
-  id?: string;
-  title?: string;
-  content?: string;
-  created_at?: string;
-  updated_at?: string;
+  id: string;  // Making this required to match SourceMetadata
+  title: string;  // Making this required to match SourceMetadata
+  content: string;  // Making this required to match SourceMetadata
+  created_at: string;  // Making this required to match SourceMetadata
+  updated_at: string;  // Making this required to match SourceMetadata
   external_source_url: string | null;
   external_source_checked_at: string | null;
-  external_content_hash?: string | null;
+  external_content_hash: string | null;
   needs_external_review: boolean;
-  is_published?: boolean;
-  published_at?: string | null;
-  template_id?: string | null;
+  is_published: boolean;
+  published_at: string | null;
+  template_id: string | null;
 }
 
 // Tag type
@@ -54,7 +54,7 @@ export interface OntologyTerm {
 export interface MetadataPanelProps {
   contentId: string;
   editable?: boolean;
-  onMetadataChange?: (() => void) | undefined;
+  onMetadataChange?: (() => void);
   isCollapsible?: boolean;
   initialCollapsed?: boolean;
   showOntologyTerms?: boolean;
@@ -85,10 +85,12 @@ export interface MetadataContentProps {
 
 // Props for the HeaderSection component
 export interface HeaderSectionProps {
-  title?: string;
-  isPublished?: boolean;
-  publishedAt?: string | null;
-  editable: boolean;
+  needsExternalReview?: boolean;
+  handleRefresh?: () => void;
+  isLoading?: boolean;
+  isCollapsible?: boolean;
+  isCollapsed?: boolean;
+  setIsCollapsed?: ((value: boolean) => void);
   className?: string;
 }
 
@@ -97,7 +99,7 @@ export interface ExternalSourceSectionProps {
   externalSourceUrl: string | null;
   lastCheckedAt: string | null;
   editable: boolean;
-  onMetadataChange?: (() => void) | undefined;
+  onMetadataChange?: (() => void);
   contentId: string;
 }
 
@@ -110,7 +112,7 @@ export interface TagsSectionProps {
   setNewTag: (value: string) => void;
   onAddTag: (typeId?: string | null) => Promise<void>;
   onDeleteTag: (tagId: string) => Promise<void>;
-  onMetadataChange?: (() => void) | undefined;
+  onMetadataChange?: (() => void);
   className?: string;
 }
 
@@ -125,8 +127,9 @@ export interface OntologyTermsSectionProps {
   contentId: string;
   sourceId?: string;
   editable?: boolean;
-  onMetadataChange?: (() => void) | undefined;
+  onMetadataChange?: (() => void);
   className?: string;
+  ontologyTerms?: OntologyTerm[]; // Added this to fix the error
 }
 
 // Props for the ContentAlert component

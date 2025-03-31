@@ -62,7 +62,7 @@ export function GraphControls({
       </form>
       
       <GraphZoomControl 
-        zoom={zoom}
+        zoomLevel={zoom}
         onZoomChange={onZoomChange}
         onResetZoom={onResetZoom}
       />

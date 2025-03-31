@@ -47,7 +47,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     handleMetadataChange
   } = useMetadataPanel({
     contentId,
-    onMetadataChange: onMetadataChange || undefined,
+    onMetadataChange,
     isCollapsible,
     initialCollapsed
   });
@@ -75,7 +75,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
           isLoading={true}
           isCollapsible={isCollapsible}
           isCollapsed={isCollapsed}
-          setIsCollapsed={setIsCollapsed ? setIsCollapsed : undefined}
+          setIsCollapsed={setIsCollapsed}
         />
         <div className="p-4 space-y-4">
           <Skeleton className="h-8 w-3/4" />
@@ -87,7 +87,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   }
   
   // Safe wrapper for onMetadataChange to handle undefined
-  const safeOnMetadataChange = onMetadataChange ? onMetadataChange : () => {};
+  const safeOnMetadataChange = onMetadataChange || (() => {});
   
   return (
     <Card className={className}>
@@ -97,7 +97,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
         isLoading={isLoading}
         isCollapsible={isCollapsible}
         isCollapsed={isCollapsed}
-        setIsCollapsed={setIsCollapsed ? setIsCollapsed : undefined}
+        setIsCollapsed={setIsCollapsed}
       />
       
       {!isCollapsed && (

@@ -75,15 +75,17 @@ function sanitizeNode(node: GraphNode | null | undefined): GraphNode | null {
     return null;
   }
   
-  // Default values for required properties, optional properties can remain undefined
+  // Return a safe node with all required and optional properties
   return {
     id: ensureString(node.id),
     name: ensureString(node.name || node.title || ''),
     title: ensureString(node.title || node.name || ''),
     type: ensureString(node.type, ''),
     description: ensureString(node.description, ''),
-    color: node.color,
-    val: node.val !== undefined ? node.val : undefined
+    // Make sure color can be null or undefined
+    color: node.color !== undefined ? node.color : null,
+    // Make val optional
+    val: node.val
   };
 }
 
@@ -110,6 +112,7 @@ function sanitizeLink(link: GraphLink | null | undefined, validNodes: GraphNode[
     return null;
   }
   
+  // Return a safe link with all required and optional properties
   return {
     source: sourceId,
     target: targetId,

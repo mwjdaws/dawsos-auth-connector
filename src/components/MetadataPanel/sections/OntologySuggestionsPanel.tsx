@@ -37,7 +37,7 @@ export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> =
   const [searchQuery, setSearchQuery] = useState("");
   const { addTerm, addTermByName } = useOntologyTerms(contentId);
   
-  // Use the correct hook for suggestions
+  // Use the correct hook for suggestions with empty content
   const {
     suggestions,
     isLoading,
@@ -53,9 +53,9 @@ export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> =
   }, [contentId, analyzeContent]);
 
   // Filter terms based on search query
-  const filteredTerms = suggestions.terms.filter(term => 
+  const filteredTerms = suggestions.terms ? suggestions.terms.filter(term => 
     term.term.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) : [];
 
   // Function to add a term
   const handleAddTerm = async (termId: string) => {
@@ -95,18 +95,19 @@ export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> =
       </div>
 
       <div className="relative mb-3">
-        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search terms or add new..."
+          type="text"
+          placeholder="Search or add new term..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-8 pr-16"
+          className="pl-8"
         />
         {searchQuery && (
           <Button
             variant="ghost"
             size="sm"
-            className="absolute right-1 top-1 h-7"
+            className="absolute right-2 top-1/2 transform -translate-y-1/2"
             onClick={() => handleAddNewTerm(searchQuery)}
           >
             <Plus className="h-4 w-4 mr-1" />
@@ -117,42 +118,31 @@ export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> =
 
       {isLoading ? (
         <div className="space-y-2">
-          <Skeleton className="h-8 w-full" />
-          <Skeleton className="h-8 w-4/5" />
-          <Skeleton className="h-8 w-2/3" />
+          <Skeleton className="h-6 w-20" />
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-6 w-16" />
         </div>
-      ) : suggestions.terms && suggestions.terms.length > 0 ? (
+      ) : filteredTerms.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {filteredTerms.map((term) => (
-            <div key={term.id} className="flex items-center">
-              <Badge 
-                variant="outline"
-                className="bg-blue-50 text-blue-800 border-blue-200 flex items-center"
-              >
-                {term.term}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-5 w-5 p-0 ml-1"
-                  onClick={() => handleAddTerm(term.id)}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </Badge>
-            </div>
+            <Badge
+              key={term.id}
+              variant="outline"
+              className="cursor-pointer flex items-center gap-1 py-1"
+              onClick={() => handleAddTerm(term.id)}
+            >
+              <Plus className="h-3 w-3" />
+              {term.term}
+            </Badge>
           ))}
         </div>
-      ) : filteredTerms.length === 0 && searchQuery ? (
-        <p className="text-sm text-muted-foreground">No terms match your search.</p>
       ) : (
-        <Card className="p-3 bg-muted/20 border">
-          <p className="text-sm text-muted-foreground text-center">
-            No suggested terms available. Click Refresh to generate suggestions.
-          </p>
-        </Card>
+        <div className="text-center text-muted-foreground text-sm py-3">
+          {searchQuery
+            ? "No matching terms found. Click 'Add' to create a new term."
+            : "No suggested terms available. Try refreshing."}
+        </div>
       )}
     </div>
   );
-};
-
-export default OntologySuggestionsPanel;
+}

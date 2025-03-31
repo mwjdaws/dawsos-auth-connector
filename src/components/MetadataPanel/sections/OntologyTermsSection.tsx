@@ -14,7 +14,8 @@ export const OntologyTermsSection: React.FC<OntologyTermsSectionProps> = ({
   editable,
   sourceId,
   onMetadataChange,
-  className
+  className,
+  ontologyTerms = []  // Provide a default value
 }) => {
   // Use sourceId if provided, otherwise fall back to contentId
   const effectiveSourceId = sourceId || contentId;

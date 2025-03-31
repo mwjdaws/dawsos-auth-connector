@@ -1,64 +1,71 @@
 
+import React from 'react';
+import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+export interface GraphZoomControlProps {
+  zoomLevel: number; // Renamed from zoom to zoomLevel
+  onZoomChange: (newZoom: number) => void;
+  onResetZoom: () => void;
+}
+
 /**
  * GraphZoomControl Component
  * 
- * Provides zoom controls for the relationship graph with reset, zoom in, and zoom out buttons.
+ * Provides zoom controls for the relationship graph visualization.
  */
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
-
-interface GraphZoomControlProps {
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onReset: () => void;
-  currentZoom?: number;
-  className?: string;
-}
-
-export const GraphZoomControl: React.FC<GraphZoomControlProps> = ({
-  onZoomIn,
-  onZoomOut,
-  onReset,
-  currentZoom = 1,
-  className = ''
-}) => {
-  // Format zoom level as percentage
-  const zoomPercentage = `${Math.round((currentZoom || 1) * 100)}%`;
+export function GraphZoomControl({
+  zoomLevel, // Renamed from zoom to zoomLevel
+  onZoomChange,
+  onResetZoom
+}: GraphZoomControlProps) {
+  // Zoom in by 10%
+  const handleZoomIn = () => {
+    onZoomChange(zoomLevel * 1.1);
+  };
+  
+  // Zoom out by 10%
+  const handleZoomOut = () => {
+    onZoomChange(zoomLevel * 0.9);
+  };
   
   return (
-    <div className={`flex items-center bg-card rounded-md shadow-sm ${className}`}>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onReset}
-        className="p-1.5 h-8"
-        title="Reset Zoom"
-      >
-        <Maximize2 className="h-4 w-4" />
-      </Button>
-      
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onZoomOut}
-        className="p-1.5 h-8"
-        title="Zoom Out"
+    <div className="flex items-center gap-1">
+      <Button 
+        variant="outline" 
+        size="icon" 
+        onClick={handleZoomOut}
+        className="h-7 w-7"
       >
         <ZoomOut className="h-4 w-4" />
+        <span className="sr-only">Zoom Out</span>
       </Button>
       
-      <span className="px-1.5 text-xs font-medium">{zoomPercentage}</span>
+      <div className="px-2 text-xs text-muted-foreground">
+        {Math.round(zoomLevel * 100)}%
+      </div>
       
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onZoomIn}
-        className="p-1.5 h-8"
-        title="Zoom In"
+      <Button 
+        variant="outline" 
+        size="icon" 
+        onClick={handleZoomIn}
+        className="h-7 w-7"
       >
         <ZoomIn className="h-4 w-4" />
+        <span className="sr-only">Zoom In</span>
+      </Button>
+      
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={onResetZoom}
+        className="h-7 w-7 ml-1"
+      >
+        <RotateCcw className="h-4 w-4" />
+        <span className="sr-only">Reset Zoom</span>
       </Button>
     </div>
   );
-};
+}
+
+export default GraphZoomControl;

@@ -1,102 +1,88 @@
 
-import React, { useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { X, GripVertical } from "lucide-react";
-import { Tag } from "../hooks/tag-operations/types";
+import React from 'react';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tag } from '../hooks/tag-operations/types';
 
 interface DraggableTagListProps {
   tags: Tag[];
   editable: boolean;
   onDeleteTag: (tagId: string) => void;
   onReorderTags: (tags: Tag[]) => void;
-  className?: string;
 }
 
 export const DraggableTagList: React.FC<DraggableTagListProps> = ({
   tags,
   editable,
   onDeleteTag,
-  onReorderTags,
-  className = ""
+  onReorderTags
 }) => {
-  const [draggedTag, setDraggedTag] = useState<Tag | null>(null);
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    
+    const items = Array.from(tags);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    
+    onReorderTags(items);
+  };
   
   if (tags.length === 0) {
-    return <p className="text-sm text-muted-foreground">No tags available</p>;
+    return <div className="text-sm text-muted-foreground mb-2">No tags</div>;
   }
   
-  const handleDragStart = (e: React.DragEvent, tag: Tag) => {
-    setDraggedTag(tag);
-    // Set a ghost drag image
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', tag.id);
-    }
-  };
-  
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-  
-  const handleDrop = (e: React.DragEvent, targetTag: Tag) => {
-    e.preventDefault();
+  const renderTag = (tag: Tag, index: number) => {
+    if (!tag) return null; // Guard against undefined tags
     
-    if (!draggedTag || draggedTag.id === targetTag.id) {
-      return;
-    }
-    
-    // Create a new array with reordered tags
-    const reorderedTags = [...tags];
-    const draggedTagIndex = reorderedTags.findIndex(t => t && t.id === draggedTag.id);
-    const targetTagIndex = reorderedTags.findIndex(t => t && t.id === targetTag.id);
-    
-    if (draggedTagIndex !== -1) { // Check if draggedTag was found
-      // Remove the dragged tag from its position
-      const [removed] = reorderedTags.splice(draggedTagIndex, 1);
-      
-      // Insert it at the target position
-      reorderedTags.splice(targetTagIndex, 0, removed);
-      
-      // Update the state
-      onReorderTags(reorderedTags);
-    }
-    
-    setDraggedTag(null);
+    return (
+      <Draggable key={tag.id} draggableId={tag.id} index={index} isDragDisabled={!editable}>
+        {(provided) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.draggableProps}
+            {...provided.dragHandleProps}
+            className="inline-block mr-2 mb-2"
+          >
+            <Badge 
+              className="bg-secondary hover:bg-secondary/90 text-secondary-foreground py-1 px-2 flex items-center"
+            >
+              {tag.name}
+              {editable && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-4 w-4 p-0 ml-1 hover:bg-destructive hover:text-destructive-foreground rounded-full"
+                  onClick={() => onDeleteTag(tag.id)}
+                >
+                  <X className="h-3 w-3" />
+                  <span className="sr-only">Remove tag</span>
+                </Button>
+              )}
+            </Badge>
+          </div>
+        )}
+      </Draggable>
+    );
   };
   
   return (
-    <div className={`flex flex-wrap gap-2 ${className}`}>
-      {tags.map((tag) => (
-        <Badge 
-          key={tag.id} 
-          variant="secondary"
-          className={`flex items-center gap-1 transition-colors ${
-            draggedTag?.id === tag.id ? 'bg-primary/20' : ''
-          }`}
-          draggable={editable}
-          onDragStart={(e) => editable && handleDragStart(e, tag)}
-          onDragOver={(e) => editable && handleDragOver(e)}
-          onDrop={(e) => editable && handleDrop(e, tag)}
-          onDragEnd={() => setDraggedTag(null)}
-        >
-          {editable && (
-            <span className="cursor-grab mr-1">
-              <GripVertical className="h-3 w-3 text-muted-foreground" />
-            </span>
-          )}
-          {tag.name}
-          {editable && (
-            <button 
-              onClick={() => onDeleteTag(tag.id)}
-              className="text-muted-foreground hover:text-foreground ml-1"
-              aria-label={`Remove tag ${tag.name}`}
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-        </Badge>
-      ))}
-    </div>
+    <DragDropContext onDragEnd={handleDragEnd}>
+      <Droppable droppableId="tags" direction="horizontal">
+        {(provided) => (
+          <div
+            {...provided.droppableProps}
+            ref={provided.innerRef}
+            className="flex flex-wrap"
+          >
+            {tags.map((tag, index) => tag ? renderTag(tag, index) : null)}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
+    </DragDropContext>
   );
-}
+};
+
+export default DraggableTagList;

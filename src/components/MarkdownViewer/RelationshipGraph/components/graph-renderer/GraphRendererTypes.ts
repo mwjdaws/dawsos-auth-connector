@@ -14,7 +14,7 @@ export interface GraphNode {
   size?: number;
   icon?: string;
   weight?: number;
-  val?: number; // Changed to accept undefined values
+  val?: number;
   [key: string]: any;  // Allow for additional properties
 }
 
@@ -26,7 +26,7 @@ export interface GraphLink {
   target: string;
   type?: string;
   weight?: number;
-  value?: number; // Changed to accept undefined values
+  value?: number;
   label?: string;
   [key: string]: any;  // Allow for additional properties
 }
