@@ -47,7 +47,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
     const result = await addTag({ 
       name: newTag, 
       contentId,
-      typeId: typeId || undefined
+      typeId: typeId || null
     });
     
     if (result) {
@@ -77,6 +77,9 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
     handleRefresh,
     isAddingTag,
     isDeletingTag,
-    isReordering
+    isReordering,
+    // Backward compatibility properties
+    isTagsLoading: isLoading,
+    tagsError: error
   };
 };

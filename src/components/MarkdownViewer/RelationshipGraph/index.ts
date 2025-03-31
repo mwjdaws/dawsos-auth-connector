@@ -1,28 +1,33 @@
 
 /**
- * Relationship Graph Component
+ * Relationship Graph Component Exports
  * 
- * This module provides a complete graph visualization system for viewing
- * knowledge relationships within the application.
- * 
- * Exports:
- * - RelationshipGraph: Main component for displaying knowledge graphs
- * - RelationshipGraphPanel: Component for embedding the graph in panels
- * - Types for extending or integrating with the graph
+ * This file exports all the components and types related to the relationship graph.
  */
 
-// Export the main component and panel
+// Export the main component
 export { RelationshipGraph } from './RelationshipGraph';
-export { RelationshipGraphPanel } from './components/RelationshipGraphPanel';
 
-// Export types for external use
+// Export the panel version
+export { RelationshipGraphPanel } from './RelationshipGraphPanel';
+
+// Export the adapter for backward compatibility
+export { RelationshipGraphAdapter } from './RelationshipGraphAdapter';
+
+// Export types
 export type { 
-  GraphData,
+  GraphData, 
   GraphNode, 
-  GraphLink,
-  RelationshipGraphProps,
-  RelationshipGraphPanelProps,
+  GraphLink, 
+  GraphProps, 
   GraphRendererProps,
-  GraphRendererRef, 
-  WithErrorHandlingOptions
+  GraphRendererRef,
+  RelationshipGraphPanelProps
 } from './types';
+
+// Export hooks
+export { useRelationshipGraph } from './hooks/useRelationshipGraph';
+export { useGraphData } from './hooks/graph-data';
+
+// Export utilities
+export { createSafeGraphProps, sanitizeGraphData } from './compatibility';

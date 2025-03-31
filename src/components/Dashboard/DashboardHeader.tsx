@@ -9,7 +9,7 @@ interface DashboardHeaderProps {
   title: string;
   description?: string;
   isLoading?: boolean;
-  onRefresh?: () => Promise<void> | void; // Updated type to accept both Promise and void
+  onRefresh?: () => Promise<void> | void; 
   showCreateButton?: boolean;
   createButtonLabel?: string;
   createButtonHref?: string;
@@ -31,7 +31,7 @@ export function DashboardHeader({
         return await Promise.resolve(onRefresh());
       }, {
         errorMessage: 'Failed to refresh data',
-        level: 'error'
+        level: 'error' as const
       })
     : undefined;
 

@@ -1,10 +1,10 @@
 
-import { GraphData, GraphNode, GraphLink, GraphProps, RelationshipGraphProps, GraphRendererRef } from './types';
+import { GraphData, GraphNode, GraphLink, GraphProps, RelationshipGraphPanelProps, GraphRendererRef } from './types';
 
 /**
  * Creates safe GraphProps from possibly undefined values
  */
-export function createSafeGraphProps(props: GraphProps): RelationshipGraphProps {
+export function createSafeGraphProps(props: GraphProps): GraphProps {
   return {
     startingNodeId: props.startingNodeId || '',
     width: props.width || 800,
@@ -70,26 +70,31 @@ export function createCompatibleGraphRef(modernRef: any): GraphRendererRef {
         modernRef.centerOnNode(nodeId);
       }
     },
-    zoomToFit: (duration?: number) => {
-      if (modernRef && typeof modernRef.zoomToFit === 'function') {
-        modernRef.zoomToFit(duration);
+    zoomIn: () => {
+      if (modernRef && typeof modernRef.zoomIn === 'function') {
+        modernRef.zoomIn();
       }
     },
-    resetViewport: () => {
+    zoomOut: () => {
+      if (modernRef && typeof modernRef.zoomOut === 'function') {
+        modernRef.zoomOut();
+      }
+    },
+    resetZoom: () => {
       if (modernRef && typeof modernRef.resetZoom === 'function') {
         modernRef.resetZoom();
       }
-    },
-    getGraphData: () => {
-      if (modernRef && typeof modernRef.getGraphData === 'function') {
-        return modernRef.getGraphData();
-      }
-      return { nodes: [], links: [] };
     },
     setZoom: (zoomLevel: number) => {
       if (modernRef && typeof modernRef.setZoom === 'function') {
         modernRef.setZoom(zoomLevel);
       }
+    },
+    exportImage: () => {
+      if (modernRef && typeof modernRef.exportImage === 'function') {
+        return modernRef.exportImage();
+      }
+      return '';
     }
   };
 }

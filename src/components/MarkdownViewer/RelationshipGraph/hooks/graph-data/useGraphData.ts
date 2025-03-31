@@ -1,3 +1,4 @@
+
 /**
  * useGraphData Hook
  * 
@@ -6,7 +7,7 @@
  * to provide a complete graph data management solution.
  */
 import { useCallback, useEffect, useRef, useMemo } from 'react';
-import { GraphData, WithErrorHandlingOptions } from '../../types';
+import { GraphData } from '../../types';
 import { withErrorHandling } from '@/utils/errors';
 import { toast } from '@/hooks/use-toast';
 import { useGraphState } from './useGraphState';
@@ -40,11 +41,6 @@ export function useGraphData(startingNodeId?: string) {
    * Fetches graph data from Supabase and constructs the graph structure
    * This function aggregates data from multiple tables to build a complete
    * representation of the knowledge network.
-   * 
-   * Includes optimizations:
-   * - Request throttling
-   * - Caching with timeout
-   * - Smart error handling with retry
    */
   const fetchGraphData = useCallback(async (skipCache = false) => {
     // Prevent excessive re-fetching and double fetches
@@ -160,8 +156,7 @@ export function useGraphData(startingNodeId?: string) {
     fetchAttempts.current = 0;
     withErrorHandling(fetchGraphData, {
       errorMessage: "Failed to refresh graph data",
-      level: "error",
-      silent: false // Explicitly set silent property
+      level: "error" as const
     })(true); // Skip cache on manual refresh
   }, [fetchGraphData]);
 

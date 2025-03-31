@@ -49,6 +49,9 @@ export interface GraphRendererRef {
   setZoom: (value: number) => void;
   resetZoom: () => void;
   exportImage: () => string;
+  resetViewport?: () => void;
+  getGraphData?: () => GraphData;
+  zoomToFit?: (duration?: number) => void;
 }
 
 // Props for the main RelationshipGraph component
@@ -64,13 +67,15 @@ export interface RelationshipGraphPanelProps {
   sourceId?: string;
   contentId?: string;
   hasAttemptedRetry?: boolean;
+  width?: number;
+  height?: number;
 }
 
 // For error handling with graph operations
 export interface WithErrorHandlingOptions {
   errorMessage?: string;
   silent?: boolean;
-  level?: "info" | "warning" | "error";
+  level?: ErrorLevel;
   technical?: boolean;
   context?: Record<string, any>;
 }

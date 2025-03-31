@@ -9,7 +9,7 @@ export type ErrorLevel = "debug" | "info" | "warning" | "error";
  */
 export interface ErrorHandlingCompatOptions {
   errorMessage?: string;
-  level?: "info" | "warning" | "error";
+  level?: ErrorLevel;
   context?: Record<string, any>;
   
   // Additional options for backward compatibility

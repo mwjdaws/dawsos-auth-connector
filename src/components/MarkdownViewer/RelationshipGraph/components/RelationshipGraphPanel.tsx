@@ -14,10 +14,12 @@ import { RelationshipGraph } from '../RelationshipGraph';
  */
 export function RelationshipGraphPanel({ 
   contentId, 
+  sourceId,
   width = 800, 
-  height = 600 
+  height = 600,
+  hasAttemptedRetry = false
 }: RelationshipGraphPanelProps) {
-  if (!contentId) {
+  if (!contentId && !sourceId) {
     return (
       <Card className="p-4 text-center text-muted-foreground">
         No content ID provided for relationship graph.
@@ -34,10 +36,10 @@ export function RelationshipGraphPanel({
       <Card className="overflow-hidden">
         <div className="w-full h-full">
           <RelationshipGraph 
-            startingNodeId={contentId}
+            startingNodeId={sourceId || contentId}
             width={width}
             height={height}
-            hasAttemptedRetry={false}
+            hasAttemptedRetry={hasAttemptedRetry}
           />
         </div>
       </Card>
