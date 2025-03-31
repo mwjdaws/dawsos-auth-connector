@@ -1,82 +1,109 @@
 
 /**
- * Global compatibility utilities for type safety
+ * Compatibility utilities for dealing with type and API changes
  * 
- * These utilities help ensure type safety when dealing with potentially
- * undefined, null, or mismatched types throughout the application.
+ * These functions help ensure backward compatibility by converting between
+ * different data formats and providing sensible defaults.
  */
 
-export interface ErrorHandlingCompatOptions {
-  level?: 'debug' | 'info' | 'warning' | 'error' | 'critical';
-  context?: Record<string, any>;
-  silent?: boolean;
-  technical?: boolean;
-  title?: string;
-  actionLabel?: string;
-  onRetry?: () => void;
-  preventDuplicate?: boolean;
-  duration?: number;
-  deduplicate?: boolean;
+/**
+ * Ensures that a value is a string, providing a default if necessary.
+ * 
+ * @param value The value to ensure is a string
+ * @param defaultValue Optional default value if the input is nullish
+ * @returns A guaranteed string value
+ */
+export function ensureString(value: any, defaultValue: string = ''): string {
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
+  
+  return String(value);
 }
 
 /**
- * Ensures a value is a string, even if null or undefined
+ * Ensures that a value is a number, providing a default if necessary.
+ * 
+ * @param value The value to ensure is a number
+ * @param defaultValue Optional default value if the input is nullish or NaN
+ * @returns A guaranteed number value
  */
-export function ensureString(value: string | null | undefined): string {
-  return value !== null && value !== undefined ? value : '';
+export function ensureNumber(value: any, defaultValue: number = 0): number {
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
+  
+  const num = Number(value);
+  return isNaN(num) ? defaultValue : num;
 }
 
 /**
- * Ensures a value is a number, even if null or undefined
+ * Ensures that a value is a boolean, providing a default if necessary.
+ * 
+ * @param value The value to ensure is a boolean
+ * @param defaultValue Optional default value if the input is nullish
+ * @returns A guaranteed boolean value
  */
-export function ensureNumber(value: number | null | undefined): number {
-  return value !== null && value !== undefined ? value : 0;
+export function ensureBoolean(value: any, defaultValue: boolean = false): boolean {
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
+  
+  return Boolean(value);
 }
 
 /**
- * Ensures a value is a boolean, even if null or undefined
- */
-export function ensureBoolean(value: boolean | null | undefined): boolean {
-  return value !== null && value !== undefined ? value : false;
-}
-
-/**
- * Converts undefined to null for API compatibility
- */
-export function undefinedToNull<T>(value: T | undefined): T | null {
-  return value === undefined ? null : value;
-}
-
-/**
- * Converts null to undefined for component props compatibility
- */
-export function nullToUndefined<T>(value: T | null): T | undefined {
-  return value === null ? undefined : value;
-}
-
-/**
- * Creates a compatible graph reference object
+ * Creates a compatible GraphRef object for backward compatibility
+ * 
+ * @param ref A modern graph renderer reference
+ * @returns A compatibility wrapper with the legacy API
  */
 export function createCompatibleGraphRef(ref: any): any {
-  if (!ref) return {};
+  if (!ref) {
+    return null;
+  }
   
   return {
-    centerOnNode: (nodeId: string) => ref.centerOnNode?.(nodeId),
-    zoomToFit: (duration?: number) => ref.zoomToFit?.(duration),
-    resetZoom: () => ref.resetZoom?.(),
-    setZoom: (zoom: number) => ref.setZoom?.(zoom),
-    getGraphData: () => ref.getGraphData?.()
+    centerOn: (nodeId: string) => {
+      if (ref.centerOnNode) {
+        ref.centerOnNode(nodeId);
+      }
+    },
+    zoomToFit: (duration?: number) => {
+      if (ref.zoomToFit) {
+        ref.zoomToFit(duration);
+      }
+    },
+    resetViewport: () => {
+      if (ref.resetZoom) {
+        ref.resetZoom();
+      }
+    },
+    getGraphData: ref.getGraphData ? ref.getGraphData : () => ({ nodes: [], links: [] }),
+    setZoom: ref.setZoom ? ref.setZoom : () => {}
   };
 }
 
 /**
- * Creates safe graph props with proper defaults
+ * Creates a compatibility wrapper for older API signatures
+ * 
+ * @param func A modern function that might have a different signature
+ * @param defaultReturn A default return value if the function is undefined
+ * @returns A function that works with the older API
  */
-export function createSafeGraphProps(props: any): any {
-  return {
-    startingNodeId: ensureString(props.startingNodeId),
-    width: ensureNumber(props.width || 800),
-    height: ensureNumber(props.height || 600),
-    hasAttemptedRetry: ensureBoolean(props.hasAttemptedRetry)
+export function createCompatibleFunction<T>(
+  func: ((...args: any[]) => T) | undefined,
+  defaultReturn: T
+): (...args: any[]) => T {
+  return (...args: any[]) => {
+    if (typeof func === 'function') {
+      try {
+        return func(...args);
+      } catch (error) {
+        console.error('Error in compatibility function:', error);
+        return defaultReturn;
+      }
+    }
+    return defaultReturn;
   };
 }

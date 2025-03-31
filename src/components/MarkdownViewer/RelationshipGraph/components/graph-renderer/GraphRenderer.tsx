@@ -33,7 +33,7 @@ export const GraphRenderer = React.forwardRef<GraphRendererRef, GraphRendererPro
     
     // Get rendering utilities
     const { getNodeSize, getNodeColor, nodeCanvasRenderer } = useNodeRenderer({ 
-      highlightedNodeId 
+      highlightedNodeId: highlightedNodeId || null
     });
     const { getLinkWidth, getLinkColor, getLinkLabel } = useLinkRenderer();
     const { backgroundColor } = useGraphRenderStyles();
@@ -119,7 +119,6 @@ export const GraphRenderer = React.forwardRef<GraphRendererRef, GraphRendererPro
           height={height}
           backgroundColor={backgroundColor}
           nodeRelSize={6}
-          zoom={zoom}
           
           // Node styling
           nodeColor={getNodeColor}

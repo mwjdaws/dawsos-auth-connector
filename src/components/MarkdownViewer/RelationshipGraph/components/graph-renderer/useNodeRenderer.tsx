@@ -1,119 +1,133 @@
-
 import React from 'react';
 import { GraphNode } from './GraphRendererTypes';
 
-interface NodeProps {
-  data: GraphNode;
-  isConnectable: boolean;
+interface NodeRendererOptions {
+  highlightedNodeId: string | null;
 }
 
 interface NodeRendererResult {
-  renderNode: ({ data, isConnectable }: NodeProps) => JSX.Element;
   getNodeSize: (node: GraphNode) => number;
   getNodeColor: (node: GraphNode) => string;
   nodeCanvasRenderer: (node: GraphNode & { x?: number; y?: number; }, ctx: CanvasRenderingContext2D, globalScale: number) => void;
 }
 
-export function useNodeRenderer({ highlightedNodeId }: { highlightedNodeId?: string | null } = {}): NodeRendererResult {
-  // Function to render the node component
-  const renderNode = ({ data, isConnectable }: NodeProps) => {
-    const nodeType = data.type || 'default';
-    const nodeColor = getNodeColor(data);
-    
-    return (
-      <div
-        style={{
-          background: nodeColor,
-          width: '60px',
-          height: '60px',
-          borderRadius: '50%',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          borderWidth: '2px',
-          borderStyle: 'solid',
-          borderColor: '#ffffff',
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-          fontSize: '12px',
-          color: '#ffffff',
-          fontWeight: 'bold',
-          userSelect: 'none'
-        }}
-      >
-        {data.name?.substring(0, 8) || data.title?.substring(0, 8) || ''}
-      </div>
-    );
+export function useNodeRenderer({ highlightedNodeId }: NodeRendererOptions): NodeRendererResult {
+  // Return node size based on type and highlighting
+  const getNodeSize = (node: GraphNode): number => {
+    const isHighlighted = node.id === highlightedNodeId;
+    const baseSize = getBaseSizeForNodeType(node.type || 'document');
+    return isHighlighted ? baseSize * 1.3 : baseSize;
   };
-
-  // Node canvas renderer for force-graph
-  const nodeCanvasRenderer = (node: GraphNode & { x?: number; y?: number; }, ctx: CanvasRenderingContext2D, globalScale: number) => {
-    if (!node || typeof node.x !== 'number' || typeof node.y !== 'number') return;
+  
+  // Get base size for different node types
+  const getBaseSizeForNodeType = (type: string): number => {
+    const sizeMap: Record<string, number> = {
+      'document': 5,
+      'term': 4,
+      'entity': 3.5,
+      'concept': 4,
+      'default': 4
+    };
     
+    return sizeMap[type] || sizeMap.default;
+  };
+  
+  // Return node color based on type and highlighting
+  const getNodeColor = (node: GraphNode): string => {
+    if (node.id === highlightedNodeId) {
+      return '#ff3e00'; // Highlight color
+    }
+    
+    return getColorForNodeType(node.type || 'document', node.domain);
+  };
+  
+  // Get color for different node types
+  const getColorForNodeType = (type: string, domain?: string): string => {
+    // First check if it's a domain-specific node
+    if (domain) {
+      const domainColorMap: Record<string, string> = {
+        'medical': '#0ea5e9',  // sky blue
+        'technology': '#8b5cf6', // violet
+        'business': '#f59e0b',  // amber
+        'science': '#10b981',   // emerald
+        'default': '#6b7280'    // gray
+      };
+      
+      return domainColorMap[domain] || domainColorMap.default;
+    }
+    
+    // Otherwise, color by type
+    const colorMap: Record<string, string> = {
+      'document': '#3b82f6',  // blue
+      'term': '#10b981',     // green
+      'entity': '#f59e0b',   // amber
+      'concept': '#8b5cf6',  // violet
+      'default': '#6b7280'   // gray
+    };
+    
+    return colorMap[type] || colorMap.default;
+  };
+  
+  // Custom node renderer function
+  const nodeCanvasRenderer = (
+    node: GraphNode & { x?: number; y?: number; },
+    ctx: CanvasRenderingContext2D,
+    globalScale: number
+  ) => {
+    const { title, name, id, type = 'document' } = node;
+    
+    // Extract node coordinates safely
+    const x = node.x || 0;
+    const y = node.y || 0;
+    
+    // Determine node display attributes
     const size = getNodeSize(node);
     const color = getNodeColor(node);
-    const isHighlighted = highlightedNodeId === node.id;
+    const fontSize = Math.max(8, size * 1.5 / globalScale);
+    const isHighlighted = node.id === highlightedNodeId;
+    const displayText = title || name || id || 'Unknown';
     
+    // Begin drawing
     ctx.beginPath();
-    ctx.arc(node.x, node.y, size, 0, 2 * Math.PI);
+    
+    // Draw the node circle
+    ctx.arc(x, y, size, 0, 2 * Math.PI);
     ctx.fillStyle = color;
     ctx.fill();
     
-    // Draw border for highlighted nodes
+    // Add highlight ring if this node is highlighted
     if (isHighlighted) {
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, size + 2, 0, 2 * Math.PI);
+      ctx.strokeStyle = '#ff3e00';
+      ctx.lineWidth = 1.5;
       ctx.stroke();
     }
     
-    // Draw label if zoomed in enough
-    if (globalScale > 1) {
-      const label = node.name || node.title || node.id || '';
-      ctx.font = '10px Arial';
+    // Add text label (only if we're zoomed in enough)
+    if (globalScale > 0.6) {
+      ctx.font = `${fontSize}px Sans-Serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(label.substring(0, 10), node.x, node.y);
+      
+      // Add a background for text readability
+      const textWidth = ctx.measureText(displayText).width;
+      const textHeight = fontSize;
+      
+      // Draw text background 
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(x - textWidth/2, y + size + 2, textWidth, textHeight);
+      
+      // Draw the text
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(displayText, x, y + size + textHeight/2 + 2);
     }
   };
-
+  
   return {
-    renderNode,
     getNodeSize,
     getNodeColor,
     nodeCanvasRenderer
   };
-}
-
-// Helper function to determine node color based on type
-function getNodeColor(node: GraphNode): string {
-  const type = node.type || 'default';
-  
-  const colorMap: Record<string, string> = {
-    source: '#3b82f6', // blue
-    term: '#10b981',   // green
-    category: '#f59e0b', // amber
-    default: '#6b7280'  // gray
-  };
-  
-  return colorMap[type] || colorMap.default;
-}
-
-// Helper function to determine node size based on properties
-function getNodeSize(node: GraphNode): number {
-  // Base size
-  let size = 5;
-  
-  // Adjust size based on node type
-  if (node.type === 'source') {
-    size += 3;
-  } else if (node.type === 'term') {
-    size += 1;
-  }
-  
-  // Use explicitly defined size if available
-  if (typeof node.size === 'number') {
-    return node.size;
-  }
-  
-  return size;
 }

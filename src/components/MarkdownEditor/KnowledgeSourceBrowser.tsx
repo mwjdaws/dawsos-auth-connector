@@ -104,7 +104,7 @@ export function KnowledgeSourceBrowser({ onSelectSource }: KnowledgeSourceBrowse
                 key={source.id}
                 variant="ghost"
                 className="w-full justify-start text-left h-auto py-3"
-                onClick={() => handleSourceSelect(source as ApiSourceData)}
+                onClick={() => handleSourceSelect(source as unknown as ApiSourceData)}
               >
                 <div className="flex items-start gap-2">
                   <Book className="h-5 w-5 shrink-0 text-muted-foreground" />

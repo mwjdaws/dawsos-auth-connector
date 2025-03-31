@@ -1,34 +1,44 @@
 
-/**
- * Type definitions for the GraphRenderer component
- */
+import { ReactNode } from 'react';
 
-// Basic node and link types
+/**
+ * Core GraphNode representation
+ */
 export interface GraphNode {
   id: string;
-  title: string;
-  name: string;
-  type: string;
-  size?: number;
-  color?: string;
-  // Allow for force-graph specific properties
-  [key: string]: any;
+  title?: string;
+  name?: string;
+  type?: string;
+  domain?: string;
+  [key: string]: any;  // Allow for additional properties
 }
 
+/**
+ * Core GraphLink representation
+ */
 export interface GraphLink {
   source: string | GraphNode;
   target: string | GraphNode;
-  type: string;
-  // Allow for force-graph specific properties
-  [key: string]: any;
+  type?: string;
+  [key: string]: any;  // Allow for additional properties
 }
 
+/**
+ * Complete graph data structure
+ */
 export interface GraphData {
   nodes: GraphNode[];
   links: GraphLink[];
 }
 
-// Component props
+/**
+ * Tooltip content type
+ */
+export type TooltipContent = ReactNode | string | null;
+
+/**
+ * GraphRenderer component props
+ */
 export interface GraphRendererProps {
   graphData: GraphData;
   width: number;
@@ -36,42 +46,16 @@ export interface GraphRendererProps {
   highlightedNodeId?: string | null;
   zoom?: number;
   onNodeClick?: (nodeId: string) => void;
-  onLinkClick?: (link: GraphLink) => void;
+  onLinkClick?: (source: string, target: string) => void;
 }
 
-// Rendering utility types
-export interface NodeRendererOptions {
-  getNodeSize: (node: GraphNode) => number;
-  getNodeColor: (node: GraphNode) => string;
-  nodeCanvasRenderer: (node: GraphNode & { x?: number; y?: number; }, ctx: CanvasRenderingContext2D, globalScale: number) => void;
-}
-
-export interface UseNodeRendererProps {
-  highlightedNodeId?: string | null;
-}
-
+/**
+ * GraphRenderer ref methods
+ */
 export interface GraphRendererRef {
   centerOnNode: (nodeId: string) => void;
   zoomToFit: (duration?: number) => void;
   resetZoom: () => void;
-  setZoom: (zoom: number) => void;
+  setZoom: (zoomLevel: number) => void;
   getGraphData: () => GraphData;
 }
-
-// Search and zoom control props
-export interface GraphSearchProps {
-  nodes: GraphNode[];
-  onNodeFound: (nodeId: string) => void;
-}
-
-export interface GraphZoomControlProps {
-  zoom: number;
-  onZoomChange: (newZoom: number) => void;
-  onReset: () => void;
-  min: number;
-  max: number;
-  percent?: number;
-}
-
-// Define TooltipContent as string (compatible with force-graph)
-export type TooltipContent = string;

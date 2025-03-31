@@ -1,88 +1,69 @@
 
 /**
- * Graph Utilities
- * 
- * This module provides utility functions for working with graph data.
+ * Graph utility functions for the relationship graph visualization
  */
-import { ensureString } from '@/utils/type-compatibility';
-import { GraphData, GraphNode, GraphLink } from '@/hooks/markdown-editor/types';
+import { GraphNode, GraphLink } from '../components/graph-renderer/GraphRendererTypes';
 
 /**
- * Formats a graph node ID to ensure it's a valid string
+ * Get a unique identifier for a graph link.
  */
-export function formatNodeId(id: string | undefined | null): string {
-  return ensureString(id);
+export function getLinkId(link: GraphLink): string {
+  const sourceId = typeof link.source === 'object' && link.source ? link.source.id : link.source;
+  const targetId = typeof link.target === 'object' && link.target ? link.target.id : link.target;
+  return `${sourceId}-${targetId}-${link.type || 'default'}`;
 }
 
 /**
- * Creates a color map based on node types
+ * Get a human-readable label for a graph node.
  */
-export function createColorMap(nodes: GraphNode[]): Record<string, string> {
-  const colorMap: Record<string, string> = {};
-  const types = [...new Set(nodes.map(node => node.type))];
-  
-  // Default colors for common node types
-  const defaultColors: Record<string, string> = {
-    'source': '#3B82F6', // blue
-    'term': '#10B981',   // green
-    'domain': '#8B5CF6', // purple
-    'tag': '#F59E0B',    // amber
-    'default': '#6B7280' // gray
+export function getNodeLabel(node: GraphNode): string {
+  return node.title || node.name || node.id || 'Unknown Node';
+}
+
+/**
+ * Find a node by its ID in the graph.
+ */
+export function findNodeById(nodes: GraphNode[], id: string): GraphNode | undefined {
+  return nodes.find(node => node.id === id);
+}
+
+/**
+ * Generate a color for a link based on its type.
+ */
+export function getLinkColor(type: string): string {
+  const colorMap: Record<string, string> = {
+    'manual': '#3b82f6',  // blue
+    'wikilink': '#10b981', // green
+    'AI-suggested': '#f59e0b', // amber
+    'default': '#9ca3af'  // gray
   };
   
-  types.forEach(type => {
-    colorMap[type] = defaultColors[type] || defaultColors.default;
-  });
+  return colorMap[type] || colorMap.default;
+}
+
+/**
+ * Generate a graph visualization configuration option for a specific entity.
+ */
+export function getGraphConfig(entityType: string, isHighlighted: boolean = false): {
+  color: string;
+  size: number;
+} {
+  const configs: Record<string, { color: string; size: number }> = {
+    'document': { color: '#3b82f6', size: 5 },  // blue
+    'term': { color: '#10b981', size: 4 },      // green
+    'entity': { color: '#f59e0b', size: 3.5 },  // amber
+    'concept': { color: '#8b5cf6', size: 4 },   // violet
+    'default': { color: '#6b7280', size: 4 }    // gray
+  };
   
-  return colorMap;
-}
-
-/**
- * Formats link labels for display
- */
-export function formatLinkLabel(link: GraphLink): string {
-  if (!link.label) return '';
-  return link.label.charAt(0).toUpperCase() + link.label.slice(1);
-}
-
-/**
- * Generate link width based on type
- */
-export function getLinkWidth(link: GraphLink): number {
-  switch (link.type) {
-    case 'strong':
-      return 2;
-    case 'weak':
-      return 0.5;
-    default:
-      return 1;
+  const config = configs[entityType] || configs.default;
+  
+  if (isHighlighted) {
+    return {
+      color: '#ff3e00',  // highlight color
+      size: config.size * 1.3
+    };
   }
-}
-
-/**
- * Safety utility to ensure graph data is valid
- */
-export function safeGraphData(data: GraphData | null | undefined): GraphData {
-  if (!data) return { nodes: [], links: [] };
   
-  // Ensure all nodes have valid IDs and labels
-  const validNodes = (data.nodes || []).map(node => ({
-    ...node,
-    id: ensureString(node.id),
-    label: ensureString(node.label),
-    type: ensureString(node.type)
-  }));
-  
-  // Ensure all links have valid source and target references
-  const validLinks = (data.links || []).filter(link => 
-    typeof link.source === 'string' && 
-    typeof link.target === 'string' &&
-    validNodes.some(node => node.id === link.source) &&
-    validNodes.some(node => node.id === link.target)
-  );
-  
-  return {
-    nodes: validNodes,
-    links: validLinks
-  };
+  return config;
 }

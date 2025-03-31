@@ -1,80 +1,107 @@
 
 /**
- * Compatibility layer for RelationshipGraph components
- * Provides type-safe wrappers and utility functions to bridge API differences
+ * Compatibility utilities for the relationship graph component
+ * These help ensure backward compatibility with older code
  */
-import { GraphNode, GraphLink, GraphData, RelationshipGraphProps } from './types';
-import { ensureString, ensureNumber, ensureBoolean, createCompatibleGraphRef, createSafeGraphProps } from '@/utils/compatibility';
+import { GraphProps, GraphRendererRef } from './types';
+import { GraphData, GraphNode, GraphLink } from './components/graph-renderer/GraphRendererTypes';
 
 /**
- * Ensures a node ID is always a string
+ * Create safe graph properties with defaults for any missing values
  */
-export function ensureNodeId(id: string | undefined | null): string {
-  return ensureString(id);
+export function createSafeGraphProps(props: GraphProps): {
+  startingNodeId: string | undefined;
+  width: number;
+  height: number;
+  hasAttemptedRetry: boolean;
+} {
+  return {
+    startingNodeId: props.startingNodeId,
+    width: props.width || 800,
+    height: props.height || 600,
+    hasAttemptedRetry: props.hasAttemptedRetry || false
+  };
 }
 
 /**
- * Ensures a GraphNode has all required properties
+ * Create a compatibility layer for the GraphRendererRef
+ * This allows older code to use the new ref structure
  */
-export function ensureValidNode(node: Partial<GraphNode>): GraphNode {
+export function createCompatibleGraphRef(ref: GraphRendererRef): any {
+  if (!ref) {
+    return null;
+  }
+  
+  return {
+    centerOn: (nodeId: string) => {
+      if (ref.centerOnNode) {
+        ref.centerOnNode(nodeId);
+      }
+    },
+    zoomToFit: (duration?: number) => {
+      if (ref.zoomToFit) {
+        ref.zoomToFit(duration);
+      }
+    },
+    resetViewport: () => {
+      if (ref.resetZoom) {
+        ref.resetZoom();
+      }
+    },
+    getGraphData: ref.getGraphData,
+    setZoom: ref.setZoom
+  };
+}
+
+/**
+ * Convert legacy node data to the new GraphNode format
+ */
+export function convertToGraphNode(node: any): GraphNode {
   return {
     id: node.id || '',
-    title: node.title || node.name || 'Untitled',
-    name: node.name || node.title || 'Unnamed',
+    title: node.title || node.name || node.id || 'Unknown',
+    name: node.name || node.title || node.id || 'Unknown',
     type: node.type || 'document',
-    ...node
+    domain: node.domain
   };
 }
 
 /**
- * Ensures a GraphLink has all required properties
+ * Convert legacy link data to the new GraphLink format
  */
-export function ensureValidLink(link: Partial<GraphLink>): GraphLink {
+export function convertToGraphLink(link: any): GraphLink {
   return {
-    source: typeof link.source === 'string' ? link.source : (link.source as any)?.id || '',
-    target: typeof link.target === 'string' ? link.target : (link.target as any)?.id || '',
-    type: link.type || 'default',
-    ...link
+    source: link.source || '',
+    target: link.target || '',
+    type: link.type || 'default'
   };
 }
 
 /**
- * Creates a safe wrapper for node click handlers
+ * Create safe graph data with proper typing
  */
-export function createSafeNodeClickHandler(
-  handler: ((node: GraphNode) => void) | undefined
-): (node: any) => void {
-  return (node: any) => {
-    if (handler && node) {
-      handler(ensureValidNode(node));
-    }
-  };
-}
-
-/**
- * Ensures GraphData is valid with proper types
- */
-export function ensureValidGraphData(data: Partial<GraphData> | undefined | null): GraphData {
+export function createSafeGraphData(data: any): GraphData {
   if (!data) {
     return { nodes: [], links: [] };
   }
   
-  return {
-    nodes: Array.isArray(data.nodes) 
-      ? data.nodes.map(node => ensureValidNode(node))
-      : [],
-    links: Array.isArray(data.links)
-      ? data.links.map(link => ensureValidLink(link))
-      : []
-  };
+  const nodes = Array.isArray(data.nodes) ? data.nodes.map(convertToGraphNode) : [];
+  const links = Array.isArray(data.links) ? data.links.map(convertToGraphLink) : [];
+  
+  return { nodes, links };
 }
 
 /**
- * Creates a safe node renderer function
+ * Safely extract a node ID from a node or ID string
  */
-export function createSafeHighlightNodeId(highlightedNodeId: string | null | undefined): string | null {
-  return highlightedNodeId === undefined ? null : highlightedNodeId;
+export function getSafeNodeId(nodeOrId: GraphNode | string | undefined | null): string | null {
+  if (!nodeOrId) {
+    return null;
+  }
+  
+  if (typeof nodeOrId === 'string') {
+    return nodeOrId;
+  }
+  
+  return nodeOrId.id || null;
 }
-
-// Re-export from utils/compatibility
-export { createCompatibleGraphRef, createSafeGraphProps };
