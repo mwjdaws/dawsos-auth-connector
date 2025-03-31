@@ -38,7 +38,7 @@ export { default } from './MetadataPanel';
 export * from './sections';
 
 // Export the hooks
-export { useMetadataPanel, useMetadataContext } from './hooks';
+export { useMetadataContext, useMetadataPanel } from './hooks';
 
 // Export types
 export * from './types';

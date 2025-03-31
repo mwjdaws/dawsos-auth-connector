@@ -1,16 +1,19 @@
 
-export { useMetadataPanel } from "./useMetadataPanel";
-export { useTagOperations } from "./tag-operations/useTagOperations";
-export { useSourceMetadata } from "./useSourceMetadata";
-export { usePanelState } from "./usePanelState";
-export { useMetadataContext } from "./useMetadataContext";
-export { usePanelContent } from "./usePanelContent";
+// Re-export all hook exports with proper naming
+export { 
+  useMetadataContext, 
+  MetadataProvider, 
+  type MetadataContextProps, 
+  type MetadataProviderProps 
+} from './useMetadataContext';
 
-// Export tag operation hooks
-export * from "./tag-operations";
+export { usePanelContent } from './usePanelContent';
+export { usePanelState } from './usePanelState';
+export { useMetadataPanel } from './useMetadataPanel';
+export { useSourceMetadata } from './useSourceMetadata';
+export { useInlineMetadataEdit } from './useInlineMetadataEdit';
+export { useOntologyTerms } from './useOntologyTerms';
+export { useExternalSource } from './useExternalSource';
 
-// Export types
-export type { Tag } from "./tag-operations/types";
-export type { SourceMetadata } from "../types";
-export type { UseTagStateResult } from "./tag-operations/types";
-export type { UsePanelStateProps } from "./usePanelState";
+// Re-export tag operation hooks 
+export * from './tag-operations';

@@ -1,9 +1,9 @@
 
 import React from 'react';
 import { AlertTriangle, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
-import { CardHeader, CardTitle } from '@/components/ui/card';
+import { CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface HeaderSectionProps {
   needsExternalReview: boolean;
@@ -11,11 +11,11 @@ interface HeaderSectionProps {
   isLoading: boolean;
   isCollapsible: boolean;
   isCollapsed: boolean;
-  setIsCollapsed: (collapsed: boolean) => void;
+  setIsCollapsed: (value: boolean) => void;
 }
 
 /**
- * Header section for the MetadataPanel with refresh and collapse controls
+ * Header section for the metadata panel with refresh and collapse controls
  */
 export const HeaderSection: React.FC<HeaderSectionProps> = ({
   needsExternalReview,
@@ -26,18 +26,24 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   setIsCollapsed
 }) => {
   return (
-    <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
+    <CardHeader className="flex flex-row items-center justify-between py-3 px-4 border-b">
       <div className="flex items-center gap-2">
-        <CardTitle className="text-sm font-medium">Content Metadata</CardTitle>
+        <h2 className="text-sm font-semibold">Metadata</h2>
         {needsExternalReview && (
-          <Badge variant="outline" className="bg-yellow-50 text-yellow-800 hover:bg-yellow-100">
-            <AlertTriangle className="mr-1 h-3 w-3" />
-            Needs Review
-          </Badge>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AlertTriangle className="h-4 w-4 text-yellow-500" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">External source needs review</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
       </div>
       
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <Button
           variant="ghost"
           size="icon"
@@ -62,7 +68,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
               <ChevronUp className="h-4 w-4" />
             )}
             <span className="sr-only">
-              {isCollapsed ? 'Expand panel' : 'Collapse panel'}
+              {isCollapsed ? 'Expand metadata' : 'Collapse metadata'}
             </span>
           </Button>
         )}
