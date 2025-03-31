@@ -14,6 +14,7 @@ export interface ExternalSourceSectionProps {
   contentId: string;
   onValidateSource?: () => void;
   onToggleReviewFlag?: () => void;
+  onMetadataChange?: () => void;
 }
 
 export function ExternalSourceSection({
@@ -24,7 +25,8 @@ export function ExternalSourceSection({
   isLoading = false,
   contentId,
   onValidateSource,
-  onToggleReviewFlag
+  onToggleReviewFlag,
+  onMetadataChange
 }: ExternalSourceSectionProps) {
   if (isLoading) {
     return (
@@ -69,8 +71,14 @@ export function ExternalSourceSection({
         {editable && (
           <ExternalSourceControls
             contentId={contentId}
-            onValidate={onValidateSource}
-            onToggleReviewFlag={onToggleReviewFlag}
+            onValidate={() => {
+              if (onValidateSource) onValidateSource();
+              if (onMetadataChange) onMetadataChange();
+            }}
+            onToggleReviewFlag={() => {
+              if (onToggleReviewFlag) onToggleReviewFlag();
+              if (onMetadataChange) onMetadataChange();
+            }}
             needsReview={needsExternalReview}
           />
         )}

@@ -76,9 +76,11 @@ export function MetadataContent({
         
         {/* External Source Section */}
         <ExternalSourceSection
-          externalSourceUrl={externalSourceUrl || ""}
+          externalSourceUrl={externalSourceUrl}
           lastCheckedAt={lastCheckedAt}
           editable={editable}
+          contentId={contentId}
+          needsExternalReview={needsExternalReview}
           onMetadataChange={handleMetadataChange}
         />
         
