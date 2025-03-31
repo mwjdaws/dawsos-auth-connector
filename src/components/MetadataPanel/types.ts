@@ -19,18 +19,18 @@ export interface SourceMetadata {
 
 // Simplified source metadata for hooks that only use a subset of fields
 export interface SimpleSourceMetadata {
-  id: string;
-  title: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
+  id?: string;
+  title?: string;
+  content?: string;
+  created_at?: string;
+  updated_at?: string;
   external_source_url: string | null;
   external_source_checked_at: string | null;
-  external_content_hash: string | null;
+  external_content_hash?: string | null;
   needs_external_review: boolean;
-  is_published: boolean;
-  published_at: string | null;
-  template_id: string | null;
+  is_published?: boolean;
+  published_at?: string | null;
+  template_id?: string | null;
 }
 
 // Tag type
@@ -54,7 +54,7 @@ export interface OntologyTerm {
 export interface MetadataPanelProps {
   contentId: string;
   editable?: boolean;
-  onMetadataChange?: (() => void);
+  onMetadataChange?: (() => void) | undefined;
   isCollapsible?: boolean;
   initialCollapsed?: boolean;
   showOntologyTerms?: boolean;
@@ -85,9 +85,9 @@ export interface MetadataContentProps {
 
 // Props for the HeaderSection component
 export interface HeaderSectionProps {
-  title: string | undefined;
-  isPublished: boolean | undefined;
-  publishedAt: string | null | undefined;
+  title?: string;
+  isPublished?: boolean;
+  publishedAt?: string | null;
   editable: boolean;
   className?: string;
 }
@@ -97,7 +97,7 @@ export interface ExternalSourceSectionProps {
   externalSourceUrl: string | null;
   lastCheckedAt: string | null;
   editable: boolean;
-  onMetadataChange: (() => void);
+  onMetadataChange?: (() => void) | undefined;
   contentId: string;
 }
 
@@ -110,7 +110,7 @@ export interface TagsSectionProps {
   setNewTag: (value: string) => void;
   onAddTag: (typeId?: string | null) => Promise<void>;
   onDeleteTag: (tagId: string) => Promise<void>;
-  onMetadataChange?: (() => void);
+  onMetadataChange?: (() => void) | undefined;
   className?: string;
 }
 
@@ -123,11 +123,10 @@ export interface OntologySectionProps {
 // Props for the OntologyTermsSection component
 export interface OntologyTermsSectionProps {
   contentId: string;
-  sourceId: string;
-  editable: boolean;
-  onMetadataChange?: (() => void);
+  sourceId?: string;
+  editable?: boolean;
+  onMetadataChange?: (() => void) | undefined;
   className?: string;
-  ontologyTerms?: OntologyTerm[];
 }
 
 // Props for the ContentAlert component
@@ -141,12 +140,4 @@ export interface ContentAlertProps {
 export interface DomainSectionProps {
   domain: string | null;
   className?: string;
-}
-
-// Panel state props
-export interface UsePanelStateProps {
-  contentId: string;
-  onMetadataChange?: (() => void) | undefined;
-  isCollapsible?: boolean;
-  initialCollapsed?: boolean;
 }

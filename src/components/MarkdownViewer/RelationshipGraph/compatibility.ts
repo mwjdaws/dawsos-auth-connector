@@ -75,6 +75,7 @@ function sanitizeNode(node: GraphNode | null | undefined): GraphNode | null {
     return null;
   }
   
+  // Default values for required properties, optional properties can remain undefined
   return {
     id: ensureString(node.id),
     name: ensureString(node.name || node.title || ''),
@@ -82,7 +83,7 @@ function sanitizeNode(node: GraphNode | null | undefined): GraphNode | null {
     type: ensureString(node.type, ''),
     description: ensureString(node.description, ''),
     color: node.color,
-    val: node.val
+    val: node.val !== undefined ? node.val : undefined
   };
 }
 

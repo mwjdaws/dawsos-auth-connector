@@ -15,7 +15,7 @@ interface ExternalSourceSectionProps {
   lastCheckedAt: string | null;
   editable?: boolean;
   className?: string;
-  onMetadataChange?: () => void;
+  onMetadataChange?: (() => void) | undefined;
 }
 
 export const ExternalSourceSection: React.FC<ExternalSourceSectionProps> = ({
@@ -34,6 +34,9 @@ export const ExternalSourceSection: React.FC<ExternalSourceSectionProps> = ({
     if (onMetadataChange) {
       onMetadataChange();
     }
+    
+    // The function must return void, not boolean
+    return;
   };
   
   const { isUpdating } = { isUpdating: false }; // Mock implementation

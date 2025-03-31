@@ -7,10 +7,9 @@
  */
 import React from "react";
 import { OntologySection } from "./OntologySection";
-import { OntologyTerm, OntologyTermsSectionProps } from "../types";
+import { OntologyTermsSectionProps } from "../types";
 
 export const OntologyTermsSection: React.FC<OntologyTermsSectionProps> = ({ 
-  ontologyTerms = [],
   contentId,
   editable,
   sourceId,
@@ -25,7 +24,7 @@ export const OntologyTermsSection: React.FC<OntologyTermsSectionProps> = ({
       {effectiveSourceId && (
         <OntologySection 
           sourceId={effectiveSourceId} 
-          editable={editable} 
+          editable={editable || false} 
         />
       )}
     </div>

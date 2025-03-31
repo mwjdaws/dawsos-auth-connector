@@ -48,8 +48,8 @@ export const DraggableTagList: React.FC<DraggableTagListProps> = ({
     
     // Create a new array with reordered tags
     const reorderedTags = [...tags];
-    const draggedTagIndex = reorderedTags.findIndex(t => t.id === draggedTag.id);
-    const targetTagIndex = reorderedTags.findIndex(t => t.id === targetTag.id);
+    const draggedTagIndex = reorderedTags.findIndex(t => t && t.id === draggedTag.id);
+    const targetTagIndex = reorderedTags.findIndex(t => t && t.id === targetTag.id);
     
     if (draggedTagIndex !== -1) { // Check if draggedTag was found
       // Remove the dragged tag from its position

@@ -1,7 +1,13 @@
 
 import { useState, useEffect } from 'react';
 import { isValidContentId } from '@/utils/validation/contentIdValidation';
-import { UsePanelStateProps } from '../types';
+
+export interface UsePanelStateProps {
+  contentId: string;
+  onMetadataChange?: (() => void) | undefined;
+  isCollapsible?: boolean | undefined;
+  initialCollapsed?: boolean | undefined;
+}
 
 export const usePanelState = ({
   contentId,

@@ -16,7 +16,7 @@ export interface HeaderSectionProps {
   isLoading?: boolean;
   isCollapsible?: boolean;
   isCollapsed?: boolean;
-  setIsCollapsed?: (value: boolean) => void;
+  setIsCollapsed?: ((value: boolean) => void) | undefined;
   className?: string;
 }
 
