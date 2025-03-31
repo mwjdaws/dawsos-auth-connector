@@ -1,6 +1,6 @@
 
-import React from 'react';
 import { renderHook } from '@testing-library/react-hooks';
+import React from 'react';
 import { MetadataProvider, useMetadataContext } from '../useMetadataContext';
 import { createValidResult } from '@/utils/validation/types';
 
@@ -36,9 +36,7 @@ describe('useMetadataContext', () => {
     
     // Create wrapper with provider
     const wrapper = ({ children }) => (
-      <MetadataProvider value={contextValue}>
-        {children}
-      </MetadataProvider>
+      React.createElement(MetadataProvider, { value: contextValue }, children)
     );
     
     // Render hook with provider wrapper
@@ -69,9 +67,7 @@ describe('useMetadataContext', () => {
     
     // Create wrapper with provider
     const wrapper = ({ children }) => (
-      <MetadataProvider value={contextValue}>
-        {children}
-      </MetadataProvider>
+      React.createElement(MetadataProvider, { value: contextValue }, children)
     );
     
     // Render hook with different contentId
