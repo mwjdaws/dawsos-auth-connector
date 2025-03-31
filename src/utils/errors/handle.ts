@@ -1,127 +1,141 @@
 
 /**
  * Error handling utilities
+ * 
+ * This file contains functions for handling errors in a consistent way
+ * throughout the application.
  */
+
+import { ErrorOptions, ErrorLevel, TaggedError } from './types';
+import { formatError, getUserFriendlyMessage } from './format';
 import { toast } from '@/hooks/use-toast';
-import { deduplicateError } from './deduplication';
-import { categorizeError } from './categorize';
-import { ErrorLevel, ErrorContext, ErrorOptions } from './types';
-import { formatError } from './format';
+
+// Track shown error messages to prevent duplicates
+const shownErrorMessages = new Set<string>();
+
+// Default error options
+const defaultErrorOptions: ErrorOptions = {
+  level: 'error',
+  context: {},
+  silent: false,
+  technical: false,
+  deduplicate: true
+};
 
 /**
- * Main error handler for the application
+ * Handle an error with standardized logging and user feedback
  * 
- * Handles error logging, notification, and tracking
+ * @param error The error to handle
+ * @param userMessage Optional user-friendly message to display
+ * @param options Error handling options
  */
-export const handleError = (
+export function handleError(
   error: unknown,
-  friendlyMessage?: string,
-  options?: ErrorOptions
-): void => {
-  const { 
-    level = "error", 
-    context = {}, 
-    silent = false,
-    technical = false,
-    deduplicate = true
-  } = options || {};
+  userMessage?: string,
+  options?: Partial<ErrorOptions>
+): void {
+  // Merge provided options with defaults
+  const fullOptions: ErrorOptions = { ...defaultErrorOptions, ...options };
   
-  // Format the error for consistent handling
+  // Format error for consistent handling
   const formattedError = formatError(error);
   
-  // Log errors to console
-  logError(formattedError, level, context);
+  // Generate unique error key for deduplication
+  const errorKey = getErrorKey(formattedError, userMessage);
   
-  // Show user notification unless silent
-  if (!silent) {
-    notifyUser(formattedError, friendlyMessage, level, deduplicate);
-  }
+  // Log error with proper level
+  logError(formattedError, fullOptions.level, fullOptions.context);
   
-  // Additional handling for technical errors
-  if (technical) {
-    console.error('[TECHNICAL ERROR]', formattedError, context);
+  // Show user notification if not silent
+  if (!fullOptions.silent) {
+    showUserNotification(
+      formattedError, 
+      userMessage, 
+      fullOptions.level, 
+      errorKey, 
+      fullOptions.deduplicate
+    );
   }
 }
 
 /**
- * Safe error handler that won't throw
- */
-export const handleErrorSafe = (
-  error: unknown,
-  friendlyMessage?: string,
-  options?: ErrorOptions
-): void => {
-  try {
-    handleError(error, friendlyMessage, options);
-  } catch (handlerError) {
-    console.error('Error in error handler:', handlerError);
-    
-    // Last resort error notification
-    try {
-      toast({
-        title: 'Unexpected Error',
-        description: 'Something went wrong',
-        variant: 'destructive',
-      });
-    } catch {
-      // Nothing more we can do
-    }
-  }
-}
-
-/**
- * Log error to console with appropriate level
+ * Log an error with appropriate severity level
  */
 function logError(
-  error: Error | string,
-  level: ErrorLevel,
-  context: ErrorContext
+  error: Error, 
+  level: ErrorLevel = 'error',
+  context?: Record<string, any>
 ): void {
-  const message = error instanceof Error ? error.message : error;
-  const stack = error instanceof Error ? error.stack : undefined;
+  const contextString = context ? ` Context: ${JSON.stringify(context)}` : '';
   
   switch (level) {
     case 'debug':
-      console.debug(`[DEBUG] ${message}`, { context, stack });
+      console.debug(`[DEBUG] ${error.message}${contextString}`, error);
       break;
     case 'info':
-      console.info(`[INFO] ${message}`, { context, stack });
+      console.info(`[INFO] ${error.message}${contextString}`, error);
       break;
     case 'warning':
-      console.warn(`[WARNING] ${message}`, { context, stack });
+      console.warn(`[WARNING] ${error.message}${contextString}`, error);
       break;
     case 'error':
     default:
-      console.error(`[ERROR] ${message}`, { context, stack });
+      console.error(`[ERROR] ${error.message}${contextString}`, error);
       break;
   }
 }
 
 /**
- * Show error notification to user
+ * Show a user notification for the error
  */
-function notifyUser(
-  error: Error | string,
-  friendlyMessage?: string,
+function showUserNotification(
+  error: Error,
+  userMessage?: string,
   level: ErrorLevel = 'error',
-  deduplicate = true
+  errorKey?: string,
+  deduplicate: boolean = true
 ): void {
-  const errorMessage = error instanceof Error ? error.message : error;
-  const message = friendlyMessage || errorMessage;
+  // Use provided message or extract from error
+  const message = userMessage || getUserFriendlyMessage(error);
   
-  // Skip notification if we should deduplicate and it's a duplicate
-  if (deduplicate && deduplicateError(message)) {
-    console.log('Skipping duplicate error notification:', message);
+  // Skip if this exact error was already shown (deduplication)
+  if (deduplicate && errorKey && shownErrorMessages.has(errorKey)) {
     return;
   }
   
+  // Map error level to toast variant
   const variant = level === 'error' ? 'destructive' : 
                  level === 'warning' ? 'warning' : 'default';
   
+  // Show toast notification
   toast({
-    title: level === 'error' ? 'Error' : 
-          level === 'warning' ? 'Warning' : 'Notice',
+    title: level.charAt(0).toUpperCase() + level.slice(1),
     description: message,
-    variant,
+    variant: variant as any
   });
+  
+  // Remember this error was shown
+  if (deduplicate && errorKey) {
+    shownErrorMessages.add(errorKey);
+    
+    // Clean up after 30 seconds to prevent memory leaks
+    setTimeout(() => {
+      shownErrorMessages.delete(errorKey);
+    }, 30000);
+  }
+}
+
+/**
+ * Generate a unique key for an error message for deduplication
+ */
+function getErrorKey(error: Error, userMessage?: string): string {
+  return `${error.name}:${error.message}:${userMessage || ''}`;
+}
+
+/**
+ * Clear all tracked error messages
+ * Useful for route changes or testing
+ */
+export function clearErrorHistory(): void {
+  shownErrorMessages.clear();
 }

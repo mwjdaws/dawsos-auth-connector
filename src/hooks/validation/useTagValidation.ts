@@ -1,62 +1,110 @@
 
 /**
- * Hook for tag validation
+ * useTagValidation hook
  * 
- * Provides validation utilities for tags with appropriate error messages
- * and checking for duplicate tags.
+ * Validates tag operations based on tag content and rules
  */
-import { useMemo } from 'react';
-import { validateTag as validateTagCore, validateTagName, validateTagUniqueness } from '@/utils/validation/tagValidation';
-import { ValidationResult } from '@/utils/validation/types';
-import { Tag } from '@/types/tag';
+import { useState, useCallback } from 'react';
+import { isValidContentId } from '@/utils/validation/contentIdValidation';
+import { handleError } from '@/utils/errors/handle';
 
-interface UseTagValidationOptions {
-  existingTags?: Tag[];
+// Tag validation result interface
+export interface TagValidationResult {
+  isValid: boolean;
+  errorMessage: string | null;
 }
 
-export function useTagValidation(contentId?: string | null, options: UseTagValidationOptions = {}) {
-  const { existingTags = [] } = options;
+/**
+ * Hook for validating tag operations
+ */
+export function useTagValidation() {
+  const [lastValidatedTag, setLastValidatedTag] = useState<string>('');
   
-  // Validate a tag with all rules
-  const validateTag = useMemo(() => {
-    return (tagName: string, opts: { checkDuplicates?: boolean } = {}) => {
-      const { checkDuplicates = true } = opts;
-      
-      // First validate the tag name format
-      const nameValidation = validateTagName(tagName);
-      if (!nameValidation.isValid) {
-        return nameValidation;
-      }
-      
-      // Then check for duplicates if requested
-      if (checkDuplicates) {
-        const uniquenessValidation = validateTagUniqueness(tagName, existingTags);
-        if (!uniquenessValidation.isValid) {
-          return uniquenessValidation;
-        }
-      }
-      
+  /**
+   * Validate a tag name based on common rules
+   * 
+   * @param tagName The tag name to validate
+   * @returns Validation result object
+   */
+  const validateTag = useCallback((tagName: string): TagValidationResult => {
+    setLastValidatedTag(tagName);
+    
+    if (!tagName || tagName.trim() === '') {
       return {
-        isValid: true,
-        message: 'Valid tag',
-        errorMessage: null
-      } as ValidationResult;
+        isValid: false,
+        errorMessage: 'Tag name cannot be empty'
+      };
+    }
+    
+    // Validate minimum length
+    if (tagName.trim().length < 2) {
+      return {
+        isValid: false,
+        errorMessage: 'Tag must be at least 2 characters long'
+      };
+    }
+    
+    // Validate maximum length
+    if (tagName.trim().length > 50) {
+      return {
+        isValid: false,
+        errorMessage: 'Tag must be less than 50 characters long'
+      };
+    }
+    
+    // Check for invalid characters (optional, adjust as needed)
+    const invalidCharsRegex = /[^\w\s\-\.]/;
+    if (invalidCharsRegex.test(tagName)) {
+      return {
+        isValid: false,
+        errorMessage: 'Tag contains invalid characters'
+      };
+    }
+    
+    return {
+      isValid: true,
+      errorMessage: null
     };
-  }, [existingTags]);
+  }, []);
   
-  // Check if a tag is a duplicate
-  const isDuplicateTag = useMemo(() => {
-    return (tagName: string): boolean => {
-      const normalizedName = tagName.trim().toLowerCase();
-      return existingTags.some(tag => tag.name.trim().toLowerCase() === normalizedName);
-    };
-  }, [existingTags]);
+  /**
+   * Validate a tag operation with content ID validation
+   * 
+   * @param tagName Tag name
+   * @param contentId Content ID
+   * @returns Whether the operation can proceed
+   */
+  const validateTagOperation = useCallback((tagName: string, contentId?: string): boolean => {
+    // First validate the content ID
+    if (contentId && !isValidContentId(contentId)) {
+      handleError(
+        new Error('Invalid content ID'),
+        'Cannot perform tag operation: invalid content ID',
+        { level: 'warning' }
+      );
+      return false;
+    }
+    
+    // Then validate the tag
+    const tagValidation = validateTag(tagName);
+    if (!tagValidation.isValid) {
+      handleError(
+        new Error(tagValidation.errorMessage || 'Invalid tag'),
+        tagValidation.errorMessage || 'Invalid tag',
+        { level: 'warning' }
+      );
+      return false;
+    }
+    
+    return true;
+  }, [validateTag]);
   
   return {
     validateTag,
-    isDuplicateTag,
-    hasExistingTags: existingTags.length > 0
+    validateTagOperation,
+    lastValidatedTag
   };
 }
 
+// Default export
 export default useTagValidation;

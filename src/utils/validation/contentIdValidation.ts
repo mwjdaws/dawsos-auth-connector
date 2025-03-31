@@ -2,109 +2,98 @@
 /**
  * Content ID validation utilities
  * 
- * Functions for validating content IDs, supporting both UUID and temporary ID formats.
+ * Functions for validating content IDs in various formats
  */
 
-import { ContentIdValidationResult, ContentIdResultType } from './types';
-import { createValidResult, createInvalidResult } from './utils';
-
-// Regular expression for validating UUIDs
+// Regular expression for UUID validation
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Regular expression for validating temporary IDs
-const TEMP_ID_REGEX = /^temp-\d+$/;
+// Prefix for temporary IDs
+const TEMP_ID_PREFIX = 'temp-';
 
 /**
  * Check if a string is a valid UUID
  * 
- * @param id String to validate
- * @returns Whether the string is a valid UUID
+ * @param value String to check
+ * @returns True if the string is a valid UUID
  */
-export function isUUID(id: string): boolean {
-  return UUID_REGEX.test(id);
+export function isUUID(value: string): boolean {
+  return UUID_REGEX.test(value);
 }
 
 /**
- * Check if a string is a valid temporary ID
+ * Check if a string is a temporary ID
  * 
- * @param id String to validate
- * @returns Whether the string is a valid temporary ID
+ * @param value String to check
+ * @returns True if the string is a temporary ID
  */
-export function isTempId(id: string): boolean {
-  return TEMP_ID_REGEX.test(id);
+export function isTempId(value: string): boolean {
+  return value.startsWith(TEMP_ID_PREFIX) && value.length > TEMP_ID_PREFIX.length;
 }
 
 /**
- * Check if a string is a valid content ID (either UUID or temporary ID)
+ * Check if a value is a valid content ID (either UUID or temporary ID)
  * 
- * @param id String to validate
- * @returns Whether the string is a valid content ID
+ * @param value Value to check
+ * @returns True if the value is a valid content ID
  */
-export function isValidContentId(id?: string | null): boolean {
-  if (!id) return false;
-  return isUUID(id) || isTempId(id);
+export function isValidContentId(value?: string | null): boolean {
+  if (!value) return false;
+  return isUUID(value) || isTempId(value);
 }
 
 /**
- * Check if a content ID is storable (UUID only, not temporary)
+ * Generate a new temporary ID
  * 
- * @param id String to validate
- * @returns Whether the ID is storable (UUID)
+ * @returns A new temporary ID
  */
-export function isStorableContentId(id?: string | null): boolean {
-  if (!id) return false;
-  return isUUID(id);
+export function generateTempId(): string {
+  return `${TEMP_ID_PREFIX}${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
 /**
- * Try to convert a string to a UUID if it's a valid UUID
- * 
- * @param id String to convert
- * @returns UUID if valid, null otherwise
+ * Content ID validation result
  */
-export function tryConvertToUUID(id?: string | null): string | null {
-  if (!id) return null;
-  return isUUID(id) ? id : null;
+export interface ContentIdValidationResult {
+  isValid: boolean;
+  isTemp: boolean;
+  isUuid: boolean;
+  errorMessage: string | null;
 }
 
 /**
- * Get detailed validation result for a content ID
+ * Get detailed validation information for a content ID
  * 
- * @param id Content ID to validate
- * @returns Validation result with type and messages
+ * @param value Content ID to validate
+ * @returns Validation result with detailed information
  */
-export function getContentIdValidationResult(id?: string | null): ContentIdValidationResult {
-  if (!id) {
+export function getContentIdValidationResult(value?: string | null): ContentIdValidationResult {
+  if (!value) {
     return {
       isValid: false,
-      resultType: 'invalid',
-      message: null,
-      errorMessage: 'Content ID is required'
+      isTemp: false,
+      isUuid: false,
+      errorMessage: 'Content ID is missing or undefined'
     };
   }
 
-  if (isUUID(id)) {
-    return {
-      isValid: true,
-      resultType: 'uuid',
-      message: 'Valid UUID',
-      errorMessage: null
-    };
-  }
+  const validUuid = isUUID(value);
+  const validTemp = isTempId(value);
+  const isValid = validUuid || validTemp;
 
-  if (isTempId(id)) {
+  if (!isValid) {
     return {
-      isValid: true,
-      resultType: 'temp',
-      message: 'Valid temporary ID',
-      errorMessage: null
+      isValid: false,
+      isTemp: false,
+      isUuid: false,
+      errorMessage: 'Invalid content ID format'
     };
   }
 
   return {
-    isValid: false,
-    resultType: 'invalid',
-    message: null,
-    errorMessage: `Invalid content ID format: ${id}`
+    isValid: true,
+    isTemp: validTemp,
+    isUuid: validUuid,
+    errorMessage: null
   };
 }

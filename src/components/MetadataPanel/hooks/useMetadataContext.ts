@@ -1,95 +1,71 @@
+
 /**
- * MetadataContext Hook
+ * useMetadataContext Hook
  * 
- * This hook provides access to metadata context outside of the MetadataPanel components.
- * It's useful for accessing metadata operations from any component in the application.
+ * This hook provides a context for metadata operations and validation, 
+ * bringing together content validation and tag operations.
  */
-import { createContext, useContext, useRef, useState } from 'react';
-import { useMetadataPanel } from './useMetadataPanel';
-import { Tag } from '@/types/tag';
-import { OntologyTerm } from '../types';
-import { isValidContentId } from '@/utils/validation/contentIdValidation';
+import { createContext, useContext } from 'react';
+import { useContentValidator } from '@/hooks/validation/useContentValidator';
+import { useTagOperations } from './tag-operations/useTagOperations';
 
-// Define the metadata context shape
-export interface MetadataContextType {
-  contentId?: string;
-  tags: Tag[];
-  ontologyTerms: OntologyTerm[];
-  isLoading: boolean;
-  error: Error | null;
-  isValidContent: boolean;
-  handleAddTag: (typeId?: string | null) => Promise<void>;
-  handleDeleteTag: (tagId: string) => Promise<void>;
-  handleRefresh: () => Promise<void>;
-  isAddingTag: boolean;
-  isDeletingTag: boolean;
-}
-
-// Create context with default values
-const MetadataContext = createContext<MetadataContextType>({
+// Default implementation for the context
+const defaultContext = {
+  contentId: '',
+  isValidContent: false,
+  contentExists: false,
+  errorMessage: '',
   tags: [],
-  ontologyTerms: [],
   isLoading: false,
   error: null,
-  isValidContent: false,
-  handleAddTag: async () => {},
-  handleDeleteTag: async () => {},
+  newTag: '',
+  setNewTag: (_: string) => {},
+  handleAddTag: async (_?: string | null) => {},
+  handleDeleteTag: async (_: string) => {},
+  handleReorderTags: async (_: any[]) => {},
   handleRefresh: async () => {},
   isAddingTag: false,
-  isDeletingTag: false
-});
+  isDeletingTag: false,
+  isReordering: false
+};
+
+// Create the context
+const MetadataContext = createContext(defaultContext);
 
 /**
- * Provider component for the metadata context
+ * Hook for providing metadata context to components
  */
-export function MetadataContextProvider({
-  contentId,
-  children
-}: {
-  contentId?: string;
-  children: React.ReactNode;
-}) {
-  // Use the metadata panel hook
-  const metadata = useMetadataPanel({ contentId });
+export const useMetadataProvider = (contentId: string) => {
+  // Use the content validator for ID validation
+  const {
+    isValid: isValidContent,
+    contentExists,
+    errorMessage
+  } = useContentValidator(contentId);
   
-  // Return the context provider
-  return (
-    <MetadataContext.Provider value={{
-      contentId,
-      tags: metadata.tags || [],
-      ontologyTerms: metadata.ontologyTerms || [],
-      isLoading: metadata.isLoading,
-      error: metadata.error,
-      isValidContent: metadata.isValidContent,
-      handleAddTag: metadata.handleAddTag,
-      handleDeleteTag: metadata.handleDeleteTag,
-      handleRefresh: metadata.handleRefresh,
-      isAddingTag: metadata.isAddingTag,
-      isDeletingTag: metadata.isDeletingTag
-    }}>
-      {children}
-    </MetadataContext.Provider>
-  );
-}
+  // Use tag operations with integrated validation
+  const tagOperations = useTagOperations(contentId);
+  
+  // Combine into a context value
+  const contextValue = {
+    contentId,
+    isValidContent,
+    contentExists,
+    errorMessage,
+    ...tagOperations
+  };
+  
+  return {
+    contextValue
+  };
+};
 
 /**
- * Custom hook for accessing the metadata context
+ * Hook for consuming metadata context
  */
-export function useMetadataContext(contentId?: string) {
-  // Get the context
-  const context = useContext(MetadataContext);
-  
-  // If contentId is provided, we also provide a local instance of the metadata panel hook
-  if (contentId) {
-    return useMetadataPanel({ contentId });
-  }
-  
-  // Otherwise, return the context
-  return context;
-}
+export const useMetadataContext = () => {
+  return useContext(MetadataContext);
+};
 
-// Re-export the context and provider
-export { MetadataContext, MetadataContextProvider as Provider };
-
-// Default export
-export default useMetadataContext;
+// Export the context provider for use in components
+export { MetadataContext };

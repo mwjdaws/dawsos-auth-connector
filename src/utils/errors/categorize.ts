@@ -2,101 +2,97 @@
 /**
  * Error categorization utilities
  * 
- * Functions for categorizing errors by type and source.
+ * Functions for identifying and categorizing errors.
  */
-import { TaggedError } from './types';
-
-// Error type constants
-export const ERROR_TYPES = {
-  NETWORK: 'network',
-  DATABASE: 'database',
-  AUTH: 'auth',
-  VALIDATION: 'validation',
-  PERMISSION: 'permission',
-  NOT_FOUND: 'not_found',
-  TIMEOUT: 'timeout',
-  API: 'api',
-  UNKNOWN: 'unknown'
-};
 
 /**
- * Categorize an error by analyzing its properties and message
+ * Check if an error is a network error
+ * 
+ * @param error The error to check
+ * @returns True if the error is likely a network error
+ */
+export function isNetworkError(error: unknown): boolean {
+  if (!error) return false;
+  
+  // Check for common network error messages
+  const errorMessage = error instanceof Error 
+    ? error.message.toLowerCase() 
+    : String(error).toLowerCase();
+  
+  return (
+    errorMessage.includes('network') ||
+    errorMessage.includes('connection') ||
+    errorMessage.includes('offline') ||
+    errorMessage.includes('failed to fetch') ||
+    errorMessage.includes('cors') ||
+    (error instanceof TypeError && errorMessage.includes('fetch'))
+  );
+}
+
+/**
+ * Check if an error is an authentication error
+ * 
+ * @param error The error to check
+ * @returns True if the error is likely an authentication error
+ */
+export function isAuthError(error: unknown): boolean {
+  if (!error) return false;
+  
+  // Check for common auth error patterns
+  const errorMessage = error instanceof Error 
+    ? error.message.toLowerCase() 
+    : String(error).toLowerCase();
+  
+  const statusCode = (error as any)?.status || (error as any)?.statusCode;
+  
+  return (
+    statusCode === 401 ||
+    statusCode === 403 ||
+    errorMessage.includes('unauthorized') ||
+    errorMessage.includes('forbidden') ||
+    errorMessage.includes('authentication') ||
+    errorMessage.includes('not logged in') ||
+    errorMessage.includes('permission denied') ||
+    errorMessage.includes('invalid token') ||
+    errorMessage.includes('token expired')
+  );
+}
+
+/**
+ * Categorize an error into common types
  * 
  * @param error The error to categorize
- * @returns The categorized error with an errorType property
+ * @returns The error category
  */
-export function categorizeError(error: unknown): TaggedError {
-  // If already categorized, return as is
-  if (error instanceof Error && (error as TaggedError).errorType) {
-    return error as TaggedError;
+export function categorizeError(error: unknown): 'network' | 'auth' | 'validation' | 'database' | 'unknown' {
+  if (isNetworkError(error)) {
+    return 'network';
   }
   
-  const err = error instanceof Error ? error : new Error(String(error));
-  const taggedError = err as TaggedError;
+  if (isAuthError(error)) {
+    return 'auth';
+  }
   
-  // Check for network errors
+  const errorMessage = error instanceof Error 
+    ? error.message.toLowerCase() 
+    : String(error).toLowerCase();
+  
   if (
-    !navigator.onLine || 
-    err.message.includes('network') ||
-    err.message.includes('Network') ||
-    err.message.includes('fetch') ||
-    err.message.includes('Failed to fetch')
+    errorMessage.includes('validation') ||
+    errorMessage.includes('invalid') ||
+    errorMessage.includes('required field')
   ) {
-    taggedError.errorType = ERROR_TYPES.NETWORK;
-    return taggedError;
+    return 'validation';
   }
   
-  // Check for database errors
   if (
-    err.message.includes('database') ||
-    err.message.includes('Database') ||
-    err.message.includes('DB') ||
-    err.message.includes('SQL') ||
-    err.message.includes('query')
+    errorMessage.includes('database') ||
+    errorMessage.includes('sql') ||
+    errorMessage.includes('query') ||
+    errorMessage.includes('constraint')
   ) {
-    taggedError.errorType = ERROR_TYPES.DATABASE;
-    return taggedError;
+    return 'database';
   }
   
-  // Check for authentication errors
-  if (
-    err.message.includes('auth') ||
-    err.message.includes('Auth') ||
-    err.message.includes('token') ||
-    err.message.includes('credentials') ||
-    err.message.includes('permission') ||
-    err.message.includes('unauthorized') ||
-    err.message.includes('not authorized') ||
-    err.message.includes('login') ||
-    err.message.toLowerCase().includes('access denied')
-  ) {
-    taggedError.errorType = ERROR_TYPES.AUTH;
-    return taggedError;
-  }
-  
-  // Check for validation errors
-  if (
-    err.message.includes('validation') ||
-    err.message.includes('invalid') ||
-    err.message.includes('not valid') ||
-    err.message.includes('schema') ||
-    err.message.includes('required field')
-  ) {
-    taggedError.errorType = ERROR_TYPES.VALIDATION;
-    return taggedError;
-  }
-  
-  // Check for not found errors
-  if (
-    err.message.includes('not found') ||
-    err.message.includes('404') ||
-    err.message.includes('does not exist')
-  ) {
-    taggedError.errorType = ERROR_TYPES.NOT_FOUND;
-    return taggedError;
-  }
-  
-  // Default to unknown
-  taggedError.errorType = ERROR_TYPES.UNKNOWN;
-  return taggedError;
+  return 'unknown';
 }

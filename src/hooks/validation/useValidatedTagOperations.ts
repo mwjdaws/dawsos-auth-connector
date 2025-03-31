@@ -1,130 +1,107 @@
 
 /**
- * Hook for tag operations with integrated validation
+ * useValidatedTagOperations Hook
  * 
- * This hook wraps tag operations with validation checks to ensure
- * all operations follow validation rules consistently.
+ * Wraps tag operations with validation to ensure tag operations 
+ * only proceed when validation passes.
  */
-import { useState, useCallback } from 'react';
+import { useTagOperations } from '@/components/MetadataPanel/hooks/tag-operations/useTagOperations';
 import { useTagValidation } from './useTagValidation';
 import { useContentValidator } from './useContentValidator';
-import { toast } from 'sonner';
-import { Tag } from '@/types/tag';
-import { handleError } from '@/utils/errors';
+import { Tag } from '@/components/MetadataPanel/hooks/tag-operations/types';
+import { handleError } from '@/utils/errors/handle';
 
-interface ValidatedTagOperationsProps {
-  contentId?: string | null;
-  tags?: Tag[];
-  onAddTag?: (tagName: string, typeId?: string | null) => Promise<void>;
-  onDeleteTag?: (tagId: string) => Promise<void>;
-  onMetadataChange?: () => void;
+interface UseValidatedTagOperationsProps {
+  contentId: string;
 }
 
-export function useValidatedTagOperations({
-  contentId,
-  tags = [],
-  onAddTag,
-  onDeleteTag,
-  onMetadataChange
-}: ValidatedTagOperationsProps) {
-  // Get content validation info
-  const { 
-    isValid: isValidContent, 
-    isTemporary 
-  } = useContentValidator(contentId);
+/**
+ * Hook for tag operations with integrated validation
+ * 
+ * @param contentId ID of the content to operate on
+ * @returns Validated tag operations
+ */
+export function useValidatedTagOperations({ contentId }: UseValidatedTagOperationsProps) {
+  // Get base tag operations
+  const tagOperations = useTagOperations(contentId);
   
-  // Get tag validation utilities
-  const { validateTag, isDuplicateTag } = useTagValidation(contentId, { existingTags: tags });
+  // Get validation utilities
+  const { validateTagOperation, validateTag } = useTagValidation();
+  const { isValid: isValidContent, contentExists, errorMessage } = useContentValidator(contentId);
   
-  // Local state for tag input
-  const [newTag, setNewTag] = useState('');
-  const [isAddingTag, setIsAddingTag] = useState(false);
-  const [isDeletingTag, setIsDeletingTag] = useState(false);
-
-  // Validated add tag handler
-  const handleAddTag = useCallback(async (typeId?: string | null) => {
-    // Validate content ID
+  /**
+   * Add a tag with validation
+   */
+  const handleAddTag = async (typeId?: string | null) => {
+    if (!tagOperations.newTag.trim()) return;
+    
+    // Validate content ID and tag
     if (!isValidContent) {
-      toast.error('Cannot add tags: Invalid content ID');
+      handleError(
+        new Error(errorMessage || 'Invalid content ID'),
+        errorMessage || 'Cannot add tag: invalid content ID',
+        { level: 'warning' }
+      );
       return;
     }
     
-    // Validate tag name
-    const trimmedTag = newTag.trim();
-    const validation = validateTag(trimmedTag, { checkDuplicates: true });
-    
+    // Validate the tag
+    const validation = validateTag(tagOperations.newTag);
     if (!validation.isValid) {
-      toast.error(validation.errorMessage || 'Invalid tag');
+      handleError(
+        new Error(validation.errorMessage || 'Invalid tag'),
+        validation.errorMessage || 'Invalid tag',
+        { level: 'warning' }
+      );
       return;
     }
     
-    // Proceed with adding tag
-    try {
-      setIsAddingTag(true);
-      if (onAddTag) {
-        await onAddTag(trimmedTag, typeId);
-        setNewTag(''); // Clear input on success
-        
-        // Call metadata change callback if provided
-        if (onMetadataChange) {
-          onMetadataChange();
-        }
-        
-        toast.success(`Tag "${trimmedTag}" added successfully`);
-      }
-    } catch (error) {
-      handleError(
-        error,
-        "Failed to add tag",
-        { level: "warning", technical: false, context: { contentId } }
-      );
-    } finally {
-      setIsAddingTag(false);
-    }
-  }, [newTag, isValidContent, onAddTag, onMetadataChange, validateTag, contentId]);
-
-  // Validated delete tag handler
-  const handleDeleteTag = useCallback(async (tagId: string) => {
-    // Validate content ID
+    // Proceed with adding the tag
+    await tagOperations.handleAddTag(typeId);
+  };
+  
+  /**
+   * Delete a tag with validation
+   */
+  const handleDeleteTag = async (tagId: string) => {
     if (!isValidContent) {
-      toast.error('Cannot delete tag: Invalid content ID');
+      handleError(
+        new Error(errorMessage || 'Invalid content ID'),
+        errorMessage || 'Cannot delete tag: invalid content ID',
+        { level: 'warning' }
+      );
       return;
     }
     
-    try {
-      setIsDeletingTag(true);
-      if (onDeleteTag) {
-        await onDeleteTag(tagId);
-        
-        // Call metadata change callback if provided
-        if (onMetadataChange) {
-          onMetadataChange();
-        }
-        
-        toast.success('Tag deleted successfully');
-      }
-    } catch (error) {
+    await tagOperations.handleDeleteTag(tagId);
+  };
+  
+  /**
+   * Reorder tags with validation
+   */
+  const handleReorderTags = async (updatedTags: Tag[]) => {
+    if (!isValidContent) {
       handleError(
-        error,
-        "Failed to delete tag",
-        { level: "warning", technical: false, context: { contentId } }
+        new Error(errorMessage || 'Invalid content ID'),
+        errorMessage || 'Cannot reorder tags: invalid content ID',
+        { level: 'warning' }
       );
-    } finally {
-      setIsDeletingTag(false);
+      return;
     }
-  }, [isValidContent, onDeleteTag, onMetadataChange, contentId]);
-
+    
+    await tagOperations.handleReorderTags(updatedTags);
+  };
+  
   return {
-    newTag,
-    setNewTag,
-    isAddingTag,
-    isDeletingTag,
+    ...tagOperations,
+    isValidContent,
+    contentExists,
     handleAddTag,
     handleDeleteTag,
-    isValidContent,
-    isTemporaryContent: isTemporary,
-    validateTag
+    handleReorderTags,
+    validationMessage: errorMessage
   };
 }
 
+// Default export
 export default useValidatedTagOperations;
