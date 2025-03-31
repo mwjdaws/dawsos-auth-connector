@@ -1,86 +1,70 @@
 
 /**
- * Standard error levels
+ * Error Types for standardized error handling
  */
-export type ErrorLevel = "debug" | "info" | "warning" | "error";
 
-/**
- * Compatible error handling options
- */
-export interface ErrorHandlingCompatOptions {
-  errorMessage?: string;
+// Error levels for categorization and UI feedback
+export type ErrorLevel = 'debug' | 'info' | 'warning' | 'error';
+
+// Base error interface
+export interface BaseError {
+  name: string;
+  message: string;
+  stack: string;
   level?: ErrorLevel;
+  timestamp: number;
+  cause?: unknown;
+}
+
+// Standard error that all other errors extend
+export interface StandardizedError extends BaseError {
+  handled?: boolean;
+  id?: string;
+}
+
+// API-specific error
+export interface ApiError extends StandardizedError {
+  name: 'ApiError';
+  statusCode?: number;
+  endpoint?: string;
+  responseData?: any;
+}
+
+// Validation-specific error
+export interface ValidationError extends StandardizedError {
+  name: 'ValidationError';
+  field?: string;
+  value?: any;
+}
+
+// Application-specific error
+export interface ApplicationError extends StandardizedError {
+  name: 'ApplicationError';
+}
+
+// Network-specific error
+export interface NetworkError extends StandardizedError {
+  name: 'NetworkError';
+  request?: any;
+}
+
+// Database-specific error
+export interface DatabaseError extends StandardizedError {
+  name: 'DatabaseError';
+  query?: string;
+}
+
+// Authentication-specific error
+export interface AuthError extends StandardizedError {
+  name: 'AuthError';
+}
+
+// Options for withErrorHandling wrapper
+export interface WithErrorHandlingOptions {
+  errorMessage?: string;
   context?: Record<string, any>;
-  
-  // Additional options for backward compatibility
   silent?: boolean;
-  technical?: boolean;
-  actionLabel?: string;
-  onRetry?: () => void;
-  preventDuplicate?: boolean;
-  deduplicate?: boolean;
-  duration?: number;
-}
-
-/**
- * API error structure
- */
-export interface ApiError extends Error {
-  name: string;
-  message: string;
-  stack: string;
-  level: "error";
-  statusCode: number;
-  endpoint: string;
-  responseData: any;
-  timestamp: number;
-}
-
-/**
- * Validation error structure
- */
-export interface ValidationError extends Error {
-  name: string;
-  message: string;
-  stack: string;
-  level: "warning";
-  field: string;
-  value: any;
-  timestamp: number;
-}
-
-/**
- * Generic application error structure
- */
-export interface ApplicationError extends Error {
-  name: string;
-  message: string;
-  stack: string;
-  level: ErrorLevel;
-  context?: Record<string, any>;
-  timestamp: number;
-}
-
-/**
- * Standardized error type
- */
-export type StandardizedError = ApiError | ValidationError | ApplicationError;
-
-/**
- * Type for withErrorHandling function
- */
-export type WrappableFunction<T> = (...args: any[]) => Promise<T>;
-
-/**
- * Type for error handling options
- */
-export type WithErrorHandlingOptions = ErrorHandlingCompatOptions;
-
-/**
- * Result of validation
- */
-export interface ValidationResult {
-  isValid: boolean;
-  message: string | null;
-  errorMessage: string | null;
+  level?: ErrorLevel;
+  onError?: (error: any) => void;
+  defaultValue?: any;
 }

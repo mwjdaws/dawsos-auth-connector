@@ -1,26 +1,27 @@
 
 /**
- * Types for Relationship Graph Components
+ * Type definitions for the RelationshipGraph components
  */
 
-// Exports for graph data structures
+// Basic graph data types
 export interface GraphNode {
   id: string;
-  name?: string;
-  title?: string;
-  type?: string;
+  name: string;
+  title: string;
+  type: string;
   description?: string;
+  val?: number;
   color?: string;
   [key: string]: any;
 }
 
 export interface GraphLink {
+  id?: string;
   source: string;
   target: string;
-  id?: string;
   type?: string;
   label?: string;
-  strength?: number;
+  value?: number;
   [key: string]: any;
 }
 
@@ -29,29 +30,11 @@ export interface GraphData {
   links: GraphLink[];
 }
 
-// Graph renderer props and ref types
-export interface GraphRendererProps {
-  graphData: GraphData;
-  width: number;
-  height: number;
-  nodeColor?: (node: GraphNode) => string;
-  highlightedNodeId?: string | null;
-  backgroundColor?: string;
-  onNodeClick?: (nodeId: string) => void;
-  onLinkClick?: (link: GraphLink) => void;
-  zoom?: number;
-}
-
+// Graph renderer ref interface
 export interface GraphRendererRef {
-  zoomIn: () => void;
-  zoomOut: () => void;
   centerOn: (nodeId: string) => void;
-  setZoom: (value: number) => void;
-  resetZoom: () => void;
-  exportImage: () => string;
-  resetViewport?: () => void;
-  getGraphData?: () => GraphData;
-  zoomToFit?: (duration?: number) => void;
+  setZoom: (zoomLevel: number) => void;
+  zoomToFit: () => void;
 }
 
 // Props for the main RelationshipGraph component
@@ -62,23 +45,35 @@ export interface GraphProps {
   hasAttemptedRetry?: boolean;
 }
 
-// Props for the panel version
+// Props types for RelationshipGraphPanel component
 export interface RelationshipGraphPanelProps {
-  sourceId?: string;
   contentId?: string;
-  hasAttemptedRetry?: boolean;
+  sourceId?: string;
   width?: number;
   height?: number;
+  hasAttemptedRetry?: boolean;
 }
 
-// Import error level type from the main error types
-import { ErrorLevel } from '@/utils/errors/types';
+// Node data object for node operations
+export interface NodeData {
+  id: string;
+  title: string;
+  type: string;
+}
 
-// For error handling with graph operations
-export interface WithErrorHandlingOptions {
-  errorMessage?: string;
-  silent?: boolean;
-  level?: ErrorLevel;
-  technical?: boolean;
-  context?: Record<string, any>;
+// Graph statistics interface
+export interface GraphStats {
+  nodeCount: number;
+  linkCount: number;
+  isEmpty?: boolean;
+  nodeTypes?: Record<string, number>;
+}
+
+// Graph renderer props for main graph visualization component
+export interface GraphRendererProps {
+  graphData: GraphData;
+  width: number;
+  height: number;
+  highlightedNodeId: string | null;
+  zoom: number;
 }

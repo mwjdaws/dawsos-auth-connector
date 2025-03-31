@@ -16,11 +16,14 @@ import { GraphData, GraphRendererRef } from '../types';
 import { toast } from '@/hooks/use-toast';
 
 export interface UseRelationshipGraphProps {
-  startingNodeId?: string;
+  startingNodeId: string;
   hasAttemptedRetry?: boolean;
 }
 
-export function useRelationshipGraph({ startingNodeId, hasAttemptedRetry = false }: UseRelationshipGraphProps) {
+export function useRelationshipGraph({ 
+  startingNodeId = '', 
+  hasAttemptedRetry = false 
+}: UseRelationshipGraphProps) {
   // Track loading time independently to provide more accurate feedback
   const [loadingTime, setLoadingTime] = useState(0);
   const [isManualRetry, setIsManualRetry] = useState(false);

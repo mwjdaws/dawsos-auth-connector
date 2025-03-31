@@ -1,131 +1,126 @@
 
+/**
+ * Error handling utility wrappers
+ * 
+ * Provides higher-order functions to handle errors consistently throughout the application
+ */
 import { handleError } from './handle';
-import { ErrorHandlingOptions } from './types';
+import { WithErrorHandlingOptions } from './types';
 
 /**
- * Type for functions that can be wrapped with error handling
+ * Wraps a function to handle any errors it throws
+ * 
+ * @param fn The function to wrap
+ * @param options Options for error handling
+ * @returns A wrapped function that handles errors
  */
-type WrappableFunction<T> = (...args: any[]) => Promise<T>;
-
-/**
- * Options for withErrorHandling wrapper
- */
-interface WithErrorHandlingOptions extends ErrorHandlingOptions {
-  /**
-   * Message to display when an error occurs
-   */
-  errorMessage?: string;
-  
-  /**
-   * Default value to return on error
-   */
-  defaultValue?: any;
-  
-  /**
-   * Additional context to include in error logs
-   */
-  contextFn?: (args: any[]) => Record<string, any>;
-}
-
-/**
- * Higher-order function that wraps an async function with standardized error handling
- * 
- * @param fn - The async function to wrap
- * @param options - Error handling options
- * @returns A wrapped function with error handling
- * 
- * @example
- * ```typescript
- * // Original function
- * const fetchData = async (id: string) => {
- *   const response = await fetch(`/api/data/${id}`);
- *   if (!response.ok) throw new Error('Failed to fetch data');
- *   return response.json();
- * };
- * 
- * // Wrapped function with error handling
- * const safeFetchData = withErrorHandling(fetchData, {
- *   errorMessage: 'Failed to load data',
- *   defaultValue: { empty: true },
- *   contextFn: (args) => ({ id: args[0] })
- * });
- * 
- * // Usage
- * const data = await safeFetchData('123');
- * ```
- */
-export function withErrorHandling<T>(
-  fn: WrappableFunction<T>,
+export function withErrorHandling<T extends (...args: any[]) => any>(
+  fn: T,
   options: WithErrorHandlingOptions = {}
-): WrappableFunction<T> {
-  const {
-    errorMessage = 'An error occurred',
-    defaultValue = undefined,
-    contextFn = () => ({}),
-    ...errorOptions
-  } = options;
-  
-  return async (...args: any[]): Promise<T> => {
+): (...args: Parameters<T>) => ReturnType<T> {
+  return (...args: Parameters<T>): ReturnType<T> => {
     try {
-      return await fn(...args);
+      const result = fn(...args);
+      
+      // Handle promises
+      if (result instanceof Promise) {
+        return result.catch((error) => {
+          // Extract context from options
+          const context = options.context || {};
+          
+          // Determine if we should be silent
+          const silent = options.silent || false;
+          
+          // Custom error message or use default
+          const errorMessage = options.errorMessage || 'An error occurred';
+          
+          // Handle the error
+          handleError(error, errorMessage, {
+            context,
+            silent,
+            level: options.level || 'error'
+          });
+          
+          // Call onError if provided
+          if (options.onError) {
+            options.onError(error);
+          }
+          
+          // Return default value or re-throw
+          if ('defaultValue' in options) {
+            return options.defaultValue as ReturnType<T>;
+          }
+          
+          throw error;
+        }) as ReturnType<T>;
+      }
+      
+      return result;
     } catch (error) {
-      // Get additional context from arguments if provided
-      const context = contextFn ? contextFn(args) : {};
+      // Extract context from options
+      const context = options.context || {};
+      
+      // Determine if we should be silent
+      const silent = options.silent || false;
+      
+      // Custom error message or use default
+      const errorMessage = options.errorMessage || 'An error occurred';
       
       // Handle the error
       handleError(error, errorMessage, {
-        ...errorOptions,
-        context: {
-          ...context,
-          ...errorOptions.context
-        }
+        context,
+        silent,
+        level: options.level || 'error'
       });
       
-      // Return default value or rethrow based on options
-      if (errorOptions.silent) {
-        return defaultValue as T;
+      // Call onError if provided
+      if (options.onError) {
+        options.onError(error);
       }
+      
+      // Return default value or re-throw
+      if ('defaultValue' in options) {
+        return options.defaultValue as ReturnType<T>;
+      }
+      
       throw error;
     }
   };
 }
 
 /**
- * Creates a version of the original function that executes in an error boundary
- * Any errors are handled but the function still rejects with the original error
- * 
- * @param fn - The async function to wrap
- * @param options - Error handling options
- * @returns A wrapped function that handles errors but still rejects
+ * Type for a function that can be wrapped
  */
-export function logErrorsAndRethrow<T>(
+export type WrappableFunction<T> = (...args: any[]) => Promise<T>;
+
+/**
+ * Wraps an asynchronous function to provide consistent error handling
+ */
+export function withAsyncErrorHandling<T>(
   fn: WrappableFunction<T>,
   options: WithErrorHandlingOptions = {}
 ): WrappableFunction<T> {
-  const {
-    errorMessage = 'An error occurred',
-    contextFn = () => ({}),
-    ...errorOptions
-  } = options;
-  
   return async (...args: any[]): Promise<T> => {
     try {
       return await fn(...args);
     } catch (error) {
-      // Get additional context from arguments if provided
-      const context = contextFn ? contextFn(args) : {};
-      
-      // Handle the error (log it, don't show UI notification)
-      handleError(error, errorMessage, {
-        ...errorOptions,
-        silent: true, // Don't show notifications
-        context: {
-          ...context,
-          ...errorOptions.context
-        }
+      // Handle the error
+      handleError(error, options.errorMessage || 'An error occurred in async operation', {
+        context: options.context || {},
+        silent: options.silent || false,
+        level: options.level || 'error'
       });
       
-      // Always rethrow the original error
+      // Call onError if provided
+      if (options.onError) {
+        options.onError(error);
+      }
+      
+      // Return default value or re-throw
+      if ('defaultValue' in options) {
+        return options.defaultValue as T;
+      }
+      
       throw error;
     }
   };

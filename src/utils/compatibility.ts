@@ -1,64 +1,86 @@
 
 /**
- * Utility functions for ensuring compatibility with different types
- * and handling null/undefined values safely.
+ * Compatibility utilities for handling various data types and formats
+ * to ensure consistent behavior across the application.
  */
 
 /**
- * Ensures a value is a string or empty string if undefined/null
+ * Options for error handling compatibility
  */
-export function ensureString(value?: string | null): string {
-  return value !== undefined && value !== null ? value : '';
+export interface ErrorHandlingCompatOptions {
+  context?: Record<string, any>;
+  silent?: boolean;
+  technical?: boolean;
+  title?: string;
+  level?: 'debug' | 'info' | 'warning' | 'error';
+  actionLabel?: string;
+  onRetry?: () => void;
+  preventDuplicate?: boolean;
+  deduplicate?: boolean;
+  duration?: number;
 }
 
 /**
- * Ensures a value is a number or returns a default value
+ * Ensures a value is a string, with a default value if null/undefined
  */
-export function ensureNumber(value?: number | null, defaultValue: number = 0): number {
-  return (value !== undefined && value !== null) ? value : defaultValue;
+export function ensureString(value: any, defaultValue: string = ''): string {
+  if (value === null || value === undefined) return defaultValue;
+  return String(value);
 }
 
 /**
- * Ensures a value is a boolean or returns a default value
+ * Ensures a value is a number, with a default value if null/undefined/NaN
  */
-export function ensureBoolean(value?: boolean | null, defaultValue: boolean = false): boolean {
-  return (value !== undefined && value !== null) ? value : defaultValue;
+export function ensureNumber(value: any, defaultValue: number = 0): number {
+  if (value === null || value === undefined) return defaultValue;
+  const num = Number(value);
+  return isNaN(num) ? defaultValue : num;
 }
 
 /**
- * Ensures an object is not null or undefined, returning an empty object if it is
+ * Ensures a value is a boolean
  */
-export function ensureObject<T extends object>(obj?: T | null, defaultValue: T = {} as T): T {
-  return (obj !== undefined && obj !== null) ? obj : defaultValue;
+export function ensureBoolean(value: any, defaultValue: boolean = false): boolean {
+  if (value === null || value === undefined) return defaultValue;
+  return Boolean(value);
 }
 
 /**
- * Ensures an array is not null or undefined, returning an empty array if it is
+ * Ensures a value is an array, with a default empty array if null/undefined
  */
-export function ensureArray<T>(arr?: T[] | null): T[] {
-  return (arr !== undefined && arr !== null) ? arr : [];
+export function ensureArray<T>(value: T[] | null | undefined, defaultValue: T[] = []): T[] {
+  if (!Array.isArray(value)) return defaultValue;
+  return value;
 }
 
 /**
- * Safely get a property from an object, handling null/undefined
+ * Ensures a value is an object, with a default empty object if null/undefined
  */
-export function safeGet<T, K extends keyof T>(obj: T | null | undefined, key: K, defaultValue: T[K]): T[K] {
-  if (obj === null || obj === undefined) {
-    return defaultValue;
-  }
-  return obj[key] !== undefined ? obj[key] : defaultValue;
+export function ensureObject<T extends object>(value: T | null | undefined, defaultValue: T): T {
+  if (value === null || value === undefined || typeof value !== 'object') return defaultValue;
+  return value;
 }
 
 /**
- * Converts null to undefined for optional parameters
+ * Converts a value to a string | null type (useful for database fields)
  */
-export function nullToUndefined<T>(value: T | null): T | undefined {
-  return value === null ? undefined : value;
+export function toNullableString(value: any): string | null {
+  if (value === null || value === undefined) return null;
+  return String(value);
 }
 
 /**
- * Converts undefined to null for API compatibility
+ * Converts a value to a number | null type (useful for database fields)
  */
-export function undefinedToNull<T>(value: T | undefined): T | null {
-  return value === undefined ? null : value;
+export function toNullableNumber(value: any): number | null {
+  if (value === null || value === undefined) return null;
+  const num = Number(value);
+  return isNaN(num) ? null : num;
+}
+
+/**
+ * Safe type converter for string ID values that might be null/undefined
+ */
+export function safeId(id: string | null | undefined): string {
+  return ensureString(id);
 }

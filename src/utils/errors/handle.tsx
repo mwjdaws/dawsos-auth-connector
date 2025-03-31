@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { toast as showToast } from '@/components/ui/use-toast';
+import { toast as showToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { categorizeError, getErrorMessage } from './categorize';
 import { ErrorLevel, StandardizedError } from './types';
@@ -84,7 +84,7 @@ export function handleError(
   // Display a toast notification unless silent is true
   if (!silent) {
     const toastVariant = errorLevel === 'error' ? 'destructive' : 
-                        errorLevel === 'warning' ? 'warning' : 'default';
+                         errorLevel === 'warning' ? 'warning' : 'default';
     
     // Create the retry action if a retry handler is provided
     const action = onRetry && actionLabel ? (
@@ -136,5 +136,3 @@ export function handleErrorSafe(
     };
   }
 }
-
-export default handleError;

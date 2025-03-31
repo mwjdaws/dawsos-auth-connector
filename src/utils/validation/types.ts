@@ -59,6 +59,11 @@ export interface DocumentValidationResult extends ValidationResult {
   type?: 'title' | 'content' | 'general';
 }
 
+/**
+ * Validates a document title
+ * @param title The title to validate
+ * @returns A validation result
+ */
 export function validateDocumentTitle(title: string): DocumentValidationResult {
   if (!title || title.trim() === '') {
     return {

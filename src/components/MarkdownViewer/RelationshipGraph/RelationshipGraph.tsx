@@ -82,17 +82,17 @@ export function RelationshipGraph(props: GraphProps) {
         <GraphControls
           graphData={graphData}
           onNodeFound={handleNodeFound}
-          zoom={zoomLevel || 1}
+          zoom={zoomLevel}
           onZoomChange={handleZoomChange}
           onResetZoom={handleResetZoom}
         />
         
         <GraphContent
           graphData={graphData}
-          width={width || 800}
-          height={height || 600}
+          width={width}
+          height={height}
           highlightedNodeId={highlightedNodeId}
-          zoomLevel={zoomLevel || 1}
+          zoomLevel={zoomLevel}
           isPending={isPending}
           graphRendererRef={graphRendererRef}
         />

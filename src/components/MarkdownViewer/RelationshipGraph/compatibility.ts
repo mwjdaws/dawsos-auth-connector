@@ -5,8 +5,31 @@
  * This file provides utilities for making the relationship graph components
  * more robust when dealing with different input types and legacy code.
  */
-import { GraphData, GraphNode, GraphLink, GraphProps } from './types';
+import { GraphData, GraphNode, GraphLink, GraphProps, GraphRendererRef } from './types';
 import { ensureString, ensureNumber, ensureBoolean } from '@/utils/compatibility';
+
+/**
+ * Creates compatible ref methods for the graph renderer
+ */
+export function createCompatibleGraphRef(modernRef: any): GraphRendererRef {
+  return {
+    centerOn: (nodeId: string) => {
+      if (modernRef && typeof modernRef.centerNode === 'function') {
+        modernRef.centerNode(nodeId);
+      }
+    },
+    setZoom: (zoomLevel: number) => {
+      if (modernRef && typeof modernRef.zoomTo === 'function') {
+        modernRef.zoomTo(zoomLevel);
+      }
+    },
+    zoomToFit: () => {
+      if (modernRef && typeof modernRef.zoomToFit === 'function') {
+        modernRef.zoomToFit();
+      }
+    }
+  };
+}
 
 /**
  * Creates safe graph props from potentially unsafe inputs
@@ -29,10 +52,14 @@ export function sanitizeGraphData(data: GraphData | null | undefined): GraphData
   }
   
   // Ensure nodes have required properties
-  const safeNodes = (data.nodes || []).map(node => sanitizeNode(node)).filter(Boolean) as GraphNode[];
+  const safeNodes = (data.nodes || [])
+    .map(node => sanitizeNode(node))
+    .filter(Boolean) as GraphNode[];
   
   // Ensure links have required properties
-  const safeLinks = (data.links || []).map(link => sanitizeLink(link, safeNodes)).filter(Boolean) as GraphLink[];
+  const safeLinks = (data.links || [])
+    .map(link => sanitizeLink(link, safeNodes))
+    .filter(Boolean) as GraphLink[];
   
   return {
     nodes: safeNodes,
@@ -54,7 +81,8 @@ function sanitizeNode(node: GraphNode | null | undefined): GraphNode | null {
     title: ensureString(node.title),
     type: ensureString(node.type),
     description: ensureString(node.description),
-    ...node
+    color: node.color,
+    val: node.val
   };
 }
 
@@ -82,6 +110,6 @@ function sanitizeLink(link: GraphLink | null | undefined, validNodes: GraphNode[
     id: link.id || `${sourceId}-${targetId}`,
     type: ensureString(link.type),
     label: ensureString(link.label),
-    ...link
+    value: link.value
   };
 }

@@ -1,21 +1,31 @@
 
-/**
- * RelationshipGraphPanel Component
- * 
- * A container component that renders the RelationshipGraph with a responsive
- * wrapper. It handles the sizing and responsiveness of the graph visualization.
- */
 import React, { useState, useEffect, useRef } from 'react';
-import { RelationshipGraph } from './RelationshipGraph';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { Card } from '@/components/ui/card';
 import { ensureString } from '@/utils/compatibility';
+import { RelationshipGraph } from './RelationshipGraph';
 
+/**
+ * Props for the RelationshipGraphPanel component
+ */
 export interface RelationshipGraphPanelProps {
-  sourceId?: string;
   contentId?: string;
+  sourceId?: string;
   hasAttemptedRetry?: boolean;
 }
 
-export function RelationshipGraphPanel({ sourceId, contentId, hasAttemptedRetry = false }: RelationshipGraphPanelProps) {
+/**
+ * RelationshipGraphPanel
+ * 
+ * A panel that displays a relationship graph for a specific content item.
+ * This component wraps the RelationshipGraph in a Card with proper sizing
+ * and error handling.
+ */
+export function RelationshipGraphPanel({ 
+  contentId, 
+  sourceId,
+  hasAttemptedRetry = false
+}: RelationshipGraphPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   
@@ -41,15 +51,33 @@ export function RelationshipGraphPanel({ sourceId, contentId, hasAttemptedRetry 
     window.addEventListener('resize', updateDimensions);
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
+
+  if (!contentId && !sourceId) {
+    return (
+      <Card className="p-4 text-center text-muted-foreground">
+        No content ID provided for relationship graph.
+      </Card>
+    );
+  }
   
   return (
     <div ref={containerRef} className="w-full h-[600px]">
-      <RelationshipGraph 
-        startingNodeId={startingNodeId}
-        width={dimensions.width} 
-        height={dimensions.height}
-        hasAttemptedRetry={hasAttemptedRetry}
-      />
+      <ErrorBoundary fallback={
+        <Card className="p-4 text-center text-destructive">
+          An error occurred while loading the relationship graph.
+        </Card>
+      }>
+        <Card className="overflow-hidden">
+          <div className="w-full h-full">
+            <RelationshipGraph 
+              startingNodeId={startingNodeId}
+              width={dimensions.width} 
+              height={dimensions.height}
+              hasAttemptedRetry={hasAttemptedRetry}
+            />
+          </div>
+        </Card>
+      </ErrorBoundary>
     </div>
   );
 }

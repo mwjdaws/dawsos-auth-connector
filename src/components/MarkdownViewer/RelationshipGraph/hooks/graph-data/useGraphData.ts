@@ -1,3 +1,4 @@
+
 /**
  * useGraphData Hook
  * 
@@ -7,12 +8,12 @@
  */
 import { useCallback, useEffect, useRef, useMemo } from 'react';
 import { GraphData } from '../../types';
-import { withErrorHandling } from '@/utils/errors';
+import { withErrorHandling } from '@/utils/errors/wrappers';
 import { toast } from '@/hooks/use-toast';
 import { useGraphState } from './useGraphState';
 import { useFetchGraphData } from './useFetchGraphData';
 
-export function useGraphData(startingNodeId?: string) {
+export function useGraphData(startingNodeId = '') {
   const { graphData, loading, error, setGraphData, setLoading, setError } = useGraphState();
   const { fetchAndProcessGraphData } = useFetchGraphData();
   const isMounted = useRef(true);
@@ -155,9 +156,9 @@ export function useGraphData(startingNodeId?: string) {
     fetchAttempts.current = 0;
     withErrorHandling(fetchGraphData, {
       errorMessage: "Failed to refresh graph data",
-      level: "error"
+      context: { startingNodeId }
     })(true); // Skip cache on manual refresh
-  }, [fetchGraphData]);
+  }, [fetchGraphData, startingNodeId]);
 
   return {
     graphData,
