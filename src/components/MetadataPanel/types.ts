@@ -60,3 +60,13 @@ export interface OntologyTerm {
   description: string;
   domain?: string | null;
 }
+
+// Props for the OntologyTermsSection component
+export interface OntologyTermsSectionProps {
+  contentId: string;
+  editable?: boolean;
+  sourceId?: string;
+  onMetadataChange?: (() => void) | null;
+  className?: string;
+  ontologyTerms?: OntologyTerm[];
+}

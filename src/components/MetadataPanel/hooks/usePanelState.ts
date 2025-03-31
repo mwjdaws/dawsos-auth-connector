@@ -1,53 +1,32 @@
 
-import { useState, useEffect } from 'react';
-import { isValidContentId } from '@/utils/validation/contentIdValidation';
+import { useState } from "react";
 
+/**
+ * Props for the usePanelState hook
+ */
 export interface UsePanelStateProps {
   contentId: string;
-  onMetadataChange?: (() => void) | null;
+  onMetadataChange: (() => void) | null;
   isCollapsible?: boolean;
   initialCollapsed?: boolean;
 }
 
 /**
- * Hook for managing panel state
- * 
- * Handles collapsible panel state and content validation
- * 
- * @param props - Panel state props
- * @returns Panel state and methods
+ * Custom hook to manage panel state (collapsed/expanded)
  */
 export const usePanelState = ({
   contentId,
-  onMetadataChange = null,
-  isCollapsible = false,
+  onMetadataChange,
+  isCollapsible = true,
   initialCollapsed = false
 }: UsePanelStateProps) => {
-  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
-  const [contentExists, setContentExists] = useState(true);
-
-  // Check if the content ID is valid
-  useEffect(() => {
-    if (!isValidContentId(contentId)) {
-      setContentExists(false);
-    } else {
-      // We could check if the content exists in the database here
-      // For now, we'll assume it does if the ID is valid
-      setContentExists(true);
-    }
-  }, [contentId]);
-
-  // Handle metadata changes
-  const handleMetadataChange = () => {
-    if (onMetadataChange) {
-      onMetadataChange();
-    }
-  };
+  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed && isCollapsible);
 
   return {
+    contentId,
     isCollapsed,
     setIsCollapsed,
-    contentExists,
-    handleMetadataChange
+    isCollapsible,
+    onMetadataChange
   };
 };

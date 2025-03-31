@@ -17,6 +17,18 @@ export interface ValidationResult {
   errorMessage: string | null;
 }
 
+// Content ID validation result
+export interface ContentIdValidationResult {
+  isValid: boolean;
+  errorMessage: string | null;
+  type: string;
+}
+
+// Document validation result
+export interface DocumentValidationResult extends ValidationResult {
+  field?: string;
+}
+
 // Tag validation options
 export interface TagValidationOptions {
   minLength?: number;
@@ -34,6 +46,12 @@ export interface DocumentValidationOptions {
   contentRequired?: boolean;
   minContentLength?: number;
   maxContentLength?: number;
+}
+
+// Tag position type for reordering
+export interface TagPosition {
+  id: string;
+  position: number;
 }
 
 // Validation compatibility utilities

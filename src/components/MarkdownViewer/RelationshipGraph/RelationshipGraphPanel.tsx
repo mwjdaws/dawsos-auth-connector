@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Card } from '@/components/ui/card';
-import { ensureString } from '@/utils/compatibility';
+import { ensureString } from '@/utils/validation/compatibility';
 import { RelationshipGraph } from './RelationshipGraph';
 
 /**

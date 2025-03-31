@@ -3,7 +3,7 @@ import React from 'react';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { ensureNumber } from '@/utils/validation/compatibility';
+import { ensureNumber } from '../compatibility';
 
 export interface GraphZoomControlProps {
   zoom: number;

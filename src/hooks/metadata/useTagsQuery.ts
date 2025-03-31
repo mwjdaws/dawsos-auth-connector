@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { isValidContentId } from '@/utils/validation';
+import { toast } from '@/hooks/use-toast';
 
 export interface Tag {
   id: string;
@@ -9,6 +10,22 @@ export interface Tag {
   content_id: string;
   type_id?: string | null;
   type_name?: string | null;
+}
+
+// Type guard for parser errors
+function isParserError(data: any): data is { message: string } {
+  return data && typeof data === 'object' && 'message' in data;
+}
+
+// Type guard for valid tags
+function isValidTag(tag: any): tag is Tag {
+  return (
+    tag &&
+    typeof tag === 'object' &&
+    typeof tag.id === 'string' &&
+    typeof tag.name === 'string' &&
+    typeof tag.content_id === 'string'
+  );
 }
 
 export function useTagsQuery(contentId: string, options?: { enabled?: boolean; includeTypeInfo?: boolean; }) {
@@ -51,10 +68,13 @@ export function useTagsQuery(contentId: string, options?: { enabled?: boolean; i
           return baseTag;
         });
       } catch (err) {
-        handleError(
-          err instanceof Error ? err : new Error('Failed to fetch tags'),
-          'Could not load tags for this content'
-        );
+        // Handle error with a toast notification
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch tags';
+        toast({
+          title: "Error",
+          description: "Could not load tags for this content",
+          variant: "destructive"
+        });
         throw err;
       }
     },

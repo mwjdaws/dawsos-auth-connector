@@ -1,49 +1,72 @@
 
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { TagPosition } from '@/utils/validation/types';
-import { isValidContentId } from '@/utils/validation/contentIdValidation';
+import { useState } from "react";
+import { Tag } from "../types";
+import { TagPosition } from "@/utils/validation/types";
 
 interface UseTagReorderingProps {
-  contentId: string;
-  onMetadataChange?: () => void;
+  tags: Tag[];
+  onSaveOrder?: (positions: TagPosition[]) => Promise<void>;
 }
 
-export const useTagReordering = ({ 
-  contentId, 
-  onMetadataChange 
-}: UseTagReorderingProps) => {
-  const [isReordering, setIsReordering] = useState(false);
+export function useTagReordering({ tags, onSaveOrder }: UseTagReorderingProps) {
+  const [isSaving, setIsSaving] = useState(false);
+  const [orderedTags, setOrderedTags] = useState<Tag[]>(tags);
 
-  /**
-   * Reorder tags by position
-   */
-  const handleReorderTags = async (tagPositions: TagPosition[]) => {
-    if (!isValidContentId(contentId) || !tagPositions.length) {
+  // Reset orderedTags when tags prop changes
+  if (tags !== orderedTags && !isSaving) {
+    setOrderedTags(tags);
+  }
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) {
       return;
     }
-
-    setIsReordering(true);
+    
+    const oldIndex = orderedTags.findIndex(tag => tag.id === active.id);
+    const newIndex = orderedTags.findIndex(tag => tag.id === over.id);
+    
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+    
+    const newOrderedTags = [...orderedTags];
+    const [removed] = newOrderedTags.splice(oldIndex, 1);
+    newOrderedTags.splice(newIndex, 0, removed);
+    
+    setOrderedTags(newOrderedTags);
+  };
+  
+  const saveOrder = async () => {
+    if (!onSaveOrder) return;
+    
+    const positions: TagPosition[] = orderedTags.map((tag, index) => ({
+      id: tag.id,
+      position: index
+    }));
+    
+    setIsSaving(true);
     try {
-      // For now, we'll just simulate reordering
-      // In a real implementation, this would update the database
-      
-      // Wait a bit to simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Notify of changes
-      if (onMetadataChange) {
-        onMetadataChange();
-      }
-    } catch (error) {
-      console.error('Error reordering tags:', error);
+      await onSaveOrder(positions);
     } finally {
-      setIsReordering(false);
+      setIsSaving(false);
     }
   };
-
-  return {
-    handleReorderTags,
-    isReordering
+  
+  const handleReorderComplete = () => {
+    if (onSaveOrder) {
+      saveOrder();
+    }
   };
-};
+  
+  return {
+    orderedTags,
+    setOrderedTags,
+    handleDragEnd,
+    handleReorderComplete,
+    isSaving
+  };
+}
+
+export default useTagReordering;

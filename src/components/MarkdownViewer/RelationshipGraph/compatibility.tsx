@@ -4,7 +4,7 @@
  * Provides type-safe wrappers and utility functions to bridge API differences
  */
 import React from 'react';
-import { GraphNode, GraphLink, GraphData, RelationshipGraphProps } from './types';
+import { GraphNode, GraphLink, GraphData, GraphRendererRef, GraphProps } from './types';
 
 /**
  * Ensures a node ID is always a string
@@ -21,12 +21,42 @@ export function createSafeGraphProps(props: {
   width?: number;
   height?: number;
   hasAttemptedRetry?: boolean;
-}): RelationshipGraphProps {
+}): GraphProps {
   return {
     startingNodeId: props.startingNodeId || '',
     width: props.width || 800,
     height: props.height || 600,
     hasAttemptedRetry: props.hasAttemptedRetry || false
+  };
+}
+
+/**
+ * Creates a compatible ref implementation for legacy components
+ */
+export function createCompatibleGraphRef(modernRef: any): GraphRendererRef {
+  return {
+    centerOn: (nodeId: string) => {
+      if (modernRef.centerOnNode) {
+        modernRef.centerOnNode(nodeId);
+      }
+    },
+    setZoom: (zoomLevel: number) => {
+      if (modernRef.setZoom) {
+        modernRef.setZoom(zoomLevel);
+      }
+    },
+    zoomToFit: () => {
+      if (modernRef.zoomToFit) {
+        modernRef.zoomToFit();
+      }
+    },
+    findNode: (id: string) => {
+      if (modernRef.getGraphData) {
+        const data = modernRef.getGraphData();
+        return data.nodes.find((node: GraphNode) => node.id === id);
+      }
+      return undefined;
+    }
   };
 }
 
@@ -39,8 +69,8 @@ export function ensureValidNode(node: Partial<GraphNode>): GraphNode {
     title: node.title || node.name || 'Untitled',
     name: node.name || node.title || 'Unnamed',
     type: node.type || 'document',
-    ...(node.val !== undefined ? { val: node.val } : {}),
-    ...(node.color !== undefined ? { color: node.color } : {}),
+    color: node.color || undefined,
+    size: node.size || undefined,
     ...node
   };
 }
@@ -53,21 +83,9 @@ export function ensureValidLink(link: Partial<GraphLink>): GraphLink {
     source: link.source || '',
     target: link.target || '',
     type: link.type || 'default',
-    ...(link.value !== undefined ? { value: link.value } : {}),
+    value: link.value || undefined,
+    label: link.label || undefined,
     ...link
-  };
-}
-
-/**
- * Creates a safe wrapper for node click handlers
- */
-export function createSafeNodeClickHandler(
-  handler: ((node: GraphNode) => void) | undefined
-): (node: any) => void {
-  return (node: any) => {
-    if (handler && node) {
-      handler(ensureValidNode(node));
-    }
   };
 }
 
@@ -90,10 +108,35 @@ export function ensureValidGraphData(data: Partial<GraphData> | undefined | null
 }
 
 /**
+ * Sanitize graph data to ensure valid for rendering
+ */
+export function sanitizeGraphData(data: GraphData | null | undefined): GraphData {
+  if (!data) return { nodes: [], links: [] };
+  
+  // Ensure nodes array exists and has valid nodes
+  const nodes = Array.isArray(data.nodes) 
+    ? data.nodes
+        .filter(node => node && typeof node.id === 'string') // Filter out invalid nodes
+        .map(ensureValidNode)
+    : [];
+  
+  // Ensure links array exists and has valid links
+  const links = Array.isArray(data.links)
+    ? data.links
+        .filter(link => link && 
+          typeof link.source === 'string' && 
+          typeof link.target === 'string') // Filter out invalid links
+        .map(ensureValidLink)
+    : [];
+  
+  return { nodes, links };
+}
+
+/**
  * Safe wrapper function to ensure numbers have fallbacks
  */
 export function ensureNumber(value: number | undefined | null, defaultValue = 0): number {
-  return (value !== undefined && value !== null) ? value : defaultValue;
+  return (value !== undefined && value !== null && !isNaN(value)) ? value : defaultValue;
 }
 
 /**
@@ -101,27 +144,4 @@ export function ensureNumber(value: number | undefined | null, defaultValue = 0)
  */
 export function createSafeHighlightNodeId(highlightedNodeId: string | null | undefined): string | null {
   return highlightedNodeId === undefined ? null : highlightedNodeId;
-}
-
-/**
- * Creates a compatible ref implementation for legacy components
- */
-export function createCompatibleGraphRef(modernRef: any) {
-  return {
-    centerOn: (nodeId: string) => {
-      if (modernRef.centerOnNode) {
-        modernRef.centerOnNode(nodeId);
-      }
-    },
-    setZoom: (zoomLevel: number) => {
-      if (modernRef.setZoom) {
-        modernRef.setZoom(zoomLevel);
-      }
-    },
-    zoomToFit: () => {
-      if (modernRef.zoomToFit) {
-        modernRef.zoomToFit();
-      }
-    }
-  };
 }

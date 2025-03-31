@@ -32,8 +32,10 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
       // Mock response data
       // In a real implementation, this would be an API call
       const mockData: SimpleSourceMetadata = {
+        id: 'mock-id-123',
         external_source_url: "https://example.com/article",
         external_source_checked_at: new Date().toISOString(),
+        external_content_hash: "mock-hash-456",
         needs_external_review: false,
         is_published: true
       };
@@ -48,9 +50,12 @@ export const useSourceMetadata = ({ contentId }: UseSourceMetadataProps) => {
       
       // Set default values in case of error
       setData({
+        id: 'error-id',
         external_source_url: null,
         needs_external_review: false, 
-        external_source_checked_at: null
+        external_source_checked_at: null,
+        external_content_hash: null,
+        is_published: false
       });
       setExternalSourceUrl(null);
       setLastCheckedAt(null);

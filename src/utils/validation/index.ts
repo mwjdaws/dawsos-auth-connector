@@ -1,11 +1,31 @@
 
 // Import and re-export validation functions for easier imports
 export { validateTag, validateTags, isValidTag, areValidTags } from './tagValidation';
-export { isValidContentId, validateContentId, getContentIdValidationResult } from './contentIdValidation';
-export { createValidationResult, VALIDATION_RESULTS } from './types';
+export { isValidContentId, getContentIdValidationResult } from './contentIdValidation';
+export { 
+  createValidationResult, 
+  VALIDATION_RESULTS 
+} from './types';
+
+// Re-export compatibility helpers
+export {
+  createBooleanValidationResult,
+  ensureNumber,
+  ensureString,
+  nullToUndefined,
+  undefinedToNull,
+  ensureBoolean
+} from './compatibility';
 
 // Export type definitions
-export type { ValidationResult, TagValidationOptions, DocumentValidationOptions } from './types';
+export type { 
+  ValidationResult, 
+  ContentIdValidationResult,
+  DocumentValidationResult,
+  TagValidationOptions, 
+  DocumentValidationOptions,
+  TagPosition
+} from './types';
 export { ContentIdValidationResultType } from './types';
 
 // Legacy validation compatibility

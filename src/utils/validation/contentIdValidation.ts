@@ -1,79 +1,65 @@
 
-import { ValidationResult, ContentIdValidationResultType } from './types';
-import { createValidationResult, VALIDATION_RESULTS } from './compatibility';
+/**
+ * Validation utilities for content IDs
+ */
+import { ValidationResult, ContentIdValidationResult, ContentIdValidationResultType } from './types';
+import { createValidationResult } from './types';
 
 /**
  * Validates if a string is a valid content ID
- * Supports UUID format or temporary IDs (temp_xxx)
- * 
- * @param contentId - The content ID to validate
+ * @param contentId The content ID to validate
  * @returns True if the content ID is valid
  */
-export function isValidContentId(contentId: string | null | undefined): boolean {
+export function isValidContentId(contentId?: string | null): boolean {
   if (!contentId) return false;
   
-  // Check if UUID format
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (uuidRegex.test(contentId)) {
-    return true;
-  }
+  // Check if it's a UUID format
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuid = uuidPattern.test(contentId);
   
-  // Check if temporary ID (temp_xxx format)
-  const tempIdRegex = /^temp_[a-zA-Z0-9-_]+$/;
-  if (tempIdRegex.test(contentId)) {
-    return true;
-  }
+  // Check if it's a temporary ID format (starts with temp-)
+  const isTempId = contentId.startsWith('temp-');
   
-  // Any non-empty string is considered valid for backward compatibility
-  return contentId.trim() !== '';
+  return isUuid || isTempId;
 }
 
 /**
- * Validates a content ID and returns a detailed validation result
- * 
- * @param contentId - The content ID to validate
- * @returns A ValidationResult with validation details
+ * Gets a validation result for a content ID
+ * @param contentId The content ID to validate
+ * @returns A validation result object
  */
-export function validateContentId(contentId: string | null | undefined): ValidationResult {
+export function getContentIdValidationResult(contentId?: string | null): ContentIdValidationResult {
   if (!contentId) {
-    return createValidationResult(false, "Content ID is required");
+    return {
+      isValid: false,
+      errorMessage: 'Content ID is required',
+      type: 'empty'
+    };
   }
   
-  if (!isValidContentId(contentId)) {
-    return createValidationResult(false, "Invalid content ID format");
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuid = uuidPattern.test(contentId);
+  const isTempId = contentId.startsWith('temp-');
+  
+  if (isUuid) {
+    return {
+      isValid: true,
+      errorMessage: null,
+      type: ContentIdValidationResultType.UUID
+    };
   }
   
-  return VALIDATION_RESULTS.VALID;
-}
-
-/**
- * Gets detailed validation result for a content ID
- * Provides the specific type of content ID (UUID, temporary, string)
- * 
- * @param contentId - The content ID to validate
- * @returns The validation result type
- */
-export function getContentIdValidationResult(contentId: string | null | undefined): ContentIdValidationResultType {
-  if (!contentId) {
-    return ContentIdValidationResultType.INVALID;
+  if (isTempId) {
+    return {
+      isValid: true,
+      errorMessage: null,
+      type: ContentIdValidationResultType.TEMP
+    };
   }
   
-  // Check if UUID format
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (uuidRegex.test(contentId)) {
-    return ContentIdValidationResultType.UUID;
-  }
-  
-  // Check if temporary ID (temp_xxx format)
-  const tempIdRegex = /^temp_[a-zA-Z0-9-_]+$/;
-  if (tempIdRegex.test(contentId)) {
-    return ContentIdValidationResultType.TEMP;
-  }
-  
-  // Any non-empty string is considered valid
-  if (contentId.trim() !== '') {
-    return ContentIdValidationResultType.STRING;
-  }
-  
-  return ContentIdValidationResultType.INVALID;
+  return {
+    isValid: false,
+    errorMessage: 'Invalid content ID format',
+    type: ContentIdValidationResultType.INVALID
+  };
 }

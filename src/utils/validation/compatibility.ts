@@ -1,4 +1,9 @@
 
+/**
+ * Validation and compatibility utility functions
+ * These functions help ensure consistent type handling across the application
+ */
+
 import { ValidationResult, VALIDATION_RESULTS } from './types';
 
 /**
@@ -15,3 +20,60 @@ export const createValidationResult = (isValid: boolean, errorMessage: string | 
 export const createBooleanValidationResult = (isValid: boolean, errorMessage?: string): boolean => {
   return isValid;
 };
+
+/**
+ * Ensures a value is a valid number, with a default fallback
+ * @param value The value to check
+ * @param defaultValue The default value to use if the input is invalid
+ * @returns A valid number
+ */
+export function ensureNumber(value: number | undefined | null, defaultValue: number = 0): number {
+  if (typeof value !== 'number' || isNaN(value)) {
+    return defaultValue;
+  }
+  return value;
+}
+
+/**
+ * Ensures a value is a valid string, with a default fallback
+ * @param value The value to check
+ * @param defaultValue The default value to use if the input is invalid
+ * @returns A valid string
+ */
+export function ensureString(value: string | undefined | null, defaultValue: string = ''): string {
+  if (typeof value !== 'string') {
+    return defaultValue;
+  }
+  return value;
+}
+
+/**
+ * Converts null to undefined for APIs that expect undefined
+ * @param value The value to convert
+ * @returns The value with null converted to undefined
+ */
+export function nullToUndefined<T>(value: T | null): T | undefined {
+  return value === null ? undefined : value;
+}
+
+/**
+ * Converts undefined to null for APIs that expect null
+ * @param value The value to convert
+ * @returns The value with undefined converted to null
+ */
+export function undefinedToNull<T>(value: T | undefined): T | null {
+  return value === undefined ? null : value;
+}
+
+/**
+ * Ensures that an optional boolean property is handled consistently
+ * @param value The boolean value to check
+ * @param defaultValue The default value to use if undefined
+ * @returns A boolean value
+ */
+export function ensureBoolean(value: boolean | undefined | null, defaultValue: boolean = false): boolean {
+  if (typeof value !== 'boolean') {
+    return defaultValue;
+  }
+  return value;
+}

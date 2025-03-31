@@ -1,87 +1,126 @@
 
-import { ValidationResult, DocumentValidationResult } from './types';
+/**
+ * Validation utilities for documents
+ */
+import { ValidationResult, DocumentValidationResult, DocumentValidationOptions } from './types';
+import { createValidationResult } from './types';
 
 /**
  * Validates a document title
+ * @param title The title to validate
+ * @param options Validation options
+ * @returns A validation result
  */
-export function validateDocumentTitle(title: string): ValidationResult {
-  if (!title || title.trim().length === 0) {
+export function validateDocumentTitle(
+  title: string, 
+  options: DocumentValidationOptions = {}
+): DocumentValidationResult {
+  const {
+    titleRequired = true,
+    minTitleLength = 1,
+    maxTitleLength = 255
+  } = options;
+  
+  if (titleRequired && (!title || title.trim().length === 0)) {
     return {
       isValid: false,
-      errorMessage: 'Title is required'
+      errorMessage: "Title is required",
+      field: 'title'
     };
   }
   
-  if (title.length > 255) {
+  if (title && title.trim().length < minTitleLength) {
     return {
       isValid: false,
-      errorMessage: 'Title cannot exceed 255 characters'
+      errorMessage: `Title must be at least ${minTitleLength} characters`,
+      field: 'title'
+    };
+  }
+  
+  if (title && title.length > maxTitleLength) {
+    return {
+      isValid: false,
+      errorMessage: `Title cannot exceed ${maxTitleLength} characters`,
+      field: 'title'
     };
   }
   
   return {
     isValid: true,
-    errorMessage: null
+    errorMessage: null,
+    field: 'title'
   };
 }
 
 /**
  * Validates document content
+ * @param content The content to validate
+ * @param options Validation options
+ * @returns A validation result
  */
-export function validateDocumentContent(content: string): ValidationResult {
-  if (!content || content.trim().length === 0) {
+export function validateDocumentContent(
+  content: string,
+  options: DocumentValidationOptions = {}
+): DocumentValidationResult {
+  const {
+    contentRequired = true,
+    minContentLength = 1,
+    maxContentLength = 100000 // 100k chars
+  } = options;
+  
+  if (contentRequired && (!content || content.trim().length === 0)) {
     return {
       isValid: false,
-      errorMessage: 'Content is required'
+      errorMessage: "Content is required",
+      field: 'content'
     };
   }
   
-  const contentLength = content.length;
-  
-  if (contentLength < 10) {
+  if (content && content.trim().length < minContentLength) {
     return {
       isValid: false,
-      errorMessage: 'Content is too short (minimum 10 characters)'
+      errorMessage: `Content must be at least ${minContentLength} characters`,
+      field: 'content'
     };
   }
   
-  if (contentLength > 100000) {
+  if (content && content.length > maxContentLength) {
     return {
       isValid: false,
-      errorMessage: 'Content is too long (maximum 100,000 characters)'
+      errorMessage: `Content cannot exceed ${maxContentLength} characters`,
+      field: 'content'
     };
+  }
+  
+  return {
+    isValid: true,
+    errorMessage: null,
+    field: 'content'
+  };
+}
+
+/**
+ * Validates an entire document (title and content)
+ * @param document The document to validate
+ * @param options Validation options
+ * @returns A validation result
+ */
+export function validateDocument(
+  document: { title: string; content: string },
+  options: DocumentValidationOptions = {}
+): DocumentValidationResult {
+  const titleResult = validateDocumentTitle(document.title, options);
+  if (!titleResult.isValid) {
+    return titleResult;
+  }
+  
+  const contentResult = validateDocumentContent(document.content, options);
+  if (!contentResult.isValid) {
+    return contentResult;
   }
   
   return {
     isValid: true,
     errorMessage: null
-  };
-}
-
-/**
- * Validates a complete document
- */
-export function validateDocument(title: string, content: string): DocumentValidationResult {
-  const titleValidation = validateDocumentTitle(title);
-  if (!titleValidation.isValid) {
-    return {
-      ...titleValidation,
-      isPublishable: false
-    };
-  }
-  
-  const contentValidation = validateDocumentContent(content);
-  if (!contentValidation.isValid) {
-    return {
-      ...contentValidation,
-      isPublishable: false
-    };
-  }
-  
-  // Document is valid and publishable
-  return {
-    isValid: true,
-    errorMessage: null,
-    isPublishable: true
   };
 }
