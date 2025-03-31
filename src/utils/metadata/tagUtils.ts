@@ -1,5 +1,5 @@
 
-import { Tag } from '@/types/tag';
+import { Tag, filterDuplicateTags } from '@/types/tag';
 
 /**
  * Transforms tag data from various formats into a standard Tag object
@@ -45,18 +45,6 @@ export function transformTagData(tagData: any): Tag {
 
 /**
  * Filters out duplicate tags from an array based on name
- * 
- * @param tags Array of tags to filter
- * @returns Array of unique tags (based on name)
+ * @deprecated Use filterDuplicateTags from @/types/tag instead
  */
-export function filterDuplicateTags(tags: Tag[]): Tag[] {
-  const seen = new Set<string>();
-  return tags.filter(tag => {
-    const normalizedName = tag.name.trim().toLowerCase();
-    if (seen.has(normalizedName)) {
-      return false;
-    }
-    seen.add(normalizedName);
-    return true;
-  });
-}
+export { filterDuplicateTags };

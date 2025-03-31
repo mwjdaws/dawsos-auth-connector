@@ -1,20 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { useTagsQuery } from '@/hooks/metadata/useTagsQuery';
-import { Tag, UseTagFetchProps, UseTagFetchResult } from './types';
-
-// Helper function to map API tags to internal Tag type
-function mapApiTagToTag(apiTag: any): Tag {
-  return {
-    id: typeof apiTag.id === 'string' ? apiTag.id : '',
-    name: typeof apiTag.name === 'string' ? apiTag.name : '',
-    content_id: typeof apiTag.content_id === 'string' ? apiTag.content_id : '',
-    type_id: typeof apiTag.type_id === 'string' ? apiTag.type_id : null,
-    type_name: apiTag.tag_types && typeof apiTag.tag_types.name === 'string' 
-      ? apiTag.tag_types.name 
-      : null
-  };
-}
+import { Tag, UseTagFetchProps, UseTagFetchResult, mapApiTagToTag } from './types';
 
 export function useTagFetch({
   contentId,

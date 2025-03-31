@@ -8,7 +8,7 @@
 import React from "react";
 import { TagInput } from "@/components/MarkdownViewer/TagInput";
 import { TagList } from "../components/TagList";
-import { Tag, TagPosition } from "../hooks/tag-operations/types";
+import { Tag, TagPosition } from "@/types/tag";
 
 export interface TagsSectionProps {
   tags: Tag[];
