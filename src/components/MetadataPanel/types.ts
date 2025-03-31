@@ -1,6 +1,15 @@
 
 import { ReactNode } from 'react';
-import type { Tag, OntologyTerm } from '@/types';
+import type { Tag } from '@/types/tag';
+
+// Define OntologyTerm since it's referenced but not exported from base types
+export interface OntologyTerm {
+  id: string;
+  term: string;
+  description: string;
+  domain?: string;
+  review_required: boolean;
+}
 
 // Base metadata panel props
 export interface MetadataPanelProps {

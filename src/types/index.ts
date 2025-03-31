@@ -1,9 +1,13 @@
+
 // filepath: /dawsos-web-app/dawsos-web-app/src/types/index.ts
 // Re-export the Tag types from the centralized location
-export { 
+export type { 
   Tag, 
   AugmentedTag, 
-  TagPosition, 
+  TagPosition 
+} from './tag';
+
+export {
   mapApiTagToTag, 
   mapApiTagsToTags,
   ensureNonNullableTag,

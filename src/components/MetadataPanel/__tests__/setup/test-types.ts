@@ -6,8 +6,17 @@
  * to ensure consistent typing and reduce duplication.
  */
 
-import { Tag, OntologyTerm } from '@/types';
+import { Tag } from '@/types/tag';
 import { Mock } from 'vitest';
+
+// Define OntologyTerm for testing
+export interface OntologyTerm {
+  id: string;
+  term: string;
+  description: string;
+  domain?: string;
+  review_required: boolean;
+}
 
 /**
  * Test version of Tag that makes type_id optional to simplify test setup
@@ -70,7 +79,7 @@ export interface TestMockData {
 }
 
 /**
- * Create empty test mock data
+ * Create empty test data
  */
 export function createEmptyTestData(): TestMockData {
   return {
