@@ -28,7 +28,7 @@ export function toTag(testTag: TestTag): Tag {
     id: testTag.id,
     name: testTag.name,
     content_id: testTag.content_id,
-    type_id: testTag.type_id || '',
+    type_id: testTag.type_id || null,
     type_name: testTag.type_name
   };
 }

@@ -73,7 +73,7 @@ export function useSaveTags() {
         toast({
           title: "Invalid Tags",
           description: `${invalidTags.length} tag(s) are invalid and will be skipped`,
-          variant: "warning",
+          variant: "default",
         });
       }
       

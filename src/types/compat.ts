@@ -1,56 +1,45 @@
 
 /**
  * Type compatibility utilities
+ * 
+ * These functions help maintain compatibility between different type systems,
+ * especially when dealing with database values (which use null) and TypeScript
+ * values (which often use undefined).
  */
 
 /**
- * Converts undefined to null, useful for API compatibility
+ * Convert an undefined value to null
+ * Useful when sending data to APIs or databases that expect null
  */
 export function undefinedToNull<T>(value: T | undefined): T | null {
   return value === undefined ? null : value;
 }
 
 /**
- * Converts null to undefined, useful for component props compatibility
+ * Convert a null value to undefined
+ * Useful when working with React components that expect undefined
  */
 export function nullToUndefined<T>(value: T | null): T | undefined {
   return value === null ? undefined : value;
 }
 
 /**
- * Ensures a value is not undefined by providing a default
+ * Convert a null or undefined value to a default value
  */
-export function withDefault<T>(value: T | undefined, defaultValue: T): T {
-  return value === undefined ? defaultValue : value;
+export function nullOrUndefinedToDefault<T>(value: T | null | undefined, defaultValue: T): T {
+  return (value === null || value === undefined) ? defaultValue : value;
 }
 
 /**
- * Safe type cast for compatibility with older API responses
+ * Check if a value is null or undefined
  */
-export function safeTypecast<T, U>(value: T, fallback: U): T | U {
-  return value !== undefined && value !== null ? value : fallback;
+export function isNullOrUndefined(value: any): value is null | undefined {
+  return value === null || value === undefined;
 }
 
 /**
- * Safe callback execution to handle undefined callbacks
+ * Ensure a value is not null or undefined, using a default value if it is
  */
-export function safeCallback<T extends (...args: any[]) => any>(
-  callback: T | undefined,
-  ...args: Parameters<T>
-): ReturnType<T> | undefined {
-  return callback ? callback(...args) : undefined;
-}
-
-/**
- * Type-safe Object.entries wrapper
- */
-export function typedEntries<T extends object>(obj: T) {
-  return Object.entries(obj) as [keyof T, T[keyof T]][];
-}
-
-/**
- * Type-safe Object.keys wrapper
- */
-export function typedKeys<T extends object>(obj: T) {
-  return Object.keys(obj) as Array<keyof T>;
+export function ensureValue<T>(value: T | null | undefined, defaultValue: T): T {
+  return isNullOrUndefined(value) ? defaultValue : value;
 }

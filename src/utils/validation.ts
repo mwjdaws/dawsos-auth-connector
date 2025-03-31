@@ -3,17 +3,11 @@
  * Validation utilities
  */
 import { getContentIdValidationResult as getContentIdValidationResultInternal, isValidContentId as isValidContentIdInternal } from './validation/contentIdValidation';
+import { ContentIdValidationResult } from './validation/types';
 
 export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
-}
-
-export interface ContentIdValidationResult {
-  isValid: boolean;
-  errorMessage: string | null;
-  message: string | null;
-  resultType: string;
 }
 
 /**
