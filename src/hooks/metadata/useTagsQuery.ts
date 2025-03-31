@@ -20,13 +20,14 @@ export function useTagsQuery(contentId: string, options?: { enabled?: boolean; i
 
       try {
         const selectClause = options?.includeTypeInfo 
-          ? 'tags.id, tags.name, tags.content_id, tags.type_id, tag_types(name)' 
-          : 'tags.id, tags.name, tags.content_id, tags.type_id';
+          ? 'tags.id, tags.name, tags.content_id, tags.type_id, tags.display_order, tag_types(name)' 
+          : 'tags.id, tags.name, tags.content_id, tags.type_id, tags.display_order';
         
         const { data, error } = await supabase
           .from('tags')
           .select(selectClause)
           .eq('content_id', contentId)
+          .order('display_order', { ascending: true })
           .order('name', { ascending: true });
 
         if (error) throw error;
@@ -47,7 +48,8 @@ export function useTagsQuery(contentId: string, options?: { enabled?: boolean; i
             id: tag.id || '',
             name: tag.name || '',
             content_id: tag.content_id || '',
-            type_id: tag.type_id || null
+            type_id: tag.type_id || null,
+            display_order: typeof tag.display_order === 'number' ? tag.display_order : 0
           };
           
           if (options?.includeTypeInfo && tag.tag_types) {

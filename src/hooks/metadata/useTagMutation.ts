@@ -1,5 +1,4 @@
 
-
 /**
  * Hook for tag mutations with proper type handling
  */
@@ -16,6 +15,7 @@ export interface AddTagParams {
   contentId: string;
   name: string;
   typeId?: string | null;
+  display_order?: number;
 }
 
 export interface DeleteTagParams {
@@ -31,7 +31,7 @@ export function useTagMutations() {
 
   // Add tag mutation
   const addTagMutation = useMutation({
-    mutationFn: async ({ name, contentId, typeId }: AddTagParams): Promise<Tag> => {
+    mutationFn: async ({ name, contentId, typeId, display_order }: AddTagParams): Promise<Tag> => {
       if (!isValidContentId(contentId)) {
         throw new Error('Invalid content ID');
       }
@@ -41,7 +41,8 @@ export function useTagMutations() {
         .insert({
           name: name.trim(),
           content_id: contentId,
-          type_id: undefinedToNull(typeId)
+          type_id: undefinedToNull(typeId),
+          display_order: display_order || 0
         })
         .select()
         .single();

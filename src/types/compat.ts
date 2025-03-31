@@ -1,23 +1,17 @@
 
 /**
- * Type compatibility utilities
- * 
- * These functions help maintain compatibility between different type systems,
- * especially when dealing with database values (which use null) and TypeScript
- * values (which often use undefined).
+ * Compatibility utilities for handling type differences
  */
 
 /**
- * Convert an undefined value to null
- * Useful when sending data to APIs or databases that expect null
+ * Convert undefined to null - useful for database operations where null is expected
  */
 export function undefinedToNull<T>(value: T | undefined): T | null {
   return value === undefined ? null : value;
 }
 
 /**
- * Convert a null value to undefined
- * Useful when working with React components that expect undefined
+ * Convert null to undefined - useful for UI components where undefined is expected
  */
 export function nullToUndefined<T>(value: T | null): T | undefined {
   return value === null ? undefined : value;

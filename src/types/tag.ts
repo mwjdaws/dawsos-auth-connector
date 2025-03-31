@@ -11,6 +11,7 @@ export interface Tag {
   content_id: string;
   type_id: string | null;
   type_name?: string | null;
+  display_order?: number; // Added to match design vision
 }
 
 /**
@@ -46,7 +47,8 @@ export function mapApiTagToTag(apiTag: any): Tag {
     type_id: typeof apiTag.type_id === 'string' ? apiTag.type_id : null,
     type_name: apiTag.tag_types && typeof apiTag.tag_types.name === 'string' 
       ? apiTag.tag_types.name 
-      : null
+      : null,
+    display_order: typeof apiTag.display_order === 'number' ? apiTag.display_order : 0
   };
 }
 
@@ -71,7 +73,8 @@ export function ensureNonNullableTag(tag: {
     name: tag.name,
     content_id: tag.content_id || '',
     type_id: tag.type_id,
-    type_name: null
+    type_name: null,
+    display_order: 0
   };
 }
 
@@ -114,6 +117,8 @@ export function isValidTag(tag: any): tag is Tag {
     typeof tag === 'object' &&
     typeof tag.id === 'string' &&
     typeof tag.name === 'string' &&
-    typeof tag.content_id === 'string'
+    typeof tag.content_id === 'string' &&
+    (tag.type_id === null || typeof tag.type_id === 'string') &&
+    (tag.display_order === undefined || typeof tag.display_order === 'number')
   );
 }
