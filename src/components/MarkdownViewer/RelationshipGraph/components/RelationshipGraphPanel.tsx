@@ -3,7 +3,7 @@ import React, { useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { GraphRenderer } from './graph-renderer/GraphRenderer';
 import { GraphData, GraphRendererRef } from '../types';
-import { ensureString } from '@/utils/compatibility';
+import { ensureString, ensureNumber } from '@/utils/compatibility';
 import { RelationshipGraphControls } from './RelationshipGraphControls';
 
 interface RelationshipGraphPanelProps {
@@ -13,7 +13,8 @@ interface RelationshipGraphPanelProps {
   className?: string;
   height?: number;
   width?: number;
-  onNodeClick?: (nodeId: string) => void;
+  onNodeClick?: ((nodeId: string) => void) | undefined;
+  hasAttemptedRetry?: boolean;
 }
 
 export function RelationshipGraphPanel({
@@ -23,7 +24,8 @@ export function RelationshipGraphPanel({
   className = '',
   height = 600,
   width,
-  onNodeClick
+  onNodeClick,
+  hasAttemptedRetry = false
 }: RelationshipGraphPanelProps) {
   const graphRef = useRef<GraphRendererRef>(null);
   const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null);
@@ -58,6 +60,9 @@ export function RelationshipGraphPanel({
     console.log(`Link clicked: ${source} -> ${target}`);
   };
   
+  // Convert width to number for the GraphRenderer
+  const effectiveWidth = width ? ensureNumber(width) : undefined;
+  
   return (
     <Card className={`flex flex-col overflow-hidden ${className}`}>
       <div className="p-4 flex justify-between items-center border-b">
@@ -73,7 +78,7 @@ export function RelationshipGraphPanel({
         <GraphRenderer
           ref={graphRef}
           graphData={graphData}
-          width={width || '100%'}
+          width={effectiveWidth || (typeof window !== 'undefined' ? window.innerWidth : 800)}
           height={height}
           highlightedNodeId={highlightedNodeId}
           zoom={zoomLevel}

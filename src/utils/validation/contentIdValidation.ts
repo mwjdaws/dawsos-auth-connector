@@ -2,126 +2,101 @@
 /**
  * Content ID validation utilities
  */
-import { 
-  ValidationResult,
-  ContentIdValidationResult 
-} from './types';
+import { ContentIdValidationResult, createContentIdValidationResult } from './types';
+
+// Regular expression to validate UUIDs (version 4)
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+// Regular expression to validate temporary IDs (starts with 'temp-')
+const TEMP_ID_REGEX = /^temp-/i;
 
 /**
- * Validation result type constants
+ * Validates if a string is a valid UUID (v4)
  */
-export enum ContentIdValidationType {
-  VALID = 'VALID',   // Valid content ID that exists
-  TEMP = 'TEMP',     // Valid temporary content ID
-  INVALID = 'INVALID' // Invalid content ID
+export function isUUID(value: string): boolean {
+  return UUID_REGEX.test(value);
 }
 
 /**
- * Checks if a content ID is in valid UUID format
+ * Validates if a string is a temporary ID (starts with 'temp-')
  */
-export function isValidUUID(id: string | null | undefined): boolean {
-  if (!id) return false;
-  
-  // UUID v4 regex pattern
-  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidPattern.test(id);
+export function isTempId(value: string): boolean {
+  return TEMP_ID_REGEX.test(value);
 }
 
 /**
- * Checks if a string is a valid temporary content ID
+ * Validates if a value is a valid content ID (either UUID or temp ID)
  */
-export function isValidTempContentId(id: string | null | undefined): boolean {
-  if (!id) return false;
-  
-  return id.startsWith('temp-');
+export function isValidContentId(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return isUUID(value) || isTempId(value);
 }
 
 /**
- * Tries to convert a string to UUID format if possible
+ * Validates if a content ID is storable (only UUIDs are storable)
  */
-export function tryConvertToUUID(id: string | null | undefined): string | null {
-  if (!id) return null;
-  if (isValidUUID(id)) return id;
-  
-  // Try to extract a UUID if it's embedded somewhere
-  const uuidMatch = id.match(/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i);
-  return uuidMatch ? uuidMatch[0] : null;
+export function isStorableContentId(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return isUUID(value);
 }
 
 /**
- * Checks if a content ID is valid (either UUID or temporary)
+ * Attempts to convert a string to a UUID if it's in a compatible format
  */
-export function isValidContentId(id: string | null | undefined): boolean {
-  if (!id) return false;
-  
-  return isValidUUID(id) || isValidTempContentId(id);
+export function tryConvertToUUID(value: string | null | undefined): string | null {
+  if (!value) return null;
+  if (isUUID(value)) return value;
+  return null;
 }
 
 /**
- * Checks if a content ID can be stored in the database
- */
-export function isStorableContentId(id: string | null | undefined): boolean {
-  if (!id) return false;
-  
-  return isValidUUID(id);
-}
-
-/**
- * Creates a content ID validation result
- */
-export function validateContentId(id: string | null | undefined): ContentIdValidationResult {
-  if (!id) {
-    return {
-      isValid: false,
-      resultType: ContentIdValidationType.INVALID,
-      message: null,
-      errorMessage: 'Content ID is required',
-      contentExists: false
-    };
-  }
-  
-  if (isValidUUID(id)) {
-    return {
-      isValid: true,
-      resultType: ContentIdValidationType.VALID,
-      message: 'Valid UUID format',
-      errorMessage: null,
-      contentExists: false // This is set later by content checking
-    };
-  }
-  
-  if (isValidTempContentId(id)) {
-    return {
-      isValid: true,
-      resultType: ContentIdValidationType.TEMP,
-      message: 'Valid temporary ID',
-      errorMessage: null,
-      contentExists: false
-    };
-  }
-  
-  return {
-    isValid: false,
-    resultType: ContentIdValidationType.INVALID,
-    message: null,
-    errorMessage: 'Invalid content ID format',
-    contentExists: false
-  };
-}
-
-/**
- * Gets validation result for a content ID with additional checks
+ * Get detailed validation result for a content ID
  */
 export function getContentIdValidationResult(
-  id: string | null | undefined,
-  exists: boolean = false
+  contentId: string | null | undefined
 ): ContentIdValidationResult {
-  const result = validateContentId(id);
-  
-  if (exists) {
-    result.contentExists = true;
-    result.message = 'Content exists';
+  if (!contentId) {
+    return createContentIdValidationResult(
+      false,
+      'missing',
+      null,
+      'Content ID is required',
+      false
+    );
   }
-  
-  return result;
+
+  if (isUUID(contentId)) {
+    return createContentIdValidationResult(
+      true,
+      'uuid',
+      'Valid UUID format',
+      null,
+      true // Assume exists for now
+    );
+  }
+
+  if (isTempId(contentId)) {
+    return createContentIdValidationResult(
+      true,
+      'temporary',
+      'Valid temporary ID format',
+      null,
+      false // Temp IDs don't exist in storage
+    );
+  }
+
+  return createContentIdValidationResult(
+    false,
+    'invalid',
+    null,
+    'Invalid content ID format',
+    false
+  );
+}
+
+/**
+ * Validate content ID with proper error message
+ */
+export function validateContentId(contentId: string | null | undefined): ContentIdValidationResult {
+  return getContentIdValidationResult(contentId);
 }

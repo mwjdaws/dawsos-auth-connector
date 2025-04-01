@@ -10,8 +10,8 @@ interface RelationshipGraphAdapterProps {
   height?: number;
   zoom?: number;
   highlightedNodeId?: string | null;
-  onNodeClick?: (nodeId: string) => void;
-  onLinkClick?: (source: string, target: string) => void;
+  onNodeClick?: ((nodeId: string) => void) | undefined;
+  onLinkClick?: ((source: string, target: string) => void) | undefined;
 }
 
 export const RelationshipGraphAdapter = React.forwardRef<GraphRendererRef, RelationshipGraphAdapterProps>(
@@ -29,13 +29,13 @@ export const RelationshipGraphAdapter = React.forwardRef<GraphRendererRef, Relat
       nodes: graphData.nodes.map((node: GraphNode) => ({
         ...node,
         id: ensureString(node.id),
-        name: ensureString(node.name),
-        title: ensureString(node.title),
+        name: ensureString(node.name || node.title),
+        title: ensureString(node.title || node.name || ''),
       })),
       links: graphData.links.map((link: GraphLink) => ({
         ...link,
-        source: ensureString(link.source),
-        target: ensureString(link.target),
+        source: ensureString(typeof link.source === 'object' ? link.source.id : link.source),
+        target: ensureString(typeof link.target === 'object' ? link.target.id : link.target),
       }))
     };
     

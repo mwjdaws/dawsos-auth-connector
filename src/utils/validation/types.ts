@@ -67,3 +67,22 @@ export function createContentIdValidationResult(
     contentExists
   };
 }
+
+/**
+ * Check if a validation result is valid
+ */
+export function isValidResult(result: ValidationResult): boolean {
+  return result.isValid === true;
+}
+
+/**
+ * Combine multiple validation results
+ * Returns first invalid result or valid result if all are valid
+ */
+export function combineValidationResults(results: ValidationResult[]): ValidationResult {
+  const invalidResult = results.find(result => !result.isValid);
+  if (invalidResult) {
+    return invalidResult;
+  }
+  return createValidResult();
+}

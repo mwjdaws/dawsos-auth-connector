@@ -40,6 +40,55 @@ export function RelationshipGraphTab({ contentId }: RelationshipGraphTabProps) {
   const isLoading = isLoadingTerms || isLoadingLinks;
   const hasConnections = sourceTerms.length > 0 || outboundLinks.length > 0 || inboundLinks.length > 0;
 
+  // Prepare graph data
+  const graphData = {
+    nodes: [
+      // Add nodes from source terms
+      ...sourceTerms.map(term => ({
+        id: term.id,
+        name: term.term,
+        title: term.term,
+        color: '#4f46e5',
+        type: 'term'
+      })),
+      // Add nodes from links
+      ...outboundLinks.map(link => ({
+        id: link.target_id,
+        name: link.target_title || 'Unknown',
+        title: link.target_title || 'Unknown',
+        color: '#16a34a',
+        type: 'outbound'
+      })),
+      ...inboundLinks.map(link => ({
+        id: link.source_id,
+        name: link.source_title || 'Unknown',
+        title: link.source_title || 'Unknown',
+        color: '#ea580c',
+        type: 'inbound'
+      }))
+    ],
+    links: [
+      // Add links for terms
+      ...sourceTerms.map(term => ({
+        source: contentId,
+        target: term.id,
+        type: 'term'
+      })),
+      // Add outbound links
+      ...outboundLinks.map(link => ({
+        source: contentId,
+        target: link.target_id,
+        type: link.link_type
+      })),
+      // Add inbound links
+      ...inboundLinks.map(link => ({
+        source: link.source_id,
+        target: contentId,
+        type: link.link_type
+      }))
+    ]
+  };
+
   return (
     <>
       <div className="flex justify-between items-center mb-4">
@@ -81,6 +130,7 @@ export function RelationshipGraphTab({ contentId }: RelationshipGraphTabProps) {
             <div className="min-h-[400px] border rounded-lg bg-card overflow-hidden">
               <RelationshipGraphPanel 
                 contentId={contentId} 
+                graphData={graphData}
                 hasAttemptedRetry={hasAttemptedRetry}
               />
             </div>
