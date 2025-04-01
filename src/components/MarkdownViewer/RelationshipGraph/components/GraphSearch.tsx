@@ -1,114 +1,116 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { 
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { GraphData } from '../types';
 
-/**
- * Props for the GraphSearch component
- */
-export interface GraphSearchProps {
+interface GraphSearchProps {
   graphData: GraphData;
   onNodeFound: (nodeId: string) => void;
   disabled?: boolean;
 }
 
-/**
- * GraphSearch Component
- * 
- * Provides search functionality for finding nodes in the graph.
- */
-export function GraphSearch({ 
-  graphData, 
+export function GraphSearch({
+  graphData,
   onNodeFound,
   disabled = false
 }: GraphSearchProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<Array<{ id: string; name: string }>>([]);
-  const [showResults, setShowResults] = useState(false);
-
-  // Update search results when search term changes
-  useEffect(() => {
-    if (!searchTerm.trim() || !graphData.nodes.length) {
-      setSearchResults([]);
-      return;
+  const [searchValue, setSearchValue] = useState('');
+  const [open, setOpen] = useState(false);
+  
+  // Prepare searchable nodes
+  const searchableNodes = useMemo(() => {
+    if (!graphData || !graphData.nodes) return [];
+    
+    return graphData.nodes.map(node => ({
+      id: node.id,
+      label: node.name || node.title || node.id,
+      type: node.type || 'unknown'
+    }));
+  }, [graphData]);
+  
+  // Filter nodes based on search input
+  const filteredNodes = useMemo(() => {
+    if (!searchValue) return searchableNodes;
+    
+    const lowerSearch = searchValue.toLowerCase();
+    return searchableNodes.filter(node => 
+      node.label.toLowerCase().includes(lowerSearch) ||
+      node.id.toLowerCase().includes(lowerSearch) ||
+      node.type.toLowerCase().includes(lowerSearch)
+    );
+  }, [searchableNodes, searchValue]);
+  
+  const handleSelect = (nodeId: string) => {
+    if (nodeId && onNodeFound) {
+      onNodeFound(nodeId);
+      setOpen(false);
+      setSearchValue('');
     }
-
-    const term = searchTerm.toLowerCase();
-    const results = graphData.nodes
-      .filter(node => 
-        (node.name || node.title || '').toLowerCase().includes(term) || 
-        (node.id || '').toLowerCase().includes(term)
-      )
-      .map(node => ({
-        id: node.id,
-        name: node.name || node.title || node.id
-      }))
-      .slice(0, 5); // Limit to 5 results
-
-    setSearchResults(results);
-  }, [searchTerm, graphData]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchResults.length > 0) {
-      onNodeFound(searchResults[0].id);
-    }
-  };
-
-  const handleResultClick = (nodeId: string) => {
-    onNodeFound(nodeId);
-    setShowResults(false);
   };
 
   return (
-    <div className="relative">
-      <form onSubmit={handleSearch} className="flex">
-        <div className="relative flex-1">
-          <Input
-            type="text"
-            placeholder="Search nodes..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setShowResults(true);
-            }}
-            onFocus={() => setShowResults(true)}
-            onBlur={() => {
-              // Delay hiding results to allow for clicks
-              setTimeout(() => setShowResults(false), 200);
-            }}
-            className="pr-10"
-            disabled={disabled}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button 
+          variant="outline" 
+          role="combobox" 
+          className="w-[250px] justify-start"
+          disabled={disabled}
+        >
+          <Search className="mr-2 h-4 w-4" />
+          <span className="truncate">
+            {searchValue || 'Search nodes...'}
+          </span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[250px] p-0" align="start">
+        <Command>
+          <CommandInput 
+            placeholder="Search nodes..." 
+            value={searchValue}
+            onValueChange={setSearchValue}
           />
-          <Button
-            type="submit"
-            variant="ghost"
-            size="sm"
-            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
-            disabled={disabled || searchResults.length === 0}
-          >
-            <Search className="h-4 w-4" />
-          </Button>
-        </div>
-      </form>
-
-      {showResults && searchResults.length > 0 && (
-        <div className="absolute z-10 mt-1 w-full bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
-          <ul className="py-1">
-            {searchResults.map((result) => (
-              <li
-                key={result.id}
-                className="px-3 py-2 cursor-pointer hover:bg-muted"
-                onClick={() => handleResultClick(result.id)}
-              >
-                {result.name}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
+          <CommandList>
+            <CommandEmpty>No nodes found.</CommandEmpty>
+            <CommandGroup heading="Nodes">
+              {filteredNodes.slice(0, 10).map((node) => (
+                <CommandItem
+                  key={node.id}
+                  value={node.id}
+                  onSelect={() => handleSelect(node.id)}
+                >
+                  <span className="truncate">{node.label}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    {node.type}
+                  </span>
+                </CommandItem>
+              ))}
+              {filteredNodes.length > 10 && (
+                <CommandItem disabled>
+                  <span className="text-xs text-muted-foreground">
+                    + {filteredNodes.length - 10} more results
+                  </span>
+                </CommandItem>
+              )}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

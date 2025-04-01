@@ -48,3 +48,50 @@ export interface TagValidationResult extends ValidationResult {
 export interface DocumentTitleValidationResult extends ValidationResult {
   // Title-specific validation properties could be added here
 }
+
+/**
+ * Helper functions for creating validation results
+ */
+export function createValidResult(message: string | null = null): ValidationResult {
+  return {
+    isValid: true,
+    errorMessage: null,
+    message
+  };
+}
+
+export function createInvalidResult(errorMessage: string): ValidationResult {
+  return {
+    isValid: false,
+    errorMessage,
+    message: null
+  };
+}
+
+export function createContentValidationResult(
+  isValid: boolean,
+  resultType: ContentIdValidationResultType,
+  contentExists: boolean,
+  message: string | null = null,
+  errorMessage: string | null = null
+): ContentIdValidationResult {
+  return {
+    isValid,
+    resultType,
+    contentExists,
+    message,
+    errorMessage
+  };
+}
+
+export function isValidResult(result: ValidationResult): boolean {
+  return result.isValid === true;
+}
+
+export function combineValidationResults(results: ValidationResult[]): ValidationResult {
+  const invalidResult = results.find(r => !r.isValid);
+  if (invalidResult) {
+    return invalidResult;
+  }
+  return createValidResult();
+}

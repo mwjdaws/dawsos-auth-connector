@@ -1,31 +1,34 @@
 
-import { ForceGraphMethods } from 'react-force-graph-2d';
+import { ReactNode } from 'react';
 
 /**
- * Basic node structure for the graph visualization
+ * Core GraphNode representation
  */
 export interface GraphNode {
   id: string;
-  name?: string;
   title?: string;
+  name?: string;
   type?: string;
-  color?: string;
+  domain?: string;
+  color?: string | null;
+  size?: number;
+  icon?: string;
   weight?: number;
-  [key: string]: any;
+  val?: number;
+  [key: string]: any;  // Allow for additional properties
 }
 
 /**
- * Basic link structure for the graph visualization
+ * Core GraphLink representation
  */
 export interface GraphLink {
   source: string | GraphNode;
   target: string | GraphNode;
   type?: string;
-  color?: string;
-  width?: number;
   weight?: number;
+  value?: number;
   label?: string;
-  [key: string]: any;
+  [key: string]: any;  // Allow for additional properties
 }
 
 /**
@@ -37,41 +40,23 @@ export interface GraphData {
 }
 
 /**
- * Extended ForceGraphMethods interface for the graph renderer
+ * GraphRenderer ref methods
  */
-export interface GraphRendererRef extends Partial<ForceGraphMethods> {
-  centerOn: (nodeId: string) => void;
-  setZoom: (zoom: number) => void;
+export interface GraphRendererRef {
+  centerOnNode: (nodeId: string) => void;
+  centerAt: (x: number, y: number, duration?: number) => void;
   zoomToFit: (duration?: number) => void;
-  getNodeAt?: (x: number, y: number) => GraphNode | null;
+  setZoom: (zoomLevel: number) => void;
+  getGraphData: () => GraphData;
 }
 
 /**
- * Props for the useRelationshipGraph hook
+ * Props for relationship graph component
  */
-export interface UseRelationshipGraphProps {
+export interface RelationshipGraphProps {
   startingNodeId: string;
   hasAttemptedRetry?: boolean;
-}
-
-/**
- * Return type for the useGraphState hook
- */
-export interface UseGraphStateReturn {
-  graphData: GraphData;
-  loading: boolean;
-  error: string | null;
-  setGraphData: (data: GraphData) => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
-}
-
-/**
- * Props for the GraphControls component
- */
-export interface GraphControlsProps {
-  zoomLevel: number;
-  onZoomChange: (newZoom: number) => void;
-  onResetZoom: () => void;
-  isDisabled: boolean;
+  width?: number;
+  height?: number;
+  className?: string;
 }

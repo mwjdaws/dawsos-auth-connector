@@ -37,7 +37,7 @@ export function GraphZoomControl({
 
   const handleSliderChange = (value: number[]) => {
     if (value && value.length > 0) {
-      onZoomChange(value[0]);
+      onZoomChange(value[0] || 1); // Default to 1 if undefined
     }
   };
 

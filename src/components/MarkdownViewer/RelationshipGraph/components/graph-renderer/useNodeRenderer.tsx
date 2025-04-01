@@ -2,69 +2,49 @@
 /**
  * useNodeRenderer hook
  * 
- * This hook provides a customized node renderer for the force graph
+ * This hook provides functions for rendering nodes in the graph
  */
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { GraphNode } from '../../types';
 
 interface UseNodeRendererProps {
-  highlightedNodeId: string | null;
-  onNodeClick?: (nodeId: string) => void;
+  nodeColorMap?: Record<string, string>;
+  defaultNodeColor?: string;
+  nodeSizeRange?: [number, number];
+  defaultNodeSize?: number;
 }
 
-export function useNodeRenderer({ 
-  highlightedNodeId,
-  onNodeClick
-}: UseNodeRendererProps) {
-  // Determine if a node is highlighted
-  const isNodeHighlighted = useCallback((node: GraphNode): boolean => {
-    return highlightedNodeId === node.id;
-  }, [highlightedNodeId]);
+export function useNodeRenderer({
+  nodeColorMap = {},
+  defaultNodeColor = '#aaaaaa',
+  nodeSizeRange = [4, 12],
+  defaultNodeSize = 6
+}: UseNodeRendererProps = {}) {
   
-  // Get node color based on type and highlight status
+  // Get node color based on type
   const getNodeColor = useCallback((node: GraphNode): string => {
     if (node.color) return node.color;
     
-    if (isNodeHighlighted(node)) {
-      return '#ff6b6b';
+    if (node.type && nodeColorMap[node.type]) {
+      return nodeColorMap[node.type];
     }
     
-    // Color based on node type
-    switch (node.type) {
-      case 'source':
-        return '#4ecdc4';
-      case 'ontology':
-        return '#f9c74f';
-      default:
-        return '#aaa';
-    }
-  }, [isNodeHighlighted]);
+    return defaultNodeColor;
+  }, [nodeColorMap, defaultNodeColor]);
   
-  // Get node size based on weight and highlight status
+  // Get node size based on weight
   const getNodeSize = useCallback((node: GraphNode): number => {
-    const baseSize = node.size || 6;
-    const weightMultiplier = node.weight || 1;
+    if (node.size) return node.size;
     
-    return isNodeHighlighted(node)
-      ? baseSize * weightMultiplier * 1.5
-      : baseSize * weightMultiplier;
-  }, [isNodeHighlighted]);
+    const weight = node.weight || 1;
+    const [min, max] = nodeSizeRange;
+    
+    // Normalize size between min and max
+    return Math.max(min, Math.min(max, defaultNodeSize * weight));
+  }, [nodeSizeRange, defaultNodeSize]);
   
-  // Handle node click
-  const handleNodeClick = useCallback((node: GraphNode) => {
-    if (onNodeClick) {
-      onNodeClick(node.id);
-    }
-  }, [onNodeClick]);
-  
-  // Custom node object with paint method
-  const nodeObject = useMemo(() => ({
-    color: getNodeColor,
-    size: getNodeSize
-  }), [getNodeColor, getNodeSize]);
-  
-  return { 
-    nodeObject,
-    handleNodeClick
+  return {
+    getNodeColor,
+    getNodeSize
   };
 }

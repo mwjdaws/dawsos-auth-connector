@@ -3,53 +3,54 @@
  * useLinkRenderer Hook
  * 
  * Custom hook for rendering links in the graph visualization.
- * Encapsulates the link appearance and labeling logic based on link types.
- * 
- * @returns {Object} Methods for getting link colors and labels
  */
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { GraphLink } from '../../types';
 
-export function useLinkRenderer() {
-  // Memoize link colors to prevent recalculations on re-renders
-  const colors = useMemo(() => {
-    return {
-      links: {
-        default: '#999',
-        wikilink: '#63b3ed',
-        manual: '#9f7aea',
-        'AI-suggested': '#f6ad55',
-        'has_term': '#cbd5e0',
-        'is_a': '#a0aec0',
-        'part_of': '#e53e3e',
-        'related_to': '#d69e2e'
-      }
-    };
-  }, []);
+interface UseLinkRendererProps {
+  linkColorMap?: Record<string, string>;
+  defaultLinkColor?: string;
+  linkWidthRange?: [number, number];
+  defaultLinkWidth?: number;
+}
+
+export function useLinkRenderer({
+  linkColorMap = {},
+  defaultLinkColor = '#999999',
+  linkWidthRange = [1, 3],
+  defaultLinkWidth = 1.5
+}: UseLinkRendererProps = {}) {
   
-  /**
-   * Get the appropriate color for a link based on its type
-   * 
-   * @param {GraphLink} link - The link object
-   * @returns {string} The color to use for the link
-   */
-  const getLinkColor = useCallback((link: GraphLink) => {
-    if (!link.type) return colors.links.default;
-    return colors.links[link.type as keyof typeof colors.links] || colors.links.default;
-  }, [colors.links]);
+  // Get link color based on type
+  const getLinkColor = useCallback((link: GraphLink): string => {
+    if (link.color) return link.color;
+    
+    if (link.type && linkColorMap[link.type]) {
+      return linkColorMap[link.type];
+    }
+    
+    return defaultLinkColor;
+  }, [linkColorMap, defaultLinkColor]);
   
-  /**
-   * Get the label text for a link
-   * 
-   * @param {GraphLink} link - The link object
-   * @returns {string} The label to display for the link
-   */
-  const getLinkLabel = useCallback((link: GraphLink) => {
-    return link.type || '';
+  // Get link width based on weight
+  const getLinkWidth = useCallback((link: GraphLink): number => {
+    if (link.width) return link.width;
+    
+    const weight = link.weight || 1;
+    const [min, max] = linkWidthRange;
+    
+    // Normalize width between min and max
+    return Math.max(min, Math.min(max, defaultLinkWidth * weight));
+  }, [linkWidthRange, defaultLinkWidth]);
+  
+  // Get link label
+  const getLinkLabel = useCallback((link: GraphLink): string => {
+    return link.label || link.type || '';
   }, []);
   
   return {
     getLinkColor,
+    getLinkWidth,
     getLinkLabel
   };
 }

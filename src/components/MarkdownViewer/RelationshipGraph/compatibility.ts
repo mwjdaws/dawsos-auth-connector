@@ -1,129 +1,120 @@
 
 /**
- * Compatibility utilities for the relationship graph
- * 
- * These functions help ensure proper type safety and data validation
- * when working with the graph data.
+ * Compatibility utilities for the Relationship Graph
  */
-import { GraphData, GraphNode, GraphLink, GraphRendererRef } from './types';
+import { GraphData, GraphNode, GraphLink } from './types';
 
 /**
- * Ensures a value is a number
+ * Ensures non-null graph data
  */
-export const ensureNumber = (value: any, defaultValue = 0): number => {
-  if (typeof value === 'number' && !isNaN(value)) {
-    return value;
-  }
-  return defaultValue;
-};
+export function ensureGraphData(data: GraphData | null | undefined): GraphData {
+  if (!data) return { nodes: [], links: [] };
+  return {
+    nodes: Array.isArray(data.nodes) ? data.nodes : [],
+    links: Array.isArray(data.links) ? data.links : []
+  };
+}
 
 /**
- * Ensures a value is a string
+ * Ensures a node has all required properties
  */
-export const ensureString = (value: any, defaultValue = ''): string => {
-  if (typeof value === 'string') {
-    return value;
-  }
-  return defaultValue;
-};
-
-/**
- * Ensures a value is a boolean
- */
-export const ensureBoolean = (value: any, defaultValue = false): boolean => {
-  if (typeof value === 'boolean') {
-    return value;
-  }
-  return defaultValue;
-};
-
-/**
- * Ensures a zoom value is valid
- */
-export const ensureValidZoom = (zoom: number): number => {
-  if (isNaN(zoom) || zoom < 0.2) {
-    return 0.2;
-  }
-  if (zoom > 2) {
-    return 2;
-  }
-  return zoom;
-};
-
-/**
- * Validates and sanitizes graph data
- */
-export const ensureValidGraphData = (data: any): GraphData => {
-  if (!data) {
-    return { nodes: [], links: [] };
-  }
-  
-  const nodes = Array.isArray(data.nodes) ? data.nodes : [];
-  const links = Array.isArray(data.links) ? data.links : [];
+export function ensureValidNode(node: any): GraphNode {
+  if (!node) return { id: generateTempId() };
   
   return {
-    nodes,
-    links
+    id: node.id || generateTempId(),
+    title: node.title || node.name || '',
+    name: node.name || node.title || '',
+    type: node.type || 'unknown',
+    ...node
   };
-};
+}
 
 /**
- * Sanitizes graph data to ensure all required properties exist
+ * Ensures a link has all required properties
  */
-export const sanitizeGraphData = (data: GraphData): GraphData => {
-  const sanitizedNodes = data.nodes.map((node: GraphNode) => ({
-    id: ensureString(node.id, `node-${Math.random().toString(36).substr(2, 9)}`),
-    name: ensureString(node.name),
-    title: ensureString(node.title),
-    type: ensureString(node.type, 'default'),
-    weight: ensureNumber(node.weight, 1)
-  }));
+export function ensureValidLink(link: any, nodes: GraphNode[]): GraphLink | null {
+  if (!link) return null;
   
-  const nodeMap = new Map(sanitizedNodes.map(node => [node.id, node]));
+  // Validate source and target
+  const source = typeof link.source === 'string' ? link.source : link.source?.id;
+  const target = typeof link.target === 'string' ? link.target : link.target?.id;
   
-  const sanitizedLinks = data.links.map((link: GraphLink) => {
-    const sourceId = typeof link.source === 'string' ? link.source : link.source?.id;
-    const targetId = typeof link.target === 'string' ? link.target : link.target?.id;
-    
-    return {
-      source: ensureString(sourceId),
-      target: ensureString(targetId),
-      type: ensureString(link.type, 'default'),
-      weight: ensureNumber(link.weight, 1)
-    };
-  }).filter(link => 
-    nodeMap.has(link.source as string) && 
-    nodeMap.has(link.target as string)
-  );
+  if (!source || !target) return null;
+  
+  // Ensure source and target nodes exist
+  const sourceExists = nodes.some(n => n.id === source);
+  const targetExists = nodes.some(n => n.id === target);
+  
+  if (!sourceExists || !targetExists) return null;
   
   return {
-    nodes: sanitizedNodes,
-    links: sanitizedLinks
+    source,
+    target,
+    type: link.type || 'default',
+    ...link
   };
-};
+}
 
 /**
- * Creates a compatible graph ref with safely typed methods
+ * Generates a temporary ID for graph nodes
  */
-export const createCompatibleGraphRef = (): GraphRendererRef => {
-  return {
-    centerOn: (nodeId: string) => {},
-    zoomToFit: (duration?: number) => {},
-    resetZoom: () => {},
-    setZoom: (zoomLevel: number) => {},
-    getGraphData: () => ({ nodes: [], links: [] })
-  };
-};
+export function generateTempId(): string {
+  return `node-${Math.random().toString(36).substr(2, 9)}`;
+}
 
 /**
- * Creates safe props for the graph renderer
+ * Adapts graph data to ensure types are correct
  */
-export const createSafeGraphProps = (props: any): any => {
+export function adaptGraphData(data: any): GraphData {
+  if (!data) return { nodes: [], links: [] };
+  
+  const adaptedNodes = Array.isArray(data.nodes) 
+    ? data.nodes.map(ensureValidNode).filter(Boolean)
+    : [];
+  
+  const adaptedLinks = Array.isArray(data.links)
+    ? data.links.map(link => ensureValidLink(link, adaptedNodes)).filter(Boolean)
+    : [];
+  
   return {
-    graphData: ensureValidGraphData(props.graphData),
-    width: ensureNumber(props.width, 800),
-    height: ensureNumber(props.height, 600),
-    highlightedNodeId: props.highlightedNodeId || null,
-    zoom: ensureValidZoom(props.zoom ?? 1)
+    nodes: adaptedNodes,
+    links: adaptedLinks as GraphLink[]
   };
-};
+}
+
+/**
+ * Type-safe wrapper for graph renderer ref methods
+ */
+export function wrapGraphRendererRef(ref: any) {
+  if (!ref) return null;
+  
+  return {
+    centerOnNode: (nodeId: string) => {
+      if (ref.current && typeof ref.current.centerOnNode === 'function') {
+        ref.current.centerOnNode(nodeId);
+      }
+    },
+    centerAt: (x: number, y: number, duration = 1000) => {
+      if (ref.current && typeof ref.current.centerAt === 'function') {
+        ref.current.centerAt(x, y, duration);
+      }
+    },
+    zoomToFit: (duration = 1000) => {
+      if (ref.current && typeof ref.current.zoomToFit === 'function') {
+        ref.current.zoomToFit(duration);
+      }
+    },
+    setZoom: (zoomLevel: number) => {
+      if (ref.current && typeof ref.current.setZoom === 'function') {
+        ref.current.setZoom(zoomLevel);
+      }
+    },
+    getGraphData: () => {
+      if (ref.current && typeof ref.current.getGraphData === 'function') {
+        return ref.current.getGraphData();
+      }
+      return { nodes: [], links: [] };
+    }
+  };
+}

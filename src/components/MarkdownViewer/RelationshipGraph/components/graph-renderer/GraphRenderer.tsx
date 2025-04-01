@@ -4,7 +4,24 @@ import ForceGraph2D from 'react-force-graph-2d';
 import { GraphData, GraphNode, GraphLink } from '../../types';
 import { useNodeRenderer } from './useNodeRenderer';
 import { useLinkRenderer } from './useLinkRenderer';
-import { NODE_COLOR_MAP, LINK_COLOR_MAP } from '../../utils/graphUtils';
+
+// Constants for node and link colors
+const NODE_COLOR_MAP = {
+  source: '#4ecdc4',
+  ontology: '#f9c74f',
+  document: '#6b7280',
+  term: '#a0aec0'
+};
+
+const LINK_COLOR_MAP = {
+  wikilink: '#63b3ed',
+  manual: '#9f7aea',
+  'AI-suggested': '#f6ad55',
+  'has_term': '#cbd5e0',
+  'is_a': '#a0aec0',
+  'part_of': '#e53e3e',
+  'related_to': '#d69e2e'
+};
 
 interface GraphRendererProps {
   graphData: GraphData;
@@ -28,17 +45,17 @@ export const GraphRenderer = forwardRef<any, GraphRendererProps>(({
   const graphRef = useRef<any>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   
-  // Use custom node and link renderers
+  // Use node and link renderer hooks
   const nodeRenderer = useNodeRenderer({
     nodeColorMap: NODE_COLOR_MAP,
-    defaultNodeColor: '#6b7280', // gray
+    defaultNodeColor: '#6b7280',
     nodeSizeRange: [4, 12],
     defaultNodeSize: 8
   });
   
   const linkRenderer = useLinkRenderer({
     linkColorMap: LINK_COLOR_MAP,
-    defaultLinkColor: '#d1d5db', // light gray
+    defaultLinkColor: '#d1d5db',
     linkWidthRange: [1, 3],
     defaultLinkWidth: 1.5
   });
@@ -60,14 +77,14 @@ export const GraphRenderer = forwardRef<any, GraphRendererProps>(({
         }
       }
     },
+    centerAt: (x: number, y: number, duration = 1000) => {
+      if (graphRef.current) {
+        graphRef.current.centerAt(x, y, duration);
+      }
+    },
     zoomToFit: (duration = 1000) => {
       if (graphRef.current) {
         graphRef.current.zoomToFit(duration);
-      }
-    },
-    resetZoom: () => {
-      if (graphRef.current) {
-        graphRef.current.zoomToFit(500);
       }
     },
     setZoom: (zoomLevel: number) => {

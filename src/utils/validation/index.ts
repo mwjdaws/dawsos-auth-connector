@@ -17,14 +17,14 @@ export * from './contentIdValidation';
 // Export document validation
 export * from './documentValidation';
 
-// For backward compatibility
+// Export with explicit names for backward compatibility
 export {
   createValidResult,
   createInvalidResult,
   createContentValidationResult,
   isValidResult,
   combineValidationResults
-} from './utils';
+} from './types';
 
 // Export validation functions for different entity types
 export { validateContentId, isValidContentId, isUUID, isTempId } from './contentIdValidation';
