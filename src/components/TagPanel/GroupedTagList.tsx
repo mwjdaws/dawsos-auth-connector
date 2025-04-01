@@ -1,139 +1,97 @@
 
-import React from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tag } from '@/types/tag';
-import { TagGroup } from './hooks/useTagGroups'; 
+import React from "react";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTagGroups } from "./hooks/useTagGroups";
+import { Tag } from "@/types/tag";
 
-// Helper function to sort tags by display_order
-function sortTagsByDisplayOrder(tags: Tag[]): Tag[] {
-  return [...tags].sort((a, b) => {
-    // Default to 0 if display_order is not defined
-    const orderA = a.display_order || 0;
-    const orderB = b.display_order || 0;
-    return orderA - orderB;
-  });
+export interface TagGroupType {
+  category: string;
+  tags: Tag[];
 }
 
 interface GroupedTagListProps {
-  tagGroups: TagGroup[];
+  tags: Tag[];
+  isLoading?: boolean;
+  contentId?: string;
   onTagClick?: (tag: string) => void;
   onTagDelete?: (tagId: string) => void;
   editable?: boolean;
-  isLoading?: boolean;
-  isDeletingTag?: boolean;
+  emptyMessage?: string;
+  maxHeight?: string;
+  refreshTrigger?: number;
 }
 
 /**
- * GroupedTagList Component
- * 
- * Displays tags grouped by their categories or types.
+ * Displays tags grouped by their type/category
  */
-export function GroupedTagList({
-  tagGroups,
+export const GroupedTagList: React.FC<GroupedTagListProps> = ({
+  tags,
+  isLoading = false,
+  contentId,
   onTagClick,
   onTagDelete,
   editable = false,
-  isLoading = false,
-  isDeletingTag = false
-}: GroupedTagListProps) {
-  if (isLoading) {
-    return <TagListSkeleton />;
-  }
-
-  if (!tagGroups || tagGroups.length === 0) {
+  emptyMessage = "No tags found",
+  maxHeight = "200px",
+  refreshTrigger
+}) => {
+  const { tagGroups, isLoading: isGroupingTags } = useTagGroups(tags);
+  
+  const loading = isLoading || isGroupingTags;
+  
+  if (loading) {
     return (
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-md">Tags</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center text-sm text-muted-foreground py-2">
-            No tags have been added yet.
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-2">
+        <Skeleton className="h-6 w-20" />
+        <div className="flex flex-wrap gap-2">
+          <Skeleton className="h-8 w-16" />
+          <Skeleton className="h-8 w-20" />
+          <Skeleton className="h-8 w-14" />
+        </div>
+      </div>
     );
   }
-
+  
+  if (!tagGroups || tagGroups.length === 0 || tagGroups.every(group => group.tags.length === 0)) {
+    return <p className="text-muted-foreground text-sm py-2">{emptyMessage}</p>;
+  }
+  
   return (
-    <div className="space-y-4">
-      {tagGroups.map((group) => {
-        // Ensure we have tags in the group
-        if (!group.tags || group.tags.length === 0) return null;
-        
-        // Sort tags by display order
-        const sortedTags = sortTagsByDisplayOrder(group.tags);
-        
-        // Use group.name if available, or fallback to category-based naming
-        const displayName = group.name || (group.category ? `${group.category} Tags` : 'Other Tags');
-        
-        return (
-          <Card key={group.id} className="shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-md">{displayName}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {sortedTags.map((tag) => (
-                  <Badge
-                    key={tag.id}
-                    variant="outline"
-                    className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                    onClick={() => onTagClick && onTagClick(tag.name)}
-                  >
-                    {tag.name}
-                    {editable && onTagDelete && (
-                      <button
-                        className="ml-1 hover:text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onTagDelete(tag.id);
-                        }}
-                        disabled={isDeletingTag}
-                      >
-                        ×
-                      </button>
-                    )}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
+    <ScrollArea className={`w-full ${maxHeight ? `max-h-[${maxHeight}]` : ''}`}>
+      <div className="space-y-4">
+        {tagGroups.map((group) => (
+          <div key={group.category} className="space-y-2">
+            <h4 className="text-sm font-medium">{group.category}</h4>
+            <div className="flex flex-wrap gap-2">
+              {group.tags.map((tag) => (
+                <Badge
+                  key={tag.id}
+                  className={`${onTagClick ? 'cursor-pointer' : ''}`}
+                  variant="secondary"
+                  onClick={() => onTagClick && onTagClick(tag.name)}
+                >
+                  {tag.name}
+                  {editable && onTagDelete && (
+                    <span
+                      className="ml-1 cursor-pointer text-muted-foreground hover:text-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onTagDelete(tag.id);
+                      }}
+                    >
+                      ×
+                    </span>
+                  )}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </ScrollArea>
   );
-}
+};
 
-function TagListSkeleton() {
-  return (
-    <div className="space-y-4">
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <Skeleton className="h-5 w-32" />
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            <Skeleton className="h-6 w-16" />
-            <Skeleton className="h-6 w-20" />
-            <Skeleton className="h-6 w-14" />
-          </div>
-        </CardContent>
-      </Card>
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <Skeleton className="h-5 w-32" />
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            <Skeleton className="h-6 w-12" />
-            <Skeleton className="h-6 w-24" />
-            <Skeleton className="h-6 w-18" />
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+export default GroupedTagList;

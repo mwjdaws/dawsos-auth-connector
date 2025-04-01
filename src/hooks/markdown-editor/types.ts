@@ -1,97 +1,131 @@
 
+import { Json } from '@/types/supabase';
+
 /**
- * Types for Markdown Editor functionality
+ * Options for the Markdown Editor
  */
-
-// Base document types
-export interface DocumentMetadata {
-  id?: string;
-  title: string;
-  content: string;
-  templateId: string | null;
-  externalSourceUrl: string;
-  sourceId?: string | null;
-}
-
-// Content state management
-export interface ContentState {
-  title: string;
-  content: string;
-  templateId: string | null;
-  externalSourceUrl: string;
-  isDirty: boolean;
-  isPublished: boolean;
-  lastSavedTitle: string;
-  lastSavedContent: string;
-  lastSavedExternalSourceUrl: string;
-}
-
-// Props for the MarkdownEditor component
 export interface MarkdownEditorProps {
   initialTitle?: string;
   initialContent?: string;
   initialTemplateId?: string | null;
   initialExternalSourceUrl?: string;
   documentId?: string | null;
-  sourceId?: string | null;
+  sourceId?: string;
   onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
   onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
 }
 
-// Props for the document operations hook
+/**
+ * Props for document operations
+ */
 export interface DocumentOperationsProps {
-  documentId?: string | null;
+  documentId: string | null;
   onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
   onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
 }
 
-// Props for the document operation handlers
-export interface DocumentOperationHandlerProps {
-  title: string;
-  content: string;
-  templateId: string | null;
-  externalSourceUrl: string;
-  documentId?: string | null;
-  sourceId?: string | null;
-  saveDraft: (options?: SaveHandlerOptions) => Promise<string | null>;
-  setLastSavedTitle: (title: string) => void;
-  setLastSavedContent: (content: string) => void;
-  setLastSavedExternalSourceUrl: (url: string) => void;
-  setIsDirty: (isDirty: boolean) => void;
-  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
-  onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
-}
-
-// Options for save handler
+/**
+ * Options for save handler
+ */
 export interface SaveHandlerOptions {
   isManualSave?: boolean;
   isAutoSave?: boolean;
-  showToast?: boolean;
-  suppressValidation?: boolean;
 }
 
-// Props for publish handler
+/**
+ * Props for the publish handler
+ */
 export interface UsePublishHandlerProps {
   title: string;
   content: string;
   templateId: string | null;
   externalSourceUrl: string;
   saveDraft: (options?: SaveHandlerOptions) => Promise<string | null>;
-  publishDocument: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => Promise<boolean>;
-  onPublish: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
+  publishDocument: any;
+  onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
   createVersion: (documentId: string, content: string, metadata?: any) => Promise<void>;
   enrichContentWithOntology?: (sourceId: string, content: string, title: string, options?: any) => Promise<any>;
-  setLastSavedTitle: (title: string) => void;
-  setLastSavedContent: (content: string) => void;
-  setLastSavedExternalSourceUrl: (url: string) => void;
-  setIsDirty: (isDirty: boolean) => void;
 }
 
-// Props for document lifecycle operations
+/**
+ * Props for document lifecycle hooks
+ */
 export interface UseDocumentLifecycleProps {
   createVersion: (documentId: string, content: string, metadata?: any) => Promise<void>;
   enrichContentWithOntology?: (sourceId: string, content: string, title: string, options?: any) => Promise<any>;
 }
 
-// Re-export ontology types
-export type { OntologyTerm, RelatedTerm } from '@/types/ontology';
+/**
+ * Result of document operations
+ */
+export interface DocumentOperationResult {
+  success: boolean;
+  contentId: string | null;
+  error?: any;
+}
+
+/**
+ * Result of publishing operations
+ */
+export interface PublishResult {
+  success: boolean;
+  documentId: string | null;
+  error?: any;
+}
+
+/**
+ * Context for draft operations
+ */
+export interface DraftOperationsContext {
+  userId?: string;
+  createVersion?: (documentId: string, content: string, metadata?: any) => Promise<void>;
+}
+
+/**
+ * Result of draft save operations
+ */
+export interface SaveDraftResult {
+  success: boolean;
+  documentId: string | null;
+  error?: any;
+}
+
+/**
+ * Context for publish operations
+ */
+export interface PublishOperationsContext {
+  userId?: string;
+}
+
+/**
+ * Ontology term definition
+ */
+export interface OntologyTerm {
+  id: string;
+  term: string;
+  description: string;
+  domain?: string;
+  review_required?: boolean;
+}
+
+/**
+ * Related term definition
+ */
+export interface RelatedTerm {
+  id: string;
+  term: string;
+  description: string;
+  domain?: string;
+  relation_type: string;
+}
+
+/**
+ * Related note definition
+ */
+export interface RelatedNote {
+  id: string;
+  title: string;
+  score?: number;
+  applied: boolean;
+  rejected: boolean;
+}

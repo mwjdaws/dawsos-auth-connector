@@ -1,103 +1,110 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { RefreshCw } from 'lucide-react';
-import { useTagGroups, TagGroup } from './hooks/useTagGroups';
-import { Tag } from '@/types/tag';
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TagGroup } from "./hooks/useTagGroups";
+import { Tag } from "@/types/tag";
 
 interface TagCardsProps {
-  tags?: Tag[];
-  isLoading?: boolean;
-  error?: Error | null;
-  handleRefresh?: () => void;
+  tagGroupsResult: {
+    tagGroups: TagGroup[];
+    isLoading: boolean;
+    error: Error | null;
+    refreshGroups: () => boolean;
+  };
   onTagClick?: (tag: string) => void;
+  onTagDelete?: (tagId: string) => void;
+  editable?: boolean;
 }
 
-export function TagCards({ tags = [], isLoading = false, error = null, handleRefresh, onTagClick }: TagCardsProps) {
-  const [recentTags, setRecentTags] = useState<Tag[]>([]);
-  const groupedTags = useTagGroups(recentTags);
-
-  useEffect(() => {
-    // Use provided tags or fetch the most recent tags
-    if (tags && tags.length > 0) {
-      setRecentTags(tags);
-    } else {
-      // In a real implementation, you might fetch recent tags here
-      setRecentTags([]);
-    }
-  }, [tags]);
-
+/**
+ * Displays tags in cards grouped by type/category
+ */
+export const TagCards: React.FC<TagCardsProps> = ({
+  tagGroupsResult,
+  onTagClick,
+  onTagDelete,
+  editable = false
+}) => {
+  const { tagGroups, isLoading, error, refreshGroups } = tagGroupsResult;
+  
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-[100px] w-full" />
-        <Skeleton className="h-[100px] w-full" />
+        <Card>
+          <CardHeader className="pb-2">
+            <Skeleton className="h-5 w-32" />
+          </CardHeader>
+          <CardContent className="pt-0 space-y-2">
+            <div className="flex flex-wrap gap-2">
+              <Skeleton className="h-8 w-16" />
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-14" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
-
+  
   if (error) {
     return (
-      <Card className="border-red-300 bg-red-50">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-red-700 text-lg flex justify-between items-center">
-            <span>Error Loading Tags</span>
-            {handleRefresh && (
-              <Button variant="ghost" size="sm" onClick={handleRefresh}>
-                <RefreshCw className="h-4 w-4 mr-1" />
-                Retry
-              </Button>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-red-700">{error.message}</p>
-        </CardContent>
-      </Card>
+      <Alert variant="destructive">
+        <AlertDescription>
+          Failed to load tags: {error.message}
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={() => refreshGroups()} 
+            className="ml-2"
+          >
+            <RefreshCw className="h-3 w-3 mr-1" /> Retry
+          </Button>
+        </AlertDescription>
+      </Alert>
     );
   }
-
-  if (!groupedTags || groupedTags.length === 0) {
+  
+  if (!tagGroups || tagGroups.length === 0) {
     return (
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Recent Tags</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">No recent tags found.</p>
-        </CardContent>
-      </Card>
+      <div className="text-muted-foreground text-sm">
+        No tags found.
+      </div>
     );
   }
-
+  
   return (
     <div className="space-y-4">
-      {groupedTags.map((group) => (
-        <Card key={group.id}>
+      {tagGroups.map((group) => (
+        <Card key={group.category}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex justify-between items-center">
-              <span>{group.name}</span>
-              {handleRefresh && (
-                <Button variant="ghost" size="sm" onClick={handleRefresh}>
-                  <RefreshCw className="h-4 w-4 mr-1" />
-                  Refresh
-                </Button>
-              )}
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">{group.category}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {group.tags.map((tag) => (
+          <CardContent className="pt-0">
+            <div className="flex flex-wrap gap-1.5">
+              {group.tags.map((tag: Tag) => (
                 <Badge
                   key={tag.id}
+                  className={`${onTagClick ? 'cursor-pointer' : ''}`}
                   variant="secondary"
-                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground"
                   onClick={() => onTagClick && onTagClick(tag.name)}
                 >
                   {tag.name}
+                  {editable && onTagDelete && (
+                    <span
+                      className="ml-1 cursor-pointer text-muted-foreground hover:text-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onTagDelete(tag.id);
+                      }}
+                    >
+                      ×
+                    </span>
+                  )}
                 </Badge>
               ))}
             </div>
@@ -106,4 +113,6 @@ export function TagCards({ tags = [], isLoading = false, error = null, handleRef
       ))}
     </div>
   );
-}
+};
+
+export default TagCards;

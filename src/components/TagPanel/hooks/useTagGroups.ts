@@ -56,12 +56,13 @@ export function useTagGroups(tags: Tag[]) {
   useEffect(() => {
     setIsLoading(true);
     try {
-      const newGroups = groupTagsByType(tags);
+      const newGroups = groupTagsByType(tags || []);
       setGroups(newGroups);
       setError(null);
     } catch (err) {
       console.error("Error grouping tags:", err);
       setError(err instanceof Error ? err : new Error(String(err)));
+      setGroups([]);
     } finally {
       setIsLoading(false);
     }
@@ -72,7 +73,7 @@ export function useTagGroups(tags: Tag[]) {
    */
   const refreshGroups = useCallback(() => {
     try {
-      const newGroups = groupTagsByType(tags);
+      const newGroups = groupTagsByType(tags || []);
       setGroups(newGroups);
       setError(null);
       return true;

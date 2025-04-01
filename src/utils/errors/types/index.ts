@@ -30,6 +30,7 @@ export enum ErrorSource {
   Utils = 'utils',
   Database = 'database',
   Component = 'component',
+  App = 'app',
   
   // For compatibility with existing code
   Network = 'network',
@@ -37,7 +38,10 @@ export enum ErrorSource {
   Validation = 'validation',
   Server = 'server',
   UI = 'ui',
-  App = 'app'
+
+  // Backward compatibility
+  Api = 'api',
+  Util = 'utils'
 }
 
 /**

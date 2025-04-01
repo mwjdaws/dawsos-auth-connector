@@ -1,391 +1,546 @@
 
 import * as React from "react";
-import { VariantProps, cva } from "class-variance-authority";
 import { cn } from "@/lib/utils";
-
-// Import recharts components directly
 import {
+  AreaChart,
   Area,
+  BarChart,
   Bar,
-  CartesianGrid,
-  ComposedChart,
-  Legend,
+  LineChart,
   Line,
+  PieChart,
+  Pie,
   ResponsiveContainer,
-  Tooltip,
   XAxis,
-  YAxis
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  TooltipProps,
+  Legend,
+  Cell,
+  ReferenceLine,
 } from "recharts";
 
-// Define chart variant styles
-const chartVariants = cva("", {
-  variants: {
-    variant: {
-      default: "",
-      stacked: "",
-    },
-  },
-  defaultVariants: {
-    variant: "default",
-  },
-});
+// Recharts component types
+type AreaChartComponentType = typeof AreaChart;
+type LineChartComponentType = typeof LineChart;
+type BarChartComponentType = typeof BarChart;
+type PieChartComponentType = typeof PieChart;
 
-// Define chart wrapper styles
-const ChartWrapper = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+const chartComponents = {
+  area: AreaChart,
+  line: LineChart,
+  bar: BarChart,
+  pie: PieChart,
+};
+
+type ChartComponentsType = typeof chartComponents;
+type ChartType = keyof ChartComponentsType;
+type ChartComponent<T extends ChartType> = ChartComponentsType[T];
+
+type ChartProps<T extends ChartType> = React.ComponentPropsWithoutRef<ChartComponent<T>> & {
+  type: T;
+};
+
+// Type for custom tooltip
+interface CustomTooltipProps extends TooltipProps<any, any> {
+  formatter: (value: any, name: string, props: any) => React.ReactNode;
+  labelFormatter: (value: any) => React.ReactNode;
+  itemSorter: (a: any, b: any) => number;
+}
+
+export function Chart<T extends ChartType>({
+  type,
+  className,
+  children,
+  ...props
+}: ChartProps<T>) {
+  const ChartComp = chartComponents[type] as React.ComponentType<any>;
+
+  return (
+    <div className="aspect-auto w-full h-full overflow-visible">
+      <ResponsiveContainer width="100%" height="100%">
+        <ChartComp
+          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+          className={cn("", className)}
+          {...props}
+        >
+          {children}
+        </ChartComp>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+type ChartAreaProps = React.ComponentPropsWithoutRef<typeof Area>;
+
+export const ChartArea = React.forwardRef<
+  React.ElementRef<typeof Area>,
+  ChartAreaProps
 >(({ className, ...props }, ref) => (
-  <div
+  <Area 
     ref={ref}
-    className={cn("w-full overflow-hidden", className)}
-    {...props}
+    className={cn("", className)} 
+    {...props} 
   />
 ));
-ChartWrapper.displayName = "ChartWrapper";
+ChartArea.displayName = "ChartArea";
 
-// Define chart tooltip styles
-const ChartTooltip = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+type ChartBarProps = React.ComponentPropsWithoutRef<typeof Bar>;
+
+export const ChartBar = React.forwardRef<
+  React.ElementRef<typeof Bar>,
+  ChartBarProps
 >(({ className, ...props }, ref) => (
-  <div
+  <Bar 
     ref={ref}
-    className={cn(
-      "rounded-lg border bg-background p-2 shadow-md",
-      className
-    )}
+    className={cn("", className)} 
+    {...props} 
+  />
+));
+ChartBar.displayName = "ChartBar";
+
+type ChartLineProps = React.ComponentPropsWithoutRef<typeof Line>;
+
+export const ChartLine = React.forwardRef<
+  React.ElementRef<typeof Line>,
+  ChartLineProps
+>(({ className, ...props }, ref) => (
+  <Line 
+    ref={ref}
+    className={cn("", className)} 
+    {...props} 
+  />
+));
+ChartLine.displayName = "ChartLine";
+
+type ChartAxisProps = React.ComponentPropsWithoutRef<typeof XAxis>;
+
+export const ChartXAxis = React.forwardRef<
+  React.ElementRef<typeof XAxis>,
+  ChartAxisProps
+>(({ className, ...props }, ref) => (
+  <XAxis 
+    ref={ref}
+    className={cn("", className)} 
+    {...props} 
+  />
+));
+ChartXAxis.displayName = "ChartXAxis";
+
+export const ChartYAxis = React.forwardRef<
+  React.ElementRef<typeof YAxis>,
+  ChartAxisProps
+>(({ className, ...props }, ref) => (
+  <YAxis 
+    ref={ref}
+    className={cn("", className)} 
+    {...props} 
+  />
+));
+ChartYAxis.displayName = "ChartYAxis";
+
+type ChartGridProps = React.ComponentPropsWithoutRef<typeof CartesianGrid>;
+
+export const ChartGrid = React.forwardRef<
+  React.ElementRef<typeof CartesianGrid>,
+  ChartGridProps
+>(({ className, ...props }, ref) => (
+  <CartesianGrid 
+    ref={ref}
+    className={cn("", className)} 
+    {...props} 
+  />
+));
+ChartGrid.displayName = "ChartGrid";
+
+export const CustomTooltip = ({ 
+  active, 
+  payload, 
+  label, 
+  formatter, 
+  labelFormatter, 
+  itemSorter
+}: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-background border border-border p-3 rounded-md shadow-md text-sm animate-in fade-in-50 zoom-in-95">
+        <div className="font-medium mb-2">
+          {labelFormatter ? labelFormatter(label) : label}
+        </div>
+        <div className="space-y-1">
+          {payload
+            .sort((a: any, b: any) => (itemSorter ? itemSorter(a, b) : 0))
+            .map((item: any, index: number) => (
+              <div
+                key={`item-${index}`}
+                className="flex items-center gap-2 text-xs"
+              >
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ background: item.color || item.fill }}
+                />
+                <span className="text-muted-foreground">
+                  {item.name}:
+                </span>{" "}
+                <span className="font-medium">
+                  {formatter ? formatter(item.value, item.name, item.payload) : item.value}
+                </span>
+              </div>
+            ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+export const ChartTooltip = React.forwardRef<
+  React.ElementRef<typeof Tooltip>,
+  Partial<CustomTooltipProps>
+>(({ className, formatter, labelFormatter, itemSorter, ...props }, ref) => (
+  <Tooltip
+    ref={ref}
+    content={<CustomTooltip formatter={formatter} labelFormatter={labelFormatter} itemSorter={itemSorter} />}
+    cursor={{ fill: "hsl(var(--muted)/0.2)" }}
     {...props}
   />
 ));
 ChartTooltip.displayName = "ChartTooltip";
 
-// Chart area component
-const ChartArea = ({ className, ...props }: React.ComponentProps<typeof Area>) => (
-  <Area className={cn("fill-primary/20 stroke-primary", className)} {...props} />
-);
-ChartArea.displayName = "ChartArea";
+type ChartLegendProps = React.ComponentPropsWithoutRef<typeof Legend>;
 
-// Chart bar component
-const ChartBar = ({ className, ...props }: React.ComponentProps<typeof Bar>) => (
-  <Bar className={cn("fill-primary", className)} {...props} />
-);
-ChartBar.displayName = "ChartBar";
-
-// Chart line component
-const ChartLine = ({ className, ...props }: React.ComponentProps<typeof Line>) => (
-  <Line
-    className={cn("stroke-primary", className)}
-    strokeWidth={2}
-    activeDot={{ r: 4 }}
-    {...props}
+export const ChartLegend = React.forwardRef<
+  React.ElementRef<typeof Legend>,
+  ChartLegendProps
+>(({ className, ...props }, ref) => (
+  <Legend 
+    ref={ref}
+    className={cn("", className)} 
+    {...props} 
   />
-);
-ChartLine.displayName = "ChartLine";
-
-// Cart grid component
-const ChartGrid = ({ className, ...props }: React.ComponentProps<typeof CartesianGrid>) => (
-  <CartesianGrid
-    className={cn("stroke-border opacity-25", className)}
-    strokeDasharray="3 3"
-    {...props}
-  />
-);
-ChartGrid.displayName = "ChartGrid";
-
-// Chart X-axis component
-interface ChartXAxisProps extends React.ComponentProps<typeof XAxis> {
-  dataKey: string;
-}
-
-const ChartXAxis = ({ className, ...props }: ChartXAxisProps) => (
-  <XAxis
-    className={cn("text-muted-foreground text-xs", className)}
-    {...props}
-  />
-);
-ChartXAxis.displayName = "ChartXAxis";
-
-// Chart Y-axis component
-interface ChartYAxisProps extends React.ComponentProps<typeof YAxis> {
-  dataKey?: string;
-}
-
-const ChartYAxis = ({ className, ...props }: ChartYAxisProps) => (
-  <YAxis
-    className={cn("text-muted-foreground text-xs", className)}
-    {...props}
-  />
-);
-ChartYAxis.displayName = "ChartYAxis";
-
-// Custom tooltip component
-interface CustomTooltipProps {
-  active?: boolean;
-  payload?: Array<{
-    name: string;
-    value: any;
-    payload: any;
-  }>;
-  label?: string;
-  formatter?: (value: any, name: string, props: any) => React.ReactNode;
-  labelFormatter?: (value: any) => React.ReactNode;
-  itemSorter?: (a: any, b: any) => number;
-}
-
-const CustomTooltip = React.forwardRef<HTMLDivElement, CustomTooltipProps>(
-  ({ active, payload, label, formatter, labelFormatter, itemSorter }, ref) => {
-    if (!active || !payload || payload.length === 0) {
-      return null;
-    }
-
-    const getFormattedValue = (item: any) => {
-      return formatter ? formatter(item.value, item.name, item) : item.value;
-    };
-
-    const getFormattedLabel = () => {
-      return labelFormatter ? labelFormatter(label) : label;
-    };
-
-    // Sort items if a sorter is provided
-    const sortedPayload = itemSorter
-      ? [...payload].sort(itemSorter)
-      : payload;
-
-    return (
-      <ChartTooltip ref={ref}>
-        <div className="text-sm font-medium">{getFormattedLabel()}</div>
-        <div className="mt-1 grid gap-0.5">
-          {sortedPayload.map((item, index) => {
-            if (!item) return null;
-            return (
-              <div key={`tooltip-item-${index}`} className="flex items-center gap-1">
-                <div
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                />
-                <div className="text-xs text-muted-foreground">{item.name}</div>
-                <div className="ml-auto text-xs font-medium">
-                  {getFormattedValue(item)}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </ChartTooltip>
-    );
-  }
-);
-CustomTooltip.displayName = "CustomTooltip";
-
-// Chart tooltip component
-const ChartCustomTooltip = ({ formatter, labelFormatter, itemSorter }: CustomTooltipProps) => (
-  <Tooltip
-    content={
-      <CustomTooltip
-        formatter={formatter}
-        labelFormatter={labelFormatter}
-        itemSorter={itemSorter}
-      />
-    }
-  />
-);
-ChartCustomTooltip.displayName = "ChartCustomTooltip";
-
-// Chart legend component
-const ChartLegend = ({ className, ...props }: React.ComponentProps<typeof Legend>) => (
-  <Legend
-    className={cn("text-xs text-muted-foreground", className)}
-    verticalAlign="bottom"
-    height={36}
-    {...props}
-  />
-);
+));
 ChartLegend.displayName = "ChartLegend";
 
-// Main chart component
-interface ChartProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof chartVariants> {
-  width?: number;
-  height?: number;
-}
-
-const Chart = React.forwardRef<HTMLDivElement, ChartProps>(
-  ({ className, variant, width = 800, height = 400, ...props }, ref) => (
-    <ChartWrapper
-      ref={ref}
-      className={cn(chartVariants({ variant }), className)}
-      {...props}
-    />
-  )
-);
-Chart.displayName = "Chart";
-
-// Export variants component
-const ChartContent = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <ResponsiveContainer width="100%" height="100%">
-    <ComposedChart {...props} />
-  </ResponsiveContainer>
-));
-ChartContent.displayName = "ChartContent";
-
-// Define data keys
-type DataKey = string | number;
-
-// Chart bars component
-interface ChartBarsProps extends React.HTMLAttributes<HTMLDivElement> {
-  data: Array<Record<string, any>>;
-  dataKeys: Array<{
-    key: DataKey;
-    name: string;
-    color?: string;
-    activeDot?: boolean | { r: number } | React.ReactNode;
-  }>;
-  grid?: boolean;
-  stackId?: string;
-  horizontal?: boolean;
-  tooltipLabel?: string;
-  formatter?: (value: any, name: string, props: any) => React.ReactNode;
-  labelFormatter?: (value: any) => React.ReactNode;
-  itemSorter?: (a: any, b: any) => number;
-}
-
-const ChartBars = ({
-  data,
-  dataKeys,
-  grid = true,
-  stackId,
-  horizontal = false,
-  tooltipLabel,
-  formatter,
-  labelFormatter,
-  itemSorter,
-}: ChartBarsProps) => {
-  if (!data || !dataKeys || dataKeys.length === 0) {
-    return null;
-  }
-
-  const categoryKey = tooltipLabel || Object.keys(data[0] || {}).find((key) => key !== "name") || "";
-
+export function SimpleAreaChart({ 
+  data, 
+  categories,
+  index,
+  colors,
+  valueFormatter,
+  startEndOnly = false,
+  showLegend = true,
+  stack = false,
+  showYAxis = false,
+  showXAxis = false,
+  yAxisWidth,
+  showValues = false,
+  showGridLines = true,
+  ...props 
+}: React.ComponentProps<typeof Chart<"area">> & {
+  data: any[];
+  categories: string[];
+  index: string;
+  colors?: string[];
+  valueFormatter?: (value: number) => string;
+  startEndOnly?: boolean;
+  showLegend?: boolean;
+  stack?: boolean;
+  showYAxis?: boolean;
+  showXAxis?: boolean;
+  yAxisWidth?: number;
+  showValues?: boolean;
+  showGridLines?: boolean;
+}) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <ComposedChart
-        data={data}
-        layout={horizontal ? "vertical" : "horizontal"}
-        margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
-      >
-        {grid && <ChartGrid />}
-        {horizontal ? (
-          <XAxis type="number" />
-        ) : (
-          <XAxis dataKey="name" />
-        )}
-        {horizontal ? (
-          <YAxis dataKey="name" type="category" />
-        ) : (
-          <YAxis />
-        )}
-        <ChartCustomTooltip 
-          formatter={formatter} 
-          labelFormatter={labelFormatter} 
-          itemSorter={itemSorter}
+    <Chart type="area" data={data} {...props}>
+      {showGridLines && <ChartGrid strokeDasharray="3 3" vertical={false} />}
+      {showXAxis && (
+        <ChartXAxis
+          dataKey={index}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          minTickGap={8}
+          tickFormatter={(value: any) => {
+            // Format the tick value
+            return value;
+          }}
         />
-        <ChartLegend />
-        {dataKeys.map((item, index) => (
-          <Bar
-            key={index}
-            dataKey={item.key}
-            name={item.name}
-            fill={item.color}
-            stroke={item.color}
-            stackId={stackId}
-            activeDot={item.activeDot ? { r: 4 } : undefined}
-          />
-        ))}
-      </ComposedChart>
-    </ResponsiveContainer>
+      )}
+      {showYAxis && (
+        <ChartYAxis
+          width={yAxisWidth}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          tickFormatter={(value: any) => {
+            // Format the tick value based on valueFormatter from props
+            if (valueFormatter) {
+              return valueFormatter(value);
+            }
+            return value;
+          }}
+        />
+      )}
+      <ChartTooltip
+        formatter={(value: any, name: string) => [
+          valueFormatter ? valueFormatter(value) : value,
+          name,
+        ]}
+      />
+      {showLegend && (
+        <ChartLegend
+          verticalAlign="top"
+          height={40}
+          content={({ payload }: any) => {
+            if (payload && payload.length) {
+              return (
+                <div className="flex flex-wrap items-center justify-center gap-4">
+                  {payload.map((entry: any, index: number) => (
+                    <div key={`item-${index}`} className="flex items-center gap-1.5">
+                      <div
+                        className="w-2.5 h-2.5 rounded-full"
+                        style={{ backgroundColor: entry.color }}
+                      />
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {entry.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            }
+            return null;
+          }}
+        />
+      )}
+      {categories.map((category, index) => (
+        <ChartArea
+          key={category}
+          type="monotone"
+          dataKey={category}
+          stroke={colors?.[index] || `hsl(var(--chart-${index + 1}))`}
+          fill={colors?.[index] || `hsl(var(--chart-${index + 1}) / 0.5)`}
+          strokeWidth={2}
+          activeDot={{ r: 6, style: { fill: "var(--chart-color)" } }}
+          stackId={stack ? "a" : undefined}
+        />
+      ))}
+    </Chart>
   );
-};
-ChartBars.displayName = "ChartBars";
-
-// Chart lines component
-interface ChartLinesProps extends React.HTMLAttributes<HTMLDivElement> {
-  data: Array<Record<string, any>>;
-  dataKeys: Array<{
-    key: DataKey;
-    name: string;
-    color?: string;
-    activeDot?: boolean | { r: number } | React.ReactNode;
-  }>;
-  grid?: boolean;
-  lineType?: "linear" | "stepAfter" | "stepBefore" | "natural" | "monotone" | "monotoneX" | "monotoneY" | "basis" | "cardinal";
-  tooltipLabel?: string;
-  formatter?: (value: any, name: string, props: any) => React.ReactNode;
-  labelFormatter?: (value: any) => React.ReactNode;
-  itemSorter?: (a: any, b: any) => number;
 }
 
-const ChartLines = ({
-  data,
-  dataKeys,
-  grid = true,
-  lineType = "monotone",
-  tooltipLabel,
-  formatter,
-  labelFormatter,
-  itemSorter,
-}: ChartLinesProps) => {
-  if (!data || !dataKeys || dataKeys.length === 0) {
-    return null;
-  }
-
-  const categoryKey = tooltipLabel || Object.keys(data[0] || {}).find((key) => key !== "name") || "";
-
+export function SimpleBarChart({ 
+  data, 
+  categories,
+  index,
+  colors,
+  valueFormatter,
+  startEndOnly = false,
+  showLegend = true,
+  stack = false,
+  showYAxis = false,
+  showXAxis = false,
+  yAxisWidth,
+  ...props 
+}: React.ComponentProps<typeof Chart<"bar">> & {
+  data: any[];
+  categories: string[];
+  index: string;
+  colors?: string[];
+  valueFormatter?: (value: number) => string;
+  startEndOnly?: boolean;
+  showLegend?: boolean;
+  stack?: boolean;
+  showYAxis?: boolean;
+  showXAxis?: boolean;
+  yAxisWidth?: number;
+}) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <ComposedChart data={data}>
-        {grid && <ChartGrid />}
-        <XAxis dataKey="name" />
-        <YAxis />
-        <ChartCustomTooltip
-          formatter={formatter}
-          labelFormatter={labelFormatter}
-          itemSorter={itemSorter}
+    <Chart type="bar" data={data} {...props}>
+      <ChartGrid strokeDasharray="3 3" vertical={false} />
+      {showXAxis && (
+        <ChartXAxis
+          dataKey={index}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          minTickGap={8}
+          tickFormatter={(value: any) => {
+            // Format the tick value
+            return value;
+          }}
         />
-        <ChartLegend />
-        {dataKeys.map((item, index) => (
-          <Line
-            key={index}
-            type={lineType}
-            dataKey={item.key}
-            name={item.name}
-            stroke={item.color}
-            activeDot={item.activeDot ? { r: 4 } : undefined}
-            strokeWidth={2}
-          />
-        ))}
-      </ComposedChart>
-    </ResponsiveContainer>
+      )}
+      {showYAxis && (
+        <ChartYAxis
+          width={yAxisWidth}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          tickFormatter={(value: any) => {
+            // Format the tick value based on valueFormatter from props
+            if (valueFormatter) {
+              return valueFormatter(value);
+            }
+            return value;
+          }}
+        />
+      )}
+      <ChartTooltip
+        formatter={(value: any, name: string) => [
+          valueFormatter ? valueFormatter(value) : value,
+          name,
+        ]}
+      />
+      {showLegend && (
+        <ChartLegend
+          verticalAlign="top"
+          height={40}
+          content={({ payload }: any) => {
+            if (payload && payload.length) {
+              return (
+                <div className="flex flex-wrap items-center justify-center gap-4">
+                  {payload.map((entry: any, index: number) => (
+                    <div key={`item-${index}`} className="flex items-center gap-1.5">
+                      <div
+                        className="w-2.5 h-2.5 rounded-full"
+                        style={{ backgroundColor: entry.color }}
+                      />
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {entry.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            }
+            return null;
+          }}
+        />
+      )}
+      {categories.map((category, index) => (
+        <Bar
+          key={index}
+          dataKey={category}
+          name={category}
+          fill={colors?.[index] || `hsl(var(--chart-${index + 1}))`}
+          stroke={colors?.[index] || `hsl(var(--chart-${index + 1}))`}
+          stackId={stack ? "a" : undefined}
+        />
+      ))}
+    </Chart>
   );
-};
-ChartLines.displayName = "ChartLines";
+}
 
-export {
-  Chart,
-  ChartArea,
-  ChartBar,
-  ChartBars,
-  ChartContent,
-  ChartCustomTooltip,
-  ChartGrid,
-  ChartLegend,
-  ChartLine,
-  ChartLines,
-  ChartTooltip,
-  ChartWrapper,
-  ChartXAxis,
-  ChartYAxis,
-};
+export function SimpleLineChart({
+  data,
+  categories,
+  index,
+  colors,
+  valueFormatter,
+  startEndOnly = false,
+  showLegend = true,
+  showYAxis = false,
+  showXAxis = false,
+  yAxisWidth,
+  showCurve = false,
+  showPoint = true,
+  ...props
+}: React.ComponentProps<typeof Chart<"line">> & {
+  data: any[];
+  categories: string[];
+  index: string;
+  colors?: string[];
+  valueFormatter?: (value: number) => string;
+  startEndOnly?: boolean;
+  showLegend?: boolean;
+  showYAxis?: boolean;
+  showXAxis?: boolean;
+  yAxisWidth?: number;
+  showCurve?: boolean;
+  showPoint?: boolean;
+}) {
+  return (
+    <Chart type="line" data={data} {...props}>
+      <ChartGrid strokeDasharray="3 3" vertical={false} />
+      {showXAxis && (
+        <ChartXAxis
+          dataKey={index}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          minTickGap={8}
+          tickFormatter={(value: any) => {
+            // Format the tick value
+            return value;
+          }}
+        />
+      )}
+      {showYAxis && (
+        <ChartYAxis
+          width={yAxisWidth}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          tickFormatter={(value: any) => {
+            // Format the tick value based on valueFormatter from props
+            if (valueFormatter) {
+              return valueFormatter(value);
+            }
+            return value;
+          }}
+        />
+      )}
+      <ChartTooltip
+        formatter={(value: any, name: string) => [
+          valueFormatter ? valueFormatter(value) : value,
+          name,
+        ]}
+      />
+      {showLegend && (
+        <ChartLegend
+          verticalAlign="top"
+          height={40}
+          content={({ payload }: any) => {
+            if (payload && payload.length) {
+              return (
+                <div className="flex flex-wrap items-center justify-center gap-4">
+                  {payload.map((entry: any, index: number) => (
+                    <div key={`item-${index}`} className="flex items-center gap-1.5">
+                      <div
+                        className="w-2.5 h-2.5 rounded-full"
+                        style={{ backgroundColor: entry.color }}
+                      />
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {entry.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            }
+            return null;
+          }}
+        />
+      )}
+      {categories.map((category, index) => (
+        <Line
+          key={index}
+          type={showCurve ? "monotone" : "linear"}
+          dataKey={category}
+          stroke={colors?.[index] || `hsl(var(--chart-${index + 1}))`}
+          strokeWidth={2}
+          dot={
+            showPoint ? { r: 3, fill: colors?.[index] || `hsl(var(--chart-${index + 1}))` } : false
+          }
+          activeDot={{
+            r: 6,
+            style: { fill: colors?.[index] || `hsl(var(--chart-${index + 1}))` },
+          }}
+        />
+      ))}
+    </Chart>
+  );
+}

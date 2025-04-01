@@ -4,8 +4,8 @@
  */
 export interface ValidationResult {
   isValid: boolean;
-  message: string | null;
   errorMessage: string | null;
+  message: string | null;
   resultType: string;
   contentExists?: boolean;
 }
@@ -16,6 +16,13 @@ export interface ValidationResult {
 export interface ContentIdValidationResult extends ValidationResult {
   resultType: 'contentId';
   contentExists: boolean;
+}
+
+/**
+ * Document content validation result
+ */
+export interface DocumentValidationResult extends ValidationResult {
+  resultType: 'document';
 }
 
 /**
@@ -33,84 +40,87 @@ export interface OntologyTermValidationResult extends ValidationResult {
 }
 
 /**
- * Create a valid result
+ * Create a valid validation result
+ * @param type Result type
+ * @param message Optional success message
+ * @returns Validation result
  */
-export function createValidResult(message: string | null = null, resultType: string = 'general'): ValidationResult {
+export function createValidResult(
+  type: string, 
+  message: string | null = null
+): ValidationResult {
   return {
     isValid: true,
-    message,
     errorMessage: null,
-    resultType
+    message,
+    resultType: type
   };
 }
 
 /**
- * Create an invalid result
+ * Create an invalid validation result
+ * @param type Result type
+ * @param errorMessage Error message
+ * @param message Optional context message
+ * @returns Validation result
  */
-export function createInvalidResult(errorMessage: string, message: string | null = null, resultType: string = 'general'): ValidationResult {
+export function createInvalidResult(
+  type: string, 
+  errorMessage: string, 
+  message: string | null = null
+): ValidationResult {
   return {
     isValid: false,
-    message,
     errorMessage,
-    resultType
+    message,
+    resultType: type
   };
 }
 
 /**
- * Create ContentIdValidationResult
+ * Create a content ID validation result
+ * @param isValid Is valid flag
+ * @param contentExists Content exists flag
+ * @param errorMessage Optional error message
+ * @param message Optional success message
+ * @returns Content ID validation result
  */
-export function createContentIdValidationResult(isValid: boolean, message: string | null, errorMessage: string | null, contentExists: boolean): ContentIdValidationResult {
+export function createContentIdValidationResult(
+  isValid: boolean,
+  contentExists: boolean,
+  errorMessage: string | null = null,
+  message: string | null = null
+): ContentIdValidationResult {
   return {
     isValid,
-    message,
+    contentExists,
     errorMessage,
-    resultType: 'contentId',
-    contentExists
+    message,
+    resultType: 'contentId'
   };
 }
 
 /**
- * Create TagValidationResult
+ * Check if a validation result is valid
+ * @param result Validation result to check
+ * @returns True if valid
  */
-export function createTagValidationResult(isValid: boolean, message: string | null, errorMessage: string | null): TagValidationResult {
-  return {
-    isValid,
-    message,
-    errorMessage,
-    resultType: 'tag'
-  };
+export function isValidResult(result: ValidationResult | undefined): boolean {
+  return result?.isValid === true;
 }
-
-/**
- * Create OntologyTermValidationResult
- */
-export function createOntologyTermValidationResult(isValid: boolean, message: string | null, errorMessage: string | null): OntologyTermValidationResult {
-  return {
-    isValid,
-    message,
-    errorMessage,
-    resultType: 'ontologyTerm'
-  };
-}
-
-/**
- * Check if a result is valid
- */
-export const isValidResult = (result: ValidationResult): boolean => result.isValid;
 
 /**
  * Combine multiple validation results
+ * @param results Results to combine
+ * @returns Combined validation result
  */
-export const combineValidationResults = (results: ValidationResult[]): ValidationResult => {
-  if (results.length === 0) {
-    return createValidResult();
+export function combineValidationResults(results: ValidationResult[]): ValidationResult {
+  // If any result is invalid, return the first invalid result
+  const firstInvalid = results.find(r => !r.isValid);
+  if (firstInvalid) {
+    return firstInvalid;
   }
   
-  const invalidResults = results.filter(result => !result.isValid);
-  if (invalidResults.length === 0) {
-    return createValidResult();
-  }
-  
-  // Return the first invalid result
-  return invalidResults[0];
-};
+  // All results are valid, return a valid result
+  return createValidResult('combined');
+}
