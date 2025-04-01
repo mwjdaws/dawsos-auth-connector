@@ -4,6 +4,7 @@ import { useDocumentVersioning } from '../useDocumentVersioning';
 import { useDraftOperations } from '../draft-operations/useDraftOperations';
 import { usePublishOperations } from '../usePublishOperations';
 import { handleError } from '@/utils/error-handling';
+import { convertErrorOptions } from '@/utils/errors/compatibility';
 import { DocumentOperationsProps, DocumentOperationResult } from '../types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -48,7 +49,10 @@ export const useDocumentOperationsCore = ({
             handleError(
               authError, 
               "Could not verify authentication status", 
-              { level: "warning", technical: false }
+              convertErrorOptions({ 
+                level: "warning", 
+                technical: false 
+              })
             );
           }
         }
@@ -82,7 +86,10 @@ export const useDocumentOperationsCore = ({
           handleError(
             result.error, 
             "An error occurred while saving the draft", 
-            { level: "error", technical: false }
+            convertErrorOptions({ 
+              level: "error", 
+              technical: false 
+            })
           );
         }
         return null;
@@ -95,7 +102,10 @@ export const useDocumentOperationsCore = ({
         handleError(
           error, 
           "An unexpected error occurred while saving the draft", 
-          { level: "error", technical: false }
+          convertErrorOptions({ 
+              level: "error", 
+              technical: false 
+          })
         );
       }
       return null;
@@ -104,8 +114,7 @@ export const useDocumentOperationsCore = ({
   
   // Use the publish operations with the saveDraft function
   const { publishDocument: publishDocumentOperation } = usePublishOperations({ 
-    saveDraft: (title, content, templateId, externalSourceUrl, userId, isAutoSave) => 
-      saveDraft(title, content, templateId, externalSourceUrl, userId, isAutoSave) 
+    saveDraft
   });
   
   /**
@@ -139,7 +148,10 @@ export const useDocumentOperationsCore = ({
           handleError(
             authError, 
             "Could not verify authentication status", 
-            { level: "error", technical: false }
+            convertErrorOptions({ 
+                level: "error", 
+                technical: false 
+            })
           );
           return { 
             success: false, 
@@ -172,7 +184,10 @@ export const useDocumentOperationsCore = ({
       handleError(
         error, 
         "An unexpected error occurred while publishing the document", 
-        { level: "error", technical: false }
+        convertErrorOptions({ 
+            level: "error", 
+            technical: false 
+        })
       );
       return { success: false, documentId: null, error };
     }

@@ -2,7 +2,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { DraftOperationsContext, SaveDraftResult } from './types';
 import { handleError } from '@/utils/error-handling';
-import { validateDocumentTitle } from '@/utils/validation';
+import { convertErrorOptions } from '@/utils/errors/compatibility';
+import { validateDocumentTitle } from '@/utils/validation/documentValidation';
 
 /**
  * Hook for draft document operations
@@ -58,7 +59,7 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
         content,
         template_id: templateId,
         external_source_url: externalSourceUrl,
-        user_id: userId
+        user_id: userId || null
       };
 
       let data;
@@ -93,7 +94,11 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
             handleError(
               versionError,
               "Warning: Could not create document version",
-              { level: "warning", technical: true, silent: isAutoSave }
+              convertErrorOptions({ 
+                level: "warning", 
+                technical: true, 
+                silent: isAutoSave 
+              })
             );
           }
         }
@@ -102,7 +107,13 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
         console.log('Creating new document for user:', userId);
         const response = await supabase
           .from('knowledge_sources')
-          .insert([knowledgeData])
+          .insert([{
+            title,
+            content,
+            template_id: templateId,
+            external_source_url: externalSourceUrl,
+            user_id: userId
+          }])
           .select()
           .single();
         
@@ -122,7 +133,11 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
         handleError(
           error,
           "Database error while saving draft",
-          { level: "error", technical: true, silent: isAutoSave }
+          convertErrorOptions({ 
+            level: "error", 
+            technical: true, 
+            silent: isAutoSave 
+          })
         );
         return { 
           success: false, 
@@ -148,7 +163,11 @@ export const useDraftOperations = (context: DraftOperationsContext) => {
       handleError(
         error,
         "Unexpected error while saving draft",
-        { level: "error", technical: true, silent: isAutoSave }
+        convertErrorOptions({ 
+          level: "error", 
+          technical: true, 
+          silent: isAutoSave 
+        })
       );
       return { 
         success: false, 
