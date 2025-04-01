@@ -1,86 +1,68 @@
 
 /**
- * Error handling types
+ * Error handling type definitions
  */
 
-/**
- * Error severity levels
- */
-export type ErrorSeverity = 'debug' | 'info' | 'warning' | 'error';
-
-/**
- * Error level enum
- */
+// Error severity levels
 export enum ErrorLevel {
-  DEBUG = 'DEBUG',
-  INFO = 'INFO',
-  WARNING = 'WARNING',
-  ERROR = 'ERROR'
+  DEBUG = "debug",
+  INFO = "info",
+  WARNING = "warning",
+  ERROR = "error"
 }
 
-/**
- * Error source categories
- */
+// Error sources (where the error originated)
 export enum ErrorSource {
-  API = 'API',
-  DATABASE = 'DATABASE',
-  UI = 'UI',
-  NETWORK = 'NETWORK',
-  AUTHENTICATION = 'AUTHENTICATION',
-  VALIDATION = 'VALIDATION',
-  PERMISSIONS = 'PERMISSIONS',
-  UNKNOWN = 'UNKNOWN'
+  CLIENT = "client",
+  SERVER = "server",
+  NETWORK = "network",
+  DATABASE = "database",
+  UNKNOWN = "unknown"
 }
 
-/**
- * Error handling options
- */
+// Core validation result interface
+export interface ValidationResult {
+  isValid: boolean;
+  errorMessage: string | null;
+  message: string | null;
+  resultType: string;
+}
+
+// Error handling options
 export interface ErrorHandlingOptions {
-  level?: ErrorSeverity | ErrorLevel;
+  // Error categorization
+  level: ErrorLevel;
+  source?: ErrorSource;
+  
+  // Context information
   context?: Record<string, any>;
+  technical?: string;
+  fingerprint?: string;
+  
+  // Display/reporting options
   silent?: boolean;
   reportToAnalytics?: boolean;
   showToast?: boolean;
   toastTitle?: string;
   toastId?: string;
-}
-
-/**
- * Error with enhanced properties
- */
-export interface EnhancedError extends Error {
+  
+  // Error details
   code?: string;
-  level?: ErrorLevel;
-  source?: ErrorSource;
+  message?: string;
+}
+
+// Default error handling options
+export const defaultErrorOptions: ErrorHandlingOptions = {
+  level: ErrorLevel.ERROR,
+  context: {},
+  silent: false,
+  reportToAnalytics: true,
+  showToast: true
+};
+
+// API Error type
+export interface ApiError extends Error {
+  status?: number;
+  code?: string;
   context?: Record<string, any>;
-}
-
-/**
- * Error boundary fallback props
- */
-export interface ErrorBoundaryFallbackProps {
-  error: Error;
-  resetErrorBoundary: () => void;
-}
-
-/**
- * Create a new enhanced error
- */
-export function createEnhancedError(
-  message: string,
-  options?: {
-    code?: string;
-    level?: ErrorLevel;
-    source?: ErrorSource;
-    context?: Record<string, any>;
-  }
-): EnhancedError {
-  const error = new Error(message) as EnhancedError;
-  if (options) {
-    error.code = options.code;
-    error.level = options.level;
-    error.source = options.source;
-    error.context = options.context;
-  }
-  return error;
 }

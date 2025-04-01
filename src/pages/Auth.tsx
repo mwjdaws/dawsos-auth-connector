@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "@/hooks/use-toast";
+import { errorToast, successToast } from "@/hooks/use-toast";
+import { handleError } from "@/utils/error-handling";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,26 +39,26 @@ const Auth = () => {
       });
       
       if (error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
+        handleError(error, {
+          toastTitle: "Sign up failed",
+          level: "error",
+          source: "server"
         });
       } else {
-        toast({
-          title: "Success",
-          description: "Check your email for the confirmation link",
-        });
+        successToast(
+          "Account created", 
+          "Please check your email for the confirmation link"
+        );
+        
         // If email confirmation is disabled, redirect to home
         if (data.user && !data.user.email_confirmed_at) {
           navigate("/");
         }
       }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "An unexpected error occurred",
-        variant: "destructive",
+    } catch (error) {
+      handleError(error, {
+        toastTitle: "Sign up error",
+        technical: "Unexpected error during sign up process"
       });
     } finally {
       setLoading(false);
@@ -75,23 +76,18 @@ const Auth = () => {
       });
       
       if (error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
+        handleError(error, {
+          toastTitle: "Sign in failed",
+          source: "server"
         });
       } else {
-        toast({
-          title: "Success",
-          description: "Successfully signed in!",
-        });
+        successToast("Welcome back", "Successfully signed in");
         navigate("/dashboard");
       }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "An unexpected error occurred",
-        variant: "destructive",
+    } catch (error) {
+      handleError(error, {
+        toastTitle: "Authentication error",
+        technical: "Unexpected error during sign in process"
       });
     } finally {
       setLoading(false);

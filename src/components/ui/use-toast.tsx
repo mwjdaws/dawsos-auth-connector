@@ -7,17 +7,20 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast";
-import { useToast as useToastImpl } from "@/components/ui/use-toast-primitive";
+import { 
+  useToast as useToastPrimitive,
+  ToastProps 
+} from "@/components/ui/use-toast-primitive";
 
-export const toast = useToastImpl().toast;
-export const useToast = useToastImpl;
+export const toast = useToastPrimitive().toast;
+export const useToast = useToastPrimitive;
 export const clearToasts = () => {
-  const { dismiss } = useToastImpl();
+  const { dismiss } = useToastPrimitive();
   dismiss(); // Dismiss all toasts
 };
 
 export function Toaster() {
-  const { toasts } = useToastImpl();
+  const { toasts } = useToastPrimitive();
 
   return (
     <ToastProvider>
