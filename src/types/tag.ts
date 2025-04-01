@@ -1,73 +1,93 @@
 
 /**
- * Type definitions for tag-related entities
+ * Tag Type Definitions
  */
 
-// Basic tag interface
+// Basic Tag interface
 export interface Tag {
   id: string;
   name: string;
   content_id: string;
   type_id: string | null;
   display_order: number;
-  type_name: string | null; // Name of the tag type
+  type_name: string;
+  color?: string; // Optional color field used in some components
 }
 
-// Type for tag positions used in reordering
+// Tag with type information
+export interface TagWithType extends Tag {
+  type_name: string;
+}
+
+// For tag position updates
 export interface TagPosition {
   id: string;
   displayOrder: number;
   name: string;
   typeId: string | null;
+  position: number; // Used for reordering
 }
 
-// Type for tag groups
+// For tag grouping
 export interface TagGroup {
-  type_id: string | null;
-  type_name: string | null;
+  name: string;
   tags: Tag[];
 }
 
-// Tag with optional additional data
-export interface EnrichedTag extends Tag {
-  type_name: string | null;
-  metadata?: Record<string, any>;
-}
+// Helper functions
+export const sortTagsByDisplayOrder = (tags: Tag[]): Tag[] => {
+  return [...tags].sort((a, b) => a.display_order - b.display_order);
+};
 
-// Tag creation request
-export interface TagCreationRequest {
-  name: string;
-  contentId: string;
-  typeId?: string | null;
-}
-
-// Tag deletion request
-export interface TagDeletionRequest {
-  tagId: string;
-  contentId: string;
-}
-
-/**
- * Converts data from API to Tag interface
- */
-export function toTag(data: any): Tag | null {
-  if (!data) return null;
+export const filterDuplicateTags = (tags: Tag[]): Tag[] => {
+  const uniqueTags = new Map<string, Tag>();
   
+  tags.forEach(tag => {
+    if (!uniqueTags.has(tag.id)) {
+      uniqueTags.set(tag.id, tag);
+    }
+  });
+  
+  return Array.from(uniqueTags.values());
+};
+
+// Conversion helpers
+export const mapApiTagToTag = (apiTag: any): Tag => {
   return {
-    id: data.id,
-    name: data.name,
-    content_id: data.content_id,
-    type_id: data.type_id,
-    display_order: data.display_order || 0,
-    type_name: data.type_name || null
+    id: apiTag.id,
+    name: apiTag.name,
+    content_id: apiTag.content_id,
+    type_id: apiTag.type_id,
+    display_order: apiTag.display_order || 0,
+    type_name: apiTag.type_name || ""
   };
-}
+};
 
-/**
- * Converts array of tag data from API to Tag[] array
- */
-export function toTags(data: any[]): Tag[] {
-  if (!data || !Array.isArray(data)) return [];
-  
-  return data.map(item => toTag(item)).filter((tag): tag is Tag => tag !== null);
-}
+export const mapApiTagsToTags = (apiTags: any[]): Tag[] => {
+  return apiTags.map(mapApiTagToTag);
+};
+
+export const ensureNonNullableTag = (tag: any): Tag => {
+  return {
+    id: tag.id || "",
+    name: tag.name || "",
+    content_id: tag.content_id || "",
+    type_id: tag.type_id || null,
+    display_order: tag.display_order || 0,
+    type_name: tag.type_name || ""
+  };
+};
+
+export const convertTagPositionsToTags = (positions: TagPosition[], existingTags: Tag[]): Tag[] => {
+  return positions.map(pos => {
+    const existingTag = existingTags.find(t => t.id === pos.id);
+    return {
+      id: pos.id,
+      name: pos.name,
+      content_id: existingTag?.content_id || "",
+      type_id: pos.typeId,
+      display_order: pos.position,
+      type_name: existingTag?.type_name || ""
+    };
+  });
+};

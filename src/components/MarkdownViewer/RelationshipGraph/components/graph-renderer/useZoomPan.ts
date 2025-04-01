@@ -18,6 +18,19 @@ interface UseZoomPanProps {
   onZoom?: (zoomLevel: number) => void;
 }
 
+interface UseZoomPanReturn {
+  transform: ZoomTransform;
+  isZooming: boolean;
+  setupZoom: (svgElement: SVGSVGElement | null) => void;
+  resetZoom: () => void;
+  setZoom: (zoomLevel: number) => void;
+  panTo: (x: number, y: number, scale?: number) => void;
+  centerOnNode: (nodeId: string, nodeElements: SVGGElement[] | null) => void;
+  canvasRef: React.RefObject<HTMLCanvasElement>;
+  initZoom: () => void;
+  zoomMethods: (nodes: any[]) => any;
+}
+
 export function useZoomPan({
   width,
   height,
@@ -25,11 +38,12 @@ export function useZoomPan({
   minZoom = 0.25,
   maxZoom = 2,
   onZoom
-}: UseZoomPanProps) {
+}: UseZoomPanProps): UseZoomPanReturn {
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown>>();
   const selectionRef = useRef<Selection<SVGSVGElement, unknown, null, undefined>>();
   const [transform, setTransform] = useState<ZoomTransform>(zoomIdentity.scale(initialZoom));
   const [isZooming, setIsZooming] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Setup zoom behavior
   useEffect(() => {
@@ -54,6 +68,23 @@ export function useZoomPan({
       }
     };
   }, [width, height, minZoom, maxZoom, onZoom]);
+
+  // Initialize zoom
+  const initZoom = useCallback(() => {
+    if (!canvasRef.current || !zoomRef.current) return;
+    
+    // Use canvas for zoom instead of SVG
+    const canvas = canvasRef.current;
+    const selection = select(canvas as unknown as SVGSVGElement);
+    selection.call(zoomRef.current);
+    selectionRef.current = selection as unknown as Selection<SVGSVGElement, unknown, null, undefined>;
+    
+    // Initialize with the starting transform
+    selection.call(
+      zoomRef.current.transform, 
+      zoomIdentity.scale(initialZoom)
+    );
+  }, [initialZoom]);
 
   // Setup SVG element selection
   const setupZoom = useCallback((svgElement: SVGSVGElement | null) => {
@@ -118,6 +149,29 @@ export function useZoomPan({
     panTo(nodeX, nodeY);
   }, [panTo]);
 
+  // Expose methods for the component to use
+  const zoomMethods = useCallback((nodes: any[]) => {
+    return {
+      zoomIn: () => {
+        const newZoom = Math.min(transform.k * 1.2, maxZoom);
+        setZoom(newZoom);
+      },
+      zoomOut: () => {
+        const newZoom = Math.max(transform.k / 1.2, minZoom);
+        setZoom(newZoom);
+      },
+      resetZoom: () => {
+        resetZoom();
+      },
+      centerOnNode: (nodeId: string) => {
+        const nodeElement = nodes.find(n => n.id === nodeId);
+        if (nodeElement) {
+          panTo(nodeElement.x, nodeElement.y);
+        }
+      }
+    };
+  }, [transform.k, maxZoom, minZoom, setZoom, resetZoom, panTo]);
+
   return {
     transform,
     isZooming,
@@ -126,5 +180,8 @@ export function useZoomPan({
     setZoom,
     panTo,
     centerOnNode,
+    canvasRef,
+    initZoom,
+    zoomMethods
   };
 }
