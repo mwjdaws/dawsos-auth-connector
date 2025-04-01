@@ -1,75 +1,95 @@
 
-import { useRef, useCallback } from 'react';
-import * as d3 from 'd3';
-import { GraphNode, GraphLink } from '../../types';
-import { ensureString } from '@/utils/compatibility';
+import { useRef, useState, useEffect } from 'react';
+import { 
+  forceSimulation, 
+  forceManyBody, 
+  forceCenter, 
+  forceLink,
+  SimulationNodeDatum,
+  Simulation
+} from 'd3-force';
+import { GraphData, GraphNode, GraphLink } from '../../../types';
 
-interface ForceSimulationOptions {
-  nodes: GraphNode[];
-  links: GraphLink[];
-  onTick: () => void;
-  strength?: number;
-  distance?: number;
+interface UseForceSimulationProps {
+  graphData: GraphData;
+  width: number;
+  height: number;
 }
 
-/**
- * Hook to create and manage D3 force simulation
- */
-export function useForceSimulation({
-  nodes,
-  links,
-  onTick,
-  strength = -300,
-  distance = 100
-}: ForceSimulationOptions) {
-  const simulationRef = useRef<d3.Simulation<GraphNode, GraphLink> | null>(null);
+export function useForceSimulation({ 
+  graphData, 
+  width, 
+  height 
+}: UseForceSimulationProps) {
+  const simulationRef = useRef<Simulation<any, any> | null>(null);
+  const [simulationNodes, setSimulationNodes] = useState<GraphNode[]>([]);
+  const [simulationLinks, setSimulationLinks] = useState<GraphLink[]>([]);
 
-  // Initialize simulation
-  const startSimulation = useCallback(() => {
-    if (!nodes || !nodes.length) return;
-
-    // Setup forces
-    simulationRef.current = d3.forceSimulation(nodes)
-      .force('link', d3.forceLink(links)
-        .id((d: any) => ensureString(d.id))
-        .distance(distance))
-      .force('charge', d3.forceManyBody().strength(strength))
-      .force('center', d3.forceCenter())
-      .force('collision', d3.forceCollide().radius(30))
-      .on('tick', onTick);
-
-    return simulationRef.current;
-  }, [nodes, links, onTick, strength, distance]);
-
-  // Stop simulation
-  const stopSimulation = useCallback(() => {
-    if (simulationRef.current) {
-      simulationRef.current.stop();
+  useEffect(() => {
+    // Make sure we have node data
+    if (!graphData.nodes.length) {
+      setSimulationNodes([]);
+      setSimulationLinks([]);
+      return;
     }
-  }, []);
 
-  // Restart simulation with new data
-  const restartSimulation = useCallback((newNodes: GraphNode[], newLinks: GraphLink[]) => {
-    if (!newNodes || !newNodes.length) return;
-    
-    stopSimulation();
-    
-    simulationRef.current = d3.forceSimulation(newNodes)
-      .force('link', d3.forceLink(newLinks)
-        .id((d: any) => ensureString(d.id))
-        .distance(distance))
-      .force('charge', d3.forceManyBody().strength(strength))
-      .force('center', d3.forceCenter())
-      .force('collision', d3.forceCollide().radius(30))
-      .on('tick', onTick);
+    // Initialize the simulation
+    if (!simulationRef.current) {
+      // Extend nodes with D3 simulation properties
+      const nodes = graphData.nodes.map(node => ({
+        ...node,
+        x: node.x || Math.random() * width, 
+        y: node.y || Math.random() * height,
+      }));
+
+      // Setup the simulation
+      const simulation = forceSimulation()
+        .force('charge', forceManyBody().strength(-300))
+        .force('center', forceCenter(width / 2, height / 2))
+        .force('link', forceLink().id((d: any) => d.id).distance(100))
+        .on('tick', () => {
+          setSimulationNodes([...nodes]);
+          setSimulationLinks([...graphData.links]);
+        });
+
+      // Initialize with nodes
+      simulation.nodes(nodes as any);
+      (simulation.force('link') as any).links(graphData.links);
       
-    return simulationRef.current;
-  }, [onTick, stopSimulation, strength, distance]);
+      simulationRef.current = simulation;
+      
+      // Initial state
+      setSimulationNodes(nodes);
+      setSimulationLinks(graphData.links);
+    } else {
+      // Update the simulation with new data
+      const simulation = simulationRef.current;
+      
+      // Update nodes
+      const nodes = graphData.nodes.map(node => ({
+        ...node,
+        x: node.x || Math.random() * width,
+        y: node.y || Math.random() * height,
+      }));
+      
+      simulation.nodes(nodes as any);
+      (simulation.force('link') as any).links(graphData.links);
+      simulation.alpha(1).restart();
+      
+      setSimulationNodes(nodes);
+      setSimulationLinks(graphData.links);
+    }
+
+    // Cleanup
+    return () => {
+      if (simulationRef.current) {
+        simulationRef.current.stop();
+      }
+    };
+  }, [graphData, width, height]);
 
   return {
-    startSimulation,
-    stopSimulation,
-    restartSimulation,
-    simulation: simulationRef.current
+    simulationNodes,
+    simulationLinks
   };
 }

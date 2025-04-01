@@ -1,121 +1,64 @@
 
-import { handleError, ErrorLevel } from './errors';
-import { ContentIdValidationResult, ContentIdValidationResultType } from '@/types/validation';
-import { fetchKnowledgeSourceExists } from '@/services/api/knowledgeSources';
+/**
+ * Content Validation Utilities
+ */
+import { validate as validateUUID } from 'uuid';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Validate a content ID
+ * Check if a content ID exists in the database
  */
-export function isValidContentId(contentId?: string): boolean {
-  if (!contentId) return false;
-  
-  // Valid UUID format
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contentId)) {
-    return true;
-  }
-  
-  // Valid temporary ID (starts with 'temp-')
-  if (contentId.startsWith('temp-')) {
-    return true;
-  }
-  
-  return false;
-}
-
-/**
- * Check if a content ID is a temporary ID
- */
-export function isTemporaryContentId(contentId?: string): boolean {
-  if (!contentId) return false;
-  return contentId.startsWith('temp-');
-}
-
-/**
- * Check if a content ID is a UUID
- */
-export function isUuidContentId(contentId?: string): boolean {
-  if (!contentId) return false;
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contentId);
-}
-
-/**
- * Validate a content ID is a valid UUID or temp ID
- */
-export function validateContentId(contentId?: string): boolean {
-  return isValidContentId(contentId);
-}
-
-/**
- * Comprehensive validation of a content ID with detailed results
- */
-export async function validateContentIdWithDetails(contentId?: string): Promise<ContentIdValidationResult> {
-  // Missing ID
-  if (!contentId) {
-    return {
-      isValid: false,
-      contentExists: false,
-      errorMessage: 'No content ID provided',
-      message: 'Please provide a valid content ID',
-      resultType: ContentIdValidationResultType.INVALID
-    };
-  }
-  
+export async function checkContentExists(contentId: string): Promise<boolean> {
   try {
-    // Check if content ID is a valid UUID
-    if (isUuidContentId(contentId)) {
-      // Check if content exists in the database
-      const exists = await fetchKnowledgeSourceExists(contentId);
+    if (!isValidContentId(contentId)) return false;
+    
+    const { data, error } = await supabase
+      .from('knowledge_sources')
+      .select('id')
+      .eq('id', contentId)
+      .single();
       
-      if (exists) {
-        return {
-          isValid: true,
-          contentExists: true,
-          errorMessage: null,
-          message: 'Valid UUID content ID that exists',
-          resultType: ContentIdValidationResultType.UUID
-        };
-      } else {
-        return {
-          isValid: true,
-          contentExists: false,
-          errorMessage: 'Content with this ID does not exist',
-          message: 'The content ID is valid but no content was found',
-          resultType: ContentIdValidationResultType.UUID
-        };
-      }
-    }
-    
-    // Check if content ID is a temporary ID
-    if (isTemporaryContentId(contentId)) {
-      return {
-        isValid: true,
-        contentExists: false,
-        errorMessage: null,
-        message: 'Valid temporary content ID',
-        resultType: ContentIdValidationResultType.TEMP
-      };
-    }
-    
-    // Invalid content ID format
-    return {
-      isValid: false,
-      contentExists: false,
-      errorMessage: 'Invalid content ID format',
-      message: 'Please provide a valid content ID',
-      resultType: ContentIdValidationResultType.INVALID
-    };
+    return !error && !!data;
   } catch (error) {
-    handleError(error, 'Error validating content ID', { 
-      level: ErrorLevel.WARNING,
-      context: { contentId }
-    });
-    
-    return {
-      isValid: false,
-      contentExists: false,
-      errorMessage: 'Error checking content existence',
-      message: 'Failed to validate the content ID',
-      resultType: ContentIdValidationResultType.UNKNOWN
-    };
+    console.error('Error checking if content exists:', error);
+    return false;
   }
+}
+
+/**
+ * Check if a string is a valid UUID
+ */
+export function isUUID(str: string): boolean {
+  return validateUUID(str);
+}
+
+/**
+ * Check if a content ID is valid (either a UUID or a temporary ID starting with 'temp-')
+ */
+export function isValidContentId(contentId: string | null | undefined): boolean {
+  if (!contentId) return false;
+  return isUUID(contentId) || contentId.startsWith('temp-');
+}
+
+/**
+ * Check if a content ID is storable (is a UUID and not a temporary ID)
+ */
+export function isStorableContentId(contentId: string | null | undefined): boolean {
+  if (!contentId) return false;
+  return isUUID(contentId);
+}
+
+/**
+ * Try to convert a string to a UUID, returning null if invalid
+ */
+export function tryConvertToUUID(str: string): string | null {
+  return isUUID(str) ? str : null;
+}
+
+/**
+ * Try to parse a content ID as a UUID, returning null if not a UUID
+ */
+export function tryParseContentIdAsUUID(contentId: string | null | undefined): string | null {
+  if (!contentId) return null;
+  return isUUID(contentId) ? contentId : null;
 }

@@ -1,82 +1,148 @@
 
-import React, { useRef, useImperativeHandle, useState, useEffect, forwardRef } from 'react';
-import { GraphData, GraphRendererRef, GraphRendererProps } from '../../types';
+import React, { useRef, useEffect, useImperativeHandle, forwardRef, useState } from 'react';
+import { GraphData, GraphNode, GraphLink, GraphRendererProps, GraphRendererRef } from '../../../types';
+import { useForceSimulation } from './useForceSimulation';
+import { useNodeRenderer } from './useNodeRenderer';
+import { useLinkRenderer } from './useLinkRenderer';
+import { useZoomPan } from './useZoomPan';
+import { sanitizeGraphData } from '@/utils/compatibility';
 
-/**
- * GraphRenderer Component
- * 
- * A force-directed graph visualization component for displaying relationship data.
- */
-export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(
-  ({ 
-    graphData, 
-    width, 
-    height, 
-    zoom = 1, 
-    highlightedNodeId, 
-    onNodeClick, 
-    onLinkClick 
-  }, ref) => {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [currentZoom, setCurrentZoom] = useState(zoom);
+export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(({
+  graphData,
+  width,
+  height,
+  highlightedNodeId,
+  zoom = 1,
+  onNodeClick,
+  onLinkClick
+}, ref) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [sanitizedData, setSanitizedData] = useState<GraphData>({ nodes: [], links: [] });
+  
+  // Process the graph data to ensure it has all required properties
+  useEffect(() => {
+    setSanitizedData(sanitizeGraphData(graphData));
+  }, [graphData]);
+  
+  // Set up the force simulation
+  const { simulationNodes, simulationLinks } = useForceSimulation({
+    graphData: sanitizedData,
+    width,
+    height
+  });
+  
+  // Node and link renderers
+  const { renderNodes, hitTest, handleNodeClick, hoveredNodeRef } = useNodeRenderer({
+    onNodeClick
+  });
+  
+  const { renderLinks, handleLinkClick } = useLinkRenderer({
+    onLinkClick
+  });
+  
+  // Zoom and pan functionality
+  const { canvasRef, transform, initZoom, zoomMethods } = useZoomPan({
+    width,
+    height,
+    initialZoom: zoom
+  });
+  
+  // Expose methods via ref
+  useImperativeHandle(ref, () => zoomMethods(simulationNodes), [
+    zoomMethods,
+    simulationNodes
+  ]);
+  
+  // Initialize zoom behavior
+  useEffect(() => {
+    initZoom();
+  }, [initZoom]);
+  
+  // Canvas rendering
+  useEffect(() => {
+    if (!canvasRef.current) return;
     
-    // Set up imperative methods for ref
-    useImperativeHandle(ref, () => ({
-      zoomIn: () => {
-        console.log("Zoom in called");
-        setCurrentZoom(prev => Math.min(prev + 0.1, 3));
-      },
-      zoomOut: () => {
-        console.log("Zoom out called");
-        setCurrentZoom(prev => Math.max(prev - 0.1, 0.1));
-      },
-      resetZoom: () => {
-        console.log("Reset zoom called");
-        setCurrentZoom(1);
-      },
-      setZoom: (newZoom: number) => {
-        console.log(`Set zoom to ${newZoom}`);
-        setCurrentZoom(Math.max(0.1, Math.min(newZoom, 3)));
-      },
-      centerOnNode: (nodeId: string) => {
-        console.log(`Center on node: ${nodeId}`);
-        // Implement centering logic here
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    
+    if (!context) return;
+    
+    // Clear canvas
+    context.clearRect(0, 0, width, height);
+    
+    // Render links and nodes
+    renderLinks(context, simulationLinks, transform);
+    renderNodes(context, simulationNodes, transform, highlightedNodeId);
+    
+  }, [
+    simulationNodes,
+    simulationLinks,
+    transform,
+    width,
+    height,
+    highlightedNodeId,
+    renderLinks,
+    renderNodes
+  ]);
+  
+  // Handle mouse interactions
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return;
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const hitNode = hitTest(x, y, simulationNodes, transform);
+    
+    // Update hover state
+    if (hitNode !== hoveredNodeRef.current) {
+      hoveredNodeRef.current = hitNode;
+      
+      // Redraw canvas to show hover effect
+      const context = canvasRef.current.getContext('2d');
+      if (context) {
+        context.clearRect(0, 0, width, height);
+        renderLinks(context, simulationLinks, transform);
+        renderNodes(context, simulationNodes, transform, highlightedNodeId);
       }
-    }));
+      
+      // Update cursor
+      canvasRef.current.style.cursor = hitNode ? 'pointer' : 'default';
+    }
+  };
+  
+  const handleMouseClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return;
     
-    useEffect(() => {
-      setCurrentZoom(zoom);
-    }, [zoom]);
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
     
-    // Would normally implement D3 force simulation here
+    const hitNode = hitTest(x, y, simulationNodes, transform);
     
-    // Simple placeholder rendering
-    return (
-      <div 
-        ref={containerRef} 
-        className="relative overflow-hidden bg-slate-50 dark:bg-slate-900 border rounded-md"
-        style={{ width, height }}
-      >
-        <div className="absolute top-2 left-2 bg-white/80 dark:bg-black/80 rounded px-2 py-1 text-xs">
-          Zoom: {currentZoom.toFixed(1)}
-        </div>
-        
-        {graphData.nodes.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-muted-foreground">No data to display</p>
-          </div>
-        ) : (
-          <div className="p-4">
-            <p className="mb-2">Graph Data:</p>
-            <p className="text-sm">{graphData.nodes.length} nodes, {graphData.links.length} links</p>
-            {highlightedNodeId && (
-              <p className="text-sm mt-2">Highlighted: {highlightedNodeId}</p>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
-);
+    if (hitNode) {
+      handleNodeClick(hitNode);
+    }
+  };
+  
+  return (
+    <div 
+      ref={containerRef}
+      className="w-full h-full relative" 
+      style={{ width: `${width}px`, height: `${height}px` }}
+    >
+      <canvas
+        ref={canvasRef}
+        width={width}
+        height={height}
+        className="absolute top-0 left-0"
+        style={{ width: `${width}px`, height: `${height}px` }}
+        onMouseMove={handleMouseMove}
+        onClick={handleMouseClick}
+      />
+    </div>
+  );
+});
 
 GraphRenderer.displayName = 'GraphRenderer';

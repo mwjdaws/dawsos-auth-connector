@@ -1,103 +1,52 @@
 
 /**
- * Validation result interfaces
+ * Validation Types
  */
 
-// Basic validation result
+// Generic validation result
 export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
   message: string | null;
+  resultType: string;
 }
 
-// Content ID specific validation result 
+// Content ID validation result
 export interface ContentIdValidationResult extends ValidationResult {
-  contentExists: boolean | null;
-  resultType: string;
+  contentExists: boolean;
 }
 
 // Tag validation result
 export interface TagValidationResult extends ValidationResult {
-  tagExists?: boolean | null;
+  isDuplicate?: boolean;
 }
 
-// Document validation result
-export interface DocumentValidationResult extends ValidationResult {
-  field?: string;
-}
-
-/**
- * Creates a valid validation result
- */
-export function createValidResult(message?: string): ValidationResult {
-  return {
-    isValid: true,
-    errorMessage: null,
-    message: message || null
-  };
-}
-
-/**
- * Creates an invalid validation result
- */
-export function createInvalidResult(errorMessage: string): ValidationResult {
-  return {
-    isValid: false,
-    errorMessage,
-    message: null
-  };
-}
-
-/**
- * Creates a content ID validation result
- */
+// Create a content ID validation result
 export function createContentIdValidationResult(
   isValid: boolean,
-  errorMessage: string | null,
-  contentExists: boolean | null = null
+  errorMessage: string | null = null,
+  contentExists: boolean = false
 ): ContentIdValidationResult {
   return {
     isValid,
     errorMessage,
-    message: null,
     contentExists,
-    resultType: 'content-id'
+    message: errorMessage,
+    resultType: 'contentId'
   };
 }
 
-/**
- * Creates a tag validation result
- */
+// Create a tag validation result
 export function createTagValidationResult(
   isValid: boolean,
-  errorMessage: string | null,
-  tagExists: boolean | null = null
+  errorMessage: string | null = null,
+  isDuplicate: boolean = false
 ): TagValidationResult {
   return {
     isValid,
     errorMessage,
-    message: null,
-    tagExists
+    message: errorMessage,
+    resultType: 'tag',
+    isDuplicate
   };
-}
-
-/**
- * Check if a validation result is valid
- */
-export function isValidResult(result: ValidationResult): boolean {
-  return result.isValid === true;
-}
-
-/**
- * Combine multiple validation results
- */
-export function combineValidationResults(results: ValidationResult[]): ValidationResult {
-  const isValid = results.every(r => r.isValid);
-  
-  if (isValid) {
-    return createValidResult();
-  }
-  
-  const firstError = results.find(r => !r.isValid);
-  return createInvalidResult(firstError?.errorMessage || 'Validation failed');
 }

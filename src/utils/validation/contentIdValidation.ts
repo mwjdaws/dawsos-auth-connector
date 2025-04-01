@@ -1,112 +1,71 @@
 
-import { v4 as uuidv4, validate as isValidUuid } from 'uuid';
-import { ContentIdValidationResult, createContentIdValidationResult } from './types';
+/**
+ * Content ID Validation Utilities
+ */
+import { validate as validateUUID } from 'uuid';
 
 /**
  * Check if a string is a valid UUID
  */
-export function isUUID(value: string | null | undefined): boolean {
-  if (!value) return false;
-  return isValidUuid(value);
+export function isUUID(str: string): boolean {
+  return validateUUID(str);
 }
 
 /**
- * Check if a string is a temporary ID (starts with 'temp-')
+ * Check if a content ID is valid (either a UUID or a temporary ID starting with 'temp-')
  */
-export function isTempId(value: string | null | undefined): boolean {
-  if (!value) return false;
-  return value.startsWith('temp-');
+export function isValidContentId(contentId: string | null | undefined): boolean {
+  if (!contentId) return false;
+  return isUUID(contentId) || contentId.startsWith('temp-');
 }
 
 /**
- * Check if a string is a valid content ID (either UUID or temp ID)
+ * Check if a content ID is storable (is a UUID and not a temporary ID)
  */
-export function isValidContentId(value: string | null | undefined): boolean {
-  if (!value) return false;
-  return isUUID(value) || isTempId(value);
+export function isStorableContentId(contentId: string | null | undefined): boolean {
+  if (!contentId) return false;
+  return isUUID(contentId);
 }
 
 /**
- * Validate a content ID and return detailed validation result
+ * Try to convert a string to a UUID, returning null if invalid
  */
-export function validateContentId(contentId: string | null | undefined): ContentIdValidationResult {
-  if (!contentId) {
-    return createContentIdValidationResult(false, 'Content ID is required', null);
-  }
-  
-  if (isTempId(contentId)) {
-    return createContentIdValidationResult(true, null, false);
-  }
-  
-  if (isUUID(contentId)) {
-    return createContentIdValidationResult(true, null, null);
-  }
-  
-  return createContentIdValidationResult(
-    false,
-    'Invalid content ID format. Expected UUID or temporary ID.',
-    false
-  );
+export function tryConvertToUUID(str: string): string | null {
+  return isUUID(str) ? str : null;
 }
 
 /**
- * Get a validation result for a content ID
- * 
- * This is a convenience wrapper around validateContentId that provides
- * a more detailed error message.
+ * Try to parse a content ID as a UUID, returning null if not a UUID
  */
-export function getContentIdValidationResult(
-  contentId: string | null | undefined
-): ContentIdValidationResult {
-  if (!contentId) {
-    return createContentIdValidationResult(
-      false,
-      'Content ID is required',
-      null
-    );
-  }
-  
-  if (contentId.trim() === '') {
-    return createContentIdValidationResult(
-      false,
-      'Content ID cannot be empty',
-      false
-    );
-  }
-  
-  if (isTempId(contentId)) {
-    return createContentIdValidationResult(
-      true,
-      null,
-      false
-    );
-  }
-  
-  if (isUUID(contentId)) {
-    return createContentIdValidationResult(
-      true,
-      null,
-      null
-    );
-  }
-  
-  return createContentIdValidationResult(
-    false,
-    `Invalid content ID format: ${contentId}. Expected UUID or temporary ID.`,
-    false
-  );
+export function tryParseContentIdAsUUID(contentId: string | null | undefined): string | null {
+  if (!contentId) return null;
+  return isUUID(contentId) ? contentId : null;
 }
 
 /**
- * Generate a new temporary content ID
+ * Create result for content ID validation
  */
-export function generateTempContentId(): string {
-  return `temp-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+export function createContentIdValidationResult(
+  isValid: boolean,
+  errorMessage: string | null = null,
+  contentExists: boolean = false
+) {
+  return {
+    isValid,
+    errorMessage,
+    contentExists,
+    message: errorMessage,
+    resultType: 'contentId'
+  };
 }
 
 /**
- * Generate a new UUID
+ * Content ID validation result type
  */
-export function generateUUID(): string {
-  return uuidv4();
+export interface ContentIdValidationResult {
+  isValid: boolean;
+  errorMessage: string | null;
+  contentExists: boolean;
+  message: string | null;
+  resultType: string;
 }

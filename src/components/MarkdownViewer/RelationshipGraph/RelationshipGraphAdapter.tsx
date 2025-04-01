@@ -2,7 +2,7 @@
 import React from 'react';
 import { GraphRenderer } from './components/graph-renderer/GraphRenderer';
 import { GraphData, GraphNode, GraphLink, GraphRendererRef } from './types';
-import { ensureString, ensureNumber, ensureBoolean, createSafeGraphProps } from '@/utils/compatibility';
+import { ensureString, ensureNumber, ensureBoolean } from '@/utils/compatibility';
 
 interface RelationshipGraphAdapterProps {
   graphData: GraphData;
@@ -39,15 +39,6 @@ export const RelationshipGraphAdapter = React.forwardRef<GraphRendererRef, Relat
       }))
     };
     
-    // Safe handler functions that won't break if the callbacks are undefined
-    const handleNodeClick = onNodeClick 
-      ? (nodeId: string) => onNodeClick(nodeId)
-      : undefined;
-      
-    const handleLinkClick = onLinkClick 
-      ? (source: string, target: string) => onLinkClick(source, target)
-      : undefined;
-    
     return (
       <GraphRenderer
         ref={ref}
@@ -56,8 +47,8 @@ export const RelationshipGraphAdapter = React.forwardRef<GraphRendererRef, Relat
         height={ensureNumber(height)}
         zoom={ensureNumber(zoom)}
         highlightedNodeId={highlightedNodeId}
-        onNodeClick={handleNodeClick}
-        onLinkClick={handleLinkClick}
+        onNodeClick={onNodeClick}
+        onLinkClick={onLinkClick}
       />
     );
   }

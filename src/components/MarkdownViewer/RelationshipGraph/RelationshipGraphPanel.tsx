@@ -2,7 +2,7 @@
 import React, { useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { GraphRenderer } from './components/graph-renderer/GraphRenderer';
-import { GraphData, GraphRendererRef } from '../types';
+import { GraphData, GraphRendererRef } from './types';
 import { ensureString, ensureNumber } from '@/utils/compatibility';
 import { RelationshipGraphControls } from './components/RelationshipGraphControls';
 

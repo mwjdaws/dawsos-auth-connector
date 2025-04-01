@@ -1,24 +1,20 @@
 
 // Adapted from: https://ui.shadcn.com/docs/components/toast
-import { 
-  Toast,
-  ToastActionElement,
-  compatibleToast
-} from "@/utils/compatibility";
-
+import * as React from "react";
 import {
-  createContext,
-  useContext,
-  useState,
-  useCallback
-} from "react";
+  type ToastActionElement,
+  type ToastProps,
+} from "@/components/ui/toast";
 
-type ToasterToast = Toast & {
+const TOAST_LIMIT = 3;
+export type ToastType = ToastProps & {
   id: string;
   title?: string;
   description?: React.ReactNode;
   action?: ToastActionElement;
 };
+
+type ToasterToast = ToastType;
 
 type ToastActionType = 
   | { type: "ADD_TOAST"; toast: Omit<ToasterToast, "id"> & { id?: string } }
@@ -48,7 +44,7 @@ const reducer = (state: ToastState, action: ToastActionType): ToastState => {
         toasts: [
           ...state.toasts,
           { ...action.toast, id: action.toast.id || generateId() },
-        ],
+        ].slice(-TOAST_LIMIT),
       };
 
     case "UPDATE_TOAST":
@@ -96,64 +92,106 @@ const reducer = (state: ToastState, action: ToastActionType): ToastState => {
   }
 };
 
-type ToastDispatch = (action: ToastActionType) => void;
+const ToastContext = React.createContext<{
+  toasts: ToasterToast[];
+  toast: (props: Omit<ToasterToast, "id"> & { id?: string }) => { id: string; dismiss: () => void };
+  update: (props: Partial<ToasterToast> & { id: string }) => void;
+  dismiss: (toastId?: string) => void;
+  remove: (toastId?: string) => void;
+}>({
+  toasts: [],
+  toast: () => ({ id: "", dismiss: () => {} }),
+  update: () => {},
+  dismiss: () => {},
+  remove: () => {},
+});
 
-const ToastContext = createContext<ToastState>(initialState);
-const ToastDispatchContext = createContext<ToastDispatch>(() => null);
+export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
+  const [state, dispatch] = React.useReducer(reducer, initialState);
 
-export function useToast() {
-  const [state, dispatch] = useState<ToastState>(initialState);
-
-  const dispatchAction = useCallback((action: ToastActionType) => {
-    dispatch((prev) => reducer(prev, action));
-  }, []);
-
-  const toast = useCallback(
+  const toast = React.useCallback(
     (props: Omit<ToasterToast, "id"> & { id?: string }) => {
       const id = props.id || generateId();
       
-      dispatchAction({
+      dispatch({
         type: "ADD_TOAST",
-        toast: compatibleToast({ ...props, id }),
+        toast: { ...props, id },
       });
 
       return {
         id,
-        dismiss: () => dispatchAction({ type: "DISMISS_TOAST", toastId: id }),
+        dismiss: () => dispatch({ type: "DISMISS_TOAST", toastId: id }),
       };
     },
-    [dispatchAction]
+    []
   );
 
-  const update = useCallback(
+  const update = React.useCallback(
     (props: Partial<ToasterToast> & { id: string }) => {
-      dispatchAction({
+      dispatch({
         type: "UPDATE_TOAST",
         toast: props,
       });
     },
-    [dispatchAction]
+    []
   );
 
-  const dismiss = useCallback(
+  const dismiss = React.useCallback(
     (toastId?: string) => {
-      dispatchAction({ type: "DISMISS_TOAST", toastId });
+      dispatch({ type: "DISMISS_TOAST", toastId });
     },
-    [dispatchAction]
+    []
   );
 
-  const remove = useCallback(
+  const remove = React.useCallback(
     (toastId?: string) => {
-      dispatchAction({ type: "REMOVE_TOAST", toastId });
+      dispatch({ type: "REMOVE_TOAST", toastId });
     },
-    [dispatchAction]
+    []
   );
 
-  return {
-    toasts: state.toasts,
-    toast,
-    update,
-    dismiss,
-    remove,
-  };
-}
+  return (
+    <ToastContext.Provider
+      value={{
+        toasts: state.toasts,
+        toast,
+        update,
+        dismiss,
+        remove,
+      }}
+    >
+      {children}
+    </ToastContext.Provider>
+  );
+};
+
+export const useToast = () => {
+  const context = React.useContext(ToastContext);
+  
+  if (context === undefined) {
+    throw new Error("useToast must be used within a ToastProvider");
+  }
+  
+  return context;
+};
+
+// Create a compatible toast function that can be imported directly
+export const toast = (props: Omit<ToasterToast, "id"> & { id?: string }) => {
+  const { toast: contextToast } = useToast();
+  return contextToast(props);
+};
+
+// Add a utility function to clear all toasts
+export const clearToasts = () => {
+  const { remove } = useToast();
+  remove();
+};
+
+// Helper function to ensure compatibility
+export const compatibleToast = (props: any) => {
+  // Make sure variant is one of the allowed values
+  if (props.variant && !["default", "destructive"].includes(props.variant)) {
+    props.variant = "default";
+  }
+  return props;
+};
