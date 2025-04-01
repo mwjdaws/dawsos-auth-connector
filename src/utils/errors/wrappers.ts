@@ -1,129 +1,110 @@
 
 /**
  * Error handling wrapper functions
- * 
- * This module provides higher-order functions and wrappers to simplify
- * error handling across the application.
  */
-import { handleError } from './handle';
-import { ErrorHandlingOptions, ErrorLevel } from './types';
-
-/**
- * Creates an error handler function for a specific component
- * 
- * @param componentName The name of the component for context
- * @returns A function to handle errors with the component context included
- */
-export function createComponentErrorHandler(componentName: string) {
-  return (
-    error: unknown, 
-    userMessage?: string, 
-    options?: Partial<ErrorHandlingOptions>
-  ) => {
-    handleError(error, userMessage, {
-      ...options,
-      context: {
-        ...options?.context,
-        component: componentName,
-        source: 'component'
-      },
-      level: options?.level || ErrorLevel.ERROR
-    });
-  };
-}
-
-/**
- * Creates an error handler function for a specific hook
- * 
- * @param hookName The name of the hook for context
- * @returns A function to handle errors with the hook context included
- */
-export function createHookErrorHandler(hookName: string) {
-  return (
-    error: unknown, 
-    userMessage?: string, 
-    options?: Partial<ErrorHandlingOptions>
-  ) => {
-    handleError(error, userMessage, {
-      ...options,
-      context: {
-        ...options?.context,
-        hook: hookName,
-        source: 'hook'
-      },
-      level: options?.level || ErrorLevel.ERROR
-    });
-  };
-}
-
-/**
- * Creates an error handler function for a specific service
- * 
- * @param serviceName The name of the service for context
- * @returns A function to handle errors with the service context included
- */
-export function createServiceErrorHandler(serviceName: string) {
-  return (
-    error: unknown, 
-    userMessage?: string, 
-    options?: Partial<ErrorHandlingOptions>
-  ) => {
-    handleError(error, userMessage, {
-      ...options,
-      context: {
-        ...options?.context,
-        service: serviceName,
-        source: 'service'
-      },
-      level: options?.level || ErrorLevel.ERROR
-    });
-  };
-}
+import { ErrorLevel, ErrorSource, type ErrorHandlingOptions } from './types';
+import { handleError, handleErrorSafe } from './handle';
 
 /**
  * Wraps a function with error handling
  * 
  * @param fn The function to wrap
- * @param errorHandler The error handler to use
- * @param userMessage An optional user-friendly message for errors
- * @param options Additional error handling options
- * @returns The wrapped function
+ * @param options Error handling options
+ * @returns A wrapped function that handles errors
  */
 export function withErrorHandling<T extends (...args: any[]) => any>(
   fn: T,
-  errorHandler: (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => void,
-  userMessage?: string,
-  options?: Partial<ErrorHandlingOptions>
-): (...args: Parameters<T>) => ReturnType<T> | undefined {
-  return (...args: Parameters<T>): ReturnType<T> | undefined => {
+  options?: Partial<ErrorHandlingOptions> & { errorMessage?: string }
+): (...args: Parameters<T>) => ReturnType<T> {
+  return (...args: Parameters<T>): ReturnType<T> => {
     try {
       return fn(...args);
     } catch (error) {
-      errorHandler(error, userMessage, options);
-      return undefined;
+      const message = options?.errorMessage || 'An error occurred';
+      const errorHandlingOptions: Partial<ErrorHandlingOptions> = {
+        ...options,
+        context: {
+          ...(options?.context || {}),
+          functionName: fn.name,
+          arguments: args
+        }
+      };
+      
+      // Remove errorMessage from options as it's not part of ErrorHandlingOptions
+      if ('errorMessage' in errorHandlingOptions) {
+        delete errorHandlingOptions.errorMessage;
+      }
+      
+      handleError(error, message, errorHandlingOptions);
+      throw error; // Re-throw to allow caller to handle
     }
   };
 }
 
 /**
- * Safely executes an async action with error handling
- * 
- * @param action The async action to execute
- * @param errorHandler The error handler to use
- * @param userMessage An optional user-friendly message for errors
- * @param options Additional error handling options
- * @returns A promise that resolves to the action result or undefined on error
+ * Creates a component-specific error handler
  */
-export async function tryAction<T>(
-  action: () => Promise<T>,
-  errorHandler: (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => void,
-  userMessage?: string,
-  options?: Partial<ErrorHandlingOptions>
-): Promise<T | undefined> {
+export function createComponentErrorHandler(
+  componentName: string
+): (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => Error {
+  return (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => {
+    return handleError(error, message, {
+      source: `${ErrorSource.COMPONENT}:${componentName}`,
+      level: ErrorLevel.ERROR,
+      ...options
+    });
+  };
+}
+
+/**
+ * Creates a hook-specific error handler
+ */
+export function createHookErrorHandler(
+  hookName: string
+): (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => Error {
+  return (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => {
+    return handleError(error, message, {
+      source: `${ErrorSource.HOOK}:${hookName}`,
+      level: ErrorLevel.ERROR,
+      ...options
+    });
+  };
+}
+
+/**
+ * Creates a service-specific error handler
+ */
+export function createServiceErrorHandler(
+  serviceName: string
+): (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => Error {
+  return (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => {
+    return handleError(error, message, {
+      source: `${ErrorSource.SERVICE}:${serviceName}`,
+      level: ErrorLevel.ERROR,
+      ...options
+    });
+  };
+}
+
+/**
+ * Try-catch wrapper for actions (used in components)
+ * 
+ * @param action Function to try
+ * @param errorHandler Error handler function
+ * @returns Result of the action, or undefined if it fails
+ */
+export function tryAction<T>(
+  action: () => T,
+  errorHandler?: (error: unknown) => void
+): T | undefined {
   try {
-    return await action();
+    return action();
   } catch (error) {
-    errorHandler(error, userMessage, options);
+    if (errorHandler) {
+      errorHandler(error);
+    } else {
+      handleErrorSafe(error, 'Action failed');
+    }
     return undefined;
   }
 }

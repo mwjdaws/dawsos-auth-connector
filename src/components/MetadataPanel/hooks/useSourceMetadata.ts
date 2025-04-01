@@ -1,8 +1,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { SourceMetadata } from '@/types/metadata';
-import { handleError, ErrorLevel, withErrorHandling } from '@/utils/errors';
+import { handleError, ErrorLevel } from '@/utils/errors';
+
+interface ExternalSourceData {
+  external_source_url: string | null;
+  external_source_checked_at: string | null;
+  needs_external_review: boolean | null;
+}
 
 interface UseSourceMetadataProps {
   contentId: string;
@@ -10,102 +15,79 @@ interface UseSourceMetadataProps {
 }
 
 /**
- * Hook for fetching and managing external source metadata
+ * Hook for managing external source metadata
  */
-export const useSourceMetadata = ({ contentId, enabled = true }: UseSourceMetadataProps) => {
-  const [data, setData] = useState<SourceMetadata | null>(null);
+export const useSourceMetadata = ({ 
+  contentId, 
+  enabled = true 
+}: UseSourceMetadataProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-
+  const [data, setData] = useState<ExternalSourceData | null>(null);
+  
+  // Derived state for better usability
+  const [externalSourceUrl, setExternalSourceUrl] = useState<string>('');
+  const [needsExternalReview, setNeedsExternalReview] = useState<boolean>(false);
+  const [lastCheckedAt, setLastCheckedAt] = useState<string>('');
+  
   /**
-   * Fetch source metadata for a specific content ID
+   * Fetch source metadata from the database
    */
   const fetchSourceMetadata = useCallback(async () => {
-    if (!contentId || !enabled) {
-      return null;
-    }
-
+    if (!contentId || !enabled) return null;
+    
     setIsLoading(true);
     setError(null);
-
+    
     try {
-      const { data: sourceData, error: sourceError } = await supabase
+      const { data, error } = await supabase
         .from('knowledge_sources')
-        .select(`
-          id,
-          external_source_url,
-          external_source_checked_at,
-          external_content_hash,
-          published,
-          title,
-          created_at,
-          updated_at
-        `)
+        .select('external_source_url, external_source_checked_at, needs_external_review')
         .eq('id', contentId)
         .single();
-
-      if (sourceError) {
-        throw sourceError;
-      }
-
-      // Transform to the SourceMetadata type
-      const metadata: SourceMetadata = {
-        id: sourceData.id,
-        title: sourceData.title,
-        external_source_url: sourceData.external_source_url,
-        external_source_checked_at: sourceData.external_source_checked_at,
-        external_content_hash: sourceData.external_content_hash,
-        needs_external_review: sourceData.external_source_url && !sourceData.external_source_checked_at,
-        is_published: sourceData.published || false,
-        created_at: sourceData.created_at,
-        updated_at: sourceData.updated_at
-      };
-
-      setData(metadata);
-      return metadata;
+      
+      if (error) throw error;
+      
+      setData(data);
+      
+      // Set derived state with proper defaults for null values
+      setExternalSourceUrl(data.external_source_url || '');
+      setNeedsExternalReview(data.needs_external_review === true);
+      setLastCheckedAt(data.external_source_checked_at || '');
+      
+      return data;
     } catch (err) {
+      console.error('Error fetching source metadata:', err);
+      
+      const errorMessage = 'Error fetching source metadata';
+      setError(new Error(errorMessage));
+      
       handleError(
         err,
-        `Failed to fetch source metadata for content: ${contentId}`,
-        { level: ErrorLevel.WARNING }
+        errorMessage,
+        { level: ErrorLevel.WARNING, context: { contentId } }
       );
-      setError(err instanceof Error ? err : new Error(String(err)));
+      
       return null;
     } finally {
       setIsLoading(false);
     }
   }, [contentId, enabled]);
-
-  // Fetch metadata when the component mounts and when contentId changes
+  
+  // Fetch data on component mount and when contentId changes
   useEffect(() => {
-    if (enabled && contentId) {
+    if (contentId && enabled) {
       fetchSourceMetadata();
     }
-  }, [enabled, contentId, fetchSourceMetadata]);
-
-  // Extract values for convenience
-  const externalSourceUrl = data?.external_source_url || null;
-  const needsExternalReview = data?.needs_external_review || false;
-  const lastCheckedAt = data?.external_source_checked_at || null;
-
-  // Safe version of fetch with error handling
-  const safeFetchSourceMetadata = withErrorHandling(
-    fetchSourceMetadata,
-    (error) => handleError(
-      error,
-      `Failed to fetch source metadata`,
-      { level: ErrorLevel.WARNING }
-    )
-  );
-
+  }, [contentId, enabled, fetchSourceMetadata]);
+  
   return {
-    data,
-    isLoading,
-    error,
-    fetchSourceMetadata: safeFetchSourceMetadata,
-    // Extracted metadata for convenience
     externalSourceUrl,
     needsExternalReview,
-    lastCheckedAt
+    lastCheckedAt,
+    isLoading,
+    error,
+    data,
+    fetchSourceMetadata
   };
 };

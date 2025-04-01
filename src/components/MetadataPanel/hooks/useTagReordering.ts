@@ -1,105 +1,88 @@
 
-import { useState, useCallback } from "react";
-import { Tag } from "@/types/tag";
-import { handleError, ErrorLevel } from "@/utils/errors/handle";
-import { supabase } from "@/integrations/supabase/client";
-
-// Define the TagPosition interface locally if needed
-interface TagPosition {
-  id: string;
-  position: number;
-}
+import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Tag, TagPosition } from '@/types';
+import { handleError, ErrorLevel } from '@/utils/errors';
 
 interface UseTagReorderingProps {
   contentId: string;
   tags: Tag[];
   setTags: (tags: Tag[]) => void;
+  onMetadataChange?: () => void;
 }
 
 /**
- * Hook for handling tag reordering
+ * Hook for handling tag reordering operations
  */
-export function useTagReordering({
+export const useTagReordering = ({
   contentId,
   tags,
-  setTags
-}: UseTagReorderingProps) {
+  setTags,
+  onMetadataChange
+}: UseTagReorderingProps) => {
   const [isReordering, setIsReordering] = useState(false);
   
   /**
-   * Save the reordered tags to the database
+   * Convert tag array to positions array
    */
-  const saveTagOrder = useCallback(async (reorderedTags: Tag[]): Promise<boolean> => {
-    if (!contentId || !reorderedTags.length) {
-      return false;
-    }
+  const getTagPositions = useCallback((updatedTags: Tag[]): TagPosition[] => {
+    return updatedTags.map((tag, index) => ({
+      id: tag.id,
+      position: index
+    }));
+  }, []);
+  
+  /**
+   * Reorder tags using drag-and-drop
+   * Updates the display_order property in the database
+   */
+  const reorderTags = useCallback(async (updatedTags: Tag[]) => {
+    if (!updatedTags.length || !contentId) return false;
     
     setIsReordering(true);
     
     try {
-      // Create tag positions
-      const tagPositions: TagPosition[] = reorderedTags.map((tag, index) => ({
-        id: tag.id,
-        position: index
-      }));
+      // Update the display_order of all affected tags in database
+      const tagPositions = getTagPositions(updatedTags);
       
-      // Update local state immediately for better UX
-      setTags(reorderedTags.map((tag, index) => ({
-        ...tag,
-        display_order: index
-      })));
+      // Update each tag individually
+      for (const position of tagPositions) {
+        const { error } = await supabase
+          .from('tags')
+          .update({ display_order: position.position })
+          .eq('id', position.id)
+          .eq('content_id', contentId);
+        
+        if (error) throw error;
+      }
       
-      // Update the database
-      const updates = tagPositions.map(position => ({
-        id: position.id,
-        display_order: position.position,
-        content_id: contentId,
-        name: reorderedTags.find(tag => tag.id === position.id)?.name || '',
-        type_id: reorderedTags.find(tag => tag.id === position.id)?.type_id || null
-      }));
+      // Update the local state with the new order
+      setTags(updatedTags);
       
-      const { error } = await supabase
-        .from('tags')
-        .upsert(updates, { onConflict: 'id' });
-      
-      if (error) throw error;
+      // Notify about metadata changes
+      if (onMetadataChange) {
+        onMetadataChange();
+      }
       
       return true;
     } catch (err) {
       handleError(
         err,
-        "Failed to update tag order",
-        { level: ErrorLevel.ERROR, context: { contentId } }
+        'Failed to reorder tags',
+        { 
+          level: ErrorLevel.WARNING,
+          category: 'tags',
+          context: { contentId }
+        }
       );
-      
       return false;
     } finally {
       setIsReordering(false);
     }
-  }, [contentId, setTags]);
-  
-  /**
-   * Handle reordering of tags
-   */
-  const handleReorderTags = useCallback(async (reorderedTags: Tag[]): Promise<void> => {
-    // Create a copy of the tags and ensure each has a display_order
-    const tagsWithOrder = reorderedTags.map((tag, index) => {
-      if (tag.display_order !== undefined) {
-        return tag;
-      }
-      return {
-        ...tag,
-        display_order: index
-      };
-    });
-    
-    await saveTagOrder(tagsWithOrder);
-  }, [saveTagOrder]);
+  }, [contentId, setTags, getTagPositions, onMetadataChange]);
   
   return {
     isReordering,
-    handleReorderTags
+    reorderTags
   };
-}
-
-export default useTagReordering;
+};

@@ -1,130 +1,163 @@
 
 /**
- * Tag Types
- * 
- * This file defines the types for tags and tag operations
+ * Tag types and utilities
  */
 
-// Base Tag interface
+/**
+ * Core Tag interface
+ */
 export interface Tag {
   id: string;
   name: string;
   content_id: string;
   type_id: string | null;
   display_order: number;
-  type_name: string;
+  type_name: string; // Required field to fix type errors
 }
 
-// Tag data without an ID (for creation)
+/**
+ * API Tag interface (from database)
+ */
+export interface ApiTag {
+  id: string;
+  name: string;
+  content_id: string;
+  type_id: string | null;
+  display_order: number;
+}
+
+/**
+ * Tag for display
+ */
+export interface TagDisplay extends Tag {
+  color?: string;
+  category?: string;
+}
+
+/**
+ * Input for creating a new tag
+ */
 export interface TagData {
   name: string;
   content_id: string;
-  type_id?: string | null;
+  type_id: string | null;
   display_order?: number;
 }
 
-// Tag group - for grouping tags by type
+/**
+ * Tag group for categorized display
+ */
 export interface TagGroup {
-  type_id: string | null;
-  type_name: string | null;
-  tags: Tag[];
-  content_id: string;
-}
-
-// Tag type
-export interface TagType {
   id: string;
   name: string;
-  description?: string;
-  order?: number;
+  tags: Tag[];
+  content_id: string;
+  category: string; // Added to fix errors
 }
-
-// Tag operation results
-export interface TagOperationResult {
-  success: boolean;
-  tag?: Tag;
-  error?: string;
-}
-
-// Request to update the position of a tag
-export interface UpdateTagPositionRequest {
-  tagId: string;
-  newPosition: number;
-}
-
-// Functions to create new tag objects
 
 /**
- * Creates a new Tag object from raw data
+ * Position information for tag reordering
  */
-export function createTag(
-  id: string,
-  name: string,
-  content_id: string,
-  type_id: string | null,
-  display_order: number,
-  type_name: string = ''
-): Tag {
+export interface TagPosition {
+  id: string;
+  position: number;
+}
+
+/**
+ * Type for tag validation results
+ */
+export interface TagValidationResult {
+  isValid: boolean;
+  errorMessage: string | null;
+}
+
+/**
+ * Maps API tag format to our internal format
+ */
+export function mapApiTagToTag(apiTag: ApiTag | null): Tag | null {
+  if (!apiTag) return null;
+  
   return {
-    id,
-    name,
-    content_id,
-    type_id,
-    display_order,
-    type_name
+    id: apiTag.id,
+    name: apiTag.name,
+    content_id: apiTag.content_id,
+    type_id: apiTag.type_id,
+    display_order: apiTag.display_order,
+    type_name: '' // Default empty string for type_name
   };
 }
 
 /**
- * Creates a new TagData object
+ * Maps array of API tags to internal format
  */
-export function createTagData(
-  name: string,
-  content_id: string,
-  type_id?: string | null,
-  display_order?: number
-): TagData {
-  return {
-    name,
-    content_id,
-    type_id,
-    display_order
-  };
+export function mapApiTagsToTags(apiTags: ApiTag[] | null): Tag[] {
+  if (!apiTags) return [];
+  
+  return apiTags.map(tag => ({
+    id: tag.id,
+    name: tag.name,
+    content_id: tag.content_id,
+    type_id: tag.type_id,
+    display_order: tag.display_order,
+    type_name: '' // Default empty string for type_name
+  }));
 }
 
 /**
- * Create a TagGroup object
+ * Ensures a tag is not null
  */
-export function createTagGroup(
-  type_id: string | null,
-  type_name: string | null,
-  tags: Tag[],
-  content_id: string
-): TagGroup {
-  return {
-    type_id,
-    type_name,
-    tags,
-    content_id
-  };
+export function ensureNonNullableTag(tag: Tag | null): Tag {
+  if (!tag) {
+    return {
+      id: '',
+      name: '',
+      content_id: '',
+      type_id: null,
+      display_order: 0,
+      type_name: ''
+    };
+  }
+  return tag;
 }
 
 /**
- * Creates a successful operation result
+ * Filters out duplicate tags by name
  */
-export function createSuccessResult(tag: Tag): TagOperationResult {
-  return {
-    success: true,
-    tag
-  };
+export function filterDuplicateTags(tags: Tag[]): Tag[] {
+  const uniqueTags = new Map<string, Tag>();
+  
+  tags.forEach(tag => {
+    if (!uniqueTags.has(tag.name.toLowerCase())) {
+      uniqueTags.set(tag.name.toLowerCase(), tag);
+    }
+  });
+  
+  return Array.from(uniqueTags.values());
 }
 
 /**
- * Creates a failed operation result
+ * Converts tag positions to tags
  */
-export function createErrorResult(error: string): TagOperationResult {
-  return {
-    success: false,
-    error
-  };
+export function convertTagPositionsToTags(
+  positions: TagPosition[],
+  existingTags: Tag[]
+): Tag[] {
+  return positions.map(position => {
+    const existingTag = existingTags.find(tag => tag.id === position.id);
+    if (!existingTag) {
+      throw new Error(`Tag with id ${position.id} not found`);
+    }
+    
+    return {
+      ...existingTag,
+      display_order: position.position
+    };
+  });
+}
+
+/**
+ * Sorts tags by display order
+ */
+export function sortTagsByDisplayOrder(tags: Tag[]): Tag[] {
+  return [...tags].sort((a, b) => a.display_order - b.display_order);
 }

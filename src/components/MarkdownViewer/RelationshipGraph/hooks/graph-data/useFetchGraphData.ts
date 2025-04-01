@@ -1,269 +1,163 @@
+
 /**
  * useFetchGraphData Hook
  * 
- * Handles the data fetching and processing for the relationship graph.
- * This hook fetches data from multiple Supabase tables and processes it.
+ * Responsible for the data fetching logic for the graph
  */
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { FetchResult, GraphFetchOptions } from './types';
 import { GraphData, GraphNode, GraphLink } from '../../types';
-import { handleError } from '@/utils/errors';
+import { handleError, ErrorLevel } from '@/utils/errors';
 
-// Define error categories as an enum or union type for type safety
-type ErrorCategory = 'NETWORK' | 'AUTHENTICATION' | 'DATABASE' | 'TIMEOUT' | 'UNKNOWN';
-
+/**
+ * Hook for fetching graph data
+ */
 export function useFetchGraphData() {
   /**
-   * Fetch raw data from Supabase
+   * Fetches data for the graph and transforms it into the proper format
    */
-  const fetchRawData = useCallback(async (): Promise<FetchResult> => {
-    console.log("Fetching graph data...");
-    
-    // Fetch knowledge sources
-    const { data: sources, error: sourcesError } = await supabase
-      .from('knowledge_sources')
-      .select('id, title')
-      .limit(100);
-    
-    if (sourcesError) throw sourcesError;
-    console.log(`Fetched ${sources?.length || 0} knowledge sources:`, sources?.map(s => s.title).slice(0, 5));
-    
-    // Fetch note links
-    const { data: links, error: linksError } = await supabase
-      .from('note_links')
-      .select('id, source_id, target_id, link_type')
-      .limit(200);
-    
-    if (linksError) throw linksError;
-    console.log(`Fetched ${links?.length || 0} note links`);
-    
-    // Fetch ontology terms
-    const { data: terms, error: termsError } = await supabase
-      .from('ontology_terms')
-      .select('id, term, domain')
-      .limit(100);
-    
-    if (termsError) throw termsError;
-    console.log(`Fetched ${terms?.length || 0} ontology terms:`, terms?.map(t => t.term).slice(0, 5));
-    
-    // Fetch ontology relationships
-    const { data: termRelationships, error: termRelError } = await supabase
-      .from('ontology_relationships')
-      .select('id, term_id, related_term_id, relation_type')
-      .limit(200);
-    
-    if (termRelError) throw termRelError;
-    console.log(`Fetched ${termRelationships?.length || 0} ontology relationships`);
-    
-    // Fetch knowledge source to ontology term relationships
-    const { data: sourceTerms, error: sourceTermsError } = await supabase
-      .from('knowledge_source_ontology_terms')
-      .select('id, knowledge_source_id, ontology_term_id')
-      .limit(200);
-    
-    if (sourceTermsError) throw sourceTermsError;
-    console.log(`Fetched ${sourceTerms?.length || 0} source-term relationships`);
-    
-    return {
-      sources,
-      links,
-      terms,
-      termRelationships,
-      sourceTerms
-    };
-  }, []);
-
-  /**
-   * Process raw data into graph format
-   */
-  const processGraphData = useCallback((data: FetchResult): GraphData => {
-    const { sources, links, terms, termRelationships, sourceTerms } = data;
-    
-    // Check if we have actual data to render
-    if (
-      (!sources || sources.length === 0) && 
-      (!terms || terms.length === 0)
-    ) {
-      console.log("No graph data available to display");
-      return { nodes: [], links: [] };
-    }
-    
-    // Prepare graph data by combining all fetched data
-    const nodes: GraphNode[] = [
-      // Knowledge source nodes
-      ...(sources || []).map(source => ({
-        id: source.id,
-        title: source.title,
-        name: source.title, // Add name for backward compatibility
-        type: 'source' as const,
-        val: 2,
-        color: '#4299e1' // blue
-      })),
-      
-      // Ontology term nodes
-      ...(terms || []).map(term => ({
-        id: term.id,
-        title: term.term,
-        name: `${term.domain ? `${term.domain}: ` : ''}${term.term}`,
-        type: 'term' as const,
-        val: 1.5,
-        color: '#68d391' // green
-      }))
-    ];
-    
-    // Log node count by type for debugging
-    const sourceNodes = nodes.filter(n => n.type === 'source').length;
-    const termNodes = nodes.filter(n => n.type === 'term').length;
-    console.log(`Created ${sourceNodes} source nodes and ${termNodes} term nodes`);
-    
-    // Filter out links that don't have corresponding nodes
-    const nodeIds = new Set(nodes.map(node => node.id));
-    
-    const validLinks: GraphLink[] = [
-      // Note links
-      ...(links || []).filter(link => 
-        nodeIds.has(link.source_id) && nodeIds.has(link.target_id)
-      ).map(link => ({
-        id: link.id,
-        source: link.source_id,
-        target: link.target_id,
-        type: link.link_type,
-        value: 1
-      })),
-      
-      // Term relationships
-      ...(termRelationships || []).filter(rel => 
-        nodeIds.has(rel.term_id) && nodeIds.has(rel.related_term_id)
-      ).map(rel => ({
-        id: rel.id,
-        source: rel.term_id,
-        target: rel.related_term_id,
-        type: rel.relation_type,
-        value: 0.7
-      })),
-      
-      // Source to term relationships
-      ...(sourceTerms || []).filter(st => 
-        nodeIds.has(st.knowledge_source_id) && nodeIds.has(st.ontology_term_id)
-      ).map(st => ({
-        id: st.id,
-        source: st.knowledge_source_id,
-        target: st.ontology_term_id,
-        type: 'has_term',
-        value: 0.5
-      }))
-    ];
-    
-    // Log link counts by type for debugging
-    const sourceLinks = validLinks.filter(l => l.type === 'wikilink' || l.type === 'manual' || l.type === 'AI-suggested').length;
-    const termLinks = validLinks.filter(l => l.type !== 'wikilink' && l.type !== 'manual' && l.type !== 'AI-suggested' && l.type !== 'has_term').length;
-    const sourceTermLinks = validLinks.filter(l => l.type === 'has_term').length;
-    
-    console.log(`Created ${sourceLinks} source-to-source links, ${termLinks} term-to-term links, and ${sourceTermLinks} source-to-term links`);
-    
-    // Create the final graph data structure
-    return { 
-      nodes,
-      links: validLinks
-    };
-  }, []);
-
-  /**
-   * Log information about the starting node
-   */
-  const logStartingNodeInfo = useCallback((graphData: GraphData, startingNodeId?: string) => {
-    if (!startingNodeId) return;
-    
-    const startingNode = graphData.nodes.find(n => n.id === startingNodeId);
-    console.log(`Starting node ${startingNodeId} found:`, startingNode ? 'YES' : 'NO');
-    
-    if (startingNode) {
-      console.log(`Starting node is a ${startingNode.type} named "${startingNode.name}"`);
-      
-      // Count direct connections to starting node
-      const directConnections = graphData.links.filter(
-        l => l.source === startingNodeId || l.target === startingNodeId
-      ).length;
-      
-      console.log(`Starting node has ${directConnections} direct connections`);
-    }
-  }, []);
-
-  /**
-   * Determine error category for consistent error handling
-   */
-  const determineErrorCategory = (err: unknown): ErrorCategory => {
-    const errorMessage = err instanceof Error ? err.message.toLowerCase() : 
-                        typeof err === 'string' ? err.toLowerCase() : '';
-
-    if (errorMessage.includes('network') || errorMessage.includes('fetch') || errorMessage.includes('connection')) {
-      return 'NETWORK';
-    }
-    if (errorMessage.includes('auth') || errorMessage.includes('permission') || errorMessage.includes('unauthorized')) {
-      return 'AUTHENTICATION';
-    }
-    if (errorMessage.includes('database') || errorMessage.includes('db') || errorMessage.includes('query')) {
-      return 'DATABASE';
-    }
-    if (errorMessage.includes('timeout') || errorMessage.includes('time out') || errorMessage.includes('timed out')) {
-      return 'TIMEOUT';
-    }
-    return 'UNKNOWN';
-  };
-
-  /**
-   * Main function to fetch and process graph data
-   */
-  const fetchAndProcessGraphData = useCallback(async (
-    startingNodeId?: string,
-    options: GraphFetchOptions = {}
-  ): Promise<{ data: GraphData | null; error: string | null }> => {
+  const fetchAndProcessGraphData = useCallback(async (startingNodeId?: string) => {
     try {
-      // Fetch the raw data from Supabase
-      const rawData = await fetchRawData();
+      let knowledgeSources: any[] = [];
+      let relationships: any[] = [];
       
-      // Process the data into graph format
-      const graphData = processGraphData(rawData);
+      // If a starting node ID is provided, we fetch related nodes
+      if (startingNodeId) {
+        // Fetch direct relationships from the source node
+        const { data: directRelationships, error: directError } = await supabase
+          .from('content_relationships')
+          .select('*')
+          .or(`source_id.eq.${startingNodeId},target_id.eq.${startingNodeId}`);
+          
+        if (directError) throw directError;
+        
+        if (directRelationships && directRelationships.length > 0) {
+          relationships = directRelationships;
+          
+          // Get all node IDs involved in relationships
+          const nodeIds = new Set<string>();
+          directRelationships.forEach(rel => {
+            nodeIds.add(rel.source_id);
+            nodeIds.add(rel.target_id);
+          });
+          
+          // Fetch all involved knowledge sources
+          if (nodeIds.size > 0) {
+            const { data: sources, error: sourcesError } = await supabase
+              .from('knowledge_sources')
+              .select('id, title, content, published')
+              .in('id', Array.from(nodeIds));
+              
+            if (sourcesError) throw sourcesError;
+            
+            if (sources) {
+              knowledgeSources = sources;
+            }
+          }
+        }
+      } else {
+        // No starting node, fetch a limited set of nodes for an overview
+        const { data: sources, error: sourcesError } = await supabase
+          .from('knowledge_sources')
+          .select('id, title, content, published')
+          .limit(50);
+          
+        if (sourcesError) throw sourcesError;
+        
+        if (sources) {
+          knowledgeSources = sources;
+          
+          // Fetch relationships between these nodes
+          if (knowledgeSources.length > 0) {
+            const nodeIds = knowledgeSources.map(source => source.id);
+            
+            const { data: rels, error: relsError } = await supabase
+              .from('content_relationships')
+              .select('*')
+              .in('source_id', nodeIds)
+              .in('target_id', nodeIds);
+              
+            if (relsError) throw relsError;
+            
+            if (rels) {
+              relationships = rels;
+            }
+          }
+        }
+      }
       
-      // Log information about the starting node if provided
-      logStartingNodeInfo(graphData, startingNodeId);
+      // Convert to graph data format
+      const graphData = transformToGraphData(knowledgeSources, relationships, startingNodeId);
       
+      // Return the processed data
       return { data: graphData, error: null };
     } catch (err) {
       console.error('Error fetching graph data:', err);
       
-      // Use our helper to determine error category instead of categorizeError
-      const errorCategory = determineErrorCategory(err);
-      let errorMessage = 'Failed to load relationship data';
+      handleError(
+        err,
+        "Failed to load graph data",
+        { level: ErrorLevel.ERROR }
+      );
       
-      // Customize error messages based on error category
-      switch (errorCategory) {
-        case 'NETWORK':
-          errorMessage = 'Network error. Please check your internet connection.';
-          break;
-        case 'AUTHENTICATION':
-          errorMessage = 'Authentication error. Please log in again.';
-          break;
-        case 'DATABASE':
-          errorMessage = 'Database error. Please try again later.';
-          break;
-        case 'TIMEOUT':
-          errorMessage = 'Request timed out. Please try again.';
-          break;
-      }
-      
-      // Log the error with our custom error handler
-      handleError(err, errorMessage, {
-        level: "error",
-        context: { startingNodeId }
-      });
-      
-      return { data: null, error: errorMessage };
+      return { 
+        data: { nodes: [], links: [] }, 
+        error: err instanceof Error ? err.message : String(err)
+      };
     }
-  }, [fetchRawData, processGraphData, logStartingNodeInfo]);
+  }, []);
+  
+  return { fetchAndProcessGraphData };
+}
 
-  return {
-    fetchAndProcessGraphData
-  };
+/**
+ * Transform the raw database data into GraphData format
+ */
+function transformToGraphData(
+  sources: any[],
+  relationships: any[],
+  highlightedNodeId?: string
+): GraphData {
+  const nodes: GraphNode[] = [];
+  const links: GraphLink[] = [];
+  
+  // Create nodes from knowledge sources
+  sources.forEach(source => {
+    const titleText = source.title || 'Untitled';
+    const isHighlighted = highlightedNodeId === source.id;
+    
+    // Extract content preview
+    let preview = '';
+    if (source.content) {
+      preview = source.content.substring(0, 100) + (source.content.length > 100 ? '...' : '');
+    }
+    
+    nodes.push({
+      id: source.id,
+      name: titleText,
+      title: titleText,
+      preview: preview,
+      size: isHighlighted ? 10 : 5,
+      type: source.published ? 'published' : 'draft',
+      highlighted: isHighlighted
+    });
+  });
+  
+  // Create links from relationships
+  relationships.forEach(rel => {
+    // Make sure both nodes exist
+    const sourceExists = nodes.some(node => node.id === rel.source_id);
+    const targetExists = nodes.some(node => node.id === rel.target_id);
+    
+    if (sourceExists && targetExists) {
+      links.push({
+        source: rel.source_id,
+        target: rel.target_id,
+        id: rel.id,
+        type: rel.relation_type || 'default'
+      });
+    }
+  });
+  
+  return { nodes, links };
 }

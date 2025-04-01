@@ -1,27 +1,32 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { OntologyTerm } from '@/types/ontology';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { handleError, ErrorLevel } from '@/utils/errors/handle';
+import { OntologyTerm } from '@/types';
+import { handleError, ErrorLevel } from '@/utils/errors';
 
 interface UseOntologyTermsProps {
   contentId: string;
+  enabled?: boolean;
 }
 
-export const useOntologyTerms = ({ contentId }: UseOntologyTermsProps) => {
-  const [terms, setTerms] = useState<OntologyTerm[]>([]);
+export const useOntologyTerms = ({ 
+  contentId, 
+  enabled = true 
+}: UseOntologyTermsProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [terms, setTerms] = useState<OntologyTerm[]>([]);
   
-  const fetchTerms = useCallback(async () => {
-    if (!contentId) {
-      return [];
-    }
+  /**
+   * Fetch ontology terms associated with the content
+   */
+  const fetchOntologyTerms = useCallback(async () => {
+    if (!contentId || !enabled) return;
+    
+    setIsLoading(true);
+    setError(null);
     
     try {
-      setIsLoading(true);
-      
-      // Query ontology terms linked to this content
       const { data, error } = await supabase
         .from('knowledge_source_ontology_terms')
         .select(`
@@ -36,117 +41,47 @@ export const useOntologyTerms = ({ contentId }: UseOntologyTermsProps) => {
         `)
         .eq('knowledge_source_id', contentId);
       
-      if (error) {
-        throw new Error(`Failed to fetch ontology terms: ${error.message}`);
-      }
+      if (error) throw error;
       
-      // Transform the response into our OntologyTerm type
-      const formattedTerms: OntologyTerm[] = data
-        .filter(item => item.ontology_terms)
+      // Transform data into OntologyTerm[] format
+      const transformedTerms: OntologyTerm[] = data
+        .filter(item => item.ontology_terms) // Ensure ontology_terms exists
         .map(item => ({
           id: item.ontology_terms.id,
-          term: item.ontology_terms.term || '',
-          description: item.ontology_terms.description || '',
-          domain: item.ontology_terms.domain || '',
-          review_required: !!item.review_required
+          term: item.ontology_terms.term,
+          description: item.ontology_terms.description || '', // Ensure non-null
+          domain: item.ontology_terms.domain || '', // Ensure non-null
+          review_required: item.review_required
         }));
       
-      setTerms(formattedTerms);
-      return formattedTerms;
+      setTerms(transformedTerms);
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to fetch ontology terms');
-      setError(error);
+      console.error('Error fetching ontology terms:', err);
+      
+      setError(new Error('Failed to fetch ontology terms'));
+      
       handleError(
-        error,
-        'Error fetching ontology terms',
-        { level: ErrorLevel.WARNING }
+        err,
+        'Failed to load ontology terms',
+        { level: ErrorLevel.WARNING, context: { contentId } }
       );
-      return [];
     } finally {
       setIsLoading(false);
     }
-  }, [contentId]);
+  }, [contentId, enabled]);
   
-  // Handle add term functionality
-  const handleAddTerm = async (termId: string) => {
-    if (!contentId || !termId) return false;
-    
-    try {
-      setIsLoading(true);
-      
-      const { error } = await supabase
-        .from('knowledge_source_ontology_terms')
-        .insert({
-          knowledge_source_id: contentId,
-          ontology_term_id: termId,
-          review_required: false
-        });
-      
-      if (error) throw new Error(`Failed to add term: ${error.message}`);
-      
-      // Refresh terms list
-      await fetchTerms();
-      return true;
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to add ontology term');
-      setError(error);
-      handleError(
-        error,
-        'Error adding ontology term',
-        { level: ErrorLevel.WARNING }
-      );
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  // Handle remove term functionality
-  const handleRemoveTerm = async (termId: string) => {
-    if (!contentId || !termId) return false;
-    
-    try {
-      setIsLoading(true);
-      
-      const { error } = await supabase
-        .from('knowledge_source_ontology_terms')
-        .delete()
-        .eq('knowledge_source_id', contentId)
-        .eq('ontology_term_id', termId);
-      
-      if (error) throw new Error(`Failed to remove term: ${error.message}`);
-      
-      // Update local state
-      setTerms(terms.filter(term => term.id !== termId));
-      return true;
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to remove ontology term');
-      setError(error);
-      handleError(
-        error,
-        'Error removing ontology term',
-        { level: ErrorLevel.WARNING }
-      );
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
+  // Fetch terms on mount and when contentId changes
   useEffect(() => {
-    if (contentId) {
-      fetchTerms();
+    if (contentId && enabled) {
+      fetchOntologyTerms();
     }
-  }, [contentId, fetchTerms]);
+  }, [contentId, enabled, fetchOntologyTerms]);
   
   return {
     terms,
     isLoading,
     error,
-    fetchTerms,
-    handleAddTerm,
-    handleRemoveTerm
+    fetchOntologyTerms,
+    setTerms
   };
 };
-
-export default useOntologyTerms;

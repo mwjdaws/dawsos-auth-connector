@@ -1,53 +1,32 @@
 
-// filepath: /dawsos-web-app/dawsos-web-app/src/types/index.ts
-// Re-export the Tag types from the centralized location
-export type { 
-  Tag, 
-  TagPosition 
-} from './tag';
+/**
+ * Central type definitions for the application
+ * 
+ * This file re-exports all type definitions from their respective modules
+ * to provide a clean interface for importing types.
+ */
 
-export {
-  mapApiTagToTag, 
+// Re-export tag types
+export type { Tag, TagData, TagDisplay, TagGroup, TagPosition } from './tag';
+export type { OntologyTerm, OntologyDomain, RelatedTerm } from './ontology';
+export type { ExternalSourceMetadata } from './metadata';
+export type { KnowledgeSource, ContentType } from './content';
+export type { User, UserProfile, UserSettings } from './user';
+export type { ValidationResult } from './validation';
+export type { ApiResponse, ApiError, RequestOptions } from './api';
+export type { SourceMetadata } from './sourceMetadata';
+
+// Re-export utility functions
+export { 
+  // Tag utilities
+  mapApiTagToTag,
   mapApiTagsToTags,
   ensureNonNullableTag,
   filterDuplicateTags,
   convertTagPositionsToTags
 } from './tag';
 
-// Export ontology types
-export type { OntologyTerm, OntologyDomain } from './ontology';
-export { OntologyRelationType, isOntologyTerm } from './ontology';
-
-export interface KnowledgeSource {
-    id: string;
-    title: string;
-    content: string;
-    createdAt: string;
-    updatedAt: string;
-    externalSourceUrl?: string;
-    externalSourceCheckedAt?: string;
-    externalContentHash?: string;
-    needsExternalReview?: boolean;
-}
-
-export interface Template {
-    id: string;
-    name: string;
-    description: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
-export interface User {
-    id: string;
-    email: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
-export interface ApiResponse<T> {
-    data: T;
-    error: string | null;
-}
-
-export type FetchStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
+// Re-export constants
+export { ContentStatus } from './content';
+export { ErrorCode } from './errors';
+export { UserRole } from './user';

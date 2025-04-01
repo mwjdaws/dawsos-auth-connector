@@ -8,7 +8,7 @@
  */
 import { useCallback, useEffect, useRef, useMemo } from 'react';
 import { GraphData } from '../../types';
-import { withErrorHandling } from '@/utils/errors/wrappers';
+import { handleError, ErrorLevel } from '@/utils/errors';
 import { toast } from '@/hooks/use-toast';
 import { useGraphState } from './useGraphState';
 import { useFetchGraphData } from './useFetchGraphData';
@@ -154,10 +154,17 @@ export function useGraphData(startingNodeId = '') {
   // Safe wrapper for the fetch function that handles errors properly
   const fetchGraphDataSafely = useCallback(() => {
     fetchAttempts.current = 0;
-    withErrorHandling(fetchGraphData, {
-      errorMessage: "Failed to refresh graph data",
-      context: { startingNodeId }
-    })(true); // Skip cache on manual refresh
+    
+    handleError(
+      new Error("Manually refreshing graph data"),
+      "Refreshing graph data",
+      {
+        level: ErrorLevel.INFO,
+        context: { startingNodeId }
+      }
+    );
+    
+    fetchGraphData(true); // Skip cache on manual refresh
   }, [fetchGraphData, startingNodeId]);
 
   return {
