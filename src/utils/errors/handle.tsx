@@ -6,7 +6,7 @@ import { ErrorHandlingOptions, ErrorLevel } from './types';
  * Default error handling options
  */
 const defaultOptions: ErrorHandlingOptions = {
-  level: 'error',
+  level: ErrorLevel.ERROR,
   silent: false,
   reportToAnalytics: true,
   showToast: true
@@ -22,23 +22,23 @@ const defaultOptions: ErrorHandlingOptions = {
 export function handleError(
   error: unknown,
   userMessage?: string,
-  options?: ErrorHandlingOptions
+  options?: Partial<ErrorHandlingOptions>
 ): void {
   const opts = { ...defaultOptions, ...options };
   const errorObj = error instanceof Error ? error : new Error(String(error));
   
   // Always log to console with appropriate level
   switch (opts.level) {
-    case 'debug':
+    case ErrorLevel.DEBUG:
       console.debug(`[DEBUG] ${userMessage || errorObj.message}`, errorObj, opts.context);
       break;
-    case 'info':
+    case ErrorLevel.INFO:
       console.info(`[INFO] ${userMessage || errorObj.message}`, errorObj, opts.context);
       break;
-    case 'warning':
+    case ErrorLevel.WARNING:
       console.warn(`[WARNING] ${userMessage || errorObj.message}`, errorObj, opts.context);
       break;
-    case 'error':
+    case ErrorLevel.ERROR:
     default:
       console.error(`[ERROR] ${userMessage || errorObj.message}`, errorObj, opts.context);
   }
@@ -46,9 +46,9 @@ export function handleError(
   // Show toast notification if enabled
   if (opts.showToast && !opts.silent) {
     toast({
-      title: opts.toastTitle || (opts.level === 'error' ? 'Error' : opts.level === 'warning' ? 'Warning' : 'Notice'),
+      title: opts.toastTitle || (opts.level === ErrorLevel.ERROR ? 'Error' : opts.level === ErrorLevel.WARNING ? 'Warning' : 'Notice'),
       description: userMessage || errorObj.message,
-      variant: opts.level === 'error' ? 'destructive' : 'default',
+      variant: opts.level === ErrorLevel.ERROR ? 'destructive' : 'default',
     });
   }
 }
@@ -62,9 +62,9 @@ export function handleError(
  */
 export function createErrorHandler(
   componentName: string,
-  defaultOptions?: ErrorHandlingOptions
+  defaultOptions?: Partial<ErrorHandlingOptions>
 ) {
-  return (error: unknown, userMessage?: string, options?: ErrorHandlingOptions): void => {
+  return (error: unknown, userMessage?: string, options?: Partial<ErrorHandlingOptions>): void => {
     handleError(error, userMessage, {
       ...defaultOptions,
       ...options,
@@ -75,4 +75,14 @@ export function createErrorHandler(
       }
     });
   };
+}
+
+/**
+ * Creates a component-specific error handler
+ */
+export function createComponentErrorHandler(componentName: string) {
+  return createErrorHandler(componentName, { 
+    level: ErrorLevel.ERROR,
+    context: { source: 'component', component: componentName }
+  });
 }

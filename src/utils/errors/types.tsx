@@ -10,7 +10,7 @@ export interface ErrorOptions {
   // Whether to show a toast notification
   silent?: boolean;
   // Error level for logging and UI presentation
-  level?: 'error' | 'warning' | 'debug' | 'info';
+  level?: ErrorLevel;
   // For backward compatibility
   technical?: boolean;
   // Source of the error
@@ -24,6 +24,20 @@ export interface ErrorOptions {
   // Whether to show notification to the user
   notifyUser?: boolean;
   // Category of error
+  category?: string;
+}
+
+/**
+ * Error handling options
+ */
+export interface ErrorHandlingOptions {
+  level?: ErrorLevel;
+  silent?: boolean;
+  reportToAnalytics?: boolean;
+  showToast?: boolean;
+  context?: Record<string, any>;
+  toastTitle?: string;
+  technical?: boolean;
   category?: string;
 }
 
@@ -121,6 +135,7 @@ export interface ErrorHandlingCompatOptions {
   message?: string;
   level?: string;
   context?: Record<string, any>;
+  technical?: boolean;
 }
 
 /**
