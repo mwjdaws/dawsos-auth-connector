@@ -5,18 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Removed Suspense and separate fallback component to prevent hydration mismatch
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   // Add effect to simulate initial loading
@@ -85,9 +83,9 @@ const Auth = () => {
       } else {
         toast({
           title: "Success",
-          description: "You are now signed in",
+          description: "Successfully signed in!",
         });
-        navigate("/");
+        navigate("/dashboard");
       }
     } catch (error: any) {
       toast({
@@ -100,16 +98,17 @@ const Auth = () => {
     }
   };
 
-  // Show loading skeleton if component is loading
+  // Show loading skeleton while content is loading
   if (isLoading) {
     return (
-      <div className="container flex items-center justify-center min-h-screen py-12">
+      <div className="flex items-center justify-center min-h-screen">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <Skeleton className="h-8 w-32 mx-auto mb-2" />
-            <Skeleton className="h-4 w-48 mx-auto" />
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-4 w-full mt-2" />
           </CardHeader>
           <CardContent className="space-y-4">
+            <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
           </CardContent>
@@ -122,38 +121,38 @@ const Auth = () => {
   }
 
   return (
-    <div className="container flex items-center justify-center min-h-screen py-12">
+    <div className="flex items-center justify-center min-h-screen">
       <Card className="w-full max-w-md">
-        <Tabs defaultValue="sign-in">
-          <CardHeader>
-            <CardTitle className="text-2xl text-center">Welcome</CardTitle>
-            <CardDescription className="text-center">
-              Sign in to your account or create a new one
-            </CardDescription>
-            <TabsList className="grid w-full grid-cols-2 mt-4">
-              <TabsTrigger value="sign-in">Sign In</TabsTrigger>
-              <TabsTrigger value="sign-up">Sign Up</TabsTrigger>
-            </TabsList>
-          </CardHeader>
+        <CardHeader>
+          <CardTitle className="text-center">Welcome</CardTitle>
+          <CardDescription className="text-center">
+            Sign in or create an account to get started
+          </CardDescription>
+        </CardHeader>
+        <Tabs defaultValue="signin" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="signin">Sign In</TabsTrigger>
+            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+          </TabsList>
           
-          <TabsContent value="sign-in">
+          <TabsContent value="signin">
             <form onSubmit={handleSignIn}>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email-signin">Email</Label>
                   <Input 
-                    id="email" 
+                    id="email-signin" 
                     type="email" 
-                    placeholder="m@example.com" 
+                    placeholder="name@example.com" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password-signin">Password</Label>
                   <Input 
-                    id="password" 
+                    id="password-signin" 
                     type="password" 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -163,30 +162,30 @@ const Auth = () => {
               </CardContent>
               <CardFooter>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Signing in..." : "Sign In"}
+                  {loading ? "Signing In..." : "Sign In"}
                 </Button>
               </CardFooter>
             </form>
           </TabsContent>
           
-          <TabsContent value="sign-up">
+          <TabsContent value="signup">
             <form onSubmit={handleSignUp}>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-4">
                 <div className="space-y-2">
-                  <Label htmlFor="new-email">Email</Label>
+                  <Label htmlFor="email-signup">Email</Label>
                   <Input 
-                    id="new-email" 
+                    id="email-signup" 
                     type="email" 
-                    placeholder="m@example.com" 
+                    placeholder="name@example.com" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="new-password">Password</Label>
+                  <Label htmlFor="password-signup">Password</Label>
                   <Input 
-                    id="new-password" 
+                    id="password-signup" 
                     type="password" 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -196,7 +195,7 @@ const Auth = () => {
               </CardContent>
               <CardFooter>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Creating account..." : "Sign Up"}
+                  {loading ? "Creating Account..." : "Create Account"}
                 </Button>
               </CardFooter>
             </form>
