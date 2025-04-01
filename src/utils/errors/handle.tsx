@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { toast } from '@/hooks/use-toast';
 import { ErrorHandlingOptions, ErrorLevel } from './types';
 
@@ -50,6 +51,22 @@ export function handleError(
       description: userMessage || errorObj.message,
       variant: opts.level === ErrorLevel.ERROR ? 'destructive' : 'default',
     });
+  }
+}
+
+/**
+ * Safe error handler that catches and handles any errors during error handling
+ */
+export function handleErrorSafe(
+  error: unknown,
+  userMessage?: string,
+  options?: Partial<ErrorHandlingOptions>
+): void {
+  try {
+    handleError(error, userMessage, options);
+  } catch (handlingError) {
+    console.error('[CRITICAL] Error occurred during error handling:', handlingError);
+    console.error('Original error:', error);
   }
 }
 

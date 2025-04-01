@@ -57,11 +57,12 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
     }
   };
 
-  // Create a handler that only calls onReorderTags if it exists
+  // Create a wrapper function that safely calls onReorderTags if it exists
   const handleReorderTags = async (tagsToReorder: Tag[]): Promise<void> => {
     if (onReorderTags) {
-      await onReorderTags(tagsToReorder);
+      return onReorderTags(tagsToReorder);
     }
+    return Promise.resolve();
   };
 
   return (
@@ -92,8 +93,8 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
       <TagList 
         tags={tags} 
         editable={editable} 
-        onDeleteTag={onDeleteTag} 
-        onReorderTags={handleReorderTags} 
+        onDeleteTag={onDeleteTag}
+        onReorderTags={handleReorderTags}
       />
     </div>
   );

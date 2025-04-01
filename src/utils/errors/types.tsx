@@ -1,149 +1,162 @@
 
-/**
- * Error options for error handling
- */
-export interface ErrorOptions {
-  // The error message to display
-  errorMessage?: string;
-  // Additional context data for debugging
-  context?: Record<string, any>;
-  // Whether to show a toast notification
-  silent?: boolean;
-  // Error level for logging and UI presentation
-  level?: ErrorLevel;
-  // For backward compatibility
-  technical?: boolean;
-  // Source of the error
-  source?: ErrorSource;
-  // Severity level
-  severity?: 'high' | 'medium' | 'low';
-  // Custom fingerprint for error deduplication
-  fingerprint?: string;
-  // Whether to deduplicate errors
-  deduplicate?: boolean;
-  // Whether to show notification to the user
-  notifyUser?: boolean;
-  // Category of error
-  category?: string;
-}
+import React from 'react';
 
 /**
- * Error handling options
- */
-export interface ErrorHandlingOptions {
-  level?: ErrorLevel;
-  silent?: boolean;
-  reportToAnalytics?: boolean;
-  showToast?: boolean;
-  context?: Record<string, any>;
-  toastTitle?: string;
-  technical?: boolean;
-  category?: string;
-}
-
-/**
- * Partial error options for when only some properties are needed
- */
-export type PartialErrorOptions = Partial<ErrorOptions>;
-
-/**
- * Result of a wrapped function that can throw
- */
-export interface ErrorHandlingResult<T> {
-  success: boolean;
-  result?: T;
-  error?: Error;
-}
-
-/**
- * Type of functions that can be wrapped with error handling
- */
-export type WrappableFunction<T = any> = (...args: any[]) => Promise<T> | T;
-
-/**
- * Error impact levels for the system
- */
-export enum ErrorImpactLevel {
-  CRITICAL = 5, // System cannot function
-  HIGH = 4,     // Major feature is broken
-  MEDIUM = 3,   // Feature partially broken
-  LOW = 2,      // Minor issue
-  INFO = 1      // Informational
-}
-
-/**
- * Error tracking options
- */
-export interface ErrorTrackingOptions {
-  // Impact level of the error
-  impactLevel?: ErrorImpactLevel;
-  // Whether this error is user-facing
-  userFacing?: boolean;
-  // Whether to log to console
-  console?: boolean;
-  // Whether to send to telemetry service
-  telemetry?: boolean;
-  // Whether to show notification to user
-  notify?: boolean;
-}
-
-/**
- * Map error level to toast variant
- */
-export const errorLevelToToastVariant: Record<string, "default" | "destructive" | null | undefined> = {
-  'error': 'destructive',
-  'warning': 'default',
-  'info': 'default',
-  'debug': null
-};
-
-/**
- * Error source categories
- */
-export type ErrorSource = 'network' | 'server' | 'database' | 'application' | 'user' | 'unknown';
-
-/**
- * API Error type
- */
-export class ApiError extends Error {
-  statusCode?: number;
-  
-  constructor(message: string, statusCode?: number) {
-    super(message);
-    this.name = 'ApiError';
-    this.statusCode = statusCode;
-  }
-}
-
-/**
- * Validation Error type
- */
-export class ValidationError extends Error {
-  field?: string;
-  
-  constructor(message: string, field?: string) {
-    super(message);
-    this.name = 'ValidationError';
-    this.field = field;
-  }
-}
-
-/**
- * Error handling compatibility options
- */
-export interface ErrorHandlingCompatOptions {
-  message?: string;
-  level?: string;
-  context?: Record<string, any>;
-  technical?: boolean;
-}
-
-/**
- * Error level enum
+ * Error severity levels
  */
 export enum ErrorLevel {
-  ERROR = 'error',
-  WARNING = 'warning',
-  INFO = 'info',
-  DEBUG = 'debug'
+  DEBUG = 'DEBUG',
+  INFO = 'INFO',
+  WARNING = 'WARNING',
+  ERROR = 'ERROR'
+}
+
+/**
+ * Types of error sources
+ */
+export enum ErrorSource {
+  API = 'api',
+  DATABASE = 'database',
+  VALIDATION = 'validation',
+  UI = 'ui',
+  NETWORK = 'network',
+  AUTHENTICATION = 'authentication',
+  UNKNOWN = 'unknown'
+}
+
+/**
+ * Options for error handling
+ */
+export interface ErrorHandlingOptions {
+  /**
+   * The severity level of the error
+   */
+  level: ErrorLevel;
+
+  /**
+   * Whether to show a toast notification for this error
+   */
+  showToast: boolean;
+
+  /**
+   * Whether to report this error to analytics
+   */
+  reportToAnalytics: boolean;
+
+  /**
+   * Whether to handle this error silently (no user-facing notifications)
+   */
+  silent: boolean;
+
+  /**
+   * Additional context information for debugging
+   */
+  context?: Record<string, any>;
+
+  /**
+   * Custom title for toast notification
+   */
+  toastTitle?: string;
+
+  /**
+   * Fingerprint for error deduplication
+   */
+  fingerprint?: string;
+
+  /**
+   * Error retry attempt count
+   * @default 0
+   */
+  retryCount?: number;
+
+  /**
+   * Maximum number of retry attempts
+   * @default 3
+   */
+  maxRetries?: number;
+
+  /**
+   * Error category for grouping similar errors
+   */
+  category?: string;
+}
+
+/**
+ * Error with additional metadata
+ */
+export interface EnhancedError extends Error {
+  /**
+   * HTTP status code if available
+   */
+  status?: number;
+
+  /**
+   * Original error that caused this error
+   */
+  originalError?: Error;
+
+  /**
+   * Error code for specific error types
+   */
+  code?: string;
+
+  /**
+   * Error timestamp
+   */
+  timestamp?: string;
+}
+
+/**
+ * Toast notification configuration for errors
+ */
+export interface ErrorToastConfig {
+  /**
+   * Toast title
+   */
+  title: string;
+
+  /**
+   * Toast description
+   */
+  description: string;
+
+  /**
+   * Toast variant
+   */
+  variant?: 'default' | 'destructive';
+
+  /**
+   * Toast duration in milliseconds
+   */
+  duration?: number;
+
+  /**
+   * Action component to display in toast
+   */
+  action?: React.ReactNode;
+}
+
+/**
+ * Result of error handling operation
+ */
+export interface ErrorHandlingResult {
+  /**
+   * Whether the error was handled successfully
+   */
+  handled: boolean;
+
+  /**
+   * Toast ID if a toast was shown
+   */
+  toastId?: string;
+
+  /**
+   * Error message that was displayed to the user
+   */
+  userMessage?: string;
+
+  /**
+   * Original error that was handled
+   */
+  error: Error;
 }
