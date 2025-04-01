@@ -47,6 +47,27 @@ export interface DocumentOperationResult {
 }
 
 /**
+ * Publish operation result interface
+ */
+export interface PublishResult {
+  success: boolean;
+  documentId: string | null;
+  error?: any;
+}
+
+/**
+ * Knowledge source version interface
+ */
+export interface KnowledgeSourceVersion {
+  id: string;
+  source_id: string | null;
+  version_number: number;
+  content: string;
+  metadata: Json | null;
+  created_at: string | null;
+}
+
+/**
  * Pagination parameters
  */
 export interface PaginationParams {

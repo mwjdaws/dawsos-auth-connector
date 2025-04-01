@@ -101,6 +101,46 @@ export function createContentIdValidationResult(
 }
 
 /**
+ * Create a document validation result 
+ * @param isValid Is valid flag
+ * @param errorMessage Error message
+ * @param message Optional success message
+ * @returns Document validation result
+ */
+export function createDocumentValidationResult(
+  isValid: boolean,
+  errorMessage: string | null = null,
+  message: string | null = null
+): DocumentValidationResult {
+  return {
+    isValid,
+    errorMessage,
+    message,
+    resultType: 'document'
+  };
+}
+
+/**
+ * Create a tag validation result
+ * @param isValid Is valid flag
+ * @param errorMessage Error message
+ * @param message Optional success message
+ * @returns Tag validation result
+ */
+export function createTagValidationResult(
+  isValid: boolean,
+  errorMessage: string | null = null,
+  message: string | null = null
+): TagValidationResult {
+  return {
+    isValid,
+    errorMessage,
+    message,
+    resultType: 'tag'
+  };
+}
+
+/**
  * Check if a validation result is valid
  * @param result Validation result to check
  * @returns True if valid

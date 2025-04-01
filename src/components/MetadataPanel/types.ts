@@ -70,3 +70,29 @@ export interface OntologyTerm {
   domain?: string | null;
   review_required?: boolean;
 }
+
+/**
+ * Related term interface
+ */
+export interface RelatedTerm {
+  id: string;
+  term: string;
+  description: string;
+  relation_type: string;
+}
+
+/**
+ * Metadata panel context props
+ */
+export interface MetadataContextProps {
+  contentId: string;
+  tags: Tag[];
+  isLoading: boolean;
+  error: Error | null;
+  refreshMetadata?: () => void;
+  handleAddTag?: (tagName: string, typeId?: string | null) => Promise<void>;
+  handleDeleteTag?: (tagId: string) => Promise<void>;
+  validationResult: ValidationResult | null;
+  isEditable: boolean;
+  sourceMetadata: SourceMetadata | null;
+}

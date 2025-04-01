@@ -5,9 +5,14 @@ import { Badge } from '@/components/ui/badge';
 import { useTagGroups } from './hooks/useTagGroups';
 import { Tag } from '@/types/tag';
 
+export interface TagGroup {
+  category: string;
+  tags: Tag[];
+}
+
 export interface TagCardsProps {
   tagGroupsResult?: {
-    groups: { category: string; tags: Tag[] }[];
+    groups: TagGroup[];
     isLoading: boolean;
   };
 }
@@ -50,14 +55,14 @@ export function TagCards({ tagGroupsResult }: TagCardsProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {groups.map((group, index) => (
+      {groups.map((group: TagGroup, index: number) => (
         <Card key={index}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">{group.category}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {group.tags.map(tag => (
+              {group.tags.map((tag: Tag) => (
                 <Badge
                   key={tag.id}
                   variant="secondary"

@@ -3,13 +3,8 @@ import { useState, useCallback } from 'react';
 import { 
   createValidResult, 
   createInvalidResult, 
-  TagValidationResult 
+  createTagValidationResult
 } from '@/utils/validation/types';
-
-export interface TagValidationResult {
-  isValid: boolean;
-  message: string | null;
-}
 
 /**
  * Hook for validating tags before operations
@@ -17,7 +12,9 @@ export interface TagValidationResult {
 export function useTagValidator() {
   const [validationResult, setValidationResult] = useState<TagValidationResult>({
     isValid: true,
-    message: null
+    message: null,
+    errorMessage: null,
+    resultType: 'tag'
   });
 
   /**
@@ -27,35 +24,40 @@ export function useTagValidator() {
     // Reset validation state
     let result: TagValidationResult = {
       isValid: true,
-      message: null
+      message: null,
+      errorMessage: null,
+      resultType: 'tag'
     };
 
     // Check if tag is empty
     if (!tagName || tagName.trim() === '') {
-      result = {
-        isValid: false,
-        message: 'Tag name cannot be empty'
-      };
+      result = createTagValidationResult(
+        false,
+        'Tag name cannot be empty',
+        null
+      );
       setValidationResult(result);
       return result;
     }
 
     // Check if tag is too short
     if (tagName.trim().length < 2) {
-      result = {
-        isValid: false,
-        message: 'Tag must be at least 2 characters long'
-      };
+      result = createTagValidationResult(
+        false,
+        'Tag must be at least 2 characters long',
+        null
+      );
       setValidationResult(result);
       return result;
     }
 
     // Check if tag is too long
     if (tagName.trim().length > 50) {
-      result = {
-        isValid: false,
-        message: 'Tag cannot exceed 50 characters'
-      };
+      result = createTagValidationResult(
+        false,
+        'Tag cannot exceed 50 characters',
+        null
+      );
       setValidationResult(result);
       return result;
     }
