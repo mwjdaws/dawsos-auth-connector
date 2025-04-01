@@ -9,7 +9,7 @@ import { useTagMutations } from '../metadata/useTagMutation';
 import { Tag } from '@/types/tag';
 import { toast } from '../use-toast';
 import { isValidContentId } from '@/utils/content-validation';
-import { handleError } from '@/utils/error-handling';
+import { handleError, ErrorLevel } from '@/utils/errors';
 
 /**
  * useTagOperations hook (compatibility layer)
@@ -66,7 +66,7 @@ export function useTagOperations(contentId: string) {
       handleError(
         err,
         "Failed to add tag",
-        { level: "warning", technical: false }
+        { level: ErrorLevel.WARNING }
       );
     }
   }, [newTag, contentId, isValidContent, addTag]);
@@ -90,7 +90,7 @@ export function useTagOperations(contentId: string) {
       handleError(
         err,
         "Failed to delete tag",
-        { level: "warning", technical: false }
+        { level: ErrorLevel.WARNING }
       );
     }
   }, [contentId, isValidContent, deleteTag]);
@@ -105,7 +105,7 @@ export function useTagOperations(contentId: string) {
       handleError(
         err,
         "Failed to refresh tags",
-        { level: "warning", technical: false }
+        { level: ErrorLevel.WARNING }
       );
     }
   }, [fetchTags]);
@@ -128,7 +128,7 @@ export function useTagOperations(contentId: string) {
       handleError(
         err,
         "Failed to reorder tags",
-        { level: "warning", technical: false }
+        { level: ErrorLevel.WARNING }
       );
     }
   }, [contentId, updateTagOrder]);
