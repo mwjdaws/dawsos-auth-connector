@@ -1,42 +1,34 @@
 
-import React, { memo } from 'react';
-import { Info } from 'lucide-react';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import React from 'react';
+import { RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface GraphHeaderProps {
+  loading: boolean;
   nodeCount: number;
   linkCount: number;
+  onRetry: () => void;
 }
 
-export const GraphHeader = memo(function GraphHeader({ 
-  nodeCount, 
-  linkCount 
-}: GraphHeaderProps) {
+export function GraphHeader({ loading, nodeCount, linkCount, onRetry }: GraphHeaderProps) {
   return (
-    <div className="px-4 py-3 border-b flex justify-between items-center bg-muted/50">
-      <div className="flex items-center gap-2">
-        <h3 className="font-medium">Knowledge Graph</h3>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Visualizes connections between knowledge sources</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-      
-      <div className="text-sm text-muted-foreground flex gap-3">
+    <div className="flex justify-between items-center p-2 border-b">
+      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
         <span>{nodeCount} nodes</span>
+        <span>•</span>
         <span>{linkCount} connections</span>
       </div>
+      
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        onClick={onRetry} 
+        disabled={loading}
+        className="text-xs h-7"
+      >
+        <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
+        {loading ? 'Loading...' : 'Refresh'}
+      </Button>
     </div>
   );
-});
+}

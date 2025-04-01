@@ -1,30 +1,36 @@
 
-/**
- * EmptyGraphState Component
- * 
- * Displays a message when no graph data is available.
- */
 import React from 'react';
+import { NetworkIcon, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface EmptyGraphStateProps {
-  onRefresh: () => void;
+  startingNodeId: string;
+  onRetry: () => void;
 }
 
-export function EmptyGraphState({ onRefresh }: EmptyGraphStateProps) {
+export function EmptyGraphState({ startingNodeId, onRetry }: EmptyGraphStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-      <p className="text-muted-foreground mb-4">
-        No relationship data available for this knowledge source.
-      </p>
-      <p className="text-sm text-muted-foreground mb-6">
-        Try adding some ontology terms or linking to other sources.
-      </p>
-      <button 
-        className="px-3 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-        onClick={onRefresh}
-      >
-        Refresh Graph Data
-      </button>
+    <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+      <NetworkIcon className="h-12 w-12 text-muted-foreground mb-4" />
+      
+      <h3 className="text-lg font-medium mb-2">No connections found</h3>
+      
+      {startingNodeId ? (
+        <p className="text-muted-foreground mb-4 max-w-md">
+          This content doesn't have any connections to other knowledge sources yet.
+          Try adding some links to other content.
+        </p>
+      ) : (
+        <p className="text-muted-foreground mb-4 max-w-md">
+          No content relationships were found. Start connecting your knowledge sources
+          to build a knowledge graph.
+        </p>
+      )}
+      
+      <Button onClick={onRetry} size="sm" className="mt-2">
+        <RefreshCw className="h-4 w-4 mr-2" />
+        Refresh
+      </Button>
     </div>
   );
 }

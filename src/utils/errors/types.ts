@@ -21,7 +21,12 @@ export enum ErrorSource {
   HOOK = 'hook',
   SERVICE = 'service',
   API = 'api',
-  UNKNOWN = 'unknown'
+  UNKNOWN = 'unknown',
+  NETWORK = 'network',
+  DATABASE = 'database',
+  AUTHENTICATION = 'authentication',
+  VALIDATION = 'validation',
+  UI = 'ui'
 }
 
 /**
@@ -38,7 +43,6 @@ export interface ErrorHandlingOptions {
   showToast?: boolean;
   toastId?: string;
   userMessage?: string;
-  technical?: string; // Technical details (for backwards compatibility)
 }
 
 /**

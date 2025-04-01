@@ -1,120 +1,115 @@
 
-/**
- * Hook for tag operations (add, delete)
- */
-import { useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
-import { Tag } from "@/types/tag";
-import { handleError } from "@/utils/errors";
-import { useContentIdValidation } from "@/hooks/validation";
+import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Tag } from '@/types';
+import { handleError, ErrorLevel } from '@/utils/errors';
 
 interface UseTagOperationsProps {
-  contentId?: string;
+  contentId: string;
   tags: Tag[];
   setTags: (tags: Tag[]) => void;
 }
 
-/**
- * Hook for tag operations
- */
-export function useTagOperations({
-  contentId,
-  tags,
-  setTags
-}: UseTagOperationsProps) {
-  // Validate content ID
-  const { isValid } = useContentIdValidation(contentId);
+export function useTagOperations({ contentId, tags, setTags }: UseTagOperationsProps) {
+  const [isAddingTag, setIsAddingTag] = useState(false);
+  const [isDeletingTag, setIsDeletingTag] = useState(false);
   
   /**
-   * Add a tag to the content
+   * Add a new tag
    */
-  const addTag = useCallback(async (name: string, typeId?: string): Promise<Tag | null> => {
-    if (!contentId || !isValid || !name.trim()) return null;
+  const addTag = useCallback(async ({ name, typeId = null }: { name: string; typeId?: string | null }) => {
+    if (!contentId || !name.trim()) return false;
+    
+    setIsAddingTag(true);
     
     try {
+      // Create new tag object
+      const newTagData = {
+        name: name.trim(),
+        content_id: contentId,
+        type_id: typeId
+      };
+      
+      // Insert tag into database
       const { data, error } = await supabase
         .from('tags')
-        .insert([{ 
-          name: name.trim().toLowerCase(), 
-          content_id: contentId,
-          type_id: typeId 
-        }])
-        .select();
+        .insert(newTagData)
+        .select('*')
+        .single();
       
       if (error) throw error;
       
-      // Update local state
-      if (data && data.length > 0) {
-        const newTag = data[0] as Tag;
-        setTags([...tags, newTag]);
+      if (data) {
+        // Add tag to local state
+        setTags([...tags, {
+          id: data.id,
+          name: data.name,
+          content_id: data.content_id,
+          type_id: data.type_id,
+          type_name: data.type_name,
+          display_order: data.display_order || tags.length
+        }]);
         
-        toast({
-          title: "Success",
-          description: "Tag added successfully",
-        });
-        
-        return newTag;
+        return true;
       }
       
-      return null;
-    } catch (error) {
+      return false;
+    } catch (err) {
       handleError(
-        error,
-        "Failed to add tag",
+        err,
+        `Failed to add tag "${name}"`,
         { 
-          level: "warning", 
-          technical: false,
-          context: { contentId }
+          level: ErrorLevel.WARNING,
+          context: { contentId, tagName: name }
         }
       );
-      
-      return null;
+      return false;
+    } finally {
+      setIsAddingTag(false);
     }
-  }, [contentId, isValid, tags, setTags]);
-
+  }, [contentId, tags, setTags]);
+  
   /**
-   * Delete a tag from the content
+   * Delete a tag
    */
-  const deleteTag = useCallback(async (tagId: string): Promise<boolean> => {
-    if (!contentId || !isValid || !tagId) return false;
+  const deleteTag = useCallback(async (tagId: string) => {
+    if (!contentId || !tagId) return false;
+    
+    setIsDeletingTag(true);
     
     try {
+      // Delete from database
       const { error } = await supabase
         .from('tags')
         .delete()
-        .eq('id', tagId);
+        .eq('id', tagId)
+        .eq('content_id', contentId);
       
       if (error) throw error;
       
-      // Update local state
+      // Remove from local state
       setTags(tags.filter(tag => tag.id !== tagId));
       
-      toast({
-        title: "Success",
-        description: "Tag deleted successfully",
-      });
-      
       return true;
-    } catch (error) {
+    } catch (err) {
       handleError(
-        error,
-        "Failed to delete tag",
+        err,
+        'Failed to delete tag',
         { 
-          level: "warning", 
-          technical: false,
-          context: { contentId }
+          level: ErrorLevel.WARNING,
+          context: { contentId, tagId }
         }
       );
-      
       return false;
+    } finally {
+      setIsDeletingTag(false);
     }
-  }, [contentId, isValid, tags, setTags]);
-
+  }, [contentId, tags, setTags]);
+  
   return {
     addTag,
-    deleteTag
+    deleteTag,
+    isAddingTag,
+    isDeletingTag
   };
 }
-
-export default useTagOperations;

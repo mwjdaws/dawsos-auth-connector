@@ -42,60 +42,58 @@ export function RelationshipGraph(props: GraphProps) {
     handleZoomChange,
     handleResetZoom,
     handleRetry
-  } = useRelationshipGraph({
-    startingNodeId,
-    hasAttemptedRetry
+  } = useRelationshipGraph({ 
+    startingNodeId, 
+    hasAttemptedRetry 
   });
   
-  // Memoize header data to prevent unnecessary re-renders
-  const headerData = useMemo(() => ({
-    nodeCount: graphStats?.nodeCount || 0,
-    linkCount: graphStats?.linkCount || 0
-  }), [graphStats]);
+  // Determine the content to display based on loading/error state
+  const content = useMemo(() => {
+    if (loading) {
+      return <GraphLoading loadingTime={loadingTime} />;
+    }
+    
+    if (error) {
+      return <GraphError error={error} onRetry={handleRetry} />;
+    }
+    
+    if (!graphData || !graphData.nodes || graphData.nodes.length === 0) {
+      return <EmptyGraphState startingNodeId={startingNodeId} onRetry={handleRetry} />;
+    }
+    
+    return (
+      <GraphContent
+        graphRef={graphRendererRef}
+        graphData={graphData}
+        width={width}
+        height={height}
+        highlightedNodeId={highlightedNodeId}
+        zoomLevel={zoomLevel}
+        onNodeSelect={handleNodeFound}
+      />
+    );
+  }, [graphData, loading, error, loadingTime, startingNodeId, width, height, highlightedNodeId, zoomLevel, handleNodeFound, handleRetry]);
   
-  // Show loading state while fetching data
-  if (loading) {
-    return <GraphLoading onManualRetry={handleRetry} loadingTime={loadingTime} />;
-  }
-  
-  // Show error state if there was a problem fetching data
-  if (error) {
-    console.error("Graph error:", error);
-    return <GraphError error={error} onRetry={handleRetry} />;
-  }
-  
-  // Show empty state if no data
-  if (!graphData || graphData.nodes.length === 0) {
-    console.log("No graph data available. graphData:", graphData);
-    return <EmptyGraphState onRefresh={handleRetry} />;
-  }
-  
-  // Render the graph when data is available, wrapped in an error boundary
   return (
-    <ErrorBoundary fallback={<ErrorFallback onRetry={handleRetry} />}>
-      <div className="border rounded-lg bg-card overflow-hidden flex flex-col">
+    <ErrorBoundary fallback={<ErrorFallback />}>
+      <div className="flex flex-col h-full">
         <GraphHeader 
-          nodeCount={headerData.nodeCount}
-          linkCount={headerData.linkCount}
+          loading={loading}
+          nodeCount={graphStats.nodeCount}
+          linkCount={graphStats.linkCount}
+          onRetry={handleRetry}
         />
         
-        <GraphControls
-          graphData={graphData}
-          onNodeFound={handleNodeFound}
-          zoom={zoomLevel || 1}
-          onZoomChange={handleZoomChange}
-          onResetZoom={handleResetZoom}
-        />
-        
-        <GraphContent
-          graphData={graphData}
-          width={width}
-          height={height}
-          highlightedNodeId={highlightedNodeId}
-          zoomLevel={zoomLevel || 1}
-          isPending={isPending}
-          graphRendererRef={graphRendererRef}
-        />
+        <div className="relative flex-1">
+          {content}
+          
+          <GraphControls
+            zoomLevel={zoomLevel}
+            onZoomChange={handleZoomChange}
+            onResetZoom={handleResetZoom}
+            isDisabled={loading || !!error || graphStats.isEmpty}
+          />
+        </div>
       </div>
     </ErrorBoundary>
   );

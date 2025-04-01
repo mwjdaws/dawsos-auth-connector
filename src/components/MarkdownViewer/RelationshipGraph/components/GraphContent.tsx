@@ -1,70 +1,49 @@
 
-/**
- * GraphContent Component
- * 
- * Renders the main content of the relationship graph, including the graph renderer
- * and loading indicator when processing updates.
- */
 import React from 'react';
-import { GraphData, GraphRendererRef } from '../types';
 import { GraphRenderer } from './graph-renderer/GraphRenderer';
-import { createCompatibleGraphRef } from '../compatibility';
+import { GraphData, GraphRendererRef } from '../types';
 
 interface GraphContentProps {
+  graphRef: React.RefObject<GraphRendererRef>;
   graphData: GraphData;
   width: number;
   height: number;
-  highlightedNodeId?: string | null;
+  highlightedNodeId: string | null;
   zoomLevel: number;
-  isPending: boolean;
-  graphRendererRef: React.RefObject<GraphRendererRef>;
+  onNodeSelect: (nodeId: string) => void;
 }
 
 export function GraphContent({
+  graphRef,
   graphData,
   width,
   height,
   highlightedNodeId,
   zoomLevel,
-  isPending,
-  graphRendererRef
+  onNodeSelect
 }: GraphContentProps) {
-  // Create a local ref for the modern GraphRenderer
-  const modernRef = React.useRef<any>(null);
-  
-  // Set up a ref forwarding mechanism
-  React.useEffect(() => {
-    if (graphRendererRef.current && modernRef.current) {
-      // Forward the modern ref methods to the legacy ref
-      Object.assign(graphRendererRef.current, createCompatibleGraphRef(modernRef.current));
+  const handleNodeClick = (nodeId: string) => {
+    if (onNodeSelect) {
+      onNodeSelect(nodeId);
     }
-  }, [graphRendererRef]);
-  
-  // Ensure we have valid data with nodes and links
-  const safeGraphData: GraphData = {
-    nodes: graphData?.nodes || [],
-    links: graphData?.links || []
   };
   
-  // Provide a non-null value for highlightedNodeId to satisfy the GraphRenderer prop types
-  const safeHighlightedNodeId = highlightedNodeId === undefined ? null : highlightedNodeId;
+  const handleLinkClick = (source: string, target: string) => {
+    console.log(`Link clicked: ${source} -> ${target}`);
+  };
   
   return (
-    <div className="relative w-full h-full">
-      <GraphRenderer 
-        ref={modernRef}
-        graphData={safeGraphData} 
-        width={width} 
+    <div className="w-full h-full">
+      <GraphRenderer
+        ref={graphRef}
+        graphData={graphData}
+        width={width}
         height={height}
-        highlightedNodeId={safeHighlightedNodeId}
+        highlightedNodeId={highlightedNodeId}
         zoom={zoomLevel}
+        onNodeClick={handleNodeClick}
+        onLinkClick={handleLinkClick}
       />
-      
-      {isPending && (
-        <div className="absolute bottom-4 right-4 bg-primary/70 text-primary-foreground px-3 py-1.5 text-xs rounded-md backdrop-blur-sm shadow-sm">
-          Updating view...
-        </div>
-      )}
     </div>
   );
 }

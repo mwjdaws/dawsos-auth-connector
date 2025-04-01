@@ -1,47 +1,29 @@
 
 /**
- * Ontology Term interface for knowledge management
+ * Type definitions for ontology-related entities
  */
+
 export interface OntologyTerm {
   id: string;
   term: string;
   description: string;
-  review_required?: boolean;
   domain?: string;
+  review_required?: boolean;
 }
 
-/**
- * Ontology Domain interface
- */
 export interface OntologyDomain {
   id: string;
   name: string;
   description: string;
 }
 
-/**
- * Type guard to check if an object is an OntologyTerm
- */
-export function isOntologyTerm(obj: any): obj is OntologyTerm {
-  return (
-    obj &&
-    typeof obj === 'object' &&
-    typeof obj.id === 'string' &&
-    typeof obj.term === 'string' &&
-    typeof obj.description === 'string'
-  );
+export interface RelatedTerm {
+  id: string;
+  term: string;
+  description: string;
+  domain?: string;
+  relationshipType?: string;
+  relationshipId?: string;
+  term_id?: string; // For backward compatibility
+  relation_type?: string; // For backward compatibility
 }
-
-/**
- * Term relation types enum
- */
-export enum OntologyRelationType {
-  RELATED = 'related',
-  PARENT = 'parent',
-  CHILD = 'child',
-  SYNONYM = 'synonym',
-  ANTONYM = 'antonym'
-}
-
-// Export the OntologyTerm interface
-export default OntologyTerm;

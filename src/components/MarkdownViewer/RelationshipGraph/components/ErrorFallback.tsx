@@ -1,22 +1,17 @@
 
-/**
- * ErrorFallback Component
- * 
- * Displays an error message when there's an error rendering the RelationshipGraph.
- * Provides a retry option to attempt reloading the graph.
- */
-import React, { memo } from 'react';
-import { GraphError } from './GraphError';
+import React from 'react';
+import { AlertCircle } from 'lucide-react';
 
-interface ErrorFallbackProps {
-  onRetry: () => void;
+export function ErrorFallback() {
+  return (
+    <div className="p-4 flex flex-col items-center justify-center h-full">
+      <AlertCircle className="h-8 w-8 text-destructive mb-2" />
+      <h3 className="font-medium">Graph Visualization Error</h3>
+      <p className="text-muted-foreground text-sm text-center mt-1">
+        An error occurred while rendering the knowledge graph.
+        <br />
+        Please try refreshing the page.
+      </p>
+    </div>
+  );
 }
-
-export const ErrorFallback = memo(({ onRetry }: ErrorFallbackProps) => (
-  <GraphError 
-    error="An unexpected error occurred while rendering the graph" 
-    onRetry={onRetry} 
-  />
-));
-
-ErrorFallback.displayName = 'ErrorFallback';

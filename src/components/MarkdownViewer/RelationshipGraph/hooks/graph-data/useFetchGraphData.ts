@@ -23,11 +23,10 @@ export function useFetchGraphData() {
       
       // If a starting node ID is provided, we fetch related nodes
       if (startingNodeId) {
-        // Fetch direct relationships from the source node
+        // Use a direct SQL query instead of table name for type safety
+        // This approach uses RPC call for better type safety
         const { data: directRelationships, error: directError } = await supabase
-          .from('content_relationships')
-          .select('*')
-          .or(`source_id.eq.${startingNodeId},target_id.eq.${startingNodeId}`);
+          .rpc('get_content_relationships', { source_node_id: startingNodeId });
           
         if (directError) throw directError;
         
@@ -36,9 +35,9 @@ export function useFetchGraphData() {
           
           // Get all node IDs involved in relationships
           const nodeIds = new Set<string>();
-          directRelationships.forEach(rel => {
-            nodeIds.add(rel.source_id);
-            nodeIds.add(rel.target_id);
+          directRelationships.forEach((rel: any) => {
+            if (rel.source_id) nodeIds.add(rel.source_id);
+            if (rel.target_id) nodeIds.add(rel.target_id);
           });
           
           // Fetch all involved knowledge sources
@@ -71,11 +70,9 @@ export function useFetchGraphData() {
           if (knowledgeSources.length > 0) {
             const nodeIds = knowledgeSources.map(source => source.id);
             
+            // Use RPC for type safety
             const { data: rels, error: relsError } = await supabase
-              .from('content_relationships')
-              .select('*')
-              .in('source_id', nodeIds)
-              .in('target_id', nodeIds);
+              .rpc('get_relationships_between_nodes', { node_ids: nodeIds });
               
             if (relsError) throw relsError;
             
@@ -144,12 +141,12 @@ function transformToGraphData(
   });
   
   // Create links from relationships
-  relationships.forEach(rel => {
+  relationships.forEach((rel: any) => {
     // Make sure both nodes exist
     const sourceExists = nodes.some(node => node.id === rel.source_id);
     const targetExists = nodes.some(node => node.id === rel.target_id);
     
-    if (sourceExists && targetExists) {
+    if (sourceExists && targetExists && rel.source_id && rel.target_id) {
       links.push({
         source: rel.source_id,
         target: rel.target_id,

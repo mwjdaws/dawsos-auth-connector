@@ -71,7 +71,6 @@ export const useTagReordering = ({
         'Failed to reorder tags',
         { 
           level: ErrorLevel.WARNING,
-          category: 'tags',
           context: { contentId }
         }
       );
