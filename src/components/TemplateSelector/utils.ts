@@ -9,7 +9,13 @@
  * @returns A structured representation of the content
  */
 export function generateStructureFromContent(content: string) {
-  const structure = {
+  const structure: {
+    sections: Array<{level: number; title: string; position: number}>;
+    totalWordCount: number;
+    hasHeadings: boolean;
+    hasLists: boolean;
+    hasCodeBlocks: boolean;
+  } = {
     sections: [],
     totalWordCount: 0,
     hasHeadings: false,
@@ -34,6 +40,7 @@ export function generateStructureFromContent(content: string) {
   // Extract sections based on headings
   const headingRegex = /^(#{1,6})\s+(.+)$/gm;
   let match;
+  
   while ((match = headingRegex.exec(content)) !== null) {
     const level = match[1].length;
     const title = match[2].trim();

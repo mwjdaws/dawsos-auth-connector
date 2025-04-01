@@ -46,14 +46,14 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
         );
       };
       
-      // Ensure description is a string or undefined (not null)
+      // Ensure description is a string or null (not undefined)
       const finalProps = {
         ...props,
-        description: props.description ?? undefined
+        description: props.description ?? null
       };
 
-      setToasts((toasts) => [
-        ...toasts,
+      setToasts((prevToasts) => [
+        ...prevToasts,
         { ...finalProps, id, dismiss },
       ].slice(-TOAST_LIMIT));
 

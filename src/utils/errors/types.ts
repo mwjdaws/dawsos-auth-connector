@@ -1,68 +1,58 @@
 
 /**
- * Error handling type definitions
+ * Error handling types
  */
 
 // Error severity levels
 export enum ErrorLevel {
-  DEBUG = "debug",
-  INFO = "info",
-  WARNING = "warning",
-  ERROR = "error"
+  Debug = 0,
+  Info = 1,
+  Warning = 2,
+  Error = 3,
+  Critical = 4
 }
 
-// Error sources (where the error originated)
+// Error sources
 export enum ErrorSource {
-  CLIENT = "client",
-  SERVER = "server",
-  NETWORK = "network",
-  DATABASE = "database",
-  UNKNOWN = "unknown"
+  Unknown = 'unknown',
+  User = 'user',
+  System = 'system',
+  Network = 'network',
+  Database = 'database',
+  Server = 'server',
+  Auth = 'auth',
+  Validation = 'validation',
+  UI = 'ui',
+  API = 'api'
 }
 
-// Core validation result interface
-export interface ValidationResult {
-  isValid: boolean;
-  errorMessage: string | null;
-  message: string | null;
-  resultType: string;
-}
+// For backward compatibility with older code
+export type ErrorSeverity = ErrorLevel;
+export type ErrorContext = Record<string, any>;
+export type ErrorMetadata = Record<string, any>;
 
-// Error handling options
-export interface ErrorHandlingOptions {
-  // Error categorization
-  level: ErrorLevel;
+// Enhanced error interface
+export interface EnhancedError extends Error {
+  level?: ErrorLevel;
   source?: ErrorSource;
-  
-  // Context information
-  context?: Record<string, any>;
-  technical?: string;
-  fingerprint?: string;
-  
-  // Display/reporting options
-  silent?: boolean;
-  reportToAnalytics?: boolean;
-  showToast?: boolean;
-  toastTitle?: string;
-  toastId?: string;
-  
-  // Error details
-  code?: string;
-  message?: string;
+  context?: ErrorContext;
+  metadata?: ErrorMetadata;
+  originalError?: Error;
 }
 
-// Default error handling options
-export const defaultErrorOptions: ErrorHandlingOptions = {
-  level: ErrorLevel.ERROR,
-  context: {},
-  silent: false,
-  reportToAnalytics: true,
-  showToast: true
-};
-
-// API Error type
-export interface ApiError extends Error {
-  status?: number;
-  code?: string;
+// Options for error handling
+export interface ErrorHandlingOptions {
+  message: string;
+  level: ErrorLevel;
+  source: ErrorSource;
+  toastTitle?: string;
+  toastDescription?: string;
   context?: Record<string, any>;
+  originalError?: Error;
+  suppressToast?: boolean;
+}
+
+// For users who need a custom type when upgrading
+export interface CustomErrorHandlingOptions extends ErrorHandlingOptions {
+  [key: string]: any;
 }

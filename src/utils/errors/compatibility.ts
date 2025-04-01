@@ -1,82 +1,79 @@
-/**
- * Error handling compatibility utilities
- * 
- * These utilities help bridge the gap between different error handling approaches
- * in the codebase.
- */
-import { ErrorLevel } from './types';
-import { handleError as handleErrorInternal } from './handle';
 
-// Map from new ErrorLevel to old error severity types
-const errorLevelMap: Record<string, string> = {
-  'DEBUG': 'debug',
-  'INFO': 'info',
-  'WARNING': 'warning',
-  'ERROR': 'error'
+import { ErrorHandlingOptions, ErrorLevel, ErrorSource } from './types';
+
+/**
+ * Convert error options from old format to new format
+ * This makes the error handling system backward compatible
+ */
+export function convertErrorOptions(
+  options?: Partial<ErrorHandlingOptions> | string | ErrorLevel
+): Partial<ErrorHandlingOptions> {
+  // If it's already in the correct format, return it
+  if (options && typeof options === 'object') {
+    const result: Partial<ErrorHandlingOptions> = { ...options };
+    
+    // Handle retryCount if present (move to context)
+    if ('retryCount' in options) {
+      result.context = {
+        ...result.context,
+        retryCount: options.retryCount
+      };
+      delete result.retryCount;
+    }
+    
+    return result;
+  }
+
+  // Convert string to error message
+  if (typeof options === 'string') {
+    return {
+      message: options,
+      toastTitle: options
+    };
+  }
+
+  // Convert ErrorLevel to level
+  if (typeof options === 'number') {
+    return {
+      level: options as ErrorLevel
+    };
+  }
+
+  // Return empty object for undefined
+  return {};
+}
+
+/**
+ * Update the ErrorSource enum values to handle legacy code
+ */
+export const ErrorSourceCompatibility = {
+  ...ErrorSource,
+  AUTHENTICATION: ErrorSource.Auth,
+  VALIDATION: ErrorSource.Validation,
+  UI: ErrorSource.UI,
+  API: ErrorSource.API
 };
 
 /**
- * Compatibility function for handling errors
- * Supports both new and old error handling formats
+ * Update the ErrorLevel enum values to handle legacy code
  */
-export function handleError(
-  error: unknown,
-  userMessage?: string,
-  options?: any
-): void {
-  // Normalize options
-  const normalizedOptions: any = { ...options };
-  
-  // Handle technical details for legacy support
-  if (normalizedOptions && normalizedOptions.technical) {
-    // If 'technical' property exists, add it to context for logging
-    normalizedOptions.context = {
-      ...normalizedOptions.context,
-      technicalDetails: normalizedOptions.technical
-    };
-    delete normalizedOptions.technical;
-  }
-  
-  // Map ErrorLevel enum values to string values expected by handleErrorInternal
-  if (normalizedOptions && normalizedOptions.level && typeof normalizedOptions.level === 'string') {
-    if (normalizedOptions.level in ErrorLevel) {
-      normalizedOptions.level = errorLevelMap[normalizedOptions.level] || 'error';
-    }
-  }
-  
-  // Support showToast option
-  if (normalizedOptions && 'showToast' in normalizedOptions) {
-    // Keep for compatibility
-  }
-  
-  // Call internal handler
-  handleErrorInternal(error, userMessage, normalizedOptions);
-}
+export const ErrorLevelCompatibility = {
+  ...ErrorLevel,
+  CRITICAL: ErrorLevel.Critical
+};
 
 /**
- * Create a compatibility layer for older error handler calls
+ * Function to handle compatibility with older error handling code
  */
-export function createErrorHandlerCompat(
-  componentName: string,
-  defaultOptions?: any
-) {
-  return (error: unknown, userMessage?: string, options?: any): void => {
-    handleError(error, userMessage, {
-      ...defaultOptions,
-      ...options,
-      context: {
-        ...(defaultOptions?.context || {}),
-        ...(options?.context || {}),
-        componentName
-      }
-    });
+export function compatibleErrorOptions(
+  message: string,
+  level: ErrorLevel = ErrorLevel.Error,
+  source: ErrorSource = ErrorSource.Unknown
+): ErrorHandlingOptions {
+  return {
+    message,
+    level,
+    source,
+    toastTitle: message
   };
-}
-
-// Export error level enum for compatibility
-export enum ErrorLevelCompat {
-  DEBUG = 'debug',
-  INFO = 'info',
-  WARNING = 'warning',
-  ERROR = 'error'
 }

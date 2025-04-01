@@ -60,7 +60,7 @@ export const errorToast = (title: string, description?: string | null, id?: stri
   const toastId = id || `error-${Date.now()}`;
   return toast({
     title,
-    description: description || undefined,
+    description: description || null,
     variant: "destructive",
     id: toastId
   });
@@ -71,7 +71,7 @@ export const successToast = (title: string, description?: string | null, id?: st
   const toastId = id || `success-${Date.now()}`;
   return toast({
     title,
-    description: description || undefined,
+    description: description || null,
     id: toastId
   });
 };
