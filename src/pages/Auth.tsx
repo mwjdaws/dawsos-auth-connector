@@ -1,203 +1,100 @@
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { errorToast, successToast } from "@/hooks/use-toast";
-import { handleError } from "@/utils/error-handling";
-import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorLevel, ErrorSource } from "@/utils/errors/types";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/supabaseClient';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from '@/hooks/use-toast';
+import { handleError } from '@/utils/errors';
+import { ErrorLevel } from '@/utils/errors/types';
 
+// Auth component for login/registration
 const Auth = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const { setUser } = useAuth();
 
-  // Add effect to simulate initial loading
-  useEffect(() => {
-    // Simulate loading for auth component
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
-      const { data, error } = await supabase.auth.signUp({ 
-        email, 
+      // Sign in with email and password
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
         password,
       });
+
+      if (error) throw error;
+
+      // User logged in successfully
+      setUser(data.user);
       
-      if (error) {
-        handleError(error, {
-          toastTitle: "Sign up failed",
-          level: ErrorLevel.ERROR,
-          source: ErrorSource.API
-        });
-      } else {
-        successToast(
-          "Account created", 
-          "Please check your email for the confirmation link"
-        );
-        
-        // If email confirmation is disabled, redirect to home
-        if (data.user && !data.user.email_confirmed_at) {
-          navigate("/");
-        }
-      }
+      // Show success toast
+      toast({
+        title: "Login successful",
+        description: "You have been successfully logged in",
+      });
+      
+      navigate('/');
     } catch (error) {
-      handleError(error, {
-        toastTitle: "Sign up error",
-        technical: "Unexpected error during sign up process"
+      // Handle login error
+      handleError(error, "Login failed", {
+        level: ErrorLevel.Error,
+        context: { email }
       });
     } finally {
       setLoading(false);
     }
   };
-
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password 
-      });
-      
-      if (error) {
-        handleError(error, {
-          toastTitle: "Sign in failed",
-          source: ErrorSource.API
-        });
-      } else {
-        successToast("Welcome back", "Successfully signed in");
-        navigate("/dashboard");
-      }
-    } catch (error) {
-      handleError(error, {
-        toastTitle: "Authentication error",
-        technical: "Unexpected error during sign in process"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Show loading skeleton while content is loading
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-4 w-full mt-2" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </CardContent>
-          <CardFooter>
-            <Skeleton className="h-10 w-full" />
-          </CardFooter>
-        </Card>
-      </div>
-    );
-  }
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <Card className="w-full max-w-md">
+    <div className="flex items-center justify-center min-h-screen bg-background">
+      <Card className="w-[350px]">
         <CardHeader>
-          <CardTitle className="text-center">Welcome</CardTitle>
-          <CardDescription className="text-center">
-            Sign in or create an account to get started
-          </CardDescription>
+          <CardTitle>Sign In</CardTitle>
+          <CardDescription>Enter your credentials below to sign in to your account</CardDescription>
         </CardHeader>
-        <Tabs defaultValue="signin" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="signin">Sign In</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="signin">
-            <form onSubmit={handleSignIn}>
-              <CardContent className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email-signin">Email</Label>
-                  <Input 
-                    id="email-signin" 
-                    type="email" 
-                    placeholder="name@example.com" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password-signin">Password</Label>
-                  <Input 
-                    id="password-signin" 
-                    type="password" 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Signing In..." : "Sign In"}
-                </Button>
-              </CardFooter>
-            </form>
-          </TabsContent>
-          
-          <TabsContent value="signup">
-            <form onSubmit={handleSignUp}>
-              <CardContent className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email-signup">Email</Label>
-                  <Input 
-                    id="email-signup" 
-                    type="email" 
-                    placeholder="name@example.com" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password-signup">Password</Label>
-                  <Input 
-                    id="password-signup" 
-                    type="password" 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Creating Account..." : "Create Account"}
-                </Button>
-              </CardFooter>
-            </form>
-          </TabsContent>
-        </Tabs>
+        <CardContent>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium">Email</label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm font-medium">Password</label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+            </div>
+          </form>
+        </CardContent>
+        <CardFooter>
+          <Button
+            type="submit"
+            onClick={handleLogin}
+            disabled={loading}
+            className="w-full"
+          >
+            {loading ? 'Signing In...' : 'Sign In'}
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );

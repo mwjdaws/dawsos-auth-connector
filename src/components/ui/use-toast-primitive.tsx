@@ -7,7 +7,7 @@ import {
 
 export type ToastProps = {
   title?: string;
-  description?: string | null;
+  description?: React.ReactNode;
   action?: ToastActionElement;
   variant?: "default" | "destructive";
   id?: string;
@@ -32,6 +32,9 @@ const ToastContext = React.createContext<ToastContextType | null>(null);
 
 // Generate a unique ID for each toast
 const generateId = () => Math.random().toString(36).substring(2, 9);
+
+// Global reference to the toast function that gets set when the provider mounts
+let toastFn: ((props: ToastProps) => string) | null = null;
 
 export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   const [toasts, setToasts] = React.useState<ToasterToast[]>([]);
@@ -61,6 +64,14 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
     },
     [setToasts]
   );
+
+  // Set the global toast function reference
+  React.useEffect(() => {
+    toastFn = toast;
+    return () => {
+      toastFn = null;
+    };
+  }, [toast]);
 
   const dismiss = React.useCallback((toastId?: string) => {
     setToasts((toasts) =>
@@ -108,9 +119,26 @@ export const useToast = () => {
   return context;
 };
 
-// Function that exports the toast function directly from the context
-// This should be used within components only
+// Function that can be imported anywhere - doesn't use hooks directly
+// It will use the global toast reference if available, otherwise it will
+// queue the toast to be shown when the toast provider mounts
+let queuedToasts: ToastProps[] = [];
+
 export const toast = (props: ToastProps) => {
-  const { toast } = useToast();
-  return toast(props);
+  if (toastFn) {
+    return toastFn(props);
+  } else {
+    // Queue the toast to be shown when the provider mounts
+    queuedToasts.push(props);
+    console.warn("Toast was called before ToastProvider was mounted");
+    return props.id || generateId();
+  }
+};
+
+// Process any queued toasts when the provider mounts
+export const clearToasts = () => {
+  if (toastFn) {
+    const { dismiss } = useToast();
+    dismiss();
+  }
 };

@@ -1,128 +1,137 @@
 
+/**
+ * Error handling utilities 
+ */
 import { toast } from "@/hooks/use-toast";
-import { ErrorLevel, ErrorSource, ErrorHandlingOptions, defaultErrorOptions } from './types';
-import { convertErrorOptions } from './compatibility';
-import { generateErrorId } from './generateId';
+import { ErrorHandlingOptions, ErrorLevel } from './types';
+import { convertErrorOptions, LegacyErrorHandlingOptions } from './compatibility';
 
 /**
- * Central error handling function
+ * Default error handling options
+ */
+const defaultOptions: ErrorHandlingOptions = {
+  level: ErrorLevel.Error,
+  silent: false,
+  reportToAnalytics: true,
+  showToast: true
+};
+
+/**
+ * Handle an error with consistent logging, reporting, and user feedback
  * 
- * This function processes all errors in the application in a consistent way
- * by providing informative toasts, logging, and context preservation.
- * 
- * @param error The error object that was caught
- * @param message Custom error message (optional)
+ * @param error The error to handle
+ * @param userMessage A user-friendly message to display
  * @param options Additional options for error handling
  */
 export function handleError(
   error: unknown,
-  message?: string | Partial<ErrorHandlingOptions>,
-  options?: Partial<ErrorHandlingOptions>
-) {
-  // Parse options based on different argument patterns
-  let errorOptions: ErrorHandlingOptions;
+  userMessage?: string,
+  options?: Partial<ErrorHandlingOptions> | LegacyErrorHandlingOptions
+): void {
+  // Convert legacy options if needed
+  const convertedOptions = convertErrorOptions(options as LegacyErrorHandlingOptions);
+  const opts: ErrorHandlingOptions = { ...defaultOptions, ...convertedOptions };
   
-  if (typeof message === 'string' && options) {
-    // Handle case: handleError(error, "message", { level: ErrorLevel.Error })
-    errorOptions = {
-      ...defaultErrorOptions,
-      ...convertErrorOptions(options),
-      message,
-      toastTitle: message
-    };
-  } else if (typeof message === 'object') {
-    // Handle case: handleError(error, { message: "message", level: ErrorLevel.Error })
-    errorOptions = {
-      ...defaultErrorOptions,
-      ...convertErrorOptions(message)
-    };
-  } else if (typeof message === 'string') {
-    // Handle case: handleError(error, "message")
-    errorOptions = {
-      ...defaultErrorOptions,
-      message,
-      toastTitle: message
-    };
-  } else {
-    // Handle case: handleError(error)
-    errorOptions = { ...defaultErrorOptions };
+  const errorObj = error instanceof Error ? error : new Error(String(error));
+  
+  // Always log to console with appropriate level
+  switch (opts.level) {
+    case ErrorLevel.Debug:
+      console.debug(`[DEBUG] ${userMessage || errorObj.message}`, errorObj, opts.context);
+      break;
+    case ErrorLevel.Info:
+      console.info(`[INFO] ${userMessage || errorObj.message}`, errorObj, opts.context);
+      break;
+    case ErrorLevel.Warning:
+      console.warn(`[WARNING] ${userMessage || errorObj.message}`, errorObj, opts.context);
+      break;
+    case ErrorLevel.Error:
+    default:
+      console.error(`[ERROR] ${userMessage || errorObj.message}`, errorObj, opts.context);
   }
-
-  // Generate a unique ID for this error
-  const errorId = generateErrorId();
-
-  // Extract information from the error
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  const errorStack = error instanceof Error ? error.stack : undefined;
-
-  // Log the error with context
-  console.error(
-    `[${errorOptions.source}] ${errorOptions.message || errorMessage}`,
-    {
-      errorId,
-      originalError: error,
-      level: errorOptions.level,
-      context: errorOptions.context,
-      stack: errorStack
-    }
-  );
-
-  // Show toast notification unless suppressed
-  if (!errorOptions.suppressToast && !errorOptions.silent && errorOptions.showToast) {
+  
+  // Show toast notification if enabled
+  // This doesn't call the hook directly - it calls a function that will
+  // use the global toast instance when available
+  if (opts.showToast && !opts.silent) {
+    const toastId = opts.fingerprint ? `error-${opts.fingerprint}` : undefined;
+    
+    // Call the safe toast function that doesn't use hooks directly
     toast({
-      id: errorOptions.toastId || errorId,
-      title: errorOptions.toastTitle || errorOptions.message || (errorOptions.level === ErrorLevel.Error ? 'Error' : errorOptions.level === ErrorLevel.Warning ? 'Warning' : 'Notice'),
-      description: errorOptions.toastDescription || errorMessage,
-      variant: errorOptions.level === ErrorLevel.Error ? 'destructive' : 'default',
+      id: toastId,
+      title: opts.toastTitle || (opts.level === ErrorLevel.Error ? 'Error' : opts.level === ErrorLevel.Warning ? 'Warning' : 'Notice'),
+      description: userMessage || errorObj.message,
+      variant: opts.level === ErrorLevel.Error ? 'destructive' : 'default',
     });
   }
+}
 
-  // Return enhanced error information for further processing if needed
-  return {
-    id: errorId,
-    message: errorOptions.message,
-    originalError: error,
-    level: errorOptions.level,
-    source: errorOptions.source,
-    context: errorOptions.context
+/**
+ * Safe error handler that catches and handles any errors during error handling
+ */
+export function handleErrorSafe(
+  error: unknown,
+  userMessage?: string,
+  options?: Partial<ErrorHandlingOptions>
+): void {
+  try {
+    handleError(error, userMessage, options);
+  } catch (handlingError) {
+    console.error('[CRITICAL] Error occurred during error handling:', handlingError);
+    console.error('Original error:', error);
+  }
+}
+
+/**
+ * Creates an error handler function with predefined context
+ * 
+ * @param componentName The name of the component or module
+ * @param defaultOptions Default options for all errors handled by this function
+ * @returns An error handler function with predefined context
+ */
+export function createErrorHandler(
+  componentName: string,
+  defaultOptions?: Partial<ErrorHandlingOptions>
+) {
+  return (error: unknown, userMessage?: string | undefined, options?: Partial<ErrorHandlingOptions> | undefined): void => {
+    handleError(error, userMessage, {
+      ...defaultOptions,
+      ...options,
+      context: {
+        ...(defaultOptions?.context || {}),
+        ...(options?.context || {}),
+        componentName
+      }
+    });
   };
 }
 
 /**
- * Create an error handler for components
+ * Creates a component-specific error handler
  */
 export function createComponentErrorHandler(componentName: string) {
-  return (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => {
-    return handleError(error, message, {
-      source: ErrorSource.UI,
-      context: { component: componentName },
-      ...options
-    });
-  };
+  return createErrorHandler(componentName, { 
+    level: ErrorLevel.Error,
+    context: { source: 'component', component: componentName }
+  });
 }
 
 /**
- * Create an error handler for hooks
+ * Creates a hook-specific error handler
  */
 export function createHookErrorHandler(hookName: string) {
-  return (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => {
-    return handleError(error, message, {
-      source: ErrorSource.Unknown,
-      context: { hook: hookName },
-      ...options
-    });
-  };
+  return createErrorHandler(hookName, {
+    level: ErrorLevel.Error,
+    context: { source: 'hook', hook: hookName }
+  });
 }
 
 /**
- * Create an error handler for services
+ * Creates a service-specific error handler
  */
 export function createServiceErrorHandler(serviceName: string) {
-  return (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => {
-    return handleError(error, message, {
-      source: ErrorSource.Server,
-      context: { service: serviceName },
-      ...options
-    });
-  };
+  return createErrorHandler(serviceName, {
+    level: ErrorLevel.Error,
+    context: { source: 'service', service: serviceName }
+  });
 }

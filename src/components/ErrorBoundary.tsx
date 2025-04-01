@@ -1,6 +1,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { handleError, ErrorLevel } from '@/utils/errors';
+import { handleError } from '@/utils/errors';
+import { ErrorLevel } from '@/utils/errors/types';
 
 interface Props {
   children: ReactNode;
@@ -54,7 +55,7 @@ export class ErrorBoundary extends Component<Props, State> {
     // Log the error to the application's error handling system
     handleError(error, "An unexpected error occurred", {
       context: { componentStack: errorInfo.componentStack },
-      level: ErrorLevel.ERROR,
+      level: ErrorLevel.Error,
     });
   }
 

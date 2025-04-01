@@ -7,17 +7,20 @@ import { AuthProvider } from './context/AuthContext';
 import { QueryProvider } from './providers/QueryProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider } from './components/ui/use-toast-primitive';
+import { clearToasts } from './hooks/use-toast';
 
 /**
  * RouteChangeHandler component to clear toasts on route changes
  */
 const RouteChangeHandler = () => {
   const location = useLocation();
+  const { dismiss } = useToast();
   
   useEffect(() => {
-    // We'll handle toast clearing in the component
-    console.log('Route changed, toasts will be cleared');
-  }, [location]);
+    // Clear toasts when the route changes
+    dismiss();
+    console.log('Route changed, toasts cleared');
+  }, [location, dismiss]);
   
   return null;
 };
