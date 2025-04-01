@@ -1,8 +1,126 @@
 
-import { ValidationResult } from '@/utils/validation/types';
+import { Tag } from '@/types/tag';
+import { OntologyTerm } from '@/types/ontology';
 
 /**
- * Props for the MetadataPanel component
+ * Metadata context props interface
+ */
+export interface MetadataContextProps {
+  contentId: string;
+  tags: Tag[];
+  validationResult: {
+    isValid: boolean;
+    contentExists: boolean;
+    errorMessage: string | null;
+  };
+  isEditable: boolean;
+  isLoading: boolean;
+  error: Error | null;
+  sourceMetadata: SourceMetadata | null;
+  refreshMetadata?: () => Promise<void>;
+  handleAddTag?: (tagName: string, typeId?: string | null) => Promise<void>;
+  handleDeleteTag?: (tagId: string) => Promise<void>;
+  handleReorderTags?: (tags: Tag[]) => Promise<void>;
+}
+
+/**
+ * Source metadata interface
+ */
+export interface SourceMetadata {
+  id: string;
+  title: string;
+  external_source_url: string | null;
+  external_source_checked_at: string | null;
+  needs_external_review: boolean;
+  published: boolean;
+  updated_at: string | null;
+}
+
+/**
+ * External source metadata interface
+ */
+export interface ExternalSourceMetadata {
+  externalSourceUrl: string | null;
+  lastCheckedAt: string | null;
+  needsExternalReview: boolean;
+}
+
+/**
+ * Header section props interface
+ */
+export interface HeaderSectionProps {
+  title?: string;
+  needsExternalReview: boolean;
+  handleRefresh: () => void;
+  isCollapsible?: boolean;
+  isCollapsed: boolean;
+  setIsCollapsed: (value: boolean) => void;
+  isLoading?: boolean;
+}
+
+/**
+ * External source section props interface
+ */
+export interface ExternalSourceSectionProps {
+  externalSourceUrl: string | null;
+  lastCheckedAt: string | null;
+  needsExternalReview: boolean;
+  editable: boolean;
+  contentId: string;
+  onMetadataChange?: () => void;
+}
+
+/**
+ * Content ID section props interface
+ */
+export interface ContentIdSectionProps {
+  contentId: string;
+}
+
+/**
+ * Ontology section props interface
+ */
+export interface OntologySectionProps {
+  sourceId: string;
+  editable: boolean;
+}
+
+/**
+ * Tags section props interface
+ */
+export interface TagsSectionProps {
+  tags: Tag[];
+  newTag: string;
+  setNewTag: (value: string) => void;
+  onAddTag: (typeId?: string | null) => Promise<void>;
+  onDeleteTag: (tagId: string) => Promise<void>;
+  onReorderTags?: (reorderedTags: Tag[]) => Promise<void>;
+  editable?: boolean;
+  isAddingTag?: boolean;
+  isDeletingTag?: boolean;
+  isReordering?: boolean;
+  onMetadataChange?: () => void;
+  className?: string;
+}
+
+/**
+ * Domain section props interface
+ */
+export interface DomainSectionProps {
+  domain: string;
+}
+
+/**
+ * Ontology terms section props interface
+ */
+export interface OntologyTermsSectionProps {
+  sourceId: string;
+  editable: boolean;
+  terms?: OntologyTerm[];
+}
+
+/**
+ * Metadata panel props interface
  */
 export interface MetadataPanelProps {
   contentId: string;
@@ -18,93 +136,11 @@ export interface MetadataPanelProps {
 }
 
 /**
- * Structure of a source's metadata
+ * Tag list props interface
  */
-export interface SourceMetadata {
-  id: string;
-  title: string;
-  content?: string;
-  external_source_url: string | null;
-  external_source_checked_at: string | null;
-  external_content_hash?: string | null;
-  needs_external_review: boolean;
-  published?: boolean;
-  published_at?: string | null;
-  updated_at: string;
-  created_at?: string;
-  metadata?: Record<string, any> | null;
-}
-
-/**
- * Simple version of source metadata with fewer fields
- */
-export interface SimpleSourceMetadata {
-  id: string;
-  title: string;
-  content: string;
-  external_source_url: string | null;
-  external_source_checked_at: string | null;
-  needs_external_review: boolean;
-  published: boolean;
-  published_at: string | null;
-  updated_at: string;
-  created_at: string;
-  metadata: Record<string, any> | null;
-}
-
-/**
- * Ontology term structure
- */
-export interface OntologyTerm {
-  id: string;
-  term: string;
-  domain?: string;
-  description?: string;
-  review_required?: boolean;
-}
-
-/**
- * Props for OntologyTermsSection component
- */
-export interface OntologyTermsSectionProps {
-  sourceId: string;
+export interface TagListProps {
+  tags: Tag[];
   editable: boolean;
-  terms?: OntologyTerm[];
-  onTermAdd?: (termId: string) => Promise<void>;
-  onTermRemove?: (termId: string) => Promise<void>;
-  onRefresh?: () => Promise<void>;
-  className?: string;
-}
-
-/**
- * Props for OntologySuggestionsPanel component
- */
-export interface OntologySuggestionsPanelProps {
-  sourceId: string;
-  content?: string;
-  onSuggestionApply?: (termId: string) => Promise<void>;
-  onSuggestionReject?: (termId: string) => Promise<void>;
-}
-
-/**
- * Props for DomainSection component
- */
-export interface DomainSectionProps {
-  domain: string | null;
-  className?: string;
-}
-
-/**
- * Props for ExternalSourceSection component
- */
-export interface ExternalSourceSectionProps {
-  externalSourceUrl: string | null;
-  lastCheckedAt?: string | null;
-  needsExternalReview?: boolean;
-  editable: boolean;
-  isLoading?: boolean;
-  contentId: string;
-  onValidateSource?: () => void;
-  onToggleReviewFlag?: () => void;
-  onMetadataChange?: () => void;
+  onDeleteTag: (tagId: string) => Promise<void>;
+  onReorderTags?: (tags: Tag[]) => Promise<void>;
 }

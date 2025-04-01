@@ -1,118 +1,89 @@
 
 /**
- * A tag associated with a piece of content
+ * Tag interface
  */
 export interface Tag {
   id: string;
   name: string;
   content_id: string;
-  type_id?: string | null;
-  display_order?: number;
-  type_name?: string; // Optional field for augmented tags
+  type_id: string | null;
+  display_order: number;
+  type_name?: string;
 }
 
 /**
- * Tag position for reordering
+ * Tag with type information
  */
-export interface TagPosition {
-  id: string;
-  position: number;
+export interface TagWithType extends Tag {
+  type_name: string;
 }
 
 /**
- * Function to sort tags by their display order
+ * Tag group interface
+ */
+export interface TagGroup {
+  id: string;
+  name: string;
+  tags: Tag[];
+  content_id: string;
+  category?: string;
+}
+
+/**
+ * Tag count interface
+ */
+export interface TagCount {
+  id: string;
+  name: string;
+  count: number;
+  type_id: string | null;
+  type_name?: string | null;
+}
+
+/**
+ * Sort tags by display order
  */
 export function sortTagsByDisplayOrder(tags: Tag[]): Tag[] {
-  return [...tags].sort((a, b) => {
-    const orderA = a.display_order ?? 0;
-    const orderB = b.display_order ?? 0;
-    return orderA - orderB;
-  });
+  if (!tags) return [];
+  return [...tags].sort((a, b) => a.display_order - b.display_order);
 }
 
 /**
- * Filter out duplicate tags based on name
+ * Map raw database tag data to Tag interface
  */
-export function filterDuplicateTags(tags: Tag[]): Tag[] {
-  const seen = new Set<string>();
-  return tags.filter(tag => {
-    const normalizedName = tag.name.toLowerCase();
-    if (seen.has(normalizedName)) {
-      return false;
-    }
-    seen.add(normalizedName);
-    return true;
-  });
-}
-
-/**
- * Ensures a tag is not null or undefined
- */
-export function ensureNonNullableTag(tag: Tag | null | undefined): Tag | null {
-  return tag || null;
-}
-
-/**
- * Convert tag positions to tags
- */
-export function convertTagPositionsToTags(positions: TagPosition[], tags: Tag[]): Tag[] {
-  const tagsMap = new Map(tags.map(tag => [tag.id, tag]));
+export function mapRawTagData(rawTags: any[]): Tag[] {
+  if (!rawTags) return [];
   
-  return positions
-    .map(pos => {
-      const tag = tagsMap.get(pos.id);
-      if (tag) {
-        return {
-          ...tag,
-          display_order: pos.position
-        };
-      }
-      return null;
-    })
-    .filter((tag): tag is Tag => tag !== null);
+  return rawTags
+    .filter(item => item !== null)
+    .map(item => ({
+      id: item.id,
+      name: item.name,
+      content_id: item.content_id,
+      type_id: item.type_id,
+      display_order: item.display_order,
+      type_name: item.type_name
+    }));
 }
 
 /**
- * Map API tag format to our Tag interface
+ * Type guard to check if an object is a Tag
  */
-export function mapApiTagToTag(apiTag: any): Tag {
-  return {
-    id: apiTag.id || '',
-    name: apiTag.name || '',
-    content_id: apiTag.content_id || '',
-    type_id: apiTag.type_id || null,
-    display_order: typeof apiTag.display_order === 'number' ? apiTag.display_order : 0,
-    type_name: apiTag.type_name || null
-  };
+export function isTag(obj: any): obj is Tag {
+  return (
+    obj &&
+    typeof obj === 'object' &&
+    typeof obj.id === 'string' &&
+    typeof obj.name === 'string' &&
+    typeof obj.content_id === 'string' &&
+    (obj.type_id === null || typeof obj.type_id === 'string') &&
+    typeof obj.display_order === 'number'
+  );
 }
 
 /**
- * Map array of API tags to our Tag interface
+ * Ensures a value is a Tag or returns null
  */
-export function mapApiTagsToTags(apiTags: any[]): Tag[] {
-  return apiTags.map(mapApiTagToTag);
-}
-
-/**
- * Validates if a tag object is valid
- */
-export function isValidTag(tag: any): tag is Tag {
-  return typeof tag === 'object' && 
-    typeof tag.id === 'string' && 
-    typeof tag.name === 'string' && 
-    typeof tag.content_id === 'string';
-}
-
-/**
- * Type guard to check if an object has the display_order property
- */
-export function hasDisplayOrder(obj: any): obj is { display_order: number } {
-  return obj && typeof obj.display_order === 'number';
-}
-
-/**
- * Augmented tag with additional information
- */
-export interface AugmentedTag extends Tag {
-  type_name?: string;
+export function ensureTag(value: any): Tag | null {
+  return isTag(value) ? value : null;
 }

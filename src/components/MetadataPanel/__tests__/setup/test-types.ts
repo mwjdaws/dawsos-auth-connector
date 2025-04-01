@@ -1,6 +1,15 @@
 
 import { Tag } from '@/types/tag';
-import { OntologyTerm } from '@/types/ontology';
+
+/**
+ * OntologyTerm type from main application
+ */
+export interface OntologyTerm {
+  id: string;
+  term: string;
+  description: string;
+  review_required?: boolean;
+}
 
 /**
  * Creates a mock tag for testing purposes
@@ -51,3 +60,25 @@ export function createMockOntologyTerms(count = 3): OntologyTerm[] {
     review_required: false
   }));
 }
+
+/**
+ * Basic testing tag
+ */
+export const basicTag: Tag = {
+  id: 'test-tag-1',
+  name: 'Test Tag',
+  content_id: 'test-content-1',
+  type_id: null,
+  display_order: 0
+};
+
+/**
+ * Tag with type
+ */
+export const typedTag: Tag = {
+  id: 'test-tag-2',
+  name: 'Typed Tag',
+  content_id: 'test-content-1',
+  type_id: 'tag-type-1',
+  display_order: 1
+};

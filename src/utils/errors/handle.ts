@@ -1,78 +1,78 @@
 
-/**
- * Central error handling utility
- */
 import { toast } from '@/hooks/use-toast';
-import { ErrorOptions } from './types';
-import { captureException } from '@/utils/telemetry';
+import { ErrorHandlingOptions, ErrorLevel } from './types';
 
-// Default options for error handling
-const DEFAULT_ERROR_OPTIONS: Partial<ErrorOptions> = {
-  silent: false
+/**
+ * Default error handling options
+ */
+const defaultOptions: ErrorHandlingOptions = {
+  level: 'error',
+  silent: false,
+  reportToAnalytics: true,
+  showToast: true
 };
 
 /**
- * Handle an error in a consistent way across the application
+ * Handle an error with consistent logging, reporting, and user feedback
  * 
- * This is the primary error handling utility that should be used app-wide.
- * It centralizes error handling logic for consistent behavior.
- * 
- * @param error The error that occurred
- * @param message Optional custom message to display instead of the error message
+ * @param error The error to handle
+ * @param userMessage A user-friendly message to display
  * @param options Additional options for error handling
  */
 export function handleError(
   error: unknown,
-  message?: string,
-  options?: Partial<ErrorOptions>
+  userMessage?: string,
+  options?: ErrorHandlingOptions
 ): void {
-  // Merge with default options
-  const opts = { ...DEFAULT_ERROR_OPTIONS, ...options };
-  
-  // Convert to Error if it's not one already
+  const opts = { ...defaultOptions, ...options };
   const errorObj = error instanceof Error ? error : new Error(String(error));
   
-  // Get the error message to display
-  const displayMessage = opts.errorMessage || message || errorObj.message || 'An error occurred';
-  
-  // Get the context data
-  const context = {
-    ...opts.context,
-    originalError: errorObj,
-    stack: errorObj.stack
-  };
-  
-  // Log the error to console
-  console.error('[Error]', displayMessage, context);
-  
-  // Track the error in analytics
-  if (!opts.silent) {
-    captureException(errorObj, {
-      context,
-      extra: { displayMessage }
-    });
+  // Always log to console with appropriate level
+  switch (opts.level) {
+    case 'debug':
+      console.debug(`[DEBUG] ${userMessage || errorObj.message}`, errorObj, opts.context);
+      break;
+    case 'info':
+      console.info(`[INFO] ${userMessage || errorObj.message}`, errorObj, opts.context);
+      break;
+    case 'warning':
+      console.warn(`[WARNING] ${userMessage || errorObj.message}`, errorObj, opts.context);
+      break;
+    case 'error':
+    default:
+      console.error(`[ERROR] ${userMessage || errorObj.message}`, errorObj, opts.context);
   }
   
-  // Show a toast notification if not silent
-  if (!opts.silent) {
-    // Determine the toast variant based on the error level
-    let variant: "default" | "destructive" | null | undefined;
-    
-    if (opts.level === 'error') {
-      variant = "destructive";
-    } else if (opts.level === 'warning') {
-      variant = "default"; // Use default for warnings
-    } else {
-      variant = "default";
-    }
-    
+  // Show toast notification if enabled
+  if (opts.showToast && !opts.silent) {
     toast({
-      title: opts.level === 'error' ? 'Error' : 'Warning',
-      description: displayMessage,
-      variant: variant
+      title: opts.toastTitle || (opts.level === 'error' ? 'Error' : opts.level === 'warning' ? 'Warning' : 'Notice'),
+      description: userMessage || errorObj.message,
+      variant: opts.level === 'error' ? 'destructive' : 'default',
     });
   }
 }
 
-// Export for backward compatibility
-export default handleError;
+/**
+ * Creates an error handler function with predefined context
+ * 
+ * @param componentName The name of the component or module
+ * @param defaultOptions Default options for all errors handled by this function
+ * @returns An error handler function with predefined context
+ */
+export function createErrorHandler(
+  componentName: string,
+  defaultOptions?: ErrorHandlingOptions
+) {
+  return (error: unknown, userMessage?: string, options?: ErrorHandlingOptions): void => {
+    handleError(error, userMessage, {
+      ...defaultOptions,
+      ...options,
+      context: {
+        ...(defaultOptions?.context || {}),
+        ...(options?.context || {}),
+        componentName
+      }
+    });
+  };
+}

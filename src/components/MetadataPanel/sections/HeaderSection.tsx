@@ -1,67 +1,76 @@
 
 import React from 'react';
-import { ChevronDown, ChevronUp, RefreshCw, AlertTriangle } from 'lucide-react';
+import { RefreshCw, ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 
-interface HeaderSectionProps {
+export interface HeaderSectionProps {
   title?: string;
-  lastUpdated?: string;
-  handleRefresh: () => void;
-  setIsCollapsed: (value: boolean) => void;
-  isCollapsed: boolean;
   needsExternalReview: boolean;
+  handleRefresh: () => void;
+  isCollapsible?: boolean;
+  isCollapsed: boolean;
+  setIsCollapsed: (value: boolean) => void;
   isLoading?: boolean;
 }
 
-export function HeaderSection({
-  title = "Metadata",
-  lastUpdated,
+export const HeaderSection: React.FC<HeaderSectionProps> = ({
+  title = 'Content Metadata',
+  needsExternalReview,
   handleRefresh,
-  setIsCollapsed,
+  isCollapsible = false,
   isCollapsed,
-  needsExternalReview = false,
+  setIsCollapsed,
   isLoading = false
-}: HeaderSectionProps) {
+}) => {
   return (
-    <div className="flex justify-between items-center mb-4">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 py-4">
       <div className="flex items-center space-x-2">
-        <h2 className="text-xl font-semibold">{title}</h2>
-        {needsExternalReview && (
-          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3" />
-            <span>Review Required</span>
-          </Badge>
+        {isCollapsible && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="p-0 h-5 w-5"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
         )}
-      </div>
-
-      <div className="flex space-x-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleRefresh}
-          aria-label="Refresh metadata"
-          className="h-8 w-8 p-0"
-          disabled={isLoading}
-        >
-          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-        </Button>
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          aria-label="Toggle panel"
-          className="h-8 w-8 p-0"
-        >
-          {isCollapsed ? (
-            <ChevronDown className="h-4 w-4" />
-          ) : (
-            <ChevronUp className="h-4 w-4" />
+        <CardTitle className="text-md flex items-center space-x-2">
+          <span>{title}</span>
+          {needsExternalReview && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    <span>Needs Refresh</span>
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>The external source has been updated since last check</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
-        </Button>
+        </CardTitle>
       </div>
-    </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleRefresh}
+        disabled={isLoading}
+        className="h-7 w-7"
+      >
+        <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+        <span className="sr-only">Refresh metadata</span>
+      </Button>
+    </CardHeader>
   );
-}
+};

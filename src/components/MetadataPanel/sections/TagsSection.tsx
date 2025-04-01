@@ -16,6 +16,8 @@ export interface TagsSectionProps {
   isAddingTag?: boolean;
   isDeletingTag?: boolean;
   isReordering?: boolean;
+  onMetadataChange?: () => void;
+  className?: string;
 }
 
 export function TagsSection({
@@ -28,7 +30,8 @@ export function TagsSection({
   editable = false,
   isAddingTag = false,
   isDeletingTag = false,
-  isReordering = false
+  isReordering = false,
+  className = ''
 }: TagsSectionProps) {
   const [selectedTagType, setSelectedTagType] = useState<string | null>(null);
   
@@ -40,7 +43,7 @@ export function TagsSection({
   };
   
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${className}`}>
       <h3 className="text-sm font-medium">Tags</h3>
       
       {editable && (
@@ -70,7 +73,7 @@ export function TagsSection({
         tags={tags} 
         editable={editable} 
         onDeleteTag={onDeleteTag}
-        onReorderTags={onReorderTags}
+        onReorderTags={onReorderTags ? tags => onReorderTags(tags) : undefined}
       />
       
       {isDeletingTag && (

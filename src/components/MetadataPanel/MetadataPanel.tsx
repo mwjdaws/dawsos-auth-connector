@@ -73,6 +73,7 @@ const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'edi
           isLoading={true}
           isCollapsed={isCollapsed}
           setIsCollapsed={setIsCollapsed}
+          isCollapsible={isCollapsible}
         />
         <div className="p-4 space-y-4">
           <Skeleton className="h-8 w-3/4" />
@@ -99,6 +100,7 @@ const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'edi
         isLoading={false}
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
+        isCollapsible={isCollapsible}
       />
       
       {!isCollapsed && (
@@ -132,17 +134,6 @@ const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'edi
  * 
  * Displays metadata for a content item including tags, external source
  * information, and ontology terms.
- * 
- * @param contentId - The ID of the content to display metadata for
- * @param editable - Whether the metadata is editable
- * @param onMetadataChange - Callback when metadata changes
- * @param isCollapsible - Whether the panel can be collapsed
- * @param initialCollapsed - Whether the panel starts collapsed
- * @param showOntologyTerms - Whether to show ontology terms
- * @param showDomain - Whether to show domain information
- * @param domain - The domain to display
- * @param className - Additional CSS classes
- * @param children - Child components to render inside the panel
  */
 const MetadataPanel: React.FC<MetadataPanelProps> = ({
   contentId,

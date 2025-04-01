@@ -1,39 +1,38 @@
 
 /**
- * Compatibility utilities for handling type differences
+ * Converts undefined to null but preserves null values
  */
-
-/**
- * Convert undefined to null - useful for database operations where null is expected
- */
-export function undefinedToNull<T>(value: T | undefined): T | null {
+export function undefinedToNull<T>(value: T | undefined | null): T | null {
   return value === undefined ? null : value;
 }
 
 /**
- * Convert null to undefined - useful for UI components where undefined is expected
+ * Converts null to undefined but preserves undefined values
  */
-export function nullToUndefined<T>(value: T | null): T | undefined {
+export function nullToUndefined<T>(value: T | null | undefined): T | undefined {
   return value === null ? undefined : value;
 }
 
 /**
- * Convert a null or undefined value to a default value
+ * Ensures a value is not null or undefined, providing a default
  */
-export function nullOrUndefinedToDefault<T>(value: T | null | undefined, defaultValue: T): T {
+export function ensureValue<T>(value: T | null | undefined, defaultValue: T): T {
   return (value === null || value === undefined) ? defaultValue : value;
 }
 
 /**
- * Check if a value is null or undefined
+ * Ensures a string is non-empty or returns null
  */
-export function isNullOrUndefined(value: any): value is null | undefined {
-  return value === null || value === undefined;
+export function ensureNonEmptyString(value: string | null | undefined): string | null {
+  if (value === null || value === undefined || value.trim() === '') {
+    return null;
+  }
+  return value;
 }
 
 /**
- * Ensure a value is not null or undefined, using a default value if it is
+ * Ensures array is not null or undefined, providing empty array as default
  */
-export function ensureValue<T>(value: T | null | undefined, defaultValue: T): T {
-  return isNullOrUndefined(value) ? defaultValue : value;
+export function ensureArray<T>(array: T[] | null | undefined): T[] {
+  return array || [];
 }

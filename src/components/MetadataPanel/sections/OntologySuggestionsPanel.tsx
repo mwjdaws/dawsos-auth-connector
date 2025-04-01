@@ -1,146 +1,201 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Check, X, Plus } from 'lucide-react';
-import { handleError } from '@/utils/errors/handle';
+import { Badge } from '@/components/ui/badge';
+import { Check, X, RefreshCw } from 'lucide-react';
 
-export interface OntologySuggestion {
+export interface OntologySuggestionTerm {
   id: string;
   term: string;
-  score: number;
-  applied: boolean;
-  rejected: boolean;
+  domain?: string;
+  description?: string;
+  score?: number;
+  applied?: boolean;
+  rejected?: boolean;
 }
 
-export interface OntologySuggestionsResult {
-  terms: OntologySuggestion[];
-  relatedNotes: any[];
+export interface OntologySuggestionsProps {
+  sourceId: string;
+  onAddTerm: (termId: string) => Promise<void>;
 }
 
-export interface UseOntologySuggestionsProps {
-  contentId: string;
-  limit?: number;
-}
-
-// Simplified hook for demonstration
-const useOntologySuggestions = ({ contentId }: UseOntologySuggestionsProps) => {
-  const [suggestions, setSuggestions] = useState<OntologySuggestionsResult>({
-    terms: [],
-    relatedNotes: []
-  });
+export function OntologySuggestionsPanel({ sourceId, onAddTerm }: OntologySuggestionsProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState<OntologySuggestionTerm[]>([]);
   const [error, setError] = useState<Error | null>(null);
 
-  const handleAccept = async (suggestionId: string) => {
-    // Implement accept logic
-    console.log("Accepting suggestion", suggestionId);
+  // Mock data for now - in a real implementation, this would fetch from an API
+  useEffect(() => {
+    const loadSuggestions = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Mock data
+        setSuggestions([
+          { id: 'term1', term: 'Artificial Intelligence', domain: 'Technology', score: 95 },
+          { id: 'term2', term: 'Neural Networks', domain: 'Technology', score: 88 },
+          { id: 'term3', term: 'Machine Learning', domain: 'Technology', score: 92 },
+          { id: 'term4', term: 'Natural Language Processing', domain: 'Technology', score: 85 }
+        ]);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Unknown error loading suggestions'));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadSuggestions();
+  }, [sourceId]);
+
+  const handleAddTerm = async (termId: string) => {
+    try {
+      await onAddTerm(termId);
+      
+      // Update local state
+      setSuggestions(prevSuggestions => 
+        prevSuggestions.map(s => 
+          s.id === termId ? { ...s, applied: true, rejected: false } : s
+        )
+      );
+    } catch (err) {
+      console.error('Failed to add term:', err);
+    }
   };
 
-  const handleReject = async (suggestionId: string) => {
-    // Implement reject logic
-    console.log("Rejecting suggestion", suggestionId);
+  const handleRejectTerm = (termId: string) => {
+    setSuggestions(prevSuggestions => 
+      prevSuggestions.map(s => 
+        s.id === termId ? { ...s, rejected: true, applied: false } : s
+      )
+    );
   };
 
-  return {
-    suggestions,
-    isLoading,
-    error,
-    handleAccept,
-    handleReject
+  const handleRefresh = () => {
+    // In a real implementation, this would re-fetch suggestions
+    setIsLoading(true);
+    setTimeout(() => setIsLoading(false), 1000);
   };
-};
 
-interface OntologySuggestionsPanelProps {
-  contentId: string;
-  showTitle?: boolean;
-}
-
-export function OntologySuggestionsPanel({ 
-  contentId, 
-  showTitle = true 
-}: OntologySuggestionsPanelProps) {
-  const { 
-    suggestions, 
-    isLoading,
-    error,
-    handleAccept,
-    handleReject
-  } = useOntologySuggestions({ contentId });
-
-  const [searchQuery, setSearchQuery] = useState("");
-
-  // Filter suggestions based on search query
-  const filteredSuggestions = suggestions.terms.filter(s => 
-    s.term.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const activeSuggestions = suggestions.filter(s => !s.applied && !s.rejected);
+  const appliedSuggestions = suggestions.filter(s => s.applied);
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="p-4">
-          {showTitle && <h3 className="text-sm font-medium mb-3">Suggested Ontology Terms</h3>}
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="border rounded-md p-3 space-y-3 bg-gray-50">
+        <div className="flex justify-between">
+          <h4 className="text-sm font-medium">Suggested Terms</h4>
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-6 w-36" />
+        </div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="p-4">
-          {showTitle && <h3 className="text-sm font-medium mb-3">Suggested Ontology Terms</h3>}
-          <div className="text-sm text-destructive">{error.message}</div>
-        </CardContent>
-      </Card>
+      <div className="border rounded-md p-3 bg-red-50">
+        <h4 className="text-sm font-medium text-red-600">Error Loading Suggestions</h4>
+        <p className="text-sm text-red-500">{error.message}</p>
+        <Button size="sm" variant="outline" className="mt-2" onClick={handleRefresh}>
+          Try Again
+        </Button>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardContent className="p-4">
-        {showTitle && <h3 className="text-sm font-medium mb-3">Suggested Ontology Terms</h3>}
-        
-        {filteredSuggestions.length === 0 && (
-          <p className="text-sm text-muted-foreground">No ontology term suggestions available.</p>
-        )}
-        
-        {filteredSuggestions.length > 0 && (
-          <div className="space-y-2">
-            {filteredSuggestions.map(suggestion => (
-              <div key={suggestion.id} className="flex items-center justify-between p-2 border rounded-md">
-                <div>
-                  <p className="text-sm font-medium">{suggestion.term}</p>
-                  <p className="text-xs text-muted-foreground">Score: {suggestion.score.toFixed(2)}</p>
-                </div>
+    <div className="border rounded-md p-3 space-y-3 bg-gray-50">
+      <div className="flex justify-between items-center">
+        <h4 className="text-sm font-medium">Suggested Terms</h4>
+        <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={isLoading}>
+          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+        </Button>
+      </div>
+
+      {activeSuggestions.length === 0 ? (
+        <p className="text-sm text-muted-foreground italic">No new suggestions available.</p>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            {activeSuggestions.map((suggestion) => (
+              <div key={suggestion.id} className="flex items-center border rounded-md px-2 py-1 bg-white">
+                <span className="text-sm mr-2">
+                  {suggestion.domain && (
+                    <span className="text-xs text-muted-foreground mr-1">{suggestion.domain}:</span>
+                  )}
+                  {suggestion.term}
+                  {suggestion.score && (
+                    <span className="text-xs text-muted-foreground ml-1">
+                      ({Math.round(suggestion.score)}%)
+                    </span>
+                  )}
+                </span>
                 <div className="flex space-x-1">
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    className="h-7 w-7 p-0"
-                    onClick={() => handleAccept(suggestion.id)}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => handleAddTerm(suggestion.id)}
                   >
-                    <Check className="h-4 w-4 text-green-500" />
+                    <Check className="h-3 w-3 text-green-500" />
                   </Button>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    className="h-7 w-7 p-0"
-                    onClick={() => handleReject(suggestion.id)}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => handleRejectTerm(suggestion.id)}
                   >
-                    <X className="h-4 w-4 text-red-500" />
+                    <X className="h-3 w-3 text-red-500" />
                   </Button>
                 </div>
               </div>
             ))}
           </div>
-        )}
-      </CardContent>
-    </Card>
+
+          {activeSuggestions.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                const highConfidenceTerms = activeSuggestions
+                  .filter(s => (s.score || 0) > 85)
+                  .map(s => s.id);
+                
+                if (highConfidenceTerms.length > 0) {
+                  Promise.all(highConfidenceTerms.map(id => handleAddTerm(id)));
+                }
+              }}
+            >
+              Add All High-Confidence Terms
+            </Button>
+          )}
+        </div>
+      )}
+
+      {appliedSuggestions.length > 0 && (
+        <div>
+          <h5 className="text-xs font-medium text-muted-foreground mb-2">Applied Terms</h5>
+          <div className="flex flex-wrap gap-2">
+            {appliedSuggestions.map(term => (
+              <Badge key={term.id} variant="secondary">
+                {term.domain && (
+                  <span className="text-xs text-muted-foreground mr-1">{term.domain}:</span>
+                )}
+                {term.term}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

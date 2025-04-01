@@ -97,13 +97,12 @@ export function MetadataContent({
         {/* Tags Section */}
         <TagsSection
           tags={tags}
-          contentId={contentId}
-          editable={editable}
           newTag={newTag}
           setNewTag={setNewTag}
           onAddTag={onAddTag}
           onDeleteTag={onDeleteTag}
           onMetadataChange={handleMetadataChange}
+          editable={editable}
           className="mt-6"
         />
         
@@ -122,4 +121,4 @@ export function MetadataContent({
       </CardContent>
     </Card>
   );
-}
+};
