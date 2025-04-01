@@ -1,17 +1,18 @@
+
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { HeaderSection } from './sections/HeaderSection';
 import { MetadataContent } from './components/MetadataContent';
 import { ContentAlert } from './components/ContentAlert';
-import { MetadataQueryProvider } from './providers/MetadataQueryProvider';
+import { MetadataProvider } from './providers/MetadataQueryProvider';
 import { useMetadataContext } from './hooks/useMetadataContext';
 import { MetadataPanelProps } from './types';
 
 /**
  * Inner component that uses the metadata context
  */
-const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'editable'>> = ({
+const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'editable'> & { children?: React.ReactNode }> = ({
   isCollapsible = false,
   initialCollapsed = false,
   showOntologyTerms = true,
@@ -47,7 +48,7 @@ const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'edi
   
   // Content validation check
   const isValidContent = validationResult?.isValid || false;
-  const contentExists = validationResult?.contentExists ?? false;
+  const contentExists = validationResult ? validationResult.contentExists || false : false;
   
   if (!isValidContent) {
     return (
@@ -148,7 +149,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   }, [onMetadataChange]);
 
   return (
-    <MetadataQueryProvider 
+    <MetadataProvider 
       contentId={contentId}
       isEditable={editable}
     >
@@ -156,7 +157,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
         {...props}
         onMetadataChange={handleMetadataChange}
       />
-    </MetadataQueryProvider>
+    </MetadataProvider>
   );
 };
 

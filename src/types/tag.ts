@@ -1,3 +1,4 @@
+
 /**
  * Type definitions for tags and tag types
  */
@@ -69,6 +70,31 @@ export function isTag(value: any): value is Tag {
     'name' in value &&
     'content_id' in value &&
     'type_id' in value &&
-    'display_order' in value
+    'display_order' in value &&
+    'type_name' in value
   );
+}
+
+/**
+ * Sort tags by display order
+ * @param tags Array of tags to sort
+ * @returns Sorted tags
+ */
+export function sortTagsByDisplayOrder(tags: Tag[]): Tag[] {
+  return [...tags].sort((a, b) => a.display_order - b.display_order);
+}
+
+/**
+ * Filters duplicate tags from an array
+ * @param tags Array of tags
+ * @returns Array without duplicates
+ */
+export function filterDuplicateTags(tags: Tag[]): Tag[] {
+  const seen = new Set<string>();
+  return tags.filter(tag => {
+    const key = `${tag.name}-${tag.type_id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }

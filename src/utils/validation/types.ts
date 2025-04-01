@@ -38,6 +38,21 @@ export interface DocumentValidationResult extends ValidationResult {
   resultType: 'document';
 }
 
+// Standard result creation functions
+export const createValidResult = (message: string | null = null): ValidationResult => ({
+  isValid: true,
+  errorMessage: null,
+  message,
+  resultType: 'generic'
+});
+
+export const createInvalidResult = (errorMessage: string | null = null): ValidationResult => ({
+  isValid: false,
+  errorMessage,
+  message: errorMessage,
+  resultType: 'generic'
+});
+
 // Utility functions to create validation results with default values
 export const createContentIdValidationResult = (
   isValid: boolean,

@@ -51,7 +51,8 @@ export const useVersions = (documentId: string) => {
           .order('version_number', { ascending: false });
         
         if (error) throw error;
-        setVersions(data || []);
+        // Type assertion to ensure data matches Version interface
+        setVersions(data as Version[] || []);
       } catch (err) {
         console.error('Error fetching versions:', err);
         setError(err instanceof Error ? err : new Error('Failed to fetch versions'));
@@ -167,7 +168,7 @@ const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
                         {getVersionLabel(version.version_number, version.metadata)}
                       </h3>
                       <p className="text-sm text-gray-500">
-                        {formatDate(version.created_at || '')}
+                        {version.created_at ? formatDate(version.created_at) : 'No date'}
                       </p>
                     </div>
                     <div>

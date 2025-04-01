@@ -1,3 +1,4 @@
+
 /**
  * Type definitions for ontology-related entities
  */
@@ -37,4 +38,24 @@ export interface OntologySuggestion {
   confidence: number;
   source_id: string;
   status: 'pending' | 'approved' | 'rejected';
+}
+
+// Related term for graph visualization
+export interface RelatedTerm {
+  id: string;
+  term: string;
+  description?: string | null;
+  domain?: string | null;
+  score?: number;
+  applied?: boolean;
+  rejected?: boolean;
+}
+
+// Related note for suggestions
+export interface RelatedNote {
+  id: string;
+  title: string;
+  score?: number;
+  applied?: boolean;
+  rejected?: boolean;
 }

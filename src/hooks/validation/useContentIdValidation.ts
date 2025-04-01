@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { isValidContentId } from '@/utils/validation/contentIdValidation';
+import { isValidContentId, isUUID, isTempId, getContentIdValidationResult } from '@/utils/validation/contentIdValidation';
 import { ContentIdValidationResult, createContentIdValidationResult } from '@/utils/validation/types';
 import { handleError, ErrorLevel } from '@/utils/errors';
 
@@ -79,6 +79,27 @@ export function useContentIdValidation() {
     return result;
   }, [validateContentId]);
 
+  // Determine if the content ID is a UUID
+  const isUuid = useCallback((contentId: string): boolean => {
+    return isUUID(contentId);
+  }, []);
+
+  // Determine if the content ID is temporary
+  const isTemporary = useCallback((contentId: string): boolean => {
+    return isTempId(contentId);
+  }, []);
+
+  // Is the ID storable (either already a UUID or a temp ID that can be converted)
+  const isStorable = useCallback((contentId: string): boolean => {
+    return isUUID(contentId) || isTempId(contentId);
+  }, []);
+
+  // Convert a temporary ID to a UUID
+  const convertToUuid = useCallback((contentId: string): string => {
+    // This is a placeholder. In a real implementation, this would convert a temp ID to a UUID
+    return contentId;
+  }, []);
+
   return {
     validationResult,
     validateContentId,
@@ -86,6 +107,10 @@ export function useContentIdValidation() {
     isValid: validationResult.isValid,
     contentExists: validationResult.contentExists,
     errorMessage: validationResult.errorMessage,
+    isUuid,
+    isTemporary,
+    isStorable,
+    convertToUuid
   };
 }
 
