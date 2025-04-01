@@ -1,5 +1,5 @@
 
-import { Tag, TagType } from '@/types/tag';
+import { Tag } from '@/types/tag';
 
 /**
  * Tag data interface for internal use

@@ -1,109 +1,106 @@
 
-/**
- * Tag validation utility functions
- */
 import { TagValidationResult } from './types';
 
-// Validation options
+/**
+ * Tag validation options
+ */
 export interface TagValidationOptions {
   minLength?: number;
   maxLength?: number;
-  allowSpecialChars?: boolean;
-  reservedWords?: string[];
+  required?: boolean;
+  pattern?: RegExp;
+  blacklist?: string[];
 }
 
 /**
  * Default validation options
  */
 const defaultOptions: TagValidationOptions = {
-  minLength: 2,
+  minLength: 1,
   maxLength: 50,
-  allowSpecialChars: true,
-  reservedWords: []
+  required: true,
+  pattern: /^[A-Za-z0-9\s-_]+$/,
+  blacklist: []
 };
 
 /**
- * Validates a tag name
+ * Validate a tag against provided options
  * 
- * @param tagName Tag name to validate
- * @param options Optional validation options
- * @returns TagValidationResult with validation details
+ * @param tag Tag string to validate
+ * @param options Validation options
+ * @returns TagValidationResult with validation status and error message
  */
 export function validateTag(
-  tagName: string,
+  tag: string,
   options?: Partial<TagValidationOptions>
 ): TagValidationResult {
-  // Merge options with defaults
-  const opts = { ...defaultOptions, ...options };
+  const mergedOptions = { ...defaultOptions, ...options };
   
-  // Check if tag is empty
-  if (!tagName || !tagName.trim()) {
-    return {
-      isValid: false,
-      errorMessage: "Tag name cannot be empty",
-      resultType: "tag"
+  const {
+    minLength,
+    maxLength,
+    required,
+    pattern,
+    blacklist
+  } = mergedOptions;
+  
+  // Check if tag is required but empty
+  if (required && (!tag || tag.trim() === '')) {
+    return { 
+      isValid: false, 
+      errorMessage: 'Tag name is required',
+      resultType: 'tag'
     };
   }
   
-  // Check minimum length
-  if (tagName.length < opts.minLength!) {
-    return {
-      isValid: false,
-      errorMessage: `Tag must be at least ${opts.minLength} characters`,
-      resultType: "tag"
+  // Skip other validations if tag is empty and not required
+  if (!tag || tag.trim() === '') {
+    return { 
+      isValid: true, 
+      errorMessage: null,
+      resultType: 'tag'
     };
   }
   
-  // Check maximum length
-  if (tagName.length > opts.maxLength!) {
-    return {
-      isValid: false,
-      errorMessage: `Tag cannot exceed ${opts.maxLength} characters`,
-      resultType: "tag"
+  // Check min length
+  if (minLength !== undefined && tag.trim().length < minLength) {
+    return { 
+      isValid: false, 
+      errorMessage: `Tag must be at least ${minLength} characters long`,
+      resultType: 'tag'
     };
   }
   
-  // Check for reserved words
-  if (opts.reservedWords && opts.reservedWords.includes(tagName.toLowerCase())) {
-    return {
-      isValid: false,
-      errorMessage: `"${tagName}" is a reserved word and cannot be used as a tag`,
-      resultType: "tag"
+  // Check max length
+  if (maxLength !== undefined && tag.trim().length > maxLength) {
+    return { 
+      isValid: false, 
+      errorMessage: `Tag must be no more than ${maxLength} characters long`,
+      resultType: 'tag'
     };
   }
   
-  // Check for special characters if not allowed
-  if (!opts.allowSpecialChars && !/^[\w\s-]+$/.test(tagName)) {
-    return {
-      isValid: false,
-      errorMessage: "Tag can only contain letters, numbers, spaces, and hyphens",
-      resultType: "tag"
+  // Check against pattern
+  if (pattern && !pattern.test(tag)) {
+    return { 
+      isValid: false, 
+      errorMessage: 'Tag contains invalid characters',
+      resultType: 'tag'
     };
   }
   
-  // All validation passed
-  return {
-    isValid: true,
+  // Check against blacklist
+  if (blacklist && blacklist.includes(tag.toLowerCase())) {
+    return { 
+      isValid: false, 
+      errorMessage: 'This tag is not allowed',
+      resultType: 'tag'
+    };
+  }
+  
+  return { 
+    isValid: true, 
     errorMessage: null,
-    resultType: "tag"
+    resultType: 'tag'
   };
-}
-
-/**
- * Checks if a collection of tags contains a specific tag (case-insensitive)
- * 
- * @param tagName Tag name to check
- * @param existingTags Array of existing tag names
- * @returns True if tag exists, false otherwise
- */
-export function tagExistsInCollection(
-  tagName: string,
-  existingTags: string[]
-): boolean {
-  if (!tagName || !existingTags || !existingTags.length) {
-    return false;
-  }
-  
-  const normalizedTagName = tagName.trim().toLowerCase();
-  return existingTags.some(tag => tag.toLowerCase() === normalizedTagName);
 }

@@ -30,7 +30,7 @@ export function useZoomPan({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<Element, unknown>>();
   const [transform, setTransform] = useState<d3.ZoomTransform>(
-    d3.zoomIdentity.translate(width / 2, height / 2).scale(initialZoom)
+    d3.zoomIdentity.scale(initialZoom).translate(width / 2, height / 2)
   );
 
   // Initialize zoom behavior
@@ -52,8 +52,8 @@ export function useZoomPan({
 
     // Set initial transform
     const initialTransform = d3.zoomIdentity
-      .translate(width / 2, height / 2)
-      .scale(initialZoom);
+      .scale(initialZoom)
+      .translate(width / 2, height / 2);
 
     d3.select(canvasRef.current).call(zoom.transform, initialTransform);
   }, [width, height, initialZoom]);
@@ -83,8 +83,8 @@ export function useZoomPan({
           if (!ensureZoomBehavior()) return;
           const newScale = transform.k * 1.2;
           const newTransform = d3.zoomIdentity
-            .translate(transform.x, transform.y)
-            .scale(newScale);
+            .scale(newScale)
+            .translate(transform.x, transform.y);
           d3.select(canvasRef.current!).call(zoomBehaviorRef.current!.transform, newTransform);
         },
 
@@ -92,16 +92,16 @@ export function useZoomPan({
           if (!ensureZoomBehavior()) return;
           const newScale = transform.k * 0.8;
           const newTransform = d3.zoomIdentity
-            .translate(transform.x, transform.y)
-            .scale(newScale);
+            .scale(newScale)
+            .translate(transform.x, transform.y);
           d3.select(canvasRef.current!).call(zoomBehaviorRef.current!.transform, newTransform);
         },
 
         resetZoom: () => {
           if (!ensureZoomBehavior()) return;
           const newTransform = d3.zoomIdentity
-            .translate(width / 2, height / 2)
-            .scale(1);
+            .scale(1)
+            .translate(width / 2, height / 2);
           d3.select(canvasRef.current!).call(zoomBehaviorRef.current!.transform, newTransform);
         },
 
@@ -113,11 +113,14 @@ export function useZoomPan({
           let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
           nodes.forEach(node => {
-            if (node.x < minX) minX = node.x;
-            if (node.y < minY) minY = node.y;
-            if (node.x > maxX) maxX = node.x;
-            if (node.y > maxY) maxY = node.y;
+            if (node.x !== undefined && node.x < minX) minX = node.x;
+            if (node.y !== undefined && node.y < minY) minY = node.y;
+            if (node.x !== undefined && node.x > maxX) maxX = node.x;
+            if (node.y !== undefined && node.y > maxY) maxY = node.y;
           });
+
+          // Special case for no valid coordinates
+          if (minX === Infinity || minY === Infinity) return;
 
           // Calculate scale and translation to fit all nodes
           const dx = maxX - minX + padding * 2;
@@ -126,7 +129,9 @@ export function useZoomPan({
           const x = (width - scale * (minX + maxX)) / 2;
           const y = (height - scale * (minY + maxY)) / 2;
 
-          const newTransform = d3.zoomIdentity.translate(x, y).scale(scale);
+          const newTransform = d3.zoomIdentity
+            .scale(scale)
+            .translate(x, y);
           d3.select(canvasRef.current!).call(zoomBehaviorRef.current!.transform, newTransform);
         },
 
@@ -134,19 +139,21 @@ export function useZoomPan({
           if (!ensureZoomBehavior()) return;
           
           const node = nodes.find(n => n.id === nodeId);
-          if (!node) return;
+          if (!node || node.x === undefined || node.y === undefined) return;
 
-          const x = width / 2 - node.x * transform.k;
-          const y = height / 2 - node.y * transform.k;
-          const newTransform = d3.zoomIdentity.translate(x, y).scale(transform.k);
+          const x = width / 2 - (node.x || 0) * transform.k;
+          const y = height / 2 - (node.y || 0) * transform.k;
+          const newTransform = d3.zoomIdentity
+            .scale(transform.k)
+            .translate(x, y);
           d3.select(canvasRef.current!).call(zoomBehaviorRef.current!.transform, newTransform);
         },
 
         setZoom: (zoom: number) => {
           if (!ensureZoomBehavior()) return;
           const newTransform = d3.zoomIdentity
-            .translate(transform.x, transform.y)
-            .scale(zoom);
+            .scale(zoom)
+            .translate(transform.x, transform.y);
           d3.select(canvasRef.current!).call(zoomBehaviorRef.current!.transform, newTransform);
         }
       };

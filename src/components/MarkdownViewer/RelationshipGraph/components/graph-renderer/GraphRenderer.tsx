@@ -58,9 +58,27 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(({
   });
   
   // Expose methods via ref
-  useImperativeHandle(ref, () => zoomMethods(simulationNodes), [
+  useImperativeHandle(ref, () => ({
+    centerOnNode: (nodeId: string) => zoomMethods(simulationNodes).centerOnNode(nodeId),
+    centerAt: (x: number, y: number, duration = 500) => {
+      // Implementation for centerAt
+      console.log("Centering at coordinates:", x, y);
+    },
+    zoomToFit: (duration = 500) => {
+      zoomMethods(simulationNodes).fitToContent();
+    },
+    resetZoom: () => zoomMethods(simulationNodes).resetZoom(),
+    zoom: (zoomLevel: number, duration = 500) => {
+      zoomMethods(simulationNodes).setZoom(zoomLevel);
+    },
+    setZoom: (zoomLevel: number) => zoomMethods(simulationNodes).setZoom(zoomLevel),
+    zoomIn: () => zoomMethods(simulationNodes).zoomIn(),
+    zoomOut: () => zoomMethods(simulationNodes).zoomOut(),
+    getGraphData: () => sanitizedData
+  }), [
     zoomMethods,
-    simulationNodes
+    simulationNodes,
+    sanitizedData
   ]);
   
   // Initialize zoom behavior

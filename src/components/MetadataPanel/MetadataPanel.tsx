@@ -1,163 +1,125 @@
 
-import React from 'react';
-import { Card } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { HeaderSection } from './sections/HeaderSection';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Button } from '@/components/ui/button';
+import { ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
 import { MetadataContent } from './components/MetadataContent';
-import { ContentAlert } from './components/ContentAlert';
-import { MetadataProvider } from './providers/MetadataQueryProvider';
-import { useMetadataContext } from './hooks/useMetadataContext';
+import { ContentIdDetail } from './components/ContentIdDetail';
+import { MetadataQueryProvider } from './providers/MetadataQueryProvider';
 import { MetadataPanelProps } from './types';
+import { useMetadataPanel } from './hooks/useMetadataPanel';
 
 /**
- * Inner component that uses the metadata context
+ * MetadataPanel Component
+ * 
+ * Displays and allows editing of content metadata including:
+ * - Tags
+ * - External source information
+ * - Ontology terms
  */
-const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'editable'> & { children?: React.ReactNode }> = ({
+const MetadataPanel = ({
+  contentId,
+  editable = false,
+  onMetadataChange = null,
   isCollapsible = false,
   initialCollapsed = false,
   showOntologyTerms = true,
   showDomain = false,
   domain = null,
-  className = '',
-  children
-}) => {
-  // Use metadata context
+  className
+}: MetadataPanelProps) => {
+  // Get metadata state and handlers from hook
   const {
-    contentId,
+    isCollapsed,
+    setIsCollapsed,
+    isCollapsible: panelIsCollapsible,
     isLoading,
     error,
-    tags,
-    refreshMetadata,
-    handleAddTag,
-    handleDeleteTag,
-    validationResult,
-    isEditable,
-    sourceMetadata
-  } = useMetadataContext();
+    handleRefresh
+  } = useMetadataPanel({
+    contentId,
+    onMetadataChange,
+    isCollapsible,
+    initialCollapsed
+  });
   
-  // State for the collapsible panel
-  const [isCollapsed, setIsCollapsed] = React.useState(initialCollapsed && isCollapsible);
+  // Handle refresh button click
+  const handleRefreshClick = () => {
+    handleRefresh();
+  };
   
-  // State for new tag input
-  const [newTag, setNewTag] = React.useState("");
-  
-  // Extract external source info
-  const externalSourceUrl = sourceMetadata?.external_source_url || null;
-  const needsExternalReview = sourceMetadata?.needs_external_review || false;
-  const lastCheckedAt = sourceMetadata?.external_source_checked_at || null;
-  
-  // Content validation check
-  const isValidContent = validationResult?.isValid || false;
-  const contentExists = validationResult ? (validationResult as any).contentExists || false : false;
-  
-  if (!isValidContent) {
-    return (
-      <Card className={className}>
-        <ContentAlert 
-          contentId={contentId}
-          isValidContent={isValidContent}
-          contentExists={contentExists}
-        />
-      </Card>
-    );
-  }
-  
-  // Loading state
-  if (isLoading) {
-    return (
-      <Card className={className}>
-        <HeaderSection 
-          title="Content Metadata"
-          needsExternalReview={false}
-          handleRefresh={() => refreshMetadata ? refreshMetadata() : {}}
-          isLoading={true}
-          isCollapsed={isCollapsed}
-          setIsCollapsed={setIsCollapsed}
-          isCollapsible={isCollapsible}
-        />
-        <div className="p-4 space-y-4">
-          <Skeleton className="h-8 w-3/4" />
-          <Skeleton className="h-8 w-full" />
-          <Skeleton className="h-32 w-full" />
-        </div>
-      </Card>
-    );
-  }
-  
-  // Handle add tag wrapper
-  const handleAddTagWrapper = async (typeId?: string | null) => {
-    if (!newTag.trim() || !handleAddTag) return;
-    await handleAddTag(newTag, typeId);
-    setNewTag("");
+  // Toggle panel collapsed state
+  const toggleCollapsed = () => {
+    if (panelIsCollapsible) {
+      setIsCollapsed(!isCollapsed);
+    }
   };
   
   return (
-    <Card className={`${needsExternalReview ? 'border border-yellow-400' : ''} ${className}`}>
-      <HeaderSection 
-        title="Content Metadata"
-        needsExternalReview={needsExternalReview}
-        handleRefresh={() => refreshMetadata ? refreshMetadata() : {}}
-        isLoading={false}
-        isCollapsed={isCollapsed}
-        setIsCollapsed={setIsCollapsed}
-        isCollapsible={isCollapsible}
-      />
-      
-      {!isCollapsed && (
-        <MetadataContent
-          data={sourceMetadata || null}
-          contentId={contentId}
-          error={error}
-          tags={tags}
-          editable={isEditable}
-          newTag={newTag}
-          setNewTag={setNewTag}
-          onAddTag={handleAddTagWrapper}
-          onDeleteTag={handleDeleteTag || (async () => {})}
-          onRefresh={refreshMetadata ? () => refreshMetadata() : () => {}}
-          externalSourceUrl={externalSourceUrl}
-          lastCheckedAt={lastCheckedAt}
-          needsExternalReview={needsExternalReview}
-          showOntologyTerms={showOntologyTerms}
-          domain={domain}
-          showDomain={showDomain}
-        />
-      )}
-      
-      {children}
-    </Card>
-  );
-};
-
-/**
- * MetadataPanel Component
- * 
- * Displays metadata for a content item including tags, external source
- * information, and ontology terms.
- */
-const MetadataPanel: React.FC<MetadataPanelProps> = ({
-  contentId,
-  editable = false,
-  onMetadataChange = null,
-  ...props
-}) => {
-  // Handle metadata changes
-  const handleMetadataChange = React.useCallback(() => {
-    if (onMetadataChange) {
-      onMetadataChange();
-    }
-  }, [onMetadataChange]);
-
-  return (
-    <MetadataProvider 
+    <MetadataQueryProvider
       contentId={contentId}
       editable={editable}
     >
-      <MetadataPanelContent
-        {...props}
-        onMetadataChange={handleMetadataChange}
-      />
-    </MetadataProvider>
+      <Card className={cn("overflow-hidden", className)}>
+        <CardHeader className="px-4 py-3 flex flex-row items-center justify-between space-y-0">
+          <div className="flex items-center space-x-2">
+            <CardTitle className="text-base font-medium">
+              Metadata
+            </CardTitle>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={handleRefreshClick}
+              disabled={isLoading}
+            >
+              <RefreshCw className={cn(
+                "h-4 w-4",
+                isLoading && "animate-spin"
+              )} />
+              <span className="sr-only">Refresh metadata</span>
+            </Button>
+          </div>
+          
+          {panelIsCollapsible && (
+            <CollapsibleTrigger asChild onClick={toggleCollapsed}>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                {isCollapsed 
+                  ? <ChevronDown className="h-4 w-4" /> 
+                  : <ChevronUp className="h-4 w-4" />
+                }
+              </Button>
+            </CollapsibleTrigger>
+          )}
+        </CardHeader>
+        
+        {panelIsCollapsible ? (
+          <Collapsible open={!isCollapsed} onOpenChange={(open) => setIsCollapsed(!open)}>
+            <CollapsibleContent>
+              <CardContent className="px-4 py-3">
+                <ContentIdDetail contentId={contentId} className="mb-4" />
+                <MetadataContent 
+                  showOntologyTerms={showOntologyTerms}
+                  showDomain={showDomain} 
+                />
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        ) : (
+          <CardContent className="px-4 py-3">
+            <ContentIdDetail contentId={contentId} className="mb-4" />
+            <MetadataContent 
+              showOntologyTerms={showOntologyTerms}
+              showDomain={showDomain} 
+            />
+          </CardContent>
+        )}
+      </Card>
+    </MetadataQueryProvider>
   );
 };
 
