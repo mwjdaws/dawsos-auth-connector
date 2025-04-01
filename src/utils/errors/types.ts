@@ -1,77 +1,78 @@
 
 /**
- * Core error handling types
+ * Error handling types
  */
 
-/**
- * Error severity levels
- */
+// Error levels for categorization
 export enum ErrorLevel {
   DEBUG = 'debug',
   INFO = 'info',
   WARNING = 'warning',
-  ERROR = 'error'
+  ERROR = 'error',
+  CRITICAL = 'critical'
 }
 
-/**
- * Source of an error
- */
-export enum ErrorSource {
-  COMPONENT = 'component',
-  HOOK = 'hook',
-  SERVICE = 'service',
-  API = 'api',
-  UNKNOWN = 'unknown',
-  NETWORK = 'network',
-  DATABASE = 'database',
-  AUTHENTICATION = 'authentication',
-  VALIDATION = 'validation',
-  UI = 'ui'
+// Error context metadata
+export interface ErrorContext {
+  source?: string;
+  component?: string;
+  operation?: string;
+  user?: string;
+  category?: string;
+  [key: string]: any;
 }
 
-/**
- * Error handling options for improved context and handling
- */
+// Error handling options
 export interface ErrorHandlingOptions {
-  // Error metadata
   level?: ErrorLevel;
-  source?: ErrorSource | string;
-  fingerprint?: string;
-  context?: Record<string, any>;
-  
-  // For UI-related errors
+  silent?: boolean;
+  context?: ErrorContext;
+  reportToService?: boolean;
   showToast?: boolean;
   toastId?: string;
-  userMessage?: string;
+  technical?: boolean; // Added for backward compatibility
+  retryable?: boolean;
+  deduplicate?: boolean;
+  maxRetries?: number;
 }
 
-/**
- * Enhanced error with additional context
- */
-export interface EnhancedError extends Error {
-  level?: ErrorLevel;
-  source?: ErrorSource | string;
-  fingerprint?: string;
-  context?: Record<string, any>;
-  metadata?: Record<string, any>;
+// Error metadata for enhanced error reporting
+export interface ErrorMetadata {
+  timestamp: number;
+  level: ErrorLevel;
+  context: ErrorContext;
+  fingerprint: string;
+  stack?: string;
+  isUserVisible: boolean;
+  message: string;
+  originalError?: any;
+  code?: string;
 }
 
-/**
- * Specialized error types for common scenarios
- */
-export class ValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ValidationError';
-  }
-}
+// Error handler function type
+export type ErrorHandler = (
+  error: unknown,
+  message?: string,
+  options?: Partial<ErrorHandlingOptions>
+) => void;
 
-export class ApiError extends Error {
-  status?: number;
-  
-  constructor(message: string, status?: number) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-  }
-}
+// Component error handler function type
+export type ComponentErrorHandler = (
+  error: unknown,
+  message?: string,
+  options?: Partial<ErrorHandlingOptions>
+) => void;
+
+// Hook error handler function type
+export type HookErrorHandler = (
+  error: unknown,
+  message?: string,
+  options?: Partial<ErrorHandlingOptions>
+) => void;
+
+// Service error handler function type
+export type ServiceErrorHandler = (
+  error: unknown,
+  message?: string,
+  options?: Partial<ErrorHandlingOptions>
+) => void;

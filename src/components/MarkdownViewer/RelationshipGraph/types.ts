@@ -1,62 +1,50 @@
 
-import { ReactNode } from 'react';
-
 /**
- * Core GraphNode representation
+ * Type definitions for the Relationship Graph
  */
+import { MutableRefObject } from 'react';
+
+// Graph data structures 
 export interface GraphNode {
   id: string;
-  title?: string;
   name?: string;
+  title?: string;
   type?: string;
-  domain?: string;
-  color?: string | null;
+  weight?: number;
   size?: number;
-  icon?: string;
-  weight?: number;
-  val?: number;
-  [key: string]: any;  // Allow for additional properties
+  color?: string;
+  group?: string;
+  [key: string]: any; // Allow additional properties
 }
 
-/**
- * Core GraphLink representation
- */
 export interface GraphLink {
-  source: string | GraphNode;
-  target: string | GraphNode;
+  source: string;
+  target: string;
   type?: string;
-  weight?: number;
-  value?: number;
   label?: string;
-  [key: string]: any;  // Allow for additional properties
+  weight?: number;
+  width?: number;
+  color?: string;
+  [key: string]: any; // Allow additional properties
 }
 
-/**
- * Complete graph data structure
- */
 export interface GraphData {
   nodes: GraphNode[];
   links: GraphLink[];
 }
 
-/**
- * GraphRenderer ref methods
- */
+// Graph renderer controls and ref
 export interface GraphRendererRef {
+  zoomIn: () => void;
+  zoomOut: () => void;
+  resetZoom: () => void;
+  setZoom: (scale: number) => void;
   centerOnNode: (nodeId: string) => void;
-  centerAt: (x: number, y: number, duration?: number) => void;
-  zoomToFit: (duration?: number) => void;
-  setZoom: (zoomLevel: number) => void;
-  getGraphData: () => GraphData;
+  updateGraph: (newData: GraphData) => void;
+  getNodeById: (id: string) => GraphNode | undefined;
 }
 
-/**
- * Props for relationship graph component
- */
-export interface RelationshipGraphProps {
-  startingNodeId: string;
-  hasAttemptedRetry?: boolean;
-  width?: number;
-  height?: number;
-  className?: string;
-}
+// For backwards compatibility
+export type GraphNodeData = GraphNode;
+export type GraphLinkData = GraphLink;
+export type GraphDataFormat = GraphData;

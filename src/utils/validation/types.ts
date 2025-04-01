@@ -1,101 +1,69 @@
 
 /**
- * Types for validation utilities
- * 
- * These types provide consistent interfaces for validation operations
- * across the application.
+ * Validation types and helper functions
  */
 
-/**
- * Standard validation result
- */
+// Basic validation result
 export interface ValidationResult {
   isValid: boolean;
+  message: string | null;
   errorMessage: string | null;
-  message: string | null;  // Alias for errorMessage for backward compatibility
 }
 
-/**
- * Content ID validation result types
- */
-export enum ContentIdValidationResultType {
-  VALID = 'valid',
-  INVALID_FORMAT = 'invalid_format',
-  NOT_FOUND = 'not_found',
-  TEMP = 'temporary'
-}
-
-/**
- * Content ID validation result
- */
+// Content ID validation result
 export interface ContentIdValidationResult extends ValidationResult {
-  resultType: ContentIdValidationResultType;
   contentExists: boolean;
+  resultType: 'VALID' | 'INVALID' | 'TEMP' | 'NOT_FOUND';
 }
 
-/**
- * Create a content ID validation result
- */
+// Create a valid result
+export function createValidResult(message: string = "Validation passed"): ValidationResult {
+  return {
+    isValid: true,
+    message,
+    errorMessage: null
+  };
+}
+
+// Create an invalid result
+export function createInvalidResult(errorMessage: string): ValidationResult {
+  return {
+    isValid: false,
+    message: null,
+    errorMessage
+  };
+}
+
+// Create a content ID validation result
 export function createContentIdValidationResult(
   isValid: boolean,
-  errorMessage: string | null,
-  resultType: ContentIdValidationResultType,
+  resultType: ContentIdValidationResult['resultType'],
+  message: string | null = null,
+  errorMessage: string | null = null,
   contentExists: boolean = false
 ): ContentIdValidationResult {
   return {
     isValid,
+    message,
     errorMessage,
-    message: errorMessage, // Alias for backward compatibility
     resultType,
     contentExists
   };
 }
 
-/**
- * Document validation result
- */
-export interface DocumentValidationResult extends ValidationResult {
-  documentId: string | null;
-}
-
-/**
- * Create a document validation result
- */
-export function createDocumentValidationResult(
-  isValid: boolean,
-  errorMessage: string | null,
-  documentId: string | null = null
-): DocumentValidationResult {
-  return {
-    isValid,
-    errorMessage,
-    message: errorMessage, // Alias for backward compatibility
-    documentId
-  };
-}
-
-/**
- * Check if a validation result indicates success
- */
+// Check if a result is valid
 export function isValidResult(result: ValidationResult): boolean {
   return result.isValid === true;
 }
 
-/**
- * Combine multiple validation results into one
- */
-export function combineValidationResults(results: ValidationResult[]): ValidationResult {
-  if (!results.length) {
-    return { isValid: true, errorMessage: null, message: null };
+// Combine multiple validation results
+export function combineValidationResults(...results: ValidationResult[]): ValidationResult {
+  // Find the first invalid result, if any
+  const invalidResult = results.find(result => !result.isValid);
+  if (invalidResult) {
+    return invalidResult;
   }
   
-  // Check if any validations failed
-  const firstFailure = results.find(r => !r.isValid);
-  
-  if (firstFailure) {
-    return firstFailure;
-  }
-  
-  // All passed
-  return { isValid: true, errorMessage: null, message: null };
+  // All results are valid
+  return createValidResult();
 }

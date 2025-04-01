@@ -1,113 +1,45 @@
 
-import { 
-  GraphNodeData, 
-  GraphLinkData, 
-  GraphDataFormat, 
-  GraphNode,
-  GraphLink 
-} from './types';
+/**
+ * Compatibility layer for relationship graph component
+ */
+import { MutableRefObject, RefObject } from 'react';
+import { GraphNode, GraphLink, GraphData, GraphRendererRef } from './types';
 
 /**
- * Convert older graph data formats to current format
+ * Create a forward-compatible graph ref for legacy components
  */
-export function convertLegacyGraphData(data: any): GraphDataFormat {
-  // If it's already in the correct format
-  if (data && Array.isArray(data.nodes) && Array.isArray(data.links)) {
-    return data;
-  }
-  
-  // Default empty graph
-  const result: GraphDataFormat = { nodes: [], links: [] };
-  
-  try {
-    // Handle nodes
-    if (data && Array.isArray(data.nodes)) {
-      result.nodes = data.nodes.map((node: any) => convertLegacyNode(node));
-    }
-    
-    // Handle links
-    if (data && Array.isArray(data.links)) {
-      result.links = data.links.map((link: any) => convertLegacyLink(link));
-    } else if (data && Array.isArray(data.edges)) {
-      // Support for older "edges" naming
-      result.links = data.edges.map((edge: any) => convertLegacyLink(edge));
-    }
-  } catch (error) {
-    console.error('Error converting legacy graph data:', error);
-  }
-  
-  return result;
+export function createCompatibleGraphRef(ref: MutableRefObject<GraphRendererRef | null>): MutableRefObject<any> {
+  // Simply return the ref as-is for now, but this function can be expanded
+  // to provide backward compatibility as needed
+  return ref;
 }
 
 /**
- * Convert older node formats to current format
+ * Convert legacy graph data to new format
  */
-export function convertLegacyNode(node: any): GraphNode {
-  // If no data, create minimal valid node
-  if (!node) {
-    return { id: 'unknown', label: 'Unknown' };
+export function convertLegacyGraphData(data: any): GraphData {
+  if (!data) return { nodes: [], links: [] };
+  
+  // Handle case where data is already in correct format
+  if (Array.isArray(data.nodes) && Array.isArray(data.links)) {
+    return data as GraphData;
   }
   
-  // Start with required properties
-  const result: GraphNode = {
-    id: String(node.id || ''),
-    label: node.label || node.name || String(node.id || '')
+  // Handle legacy format
+  return {
+    nodes: Array.isArray(data.nodes) 
+      ? data.nodes.map((node: any) => ({
+          id: node.id || `node-${Math.random().toString(36).substring(2, 9)}`,
+          name: node.name || node.title || node.label || 'Unnamed Node',
+          ...node
+        }))
+      : [],
+    links: Array.isArray(data.links) || Array.isArray(data.edges)
+      ? (data.links || data.edges).map((link: any) => ({
+          source: typeof link.source === 'object' ? link.source.id : link.source,
+          target: typeof link.target === 'object' ? link.target.id : link.target,
+          ...link
+        }))
+      : []
   };
-  
-  // Add optional properties if they exist
-  if (node.group) result.type = String(node.group);
-  if (node.type) result.type = String(node.type);
-  if (node.color) result.color = String(node.color);
-  if (node.size !== undefined) result.size = Number(node.size);
-  if (node.weight !== undefined) result.weight = Number(node.weight);
-  if (node.x !== undefined) result.x = Number(node.x);
-  if (node.y !== undefined) result.y = Number(node.y);
-  
-  // Copy any custom properties
-  Object.keys(node).forEach(key => {
-    if (!['id', 'label', 'name', 'group', 'type', 'color', 'size', 'weight', 'x', 'y'].includes(key)) {
-      (result as any)[key] = node[key];
-    }
-  });
-  
-  return result;
-}
-
-/**
- * Convert older link formats to current format
- */
-export function convertLegacyLink(link: any): GraphLink {
-  // If no data, create minimal valid link
-  if (!link) {
-    return { source: 'unknown', target: 'unknown' };
-  }
-  
-  // Start with required properties
-  const result: GraphLink = {
-    source: String(link.source || ''),
-    target: String(link.target || '')
-  };
-  
-  // Add optional properties if they exist
-  if (link.type) result.type = String(link.type);
-  if (link.label) result.label = String(link.label);
-  if (link.color) result.color = String(link.color);
-  if (link.width !== undefined) result.width = Number(link.width);
-  if (link.weight !== undefined) result.weight = Number(link.weight);
-  
-  // Copy any custom properties
-  Object.keys(link).forEach(key => {
-    if (!['source', 'target', 'type', 'label', 'color', 'width', 'weight'].includes(key)) {
-      (result as any)[key] = link[key];
-    }
-  });
-  
-  return result;
-}
-
-/**
- * Create a compatible ref object for the graph
- */
-export function createCompatibleGraphRef(initialValue: any = null) {
-  return { current: initialValue };
 }

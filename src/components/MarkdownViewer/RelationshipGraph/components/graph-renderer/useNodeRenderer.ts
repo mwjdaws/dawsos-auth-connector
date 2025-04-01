@@ -23,12 +23,15 @@ export function useNodeRenderer({
   
   // Get node color based on type
   const getNodeColor = useCallback((node: GraphNode): string => {
+    // Use explicit color if defined
     if (node.color) return node.color;
     
+    // Look up color by node type
     if (node.type && nodeColorMap[node.type]) {
       return nodeColorMap[node.type];
     }
     
+    // Default color
     return defaultNodeColor;
   }, [nodeColorMap, defaultNodeColor]);
   

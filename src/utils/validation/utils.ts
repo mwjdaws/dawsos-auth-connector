@@ -1,57 +1,66 @@
 
+/**
+ * Validation utility functions
+ */
+import { ContentIdValidationResult, ValidationResult } from './types';
 import { 
-  ValidationResult, 
-  ContentIdValidationResult, 
-  ContentIdValidationResultType,
   createValidResult,
   createInvalidResult,
-  createContentValidationResult,
-  isValidResult,
-  combineValidationResults
+  createContentIdValidationResult
 } from './types';
 
 /**
- * Validates if a string is not empty
+ * Creates a content validation result for compatibility purposes
  */
-export function validateNonEmpty(value: string, fieldName: string): ValidationResult {
-  if (!value || value.trim() === '') {
-    return createInvalidResult(`${fieldName} cannot be empty`);
-  }
-  return createValidResult();
+export function createContentValidationResult(
+  isValid: boolean,
+  message: string | null = null,
+  errorMessage: string | null = null,
+  contentExists: boolean = false
+): ContentIdValidationResult {
+  return createContentIdValidationResult(
+    isValid,
+    isValid ? (contentExists ? 'VALID' : 'TEMP') : 'INVALID',
+    message,
+    errorMessage,
+    contentExists
+  );
 }
 
 /**
- * Validates if a string is at least a certain length
+ * Gets a validation result for a content ID with additional checks
  */
-export function validateMinLength(value: string, minLength: number, fieldName: string): ValidationResult {
-  if (value && value.length < minLength) {
-    return createInvalidResult(`${fieldName} must be at least ${minLength} characters`);
+export function getContentIdValidationResult(
+  id: string | null | undefined,
+  exists: boolean = false
+): ContentIdValidationResult {
+  if (!id) {
+    return createContentIdValidationResult(
+      false,
+      'INVALID',
+      null,
+      'Content ID is required',
+      false
+    );
   }
-  return createValidResult();
-}
 
-/**
- * Validates if a string is not longer than a certain length
- */
-export function validateMaxLength(value: string, maxLength: number, fieldName: string): ValidationResult {
-  if (value && value.length > maxLength) {
-    return createInvalidResult(`${fieldName} cannot exceed ${maxLength} characters`);
+  // For existing content
+  if (exists) {
+    return createContentIdValidationResult(
+      true,
+      'VALID',
+      'Content exists',
+      null,
+      true
+    );
   }
-  return createValidResult();
-}
 
-/**
- * Combines validation results and returns the first invalid result, or valid if all are valid
- */
-export function validateAll(...results: ValidationResult[]): ValidationResult {
-  return combineValidationResults(results);
+  // Default result for non-null ID that may not exist
+  return createContentIdValidationResult(
+    true,
+    'VALID',
+    'Valid content ID format',
+    null,
+    false
+  );
 }
-
-// Re-export from types.ts for backward compatibility
-export {
-  createValidResult,
-  createInvalidResult,
-  createContentValidationResult,
-  isValidResult,
-  combineValidationResults
-};

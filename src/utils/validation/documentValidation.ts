@@ -1,57 +1,66 @@
 
-import { ValidationResult, createValidResult, createInvalidResult } from './types';
+import { ValidationResult } from './types';
+import { createValidResult, createInvalidResult } from './types';
 
 /**
  * Validates a document title
- * 
- * @param title The title to validate
- * @returns Validation result
  */
 export function validateDocumentTitle(title: string): ValidationResult {
   if (!title || title.trim() === '') {
-    return createInvalidResult('Document title is required');
+    return createInvalidResult('Title is required');
   }
   
-  if (title.trim().length < 3) {
-    return createInvalidResult('Document title must be at least 3 characters');
+  if (title.length < 3) {
+    return createInvalidResult('Title must be at least 3 characters');
   }
   
-  if (title.trim().length > 255) {
-    return createInvalidResult('Document title cannot exceed 255 characters');
+  if (title.length > 255) {
+    return createInvalidResult('Title must be less than 255 characters');
   }
   
-  return createValidResult();
+  return createValidResult('Title is valid');
 }
 
 /**
  * Validates document content
- * 
- * @param content The document content to validate
- * @returns Validation result
  */
 export function validateDocumentContent(content: string): ValidationResult {
   if (!content || content.trim() === '') {
-    return createInvalidResult('Document content is required');
+    return createInvalidResult('Content is required');
   }
   
-  return createValidResult();
+  return createValidResult('Content is valid');
 }
 
 /**
  * Validates a URL
- * 
- * @param url The URL to validate
- * @returns Validation result
  */
 export function validateUrl(url: string): ValidationResult {
   if (!url || url.trim() === '') {
-    return createValidResult(); // Empty URL is valid (no external source)
+    return createValidResult('No URL provided');
   }
   
   try {
     new URL(url);
-    return createValidResult();
-  } catch (error) {
+    return createValidResult('URL is valid');
+  } catch (e) {
     return createInvalidResult('Invalid URL format');
   }
+}
+
+/**
+ * Validates a complete document
+ */
+export function validateDocument(document: { title: string; content: string }): ValidationResult {
+  const titleValidation = validateDocumentTitle(document.title);
+  if (!titleValidation.isValid) {
+    return titleValidation;
+  }
+  
+  const contentValidation = validateDocumentContent(document.content);
+  if (!contentValidation.isValid) {
+    return contentValidation;
+  }
+  
+  return createValidResult('Document is valid');
 }

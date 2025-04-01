@@ -23,12 +23,15 @@ export function useLinkRenderer({
   
   // Get link color based on type
   const getLinkColor = useCallback((link: GraphLink): string => {
-    if (link.color !== undefined) return link.color;
+    // Use explicit color if defined
+    if (link.color) return link.color;
     
+    // Look up color by link type
     if (link.type && linkColorMap[link.type]) {
       return linkColorMap[link.type];
     }
     
+    // Default color
     return defaultLinkColor;
   }, [linkColorMap, defaultLinkColor]);
   
@@ -43,8 +46,14 @@ export function useLinkRenderer({
     return Math.max(min, Math.min(max, defaultLinkWidth * weight));
   }, [linkWidthRange, defaultLinkWidth]);
   
+  // Get link label (if any)
+  const getLinkLabel = useCallback((link: GraphLink): string => {
+    return link.label || link.type || '';
+  }, []);
+  
   return {
     getLinkColor,
-    getLinkWidth
+    getLinkWidth,
+    getLinkLabel
   };
 }

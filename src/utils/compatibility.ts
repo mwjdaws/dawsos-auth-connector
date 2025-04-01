@@ -1,99 +1,83 @@
 
 /**
- * Utility functions for ensuring compatibility across components
+ * Global compatibility utilities
+ * 
+ * This file provides compatibility functions to handle 
+ * strict type checking issues and prevent runtime errors
  */
 
-/**
- * Ensures a value is a string, providing an empty string fallback
- */
-export const ensureString = (value: string | null | undefined): string => {
-  return value || '';
-};
-
-/**
- * Ensures a value is a number, providing a fallback
- */
-export const ensureNumber = (value: number | null | undefined, fallback = 0): number => {
-  return typeof value === 'number' ? value : fallback;
-};
-
-/**
- * Ensures a value is a boolean, providing a fallback
- */
-export const ensureBoolean = (value: boolean | null | undefined, fallback = false): boolean => {
-  return typeof value === 'boolean' ? value : fallback;
-};
-
-/**
- * Ensures a zoom level is within valid range
- */
-export const ensureValidZoom = (zoom: number | undefined, min = 0.1, max = 5): number => {
-  const safeZoom = typeof zoom === 'number' ? zoom : 1;
-  return Math.min(Math.max(safeZoom, min), max);
-};
-
-/**
- * Ensures the graph data is valid, providing empty arrays as fallbacks
- */
-export const ensureValidGraphData = (data: any): { nodes: any[]; links: any[] } => {
-  if (!data) return { nodes: [], links: [] };
-  return {
-    nodes: Array.isArray(data.nodes) ? data.nodes : [],
-    links: Array.isArray(data.links) ? data.links : []
-  };
-};
-
-/**
- * Creates safe props for graph components
- */
-export const createSafeGraphProps = (props: any) => {
-  return {
-    startingNodeId: ensureString(props.startingNodeId),
-    width: ensureNumber(props.width, 800),
-    height: ensureNumber(props.height, 600),
-    hasAttemptedRetry: ensureBoolean(props.hasAttemptedRetry, false)
-  };
-};
-
-/**
- * Helper function for safely invoking callbacks
- */
-export const safeCallback = <T extends (...args: any[]) => any>(
-  callback: T | undefined,
+// Safely handle optional callbacks
+export function safeCallback<T extends (...args: any[]) => any>(
+  callback: T | undefined | null,
   ...args: Parameters<T>
-): ReturnType<T> | undefined => {
+): ReturnType<T> | undefined {
   if (typeof callback === 'function') {
     return callback(...args);
   }
   return undefined;
-};
+}
 
-/**
- * Sanitizes graph data to ensure all required fields are present
- */
-export const sanitizeGraphData = (data: any) => {
-  if (!data) return { nodes: [], links: [] };
+// Safely get a property when it might be null or undefined
+export function safeProperty<T, K extends keyof T>(
+  obj: T | null | undefined,
+  prop: K,
+  defaultValue?: T[K]
+): T[K] | undefined {
+  if (obj == null) return defaultValue;
+  return obj[prop] ?? defaultValue;
+}
+
+// Convert potentially undefined to null
+export function toNull<T>(val: T | undefined): T | null {
+  return val === undefined ? null : val;
+}
+
+// Convert potentially null to undefined
+export function toUndefined<T>(val: T | null): T | undefined {
+  return val === null ? undefined : val;
+}
+
+// Create a compatible graph reference
+export function createCompatibleGraphRef(ref: any): any {
+  return ref;
+}
+
+// Safely filter array items to remove undefined entries
+export function safeFilter<T>(array: (T | undefined | null)[]): T[] {
+  return array.filter((item): item is T => item !== undefined && item !== null);
+}
+
+// Handle strict compatibility for error levels
+export function compatibleErrorLevel(level: string | undefined): 'info' | 'warning' | 'error' | undefined {
+  if (!level) return undefined;
   
-  const sanitizedNodes = Array.isArray(data.nodes) 
-    ? data.nodes.map((node: any) => ({
-        id: ensureString(node.id),
-        name: node.name || node.title || node.id || 'Unnamed',
-        type: node.type || 'unknown',
-        ...node
-      }))
-    : [];
-    
-  const sanitizedLinks = Array.isArray(data.links) 
-    ? data.links.map((link: any) => ({
-        source: typeof link.source === 'object' ? link.source.id : String(link.source || ''),
-        target: typeof link.target === 'object' ? link.target.id : String(link.target || ''),
-        type: link.type || 'unknown',
-        ...link
-      }))
-    : [];
-    
-  return {
-    nodes: sanitizedNodes,
-    links: sanitizedLinks
-  };
-};
+  switch (level) {
+    case 'debug':
+    case 'info':
+      return 'info';
+    case 'warning':
+      return 'warning';
+    case 'error':
+    case 'critical':
+      return 'error';
+    default:
+      return undefined;
+  }
+}
+
+// Handle backwards compatibility for technical error option
+export function compatibleErrorOptions(options: any = {}): any {
+  const result = { ...options };
+  
+  // Map technical flag to appropriate level if needed
+  if (options?.technical === true && !options?.level) {
+    result.level = 'error';
+  }
+  
+  // Remove technical property as it's not in the current type
+  if ('technical' in result) {
+    delete result.technical;
+  }
+  
+  return result;
+}
