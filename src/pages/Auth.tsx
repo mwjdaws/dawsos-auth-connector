@@ -10,6 +10,7 @@ import { handleError } from "@/utils/error-handling";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorLevel, ErrorSource } from "@/utils/errors/types";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -41,8 +42,8 @@ const Auth = () => {
       if (error) {
         handleError(error, {
           toastTitle: "Sign up failed",
-          level: "error",
-          source: "server"
+          level: ErrorLevel.ERROR,
+          source: ErrorSource.API
         });
       } else {
         successToast(
@@ -78,7 +79,7 @@ const Auth = () => {
       if (error) {
         handleError(error, {
           toastTitle: "Sign in failed",
-          source: "server"
+          source: ErrorSource.API
         });
       } else {
         successToast("Welcome back", "Successfully signed in");

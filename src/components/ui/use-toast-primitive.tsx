@@ -7,7 +7,7 @@ import {
 
 export type ToastProps = {
   title?: string;
-  description?: string;
+  description?: string | null;
   action?: ToastActionElement;
   variant?: "default" | "destructive";
   id?: string;
@@ -24,7 +24,7 @@ type ToasterToast = ToastProps & {
 // Create a context to manage toasts
 type ToastContextType = {
   toasts: ToasterToast[];
-  toast: (props: ToastProps) => void;
+  toast: (props: ToastProps) => string;
   dismiss: (toastId?: string) => void;
 };
 
@@ -45,10 +45,16 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
           toasts.filter((toast) => toast.id !== id)
         );
       };
+      
+      // Ensure description is a string or undefined (not null)
+      const finalProps = {
+        ...props,
+        description: props.description ?? undefined
+      };
 
       setToasts((toasts) => [
         ...toasts,
-        { ...props, id, dismiss },
+        { ...finalProps, id, dismiss },
       ].slice(-TOAST_LIMIT));
 
       return id;

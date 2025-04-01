@@ -1,110 +1,100 @@
 
-export interface OntologyTerm {
-  id: string;
-  term: string;
-  description: string;
-  domain?: string;
-  review_required?: boolean;
-  associationId?: string;
-}
-
-export interface RelatedTerm {
-  term_id: string;
-  term: string;
-  relation_type: string;
-  domain?: string;
-  description?: string;
-}
-
 /**
- * Document operations result
+ * Types for markdown editor
  */
-export interface DocumentOperationResult {
-  success: boolean;
-  documentId: string | null;
-  error?: any;
+
+// Type for save draft handler options
+export interface SaveHandlerOptions {
+  /**
+   * Whether this is a manual save initiated by the user
+   */
+  isManualSave?: boolean;
+  
+  /**
+   * Whether this is an autosave
+   */
+  isAutoSave?: boolean;
 }
 
-/**
- * Save draft operation result
- */
+// Type for draft operation results
 export interface SaveDraftResult {
   success: boolean;
   documentId: string | null;
   error?: any;
 }
 
-/**
- * Publish result
- */
+// Type for publish operation results
 export interface PublishResult {
   success: boolean;
   documentId: string | null;
   error?: any;
 }
 
-/**
- * Document operations props
- */
-export interface DocumentOperationsProps {
-  documentId?: string | null;
-  sourceId?: string | null;
-  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
-  onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
+// Document operations context type
+export interface DraftOperationsContext {
+  // Function to create a version of the document
+  createVersion?: (documentId: string, content: string, metadata?: any) => Promise<void>;
+  
+  // Function to enrich content with ontology terms
+  enrichContentWithOntology?: (sourceId: string, content: string, title: string, options?: any) => Promise<any>;
 }
 
-/**
- * Document operation handler props
- */
+// Ontology term type
+export interface OntologyTerm {
+  id: string;
+  term: string;
+  description: string;
+  domain?: string;
+  review_required?: boolean;
+}
+
+// Related term type
+export interface RelatedTerm {
+  id: string;
+  term: string;
+  relevance: number;
+}
+
+// Result type for document operations
+export interface DocumentOperationResult {
+  success: boolean;
+  documentId: string | null; 
+  error?: any;
+}
+
+// Props type for document lifecycle
+export interface UseDocumentLifecycleProps {
+  // Function to create a version of the document
+  createVersion: (documentId: string, content: string, metadata?: any, isAutoSave?: boolean) => Promise<void>;
+  
+  // Function to enrich content with ontology terms (optional)
+  enrichContentWithOntology?: (sourceId: string, content: string, title: string, options?: any) => Promise<any>;
+}
+
+// Props for document operation handlers
 export interface DocumentOperationHandlerProps {
   title: string;
   content: string;
   templateId: string | null;
   externalSourceUrl: string;
-  documentId?: string | null;
-  sourceId?: string | null;
-  saveDraft: (title: string, content: string, templateId: string | null, externalSourceUrl: string, userId?: string, isAutoSave?: boolean) => Promise<string | null>;
-  publishDocument: (title: string, content: string, templateId: string | null, externalSourceUrl: string, userId?: string) => Promise<DocumentOperationResult>;
+  documentId: string | null;
+  sourceId: string | null;
+  saveDraft: (title: string, content: string, templateId: string | null, externalSourceUrl: string, userId: string | undefined, isAutoSave?: boolean) => Promise<string | null>;
   setLastSavedTitle: (title: string) => void;
   setLastSavedContent: (content: string) => void;
   setLastSavedExternalSourceUrl: (url: string) => void;
   setIsDirty: (isDirty: boolean) => void;
   onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
   onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
+  createVersion: (documentId: string, content: string, metadata?: any, isAutoSave?: boolean) => Promise<void>;
+  enrichContentWithOntology?: (sourceId: string, content: string, title: string, options?: any) => Promise<any>;
 }
 
-/**
- * Draft operations context
- */
-export interface DraftOperationsContext {
-  createVersion?: (documentId: string, content: string, metadata?: any) => Promise<void>;
-}
-
-/**
- * Publish operations context
- */
-export interface PublishOperationsContext {
-  saveDraft: (title: string, content: string, templateId: string | null, externalSourceUrl: string, userId?: string, isAutoSave?: boolean) => Promise<string | null>;
-}
-
-/**
- * Markdown editor props
- */
-export interface MarkdownEditorProps {
-  initialTitle?: string;
-  initialContent?: string;
-  initialTemplateId?: string | null;
-  initialExternalSourceUrl?: string;
-  documentId?: string | null;
-  sourceId?: string | null;
-  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
-  onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
-}
-
-/**
- * Save handler options
- */
-export interface SaveHandlerOptions {
-  isAutoSave?: boolean;
-  skipValidation?: boolean;
+// Related note type for suggestions
+export interface RelatedNote {
+  id: string;
+  title: string;
+  score?: number;
+  applied?: boolean;
+  rejected?: boolean;
 }

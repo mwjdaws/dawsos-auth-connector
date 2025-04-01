@@ -8,20 +8,21 @@ export enum ErrorLevel {
   DEBUG = 'DEBUG',
   INFO = 'INFO',
   WARNING = 'WARNING',
-  ERROR = 'ERROR'
+  ERROR = 'ERROR',
+  CRITICAL = 'CRITICAL'
 }
 
 /**
  * Types of error sources
  */
 export enum ErrorSource {
-  API = 'api',
-  DATABASE = 'database',
-  VALIDATION = 'validation',
-  UI = 'ui',
-  NETWORK = 'network',
-  AUTHENTICATION = 'authentication',
-  UNKNOWN = 'unknown'
+  API = 'API',
+  DATABASE = 'DATABASE',
+  VALIDATION = 'VALIDATION',
+  UI = 'UI',
+  NETWORK = 'NETWORK',
+  AUTHENTICATION = 'AUTHENTICATION',
+  UNKNOWN = 'UNKNOWN'
 }
 
 /**
@@ -57,6 +58,11 @@ export interface ErrorHandlingOptions {
    * Custom title for toast notification
    */
   toastTitle?: string;
+
+  /**
+   * User-friendly message to display
+   */
+  message?: string;
 
   /**
    * Fingerprint for error deduplication

@@ -7,7 +7,7 @@ import {
 
 export type ToastProps = {
   title?: string;
-  description?: string;
+  description?: string | null;
   action?: ToastActionElement;
   variant?: "default" | "destructive";
   id?: string;
@@ -56,22 +56,22 @@ export const deduplicateToast = (id: string, props: ToastProps) => {
 };
 
 // Error toast helper
-export const errorToast = (title: string, description?: string, id?: string) => {
+export const errorToast = (title: string, description?: string | null, id?: string) => {
   const toastId = id || `error-${Date.now()}`;
   return toast({
     title,
-    description,
+    description: description || undefined,
     variant: "destructive",
     id: toastId
   });
 };
 
 // Success toast helper
-export const successToast = (title: string, description?: string, id?: string) => {
+export const successToast = (title: string, description?: string | null, id?: string) => {
   const toastId = id || `success-${Date.now()}`;
   return toast({
     title,
-    description,
+    description: description || undefined,
     id: toastId
   });
 };

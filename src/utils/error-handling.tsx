@@ -4,7 +4,6 @@
  */
 import { toast } from '@/hooks/use-toast';
 import { ErrorLevel, ErrorSource, ErrorHandlingOptions } from '@/utils/errors/types';
-import { convertErrorOptions } from '@/utils/compatibility';
 
 /**
  * Default error handling options
@@ -20,31 +19,32 @@ const defaultOptions: ErrorHandlingOptions = {
  * Handle an error with consistent logging, reporting, and user feedback
  * 
  * @param error The error to handle
- * @param userMessage A user-friendly message to display
  * @param options Additional options for error handling
  */
 export function handleError(
   error: unknown,
-  userMessage?: string,
   options?: Partial<ErrorHandlingOptions>
 ): void {
-  const opts = { ...defaultOptions, ...convertErrorOptions(options) };
+  const opts = { ...defaultOptions, ...options };
   const errorObj = error instanceof Error ? error : new Error(String(error));
+  
+  // Get user-friendly message - either from options or from the error
+  const userMessage = opts.toastTitle || errorObj.message;
   
   // Always log to console with appropriate level
   switch (opts.level) {
     case ErrorLevel.DEBUG:
-      console.debug(`[DEBUG] ${userMessage || errorObj.message}`, errorObj, opts.context);
+      console.debug(`[DEBUG] ${userMessage}`, errorObj, opts.context);
       break;
     case ErrorLevel.INFO:
-      console.info(`[INFO] ${userMessage || errorObj.message}`, errorObj, opts.context);
+      console.info(`[INFO] ${userMessage}`, errorObj, opts.context);
       break;
     case ErrorLevel.WARNING:
-      console.warn(`[WARNING] ${userMessage || errorObj.message}`, errorObj, opts.context);
+      console.warn(`[WARNING] ${userMessage}`, errorObj, opts.context);
       break;
     case ErrorLevel.ERROR:
     default:
-      console.error(`[ERROR] ${userMessage || errorObj.message}`, errorObj, opts.context);
+      console.error(`[ERROR] ${userMessage}`, errorObj, opts.context);
   }
   
   // Show toast notification if enabled
@@ -55,7 +55,7 @@ export function handleError(
         : opts.level === ErrorLevel.WARNING 
           ? 'Warning' 
           : 'Notice'),
-      description: userMessage || errorObj.message,
+      description: opts.message || errorObj.message,
       variant: opts.level === ErrorLevel.ERROR ? 'destructive' : 'default',
     });
   }
@@ -72,10 +72,10 @@ export function createErrorHandler(
   componentName: string,
   defaultOptions?: Partial<ErrorHandlingOptions>
 ) {
-  return (error: unknown, userMessage?: string, options?: Partial<ErrorHandlingOptions>): void => {
-    handleError(error, userMessage, {
-      ...convertErrorOptions(defaultOptions),
-      ...convertErrorOptions(options),
+  return (error: unknown, options?: Partial<ErrorHandlingOptions>): void => {
+    handleError(error, {
+      ...defaultOptions,
+      ...options,
       context: {
         ...(defaultOptions?.context || {}),
         ...(options?.context || {}),
