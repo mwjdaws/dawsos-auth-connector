@@ -45,7 +45,7 @@ export function useZoomPan({
     if (!canvasRef.current) return;
 
     // Clear any existing zoom behavior
-    d3.select(canvasRef.current).on('.zoom', null);
+    d3.select(canvasRef.current).on('.zoom', null as any);
 
     // Create new zoom behavior
     const zoomBehavior = d3.zoom<HTMLCanvasElement, unknown>()

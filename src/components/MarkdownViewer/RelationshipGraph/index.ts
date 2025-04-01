@@ -30,8 +30,12 @@ export {
   ensureString, 
   ensureNumber, 
   ensureBoolean,
+  sanitizeGraphData
+} from '@/utils/compatibility';
+
+// Re-export additional compatibility utilities
+export {
   ensureValidZoom,
   ensureValidGraphData,
-  sanitizeGraphData,
   createSafeGraphProps
 } from '@/utils/compatibility';

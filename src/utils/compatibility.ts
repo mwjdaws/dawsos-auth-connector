@@ -38,6 +38,28 @@ export function ensureBoolean(value: any, defaultValue = false): boolean {
 }
 
 /**
+ * Ensure zoom value is within valid range
+ */
+export function ensureValidZoom(zoom: any, minZoom = 0.1, maxZoom = 4, defaultZoom = 1): number {
+  const numZoom = ensureNumber(zoom, defaultZoom);
+  return Math.max(minZoom, Math.min(maxZoom, numZoom));
+}
+
+/**
+ * Make sure that graph data has required node and link properties for rendering
+ */
+export function ensureValidGraphData(graphData: any) {
+  if (!graphData) {
+    return { nodes: [], links: [] };
+  }
+  
+  const nodes = Array.isArray(graphData.nodes) ? graphData.nodes : [];
+  const links = Array.isArray(graphData.links) ? graphData.links : [];
+  
+  return { nodes, links };
+}
+
+/**
  * Sanitize graph data to ensure it has all required properties
  */
 export function sanitizeGraphData(graphData: any) {
@@ -49,7 +71,7 @@ export function sanitizeGraphData(graphData: any) {
   const links = Array.isArray(graphData.links) ? graphData.links : [];
   
   // Sanitize nodes
-  const sanitizedNodes = nodes.map((node) => ({
+  const sanitizedNodes = nodes.map((node: any) => ({
     ...node,
     id: ensureString(node.id),
     name: ensureString(node.name || node.title || ''),
@@ -59,7 +81,7 @@ export function sanitizeGraphData(graphData: any) {
   }));
   
   // Sanitize links
-  const sanitizedLinks = links.map((link) => ({
+  const sanitizedLinks = links.map((link: any) => ({
     ...link,
     source: ensureString(typeof link.source === 'object' ? link.source.id : link.source),
     target: ensureString(typeof link.target === 'object' ? link.target.id : link.target),
@@ -69,4 +91,30 @@ export function sanitizeGraphData(graphData: any) {
     nodes: sanitizedNodes,
     links: sanitizedLinks
   };
+}
+
+/**
+ * Create safe props for graph rendering
+ */
+export function createSafeGraphProps(props: any) {
+  return {
+    width: ensureNumber(props.width, 800),
+    height: ensureNumber(props.height, 600),
+    zoom: ensureValidZoom(props.zoom),
+    graphData: sanitizeGraphData(props.graphData),
+    highlightedNodeId: props.highlightedNodeId || null
+  };
+}
+
+/**
+ * Safe callback function invocation with optional parameters
+ */
+export function safeCallback<T extends (...args: any[]) => any>(
+  callback: T | undefined | null,
+  ...args: Parameters<T>
+): ReturnType<T> | undefined {
+  if (typeof callback === 'function') {
+    return callback(...args);
+  }
+  return undefined;
 }
