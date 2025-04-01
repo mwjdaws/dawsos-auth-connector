@@ -8,7 +8,7 @@ import { safeCallback } from '@/utils/compatibility';
 import { useContentValidator } from '@/hooks/validation/useContentValidator';
 import { createComponentErrorHandler } from '@/utils/errors/wrappers';
 import { ContentValidationResult } from '@/utils/validation/types';
-import { handleError } from '@/utils/errors/handle';
+import { handleError, ErrorLevel } from '@/utils/errors';
 
 // Component-specific error handler
 const handleComponentError = createComponentErrorHandler('MetadataPanel');
@@ -105,7 +105,7 @@ export const useMetadataPanel = ({
       handleError(
         err, 
         "Error refreshing metadata", 
-        { level: "warning", context: { contentId } }
+        { level: ErrorLevel.WARNING, context: { contentId } }
       );
     }
   }, [contentId, isValidContent, fetchSourceMetadata, refreshTags, handleMetadataChange]);

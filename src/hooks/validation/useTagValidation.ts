@@ -6,7 +6,7 @@
  */
 import { useState, useCallback } from 'react';
 import { isValidContentId } from '@/utils/validation/contentIdValidation';
-import { handleError } from '@/utils/errors/handle';
+import { handleError, ErrorLevel } from '@/utils/errors';
 import { ValidationResult, createValidResult, createInvalidResult } from '@/utils/validation/types';
 
 /**
@@ -60,7 +60,7 @@ export function useTagValidation() {
       handleError(
         new Error('Invalid content ID'),
         'Cannot perform tag operation: invalid content ID',
-        { level: "warning" }
+        { level: ErrorLevel.WARNING }
       );
       return false;
     }
@@ -71,7 +71,7 @@ export function useTagValidation() {
       handleError(
         new Error(tagValidation.errorMessage || 'Invalid tag'),
         tagValidation.errorMessage || 'Invalid tag',
-        { level: "warning" }
+        { level: ErrorLevel.WARNING }
       );
       return false;
     }

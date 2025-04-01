@@ -16,7 +16,7 @@ import { useTagState } from './useTagState';
 import { useTagFetch } from './useTagFetch';
 import { useTagMutations } from './useTagMutations';
 import { Tag } from '@/types/tag';
-import { handleError } from '@/utils/errors/handle';
+import { handleError, ErrorLevel } from '@/utils/errors';
 import { isValidContentId } from '@/utils/validation/contentIdValidation';
 
 /**
@@ -89,7 +89,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
       handleError(
         err,
         "Failed to refresh tags",
-        { level: "warning", technical: false }
+        { level: ErrorLevel.WARNING }
       );
     }
   }, [fetchTags]);
@@ -107,7 +107,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
       handleError(
         new Error('Tag must be at least 2 characters long'),
         'Tag must be at least 2 characters long',
-        { level: "warning", technical: false }
+        { level: ErrorLevel.WARNING }
       );
       return;
     }
@@ -126,7 +126,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
       handleError(
         err,
         "Failed to add tag",
-        { level: "warning", technical: false }
+        { level: ErrorLevel.WARNING }
       );
     }
   };
@@ -143,7 +143,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
       handleError(
         err,
         "Failed to delete tag",
-        { level: "warning", technical: false }
+        { level: ErrorLevel.WARNING }
       );
     }
   };
@@ -167,7 +167,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
       handleError(
         err,
         "Failed to reorder tags",
-        { level: "warning", technical: false }
+        { level: ErrorLevel.WARNING }
       );
     }
   };

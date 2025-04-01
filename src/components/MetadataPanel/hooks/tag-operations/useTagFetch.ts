@@ -1,7 +1,8 @@
 
 import { useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Tag } from '@/types/tag';
-import { handleError } from '@/utils/errors/handle';
+import { handleError, ErrorLevel } from '@/utils/errors';
 
 interface UseTagFetchProps {
   contentId: string;
@@ -11,7 +12,7 @@ interface UseTagFetchProps {
 }
 
 /**
- * Hook for fetching tags from the API
+ * Hook for fetching tags from the database
  */
 export const useTagFetch = ({
   contentId,
@@ -21,46 +22,59 @@ export const useTagFetch = ({
 }: UseTagFetchProps) => {
   
   /**
-   * Fetch tags for the current content
+   * Fetch tags for a specific content ID
    */
-  const fetchTags = useCallback(async (): Promise<Tag[]> => {
+  const fetchTags = useCallback(async () => {
     if (!contentId) {
-      return [];
+      setTags([]);
+      return;
     }
     
     setIsLoading(true);
     setError(null);
     
     try {
-      // In a real implementation, this would be an API call
-      // For now, we'll simulate a delay and return mock data
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Fetch tags with optional type info
+      const { data, error } = await supabase
+        .from('tags')
+        .select(`
+          id,
+          name,
+          content_id,
+          type_id,
+          display_order,
+          tag_types(id, name)
+        `)
+        .eq('content_id', contentId)
+        .order('display_order', { ascending: true });
       
-      // Mock response data
-      const mockTags: Tag[] = [
-        { id: '1', name: 'React', content_id: contentId, display_order: 0, type_id: null },
-        { id: '2', name: 'TypeScript', content_id: contentId, display_order: 1, type_id: null },
-        { id: '3', name: 'Tailwind', content_id: contentId, display_order: 2, type_id: null }
-      ];
+      if (error) {
+        throw error;
+      }
       
-      setTags(mockTags);
-      return mockTags;
+      // Transform data to include type_name from the tag_types join
+      const formattedTags: Tag[] = data.map(tag => ({
+        id: tag.id,
+        name: tag.name,
+        content_id: tag.content_id,
+        type_id: tag.type_id,
+        display_order: tag.display_order,
+        type_name: tag.tag_types ? tag.tag_types.name : null
+      }));
+      
+      setTags(formattedTags);
     } catch (err) {
-      // Handle error properly
-      const error = err instanceof Error ? err : new Error('Unknown error fetching tags');
-      setError(error);
-      
       handleError(
-        error,
-        "Failed to fetch tags",
-        { level: "warning", context: { contentId } }
+        err,
+        `Failed to fetch tags for content: ${contentId}`,
+        { level: ErrorLevel.WARNING }
       );
-      
-      return [];
+      setError(err instanceof Error ? err : new Error(String(err)));
+      setTags([]);
     } finally {
       setIsLoading(false);
     }
-  }, [contentId, setTags, setIsLoading, setError]);
+  }, [contentId, setError, setIsLoading, setTags]);
   
   return {
     fetchTags

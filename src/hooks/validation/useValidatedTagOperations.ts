@@ -10,7 +10,7 @@ import { useTagOperations } from '@/components/MetadataPanel/hooks/tag-operation
 import { useTagValidation } from './useTagValidation';
 import { useContentValidator } from './useContentValidator';
 import { Tag } from '@/types/tag';
-import { handleError } from '@/utils/errors/handle';
+import { handleError, ErrorLevel } from '@/utils/errors';
 
 interface UseValidatedTagOperationsProps {
   contentId: string;
@@ -41,7 +41,7 @@ export function useValidatedTagOperations({ contentId }: UseValidatedTagOperatio
       handleError(
         new Error(errorMessage || 'Invalid content ID'),
         errorMessage || 'Cannot add tag: invalid content ID',
-        { level: 'warning' }
+        { level: ErrorLevel.WARNING }
       );
       return;
     }
@@ -52,7 +52,7 @@ export function useValidatedTagOperations({ contentId }: UseValidatedTagOperatio
       handleError(
         new Error(validation.errorMessage || 'Invalid tag'),
         validation.errorMessage || 'Invalid tag',
-        { level: 'warning' }
+        { level: ErrorLevel.WARNING }
       );
       return;
     }
@@ -69,7 +69,7 @@ export function useValidatedTagOperations({ contentId }: UseValidatedTagOperatio
       handleError(
         new Error(errorMessage || 'Invalid content ID'),
         errorMessage || 'Cannot delete tag: invalid content ID',
-        { level: 'warning' }
+        { level: ErrorLevel.WARNING }
       );
       return;
     }
@@ -85,7 +85,7 @@ export function useValidatedTagOperations({ contentId }: UseValidatedTagOperatio
       handleError(
         new Error(errorMessage || 'Invalid content ID'),
         errorMessage || 'Cannot reorder tags: invalid content ID',
-        { level: 'warning' }
+        { level: ErrorLevel.WARNING }
       );
       return;
     }

@@ -1,27 +1,20 @@
 
-/**
- * useTagMutations Hook
- * 
- * Handles creating, updating, and deleting tags
- */
-
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tag } from '@/types/tag';
-import { TagPosition } from '@/types/tag';
-import { handleError } from '@/utils/errors/handle';
+import { handleError, ErrorLevel } from '@/utils/errors';
+import { useAuth } from '@/hooks/useAuth';
 
 interface UseTagMutationsProps {
   contentId: string;
-  setTags: (tags: Tag[]) => void;
   tags: Tag[];
+  setTags: (tags: Tag[]) => void;
 }
 
 interface AddTagParams {
   name: string;
   contentId: string;
-  typeId?: string | null;
-  display_order?: number;
+  typeId: string | null;
 }
 
 interface DeleteTagParams {
@@ -29,136 +22,147 @@ interface DeleteTagParams {
   contentId: string;
 }
 
-export const useTagMutations = ({ contentId, setTags, tags }: UseTagMutationsProps) => {
+export interface TagPosition {
+  id: string;
+  position: number;
+}
+
+/**
+ * Hook for tag mutation operations (add, delete, reorder)
+ */
+export const useTagMutations = ({ 
+  contentId, 
+  tags, 
+  setTags 
+}: UseTagMutationsProps) => {
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [isDeletingTag, setIsDeletingTag] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
+  const { user } = useAuth();
   
   /**
-   * Add a new tag
+   * Add a new tag to the content
    */
-  const addTag = async (params: AddTagParams): Promise<Tag | null> => {
+  const addTag = useCallback(async ({ name, contentId, typeId }: AddTagParams) => {
+    if (!name.trim() || !contentId) return false;
+    
+    setIsAddingTag(true);
+    
     try {
-      setIsAddingTag(true);
+      // Get the highest display order to place the new tag at the end
+      const maxOrderTag = tags.reduce(
+        (max, tag) => tag.display_order > max ? tag.display_order : max, 
+        0
+      );
       
-      // Calculate display order if not provided
-      const displayOrder = params.display_order !== undefined 
-        ? params.display_order 
-        : (tags && tags.length > 0) 
-          ? Math.max(...tags.map(t => t.display_order || 0)) + 1 
-          : 0;
-      
+      // Insert the new tag
       const { data, error } = await supabase
         .from('tags')
         .insert({
-          name: params.name,
-          content_id: params.contentId,
-          type_id: params.typeId === undefined ? null : params.typeId,
-          display_order: displayOrder
+          name: name.trim(),
+          content_id: contentId,
+          type_id: typeId,
+          display_order: maxOrderTag + 1
         })
         .select()
         .single();
       
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       
-      // Update local state with the new tag
-      const newTag = data as Tag;
-      setTags([...tags, newTag]);
+      // Add the new tag to the state
+      setTags([...tags, data]);
       
-      return newTag;
-    } catch (error) {
+      return true;
+    } catch (err) {
       handleError(
-        error,
-        `Failed to add tag "${params.name}"`,
-        { level: "warning" }
+        err,
+        `Failed to add tag "${name}"`,
+        { level: ErrorLevel.WARNING }
       );
-      return null;
+      return false;
     } finally {
       setIsAddingTag(false);
     }
-  };
+  }, [contentId, setTags, tags]);
   
   /**
-   * Delete a tag
+   * Delete a tag from the content
    */
-  const deleteTag = async (params: DeleteTagParams): Promise<boolean> => {
+  const deleteTag = useCallback(async ({ tagId, contentId }: DeleteTagParams) => {
+    if (!tagId || !contentId) return false;
+    
+    setIsDeletingTag(true);
+    
     try {
-      setIsDeletingTag(true);
-      
       const { error } = await supabase
         .from('tags')
         .delete()
-        .eq('id', params.tagId)
-        .eq('content_id', params.contentId);
+        .eq('id', tagId)
+        .eq('content_id', contentId);
       
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       
-      // Update local state by removing the deleted tag
-      setTags(tags.filter(tag => tag.id !== params.tagId));
+      // Remove the deleted tag from the state
+      setTags(tags.filter(tag => tag.id !== tagId));
       
       return true;
-    } catch (error) {
+    } catch (err) {
       handleError(
-        error,
-        "Failed to delete tag",
-        { level: "warning" }
+        err,
+        `Failed to delete tag`,
+        { level: ErrorLevel.WARNING }
       );
       return false;
     } finally {
       setIsDeletingTag(false);
     }
-  };
+  }, [contentId, setTags, tags]);
   
   /**
-   * Reorder tags by updating their display_order values
+   * Reorder tags using drag-and-drop
+   * Updates the display_order property in the database
    */
-  const reorderTags = async (positions: TagPosition[]): Promise<boolean> => {
+  const reorderTags = useCallback(async (tagPositions: TagPosition[]) => {
+    if (!tagPositions?.length || !contentId) return false;
+    
+    setIsReordering(true);
+    
     try {
-      setIsReordering(true);
+      // Update the display_order of all affected tags
+      const updates = tagPositions.map(item => ({
+        id: item.id,
+        display_order: item.position,
+        content_id: contentId
+      }));
       
-      // Create an array of updates to perform as separate operations
-      const updatePromises = positions.map(position => 
-        supabase
-          .from('tags')
-          .update({ display_order: position.position })
-          .eq('id', position.id)
-      );
-      
-      // Execute all updates
-      await Promise.all(updatePromises);
-      
-      // Update local state with the new order
-      // Create a map of tag ID -> new display_order for fast lookup
-      const orderMap = new Map<string, number>();
-      positions.forEach(pos => orderMap.set(pos.id, pos.position));
-      
-      // Apply the new order to the tags
-      const updatedTags = tags.map(tag => {
-        const newOrder = orderMap.get(tag.id);
-        if (newOrder !== undefined) {
-          return { ...tag, display_order: newOrder };
-        }
-        return tag;
+      const { error } = await supabase.rpc('update_tag_positions', {
+        tag_updates: updates
       });
+      
+      if (error) throw error;
+      
+      // Update the local state with the new order
+      const updatedTags = [...tags].map(tag => {
+        const position = tagPositions.find(pos => pos.id === tag.id);
+        return position 
+          ? { ...tag, display_order: position.position }
+          : tag;
+      }).sort((a, b) => a.display_order - b.display_order);
       
       setTags(updatedTags);
       
       return true;
-    } catch (error) {
+    } catch (err) {
       handleError(
-        error,
-        "Failed to reorder tags",
-        { level: "warning" }
+        err,
+        `Failed to reorder tags`,
+        { level: ErrorLevel.WARNING }
       );
       return false;
     } finally {
       setIsReordering(false);
     }
-  };
+  }, [contentId, setTags, tags]);
   
   return {
     addTag,
