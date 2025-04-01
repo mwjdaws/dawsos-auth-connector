@@ -1,11 +1,11 @@
 
 import { useState, useCallback } from 'react';
+import { toast } from '@/hooks/use-toast';
 
 export interface TagValidationOptions {
   minLength?: number;
   maxLength?: number;
-  allowSpecialChars?: boolean;
-  allowEmpty?: boolean;
+  disallowSpecialChars?: boolean;
 }
 
 export interface TagValidationResult {
@@ -13,68 +13,93 @@ export interface TagValidationResult {
   message: string | null;
 }
 
-export const useTagValidator = (options: TagValidationOptions = {}) => {
-  const {
-    minLength = 2,
-    maxLength = 50,
-    allowSpecialChars = true,
-    allowEmpty = false
-  } = options;
+/**
+ * A hook for validating tag names
+ */
+export function useTagValidator() {
+  const [validationResult, setValidationResult] = useState<TagValidationResult | null>(null);
 
-  const [validationError, setValidationError] = useState<string | null>(null);
+  /**
+   * Validates a tag name
+   */
+  const validateTag = useCallback((
+    tagName: string,
+    options: TagValidationOptions = {}
+  ): TagValidationResult => {
+    const {
+      minLength = 1,
+      maxLength = 50,
+      disallowSpecialChars = true
+    } = options;
 
-  const validateTag = useCallback(
-    (tag: string): TagValidationResult => {
-      // Trim the tag
-      const trimmedTag = tag.trim();
+    // Check if tag is empty
+    if (!tagName || tagName.trim() === '') {
+      const result = { 
+        isValid: false, 
+        message: 'Tag name cannot be empty' 
+      };
+      setValidationResult(result);
+      return result;
+    }
 
-      // Check if empty
-      if (!trimmedTag && !allowEmpty) {
-        const message = "Tag cannot be empty";
-        setValidationError(message);
-        return { isValid: false, message };
-      }
+    // Check length constraints
+    if (tagName.length < minLength) {
+      const result = {
+        isValid: false,
+        message: `Tag must be at least ${minLength} characters long`
+      };
+      setValidationResult(result);
+      return result;
+    }
 
-      // Skip further validation if empty is allowed and the tag is empty
-      if (!trimmedTag && allowEmpty) {
-        setValidationError(null);
-        return { isValid: true, message: null };
-      }
+    if (tagName.length > maxLength) {
+      const result = {
+        isValid: false,
+        message: `Tag cannot exceed ${maxLength} characters`
+      };
+      setValidationResult(result);
+      return result;
+    }
 
-      // Check length
-      if (trimmedTag.length < minLength) {
-        const message = `Tag must be at least ${minLength} characters`;
-        setValidationError(message);
-        return { isValid: false, message };
-      }
+    // Check for special characters if disallowed
+    if (disallowSpecialChars && /[^\w\s-]/.test(tagName)) {
+      const result = {
+        isValid: false,
+        message: 'Tag contains invalid characters. Use only letters, numbers, spaces, and hyphens.'
+      };
+      setValidationResult(result);
+      return result;
+    }
 
-      if (trimmedTag.length > maxLength) {
-        const message = `Tag must be no more than ${maxLength} characters`;
-        setValidationError(message);
-        return { isValid: false, message };
-      }
+    const result = { isValid: true, message: null };
+    setValidationResult(result);
+    return result;
+  }, []);
 
-      // Check for special characters if not allowed
-      if (!allowSpecialChars) {
-        const specialCharsRegex = /[^a-zA-Z0-9 -]/;
-        if (specialCharsRegex.test(trimmedTag)) {
-          const message = "Tag contains special characters that are not allowed";
-          setValidationError(message);
-          return { isValid: false, message };
-        }
-      }
+  /**
+   * Reset validation result
+   */
+  const resetValidation = useCallback(() => {
+    setValidationResult(null);
+  }, []);
 
-      // If we reach here, the tag is valid
-      setValidationError(null);
-      return { isValid: true, message: null };
-    },
-    [minLength, maxLength, allowSpecialChars, allowEmpty]
-  );
+  /**
+   * Show validation error as toast
+   */
+  const showValidationError = useCallback(() => {
+    if (validationResult && !validationResult.isValid && validationResult.message) {
+      toast({
+        title: "Tag Validation Error",
+        description: validationResult.message,
+        variant: "destructive"
+      });
+    }
+  }, [validationResult]);
 
   return {
     validateTag,
-    validationError
+    validationResult,
+    resetValidation,
+    showValidationError
   };
-};
-
-export default useTagValidator;
+}

@@ -2,11 +2,12 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { useTagValidator, TagValidationOptions } from './useTagValidator';
+import { useTagValidator } from './useTagValidator';
 
 interface SaveTagsOptions {
   contentId?: string;
   skipExistingCheck?: boolean;
+  maxRetries?: number;
 }
 
 interface SaveTagsResult {
@@ -59,8 +60,7 @@ export function useSaveTags() {
     
     try {
       // Validate each tag first
-      const validationOptions: TagValidationOptions = {
-        allowEmpty: false,
+      const validationOptions = {
         minLength: 1,
         maxLength: 50
       };

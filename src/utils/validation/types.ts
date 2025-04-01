@@ -9,7 +9,6 @@ export interface ValidationResult {
   message: string | null;
   errorMessage: string | null;
   resultType: 'generic' | 'content' | 'contentId' | 'tag' | 'ontologyTerm';
-  contentExists?: boolean;
 }
 
 // Content ID specific validation result

@@ -1,13 +1,23 @@
 
 /**
- * Type definitions for ontology-related entities
+ * Ontology types for the application
  */
 
 export interface OntologyTerm {
   id: string;
   term: string;
   description: string;
-  domain?: string | null;
+  domain?: string;
+  review_required?: boolean;
+  associationId?: string; // Added to fix type error
+}
+
+export interface OntologyTermAssociation {
+  id: string;
+  ontology_term_id: string;
+  knowledge_source_id: string;
+  created_at?: string;
+  created_by?: string;
   review_required?: boolean;
 }
 
@@ -15,24 +25,23 @@ export interface OntologyDomain {
   id: string;
   name: string;
   description: string;
+  parent_id?: string;
 }
 
 export interface RelatedTerm {
   id: string;
   term: string;
   description: string;
-  domain?: string | null;
-  relationshipType?: string;
-  relationshipId?: string;
-  term_id?: string; // For backward compatibility
-  relation_type?: string; // For backward compatibility
+  similarity: number;
+  domain?: string;
 }
 
-export interface OntologyTermRelationship {
+export interface OntologySuggestion {
   id: string;
-  term_id: string;
-  related_term_id: string;
-  relation_type: string;
+  term: string;
+  description: string;
+  confidence: number;
+  domain?: string;
 }
 
 export interface RelatedNote {

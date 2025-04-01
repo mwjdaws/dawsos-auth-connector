@@ -1,74 +1,34 @@
 
-// Basic ontology term interface
-export interface OntologyTerm {
-  id: string;
-  term: string;
-  description: string;
-  domain?: string;
-  associationId?: string; // Adding associationId property
-  review_required?: boolean;
+import { OntologyTerm, RelatedTerm, OntologySuggestion, RelatedNote } from '@/types/ontology';
+
+export interface UseOntologySuggestionsResult {
+  suggestions: OntologySuggestion[];
+  isLoading: boolean;
+  error: Error | null;
+  fetchSuggestions: (content: string) => Promise<OntologySuggestion[]>;
+  applySuggestion: (suggestion: OntologySuggestion) => Promise<void>;
+  rejectSuggestion: (suggestion: OntologySuggestion) => Promise<void>;
+  reset: () => void;
 }
 
-// Related term data structure
-export interface RelatedTerm {
-  id: string;
-  term: string;
-  domain?: string;
-  description?: string;
-  confidence?: number;
-  score?: number;
+export interface UseOntologyTermsResult {
+  terms: OntologyTerm[];
+  relatedTerms: RelatedTerm[];
+  isLoading: boolean;
+  error: Error | null;
+  fetchTerms: () => Promise<OntologyTerm[]>;
+  addTerm: (term: string, description?: string) => Promise<void>;
+  removeTerm: (termId: string) => Promise<void>;
 }
 
-// Term suggestions interface
-export interface TermSuggestion {
-  id: string;
-  term: string;
-  domain?: string;
-  description?: string;
-  confidence?: number;
+export interface UseRelatedNotesResult {
+  relatedNotes: RelatedNote[];
+  isLoading: boolean;
+  error: Error | null;
+  fetchRelatedNotes: () => Promise<RelatedNote[]>;
+  applyRelatedNote: (noteId: string) => Promise<void>;
+  rejectRelatedNote: (noteId: string) => Promise<void>;
 }
 
-// Domain structure
-export interface Domain {
-  id: string;
-  name: string;
-  description?: string;
-}
-
-// Term relationship types
-export enum TermRelationshipType {
-  BROADER = 'broader',
-  NARROWER = 'narrower',
-  RELATED = 'related',
-  EQUIVALENT = 'equivalent'
-}
-
-// Term relationship structure
-export interface TermRelationship {
-  id: string;
-  sourceTermId: string;
-  targetTermId: string;
-  type: TermRelationshipType;
-  confidence?: number;
-}
-
-// Term hierarchy item
-export interface TermHierarchyItem {
-  id: string;
-  term: string;
-  domain?: string;
-  description?: string;
-  children?: TermHierarchyItem[];
-  level: number;
-}
-
-// Term suggestion count
-export interface TermSuggestionCount {
-  count: number;
-  sourceId: string;
-}
-
-// Define export types
-export type OntologyTermMap = Record<string, OntologyTerm>;
-export type DomainMap = Record<string, Domain>;
-export type TermRelationshipMap = Record<string, TermRelationship[]>;
+// Re-export the base types for convenience
+export type { OntologyTerm, RelatedTerm, OntologySuggestion, RelatedNote };

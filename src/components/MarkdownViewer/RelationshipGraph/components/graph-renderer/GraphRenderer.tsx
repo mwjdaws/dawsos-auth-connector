@@ -31,13 +31,23 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(({
     height
   });
   
-  // Node and link renderers
+  // Create a safe node click handler that handles undefined callbacks
+  const safeNodeClickHandler = (nodeId: string) => {
+    if (onNodeClick) onNodeClick(nodeId);
+  };
+  
+  // Create a safe link click handler that handles undefined callbacks
+  const safeLinkClickHandler = (source: string, target: string) => {
+    if (onLinkClick) onLinkClick(source, target);
+  };
+  
+  // Node and link renderers with safe handlers
   const { renderNodes, hitTest, handleNodeClick, hoveredNodeRef } = useNodeRenderer({
-    onNodeClick
+    onNodeClick: safeNodeClickHandler
   });
   
   const { renderLinks, handleLinkClick } = useLinkRenderer({
-    onLinkClick
+    onLinkClick: safeLinkClickHandler
   });
   
   // Zoom and pan functionality

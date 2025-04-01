@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { GraphRenderer } from './components/graph-renderer/GraphRenderer';
-import { GraphData, GraphNode, GraphLink, GraphRendererRef } from './types';
+import { GraphData } from './components/graph-renderer/GraphRendererTypes';
+import type { GraphRendererRef } from './components/graph-renderer/GraphRendererTypes';
 import { ensureString, ensureNumber, ensureBoolean } from '@/utils/compatibility';
 
 interface RelationshipGraphAdapterProps {
@@ -26,13 +27,13 @@ export const RelationshipGraphAdapter = React.forwardRef<GraphRendererRef, Relat
   }, ref) => {
     // Sanitize graph data to ensure it's in the correct format
     const sanitizedData: GraphData = {
-      nodes: graphData.nodes.map((node: GraphNode) => ({
+      nodes: graphData.nodes.map((node) => ({
         ...node,
         id: ensureString(node.id),
-        name: ensureString(node.name || node.title),
+        name: ensureString(node.name || node.title || ''),
         title: ensureString(node.title || node.name || ''),
       })),
-      links: graphData.links.map((link: GraphLink) => ({
+      links: graphData.links.map((link) => ({
         ...link,
         source: ensureString(typeof link.source === 'object' ? link.source.id : link.source),
         target: ensureString(typeof link.target === 'object' ? link.target.id : link.target),
