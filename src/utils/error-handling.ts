@@ -1,6 +1,7 @@
 
 import { toast } from "@/hooks/use-toast";
 import { ErrorLevel, ErrorSource, ErrorHandlingOptions, defaultErrorOptions } from './errors/types';
+import { compatibleErrorOptions } from './errors/compatibility';
 
 /**
  * Central error handling function
@@ -24,7 +25,7 @@ export const handleError = (
     // Handle case: handleError(error, "message", { level: ErrorLevel.Error })
     errorOptions = {
       ...defaultErrorOptions,
-      ...options,
+      ...compatibleErrorOptions(options),
       message,
       toastTitle: message
     };
@@ -32,7 +33,7 @@ export const handleError = (
     // Handle case: handleError(error, { message: "message", level: ErrorLevel.Error })
     errorOptions = {
       ...defaultErrorOptions,
-      ...message
+      ...compatibleErrorOptions(message)
     };
   } else if (typeof message === 'string') {
     // Handle case: handleError(error, "message")
@@ -80,6 +81,30 @@ export const handleError = (
     context: errorOptions.context
   };
 };
+
+/**
+ * Creates an error handler function with predefined context
+ * 
+ * @param componentName The name of the component or module
+ * @param defaultOptions Default options for all errors handled by this function
+ * @returns An error handler function with predefined context
+ */
+export function createErrorHandler(
+  componentName: string,
+  defaultOptions?: Partial<ErrorHandlingOptions>
+) {
+  return (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>): void => {
+    handleError(error, message, {
+      ...defaultOptions,
+      ...options,
+      context: {
+        ...(defaultOptions?.context || {}),
+        ...(options?.context || {}),
+        componentName
+      }
+    });
+  };
+}
 
 /**
  * Create an error handler for components

@@ -38,6 +38,7 @@ export interface EnhancedError extends Error {
   context?: ErrorContext;
   metadata?: ErrorMetadata;
   originalError?: Error;
+  code?: string;
 }
 
 // Options for error handling

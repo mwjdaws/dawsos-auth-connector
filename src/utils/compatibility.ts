@@ -1,74 +1,138 @@
 
-import { ErrorHandlingOptions, ErrorLevel, ErrorSource } from './errors/types';
+import { ErrorHandlingOptions } from './errors/types';
+import { convertErrorOptions, compatibleErrorOptions, LegacyErrorHandlingOptions } from './errors/compatibility';
 
 /**
- * Interface for legacy error handling options
+ * Utility functions for type compatibility and conversions
  */
-export interface LegacyErrorHandlingOptions {
-  level?: string;
-  silent?: boolean;
-  toastTitle?: string;
-  retryCount?: number;
-  context?: Record<string, any>;
-  suppressToast?: boolean;
-  technical?: string;
-  [key: string]: any;
+import React from 'react';
+
+// Re-export error compatibility helpers
+export { convertErrorOptions, compatibleErrorOptions, LegacyErrorHandlingOptions };
+
+/**
+ * Ensures a value is a string
+ * 
+ * @param value The value to check/convert
+ * @param defaultValue Optional default value if conversion fails
+ * @returns The value as a string, or the default value
+ */
+export function ensureString(value: unknown, defaultValue: string = ''): string {
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
+  
+  return String(value);
 }
 
 /**
- * Convert legacy error options to the new format
+ * Ensures a value is a number
+ * 
+ * @param value The value to check/convert
+ * @param defaultValue Optional default value if conversion fails
+ * @returns The value as a number, or the default value
  */
-export function convertErrorOptions(options?: LegacyErrorHandlingOptions): Partial<ErrorHandlingOptions> {
-  if (!options) return {};
-  
-  const result: Partial<ErrorHandlingOptions> = { ...options };
-  
-  // Convert string level to enum if needed
-  if (typeof options.level === 'string') {
-    switch (options.level.toLowerCase()) {
-      case 'debug':
-        result.level = ErrorLevel.Debug;
-        break;
-      case 'info':
-        result.level = ErrorLevel.Info;
-        break;
-      case 'warning':
-        result.level = ErrorLevel.Warning;
-        break;
-      case 'error':
-        result.level = ErrorLevel.Error;
-        break;
-      case 'critical':
-        result.level = ErrorLevel.Critical;
-        break;
-    }
+export function ensureNumber(value: unknown, defaultValue: number = 0): number {
+  if (value === null || value === undefined) {
+    return defaultValue;
   }
   
-  // Preserve retryCount for backward compatibility if needed
-  if (options.retryCount !== undefined && result.context) {
-    result.context.retryCount = options.retryCount;
-  }
-  
-  return result;
+  const num = Number(value);
+  return isNaN(num) ? defaultValue : num;
 }
 
 /**
- * Function to ensure backward compatibility with older error handling code
+ * Ensures a value is a boolean
+ * 
+ * @param value The value to check/convert
+ * @param defaultValue Optional default value if conversion fails
+ * @returns The value as a boolean, or the default value
  */
-export function compatibleErrorOptions(
-  options?: Partial<ErrorHandlingOptions> | LegacyErrorHandlingOptions
-): Partial<ErrorHandlingOptions> {
-  if (!options) return {};
-  
-  // Check if this is a legacy options object
-  if (
-    typeof options.level === 'string' ||
-    'retryCount' in options ||
-    'technical' in options
-  ) {
-    return convertErrorOptions(options as LegacyErrorHandlingOptions);
+export function ensureBoolean(value: unknown, defaultValue: boolean = false): boolean {
+  if (value === null || value === undefined) {
+    return defaultValue;
   }
   
-  // Already in the right format
-  return options as Partial<ErrorHandlingOptions>;
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true';
+  }
+  
+  if (typeof value === 'number') {
+    return value !== 0;
+  }
+  
+  return defaultValue;
+}
+
+/**
+ * Safely calls a callback function
+ * 
+ * @param callback The callback function to call
+ * @param args Arguments to pass to the callback
+ * @returns The result of the callback, or undefined if the callback is not a function
+ */
+export function safeCallback<T extends (...args: any[]) => any>(
+  callback: T | null | undefined,
+  ...args: Parameters<T>
+): ReturnType<T> | undefined {
+  if (typeof callback === 'function') {
+    return callback(...args);
+  }
+  return undefined;
+}
+
+/**
+ * Creates a no-op function that can be used as a safe default
+ * 
+ * @returns A function that does nothing
+ */
+export function noOp(): () => void {
+  return () => {};
+}
+
+/**
+ * Safe JSX wrapper for potentially undefined/null children
+ */
+export function SafeRender({ children }: { children: React.ReactNode }): JSX.Element | null {
+  return children ? <>{children}</> : null;
+}
+
+// Additional graph data utilities for RelationshipGraph components
+export function sanitizeGraphData(data: any): any {
+  if (!data) return { nodes: [], links: [] };
+  return {
+    nodes: Array.isArray(data.nodes) ? data.nodes : [],
+    links: Array.isArray(data.links) ? data.links : []
+  };
+}
+
+export function ensureValidZoom(zoom: unknown): number {
+  const parsedZoom = ensureNumber(zoom, 1);
+  return Math.min(Math.max(0.1, parsedZoom), 5);
+}
+
+export function ensureValidGraphData(data: any): { nodes: any[], links: any[] } {
+  return {
+    nodes: Array.isArray(data?.nodes) ? data.nodes : [],
+    links: Array.isArray(data?.links) ? data.links : []
+  };
+}
+
+export function createSafeGraphProps(props: any): any {
+  return {
+    width: ensureNumber(props?.width, 800),
+    height: ensureNumber(props?.height, 600),
+    nodeSize: ensureNumber(props?.nodeSize, 16),
+    linkDistance: ensureNumber(props?.linkDistance, 100),
+    chargeStrength: ensureNumber(props?.chargeStrength, -30),
+    centerForce: ensureNumber(props?.centerForce, 0.1),
+    enableDrag: ensureBoolean(props?.enableDrag, true),
+    enableZoom: ensureBoolean(props?.enableZoom, true),
+    highlightDegree: ensureNumber(props?.highlightDegree, 1),
+    data: ensureValidGraphData(props?.data)
+  };
 }

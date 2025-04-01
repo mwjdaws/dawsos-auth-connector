@@ -18,7 +18,7 @@ export {
 } from '@/utils/error-handling';
 
 // Export compatibility utils
-export { convertErrorOptions } from '@/utils/compatibility';
+export { convertErrorOptions, compatibleErrorOptions } from './compatibility';
 
 // For backward compatibility 
 export * from './categorize';
