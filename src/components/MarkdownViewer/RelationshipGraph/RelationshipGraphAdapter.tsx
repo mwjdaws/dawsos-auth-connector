@@ -1,44 +1,57 @@
 
-/**
- * Relationship Graph Adapter
- * 
- * This adapter component handles prop compatibility between the relationship graph
- * components and their consumers, ensuring type safety.
- */
 import React from 'react';
-import { RelationshipGraph } from './RelationshipGraph';
+import { GraphRenderer } from './components/graph-renderer/GraphRenderer';
+import { GraphData, GraphNode, GraphLink, GraphRendererRef } from './types';
 import { ensureString, ensureNumber, ensureBoolean } from '@/utils/compatibility';
 
 interface RelationshipGraphAdapterProps {
-  startingNodeId?: string;
-  hasAttemptedRetry?: boolean;
+  graphData: GraphData;
   width?: number;
   height?: number;
+  zoom?: number;
+  highlightedNodeId?: string | null;
+  onNodeClick?: (nodeId: string) => void;
+  onLinkClick?: (source: string, target: string) => void;
 }
 
-/**
- * Adapter for RelationshipGraph to handle optional/nullable props
- */
-export function RelationshipGraphAdapter({
-  startingNodeId,
-  hasAttemptedRetry = false,
-  width = 800,
-  height = 600
-}: RelationshipGraphAdapterProps) {
-  // Convert undefined to empty string instead of directly passing undefined
-  const safeNodeId = ensureString(startingNodeId);
-  const safeWidth = ensureNumber(width);
-  const safeHeight = ensureNumber(height);
-  const safeHasRetried = ensureBoolean(hasAttemptedRetry);
-  
-  return (
-    <RelationshipGraph
-      startingNodeId={safeNodeId}
-      hasAttemptedRetry={safeHasRetried}
-      width={safeWidth}
-      height={safeHeight}
-    />
-  );
-}
+export const RelationshipGraphAdapter = React.forwardRef<GraphRendererRef, RelationshipGraphAdapterProps>(
+  ({ 
+    graphData, 
+    width = 800, 
+    height = 600, 
+    zoom = 1, 
+    highlightedNodeId = null,
+    onNodeClick,
+    onLinkClick
+  }, ref) => {
+    // Ensure data is in the correct format
+    const sanitizedData: GraphData = {
+      nodes: graphData.nodes.map((node: GraphNode) => ({
+        ...node,
+        id: ensureString(node.id),
+        name: ensureString(node.name),
+        title: ensureString(node.title),
+      })),
+      links: graphData.links.map((link: GraphLink) => ({
+        ...link,
+        source: ensureString(link.source),
+        target: ensureString(link.target),
+      }))
+    };
+    
+    return (
+      <GraphRenderer
+        ref={ref}
+        graphData={sanitizedData}
+        width={ensureNumber(width)}
+        height={ensureNumber(height)}
+        zoom={ensureNumber(zoom)}
+        highlightedNodeId={highlightedNodeId}
+        onNodeClick={onNodeClick}
+        onLinkClick={onLinkClick}
+      />
+    );
+  }
+);
 
-export default RelationshipGraphAdapter;
+RelationshipGraphAdapter.displayName = 'RelationshipGraphAdapter';

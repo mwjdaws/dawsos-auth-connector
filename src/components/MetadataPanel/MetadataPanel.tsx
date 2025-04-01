@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -48,7 +47,7 @@ const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'edi
   
   // Content validation check
   const isValidContent = validationResult?.isValid || false;
-  const contentExists = validationResult?.contentExists || false;
+  const contentExists = validationResult?.contentExists ?? false;
   
   if (!isValidContent) {
     return (

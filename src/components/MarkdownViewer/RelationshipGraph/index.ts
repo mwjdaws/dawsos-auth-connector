@@ -1,41 +1,32 @@
 
 /**
- * RelationshipGraph Main Export
+ * RelationshipGraph Component
  * 
- * This file exports all components, hooks, and utilities for the relationship graph
- * to provide a unified API for consumers.
+ * This component visualizes relationships between content items.
  */
 
-// Main Components
-export { RelationshipGraph } from './RelationshipGraph';
-export { RelationshipGraphPanel } from './RelationshipGraphPanel';
+// Main components
+export { RelationshipGraphPanel } from './components/RelationshipGraphPanel';
+export { RelationshipGraphControls } from './components/RelationshipGraphControls';
 export { RelationshipGraphAdapter } from './RelationshipGraphAdapter';
+export { GraphRenderer } from './components/graph-renderer/GraphRenderer';
 
-// Sub-components
-export { ErrorFallback } from './components/ErrorFallback';
-export { GraphControls } from './components/GraphControls';
-export { GraphRenderer } from './components/GraphRenderer';
-export { GraphSearch } from './components/GraphSearch';
-export { GraphZoomControl } from './components/GraphZoomControl';
-export { GraphContent } from './components/GraphContent';
+// Type definitions
+export type { 
+  GraphNode, 
+  GraphLink, 
+  GraphData,
+  GraphRendererRef 
+} from './types';
 
-// Hooks
-export { useRelationshipGraph } from './hooks/useRelationshipGraph';
-export { useGraphData } from './hooks/graph-data/useGraphData';
-export { useGraphState } from './hooks/graph-data/useGraphState';
-export { useFetchGraphData } from './hooks/graph-data/useFetchGraphData';
-
-// Types
-export * from './types';
-
-// Utilities
-export {
+// Utility functions for graph components
+export { 
   ensureNumber,
   ensureString,
   ensureBoolean,
   ensureValidZoom,
   ensureValidGraphData,
   sanitizeGraphData,
-  createCompatibleGraphRef,
-  createSafeGraphProps
+  // Helper functions
+  createSafeGraphProps,
 } from '@/utils/compatibility';

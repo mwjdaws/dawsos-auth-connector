@@ -1,53 +1,83 @@
 
-/**
- * useNodeRenderer hook
- * 
- * This hook provides functions for rendering nodes in the graph
- */
-import { useCallback } from 'react';
+import { useRef, useCallback } from 'react';
+import * as d3 from 'd3';
 import { GraphNode } from '../../types';
+import { ensureString } from '@/utils/compatibility';
 
-interface UseNodeRendererProps {
-  nodeColorMap?: Record<string, string>;
-  defaultNodeColor?: string;
-  nodeSizeRange?: [number, number];
-  defaultNodeSize?: number;
+interface NodeRendererOptions {
+  onNodeClick?: (nodeId: string) => void;
 }
 
-export function useNodeRenderer({
-  nodeColorMap = {},
-  defaultNodeColor = '#aaaaaa',
-  nodeSizeRange = [4, 12],
-  defaultNodeSize = 6
-}: UseNodeRendererProps = {}) {
+export function useNodeRenderer(
+  svgRef: React.RefObject<SVGSVGElement>,
+  gRef: React.RefObject<SVGGElement>,
+  options: NodeRendererOptions = {}
+) {
+  const nodesRef = useRef<d3.Selection<SVGGElement, GraphNode, SVGGElement, unknown>>();
+  const nodeDataRef = useRef<GraphNode[]>([]);
   
-  // Get node color based on type
-  const getNodeColor = useCallback((node: GraphNode): string => {
-    // Use explicit color if defined
-    if (node.color) return node.color;
+  // Render nodes initially
+  const renderNodes = useCallback((nodes: GraphNode[], highlightedNodeId: string = '') => {
+    if (!gRef.current) return;
     
-    // Look up color by node type
-    if (node.type && nodeColorMap[node.type]) {
-      return nodeColorMap[node.type];
+    nodeDataRef.current = nodes;
+    
+    // Remove any existing nodes
+    d3.select(gRef.current).selectAll('.node').remove();
+    
+    // Create node elements
+    nodesRef.current = d3.select(gRef.current)
+      .selectAll('.node')
+      .data(nodes, (d: any) => ensureString(d.id))
+      .enter()
+      .append('g')
+      .attr('class', 'node')
+      .attr('id', d => `node-${ensureString(d.id)}`)
+      .attr('data-id', d => ensureString(d.id))
+      .classed('highlighted', d => ensureString(d.id) === highlightedNodeId);
+    
+    // Add node circles
+    nodesRef.current
+      .append('circle')
+      .attr('r', d => d.size || 15)
+      .attr('fill', d => d.color || '#69b3a2')
+      .attr('stroke', d => d.color || '#69b3a2')
+      .attr('stroke-width', 2);
+    
+    // Add node labels
+    nodesRef.current
+      .append('text')
+      .text(d => d.name || d.title || d.id || '')
+      .attr('dy', 30)
+      .attr('text-anchor', 'middle')
+      .attr('class', 'node-label');
+    
+    // Add click events
+    if (options.onNodeClick) {
+      nodesRef.current.on('click', (event, d) => {
+        options.onNodeClick?.(ensureString(d.id));
+      });
     }
     
-    // Default color
-    return defaultNodeColor;
-  }, [nodeColorMap, defaultNodeColor]);
+    return nodesRef.current;
+  }, [gRef, options]);
   
-  // Get node size based on weight
-  const getNodeSize = useCallback((node: GraphNode): number => {
-    if (node.size !== undefined) return node.size;
+  // Update node positions
+  const updateNodePositions = useCallback(() => {
+    if (!nodesRef.current) return;
     
-    const weight = node.weight || 1;
-    const [min, max] = nodeSizeRange;
-    
-    // Normalize size between min and max
-    return Math.max(min, Math.min(max, defaultNodeSize * weight));
-  }, [nodeSizeRange, defaultNodeSize]);
+    nodesRef.current
+      .attr('transform', d => `translate(${d.x || 0}, ${d.y || 0})`);
+  }, [nodesRef]);
+  
+  // Get a node by ID
+  const getNodeById = useCallback((id: string): GraphNode | undefined => {
+    return nodeDataRef.current.find(n => n.id === id);
+  }, [nodeDataRef]);
   
   return {
-    getNodeColor,
-    getNodeSize
+    renderNodes,
+    updateNodePositions,
+    getNodeById,
   };
 }

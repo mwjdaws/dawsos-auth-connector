@@ -1,23 +1,36 @@
 
 /**
- * Validation types and helper functions
+ * Validation result types
  */
 
-// Basic validation result
+/**
+ * Standard validation result
+ */
 export interface ValidationResult {
   isValid: boolean;
   message: string | null;
   errorMessage: string | null;
 }
 
-// Content ID validation result
+/**
+ * Content ID validation result type
+ */
 export interface ContentIdValidationResult extends ValidationResult {
+  resultType: string;
   contentExists: boolean;
-  resultType: 'VALID' | 'INVALID' | 'TEMP' | 'NOT_FOUND';
 }
 
-// Create a valid result
-export function createValidResult(message: string = "Validation passed"): ValidationResult {
+/**
+ * Tag validation result
+ */
+export interface TagValidationResult extends ValidationResult {
+  tag?: string;
+}
+
+/**
+ * Helper function to create a valid result
+ */
+export function createValidResult(message: string | null = null): ValidationResult {
   return {
     isValid: true,
     message,
@@ -25,8 +38,10 @@ export function createValidResult(message: string = "Validation passed"): Valida
   };
 }
 
-// Create an invalid result
-export function createInvalidResult(errorMessage: string): ValidationResult {
+/**
+ * Helper function to create an invalid result
+ */
+export function createInvalidResult(errorMessage: string | null = null): ValidationResult {
   return {
     isValid: false,
     message: null,
@@ -34,36 +49,21 @@ export function createInvalidResult(errorMessage: string): ValidationResult {
   };
 }
 
-// Create a content ID validation result
+/**
+ * Helper function to create a content ID validation result
+ */
 export function createContentIdValidationResult(
   isValid: boolean,
-  resultType: ContentIdValidationResult['resultType'],
+  resultType: string,
   message: string | null = null,
   errorMessage: string | null = null,
   contentExists: boolean = false
 ): ContentIdValidationResult {
   return {
     isValid,
+    resultType,
     message,
     errorMessage,
-    resultType,
     contentExists
   };
-}
-
-// Check if a result is valid
-export function isValidResult(result: ValidationResult): boolean {
-  return result.isValid === true;
-}
-
-// Combine multiple validation results
-export function combineValidationResults(...results: ValidationResult[]): ValidationResult {
-  // Find the first invalid result, if any
-  const invalidResult = results.find(result => !result.isValid);
-  if (invalidResult) {
-    return invalidResult;
-  }
-  
-  // All results are valid
-  return createValidResult();
 }

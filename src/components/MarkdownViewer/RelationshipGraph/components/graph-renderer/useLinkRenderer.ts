@@ -1,59 +1,62 @@
 
-/**
- * useLinkRenderer hook
- * 
- * This hook provides functions for rendering links in the graph
- */
-import { useCallback } from 'react';
+import { useRef, useCallback } from 'react';
+import * as d3 from 'd3';
 import { GraphLink } from '../../types';
+import { ensureString } from '@/utils/compatibility';
 
-interface UseLinkRendererProps {
-  linkColorMap?: Record<string, string>;
-  defaultLinkColor?: string;
-  linkWidthRange?: [number, number];
-  defaultLinkWidth?: number;
+interface LinkRendererOptions {
+  onLinkClick?: (source: string, target: string) => void;
 }
 
-export function useLinkRenderer({
-  linkColorMap = {},
-  defaultLinkColor = '#cccccc',
-  linkWidthRange = [1, 4],
-  defaultLinkWidth = 1.5
-}: UseLinkRendererProps = {}) {
+export function useLinkRenderer(
+  svgRef: React.RefObject<SVGSVGElement>,
+  gRef: React.RefObject<SVGGElement>,
+  options: LinkRendererOptions = {}
+) {
+  const linksRef = useRef<d3.Selection<SVGLineElement, GraphLink, SVGGElement, unknown>>();
   
-  // Get link color based on type
-  const getLinkColor = useCallback((link: GraphLink): string => {
-    // Use explicit color if defined
-    if (link.color) return link.color;
+  // Render links initially
+  const renderLinks = useCallback((links: GraphLink[]) => {
+    if (!gRef.current) return;
     
-    // Look up color by link type
-    if (link.type && linkColorMap[link.type]) {
-      return linkColorMap[link.type];
+    // Remove any existing links
+    d3.select(gRef.current).selectAll('.link').remove();
+    
+    // Create link elements
+    linksRef.current = d3.select(gRef.current)
+      .selectAll('.link')
+      .data(links)
+      .enter()
+      .append('line')
+      .attr('class', 'link')
+      .attr('stroke', d => d.color || '#999')
+      .attr('stroke-width', d => d.width || 1)
+      .attr('stroke-opacity', 0.6)
+      .attr('marker-end', 'url(#arrow)');
+    
+    // Add click events
+    if (options.onLinkClick) {
+      linksRef.current.on('click', (event, d) => {
+        options.onLinkClick?.(ensureString(d.source), ensureString(d.target));
+      });
     }
     
-    // Default color
-    return defaultLinkColor;
-  }, [linkColorMap, defaultLinkColor]);
+    return linksRef.current;
+  }, [gRef, options]);
   
-  // Get link width based on weight
-  const getLinkWidth = useCallback((link: GraphLink): number => {
-    if (link.width !== undefined) return link.width;
+  // Update link positions
+  const updateLinkPositions = useCallback(() => {
+    if (!linksRef.current) return;
     
-    const weight = link.weight || 1;
-    const [min, max] = linkWidthRange;
-    
-    // Normalize width between min and max
-    return Math.max(min, Math.min(max, defaultLinkWidth * weight));
-  }, [linkWidthRange, defaultLinkWidth]);
-  
-  // Get link label (if any)
-  const getLinkLabel = useCallback((link: GraphLink): string => {
-    return link.label || link.type || '';
-  }, []);
+    linksRef.current
+      .attr('x1', (d: any) => d.source.x || 0)
+      .attr('y1', (d: any) => d.source.y || 0)
+      .attr('x2', (d: any) => d.target.x || 0)
+      .attr('y2', (d: any) => d.target.y || 0);
+  }, [linksRef]);
   
   return {
-    getLinkColor,
-    getLinkWidth,
-    getLinkLabel
+    renderLinks,
+    updateLinkPositions
   };
 }

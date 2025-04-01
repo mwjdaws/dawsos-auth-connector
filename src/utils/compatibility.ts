@@ -1,83 +1,79 @@
 
 /**
- * Global compatibility utilities
- * 
- * This file provides compatibility functions to handle 
- * strict type checking issues and prevent runtime errors
+ * Compatibility utilities for handling nullable types and validations
  */
 
-// Safely handle optional callbacks
-export function safeCallback<T extends (...args: any[]) => any>(
-  callback: T | undefined | null,
-  ...args: Parameters<T>
-): ReturnType<T> | undefined {
-  if (typeof callback === 'function') {
-    return callback(...args);
-  }
-  return undefined;
+/**
+ * Ensures a value is a string
+ */
+export function ensureString(value: string | null | undefined): string {
+  return value ?? '';
 }
 
-// Safely get a property when it might be null or undefined
-export function safeProperty<T, K extends keyof T>(
-  obj: T | null | undefined,
-  prop: K,
-  defaultValue?: T[K]
-): T[K] | undefined {
-  if (obj == null) return defaultValue;
-  return obj[prop] ?? defaultValue;
+/**
+ * Ensures a value is a number
+ */
+export function ensureNumber(value: number | null | undefined): number {
+  return value ?? 0;
 }
 
-// Convert potentially undefined to null
-export function toNull<T>(val: T | undefined): T | null {
-  return val === undefined ? null : val;
+/**
+ * Ensures a value is a boolean
+ */
+export function ensureBoolean(value: boolean | null | undefined): boolean {
+  return value ?? false;
 }
 
-// Convert potentially null to undefined
-export function toUndefined<T>(val: T | null): T | undefined {
-  return val === null ? undefined : val;
+/**
+ * Validates that a zoom level is within acceptable range
+ */
+export function ensureValidZoom(value: number | null | undefined): number {
+  const zoom = value ?? 1;
+  return Math.max(0.1, Math.min(3, zoom));
 }
 
-// Create a compatible graph reference
-export function createCompatibleGraphRef(ref: any): any {
-  return ref;
-}
-
-// Safely filter array items to remove undefined entries
-export function safeFilter<T>(array: (T | undefined | null)[]): T[] {
-  return array.filter((item): item is T => item !== undefined && item !== null);
-}
-
-// Handle strict compatibility for error levels
-export function compatibleErrorLevel(level: string | undefined): 'info' | 'warning' | 'error' | undefined {
-  if (!level) return undefined;
+/**
+ * Ensures graph data is in the correct format
+ */
+export function ensureValidGraphData(data: any): { nodes: any[]; links: any[] } {
+  if (!data) return { nodes: [], links: [] };
   
-  switch (level) {
-    case 'debug':
-    case 'info':
-      return 'info';
-    case 'warning':
-      return 'warning';
-    case 'error':
-    case 'critical':
-      return 'error';
-    default:
-      return undefined;
-  }
+  return {
+    nodes: Array.isArray(data.nodes) ? data.nodes : [],
+    links: Array.isArray(data.links) ? data.links : []
+  };
 }
 
-// Handle backwards compatibility for technical error option
-export function compatibleErrorOptions(options: any = {}): any {
-  const result = { ...options };
+/**
+ * Sanitizes graph data to ensure required properties
+ */
+export function sanitizeGraphData(data: any): { nodes: any[]; links: any[] } {
+  const validData = ensureValidGraphData(data);
   
-  // Map technical flag to appropriate level if needed
-  if (options?.technical === true && !options?.level) {
-    result.level = 'error';
-  }
-  
-  // Remove technical property as it's not in the current type
-  if ('technical' in result) {
-    delete result.technical;
-  }
-  
-  return result;
+  return {
+    nodes: validData.nodes.map(node => ({
+      id: ensureString(node.id),
+      name: ensureString(node.name),
+      title: ensureString(node.title),
+      ...node
+    })),
+    links: validData.links.map(link => ({
+      source: ensureString(link.source),
+      target: ensureString(link.target),
+      ...link
+    }))
+  };
+}
+
+/**
+ * Creates safe graph props with defaults for null values
+ */
+export function createSafeGraphProps(props: any) {
+  return {
+    width: ensureNumber(props.width),
+    height: ensureNumber(props.height),
+    zoomLevel: ensureValidZoom(props.zoomLevel),
+    highlightedNodeId: ensureString(props.highlightedNodeId),
+    graphData: ensureValidGraphData(props.graphData)
+  };
 }

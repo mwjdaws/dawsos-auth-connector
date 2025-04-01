@@ -1,83 +1,86 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import React, { useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { RelationshipGraph } from '../RelationshipGraph';
+import { GraphRenderer } from './graph-renderer/GraphRenderer';
+import { GraphData, GraphRendererRef } from '../types';
 import { ensureString } from '@/utils/compatibility';
+import { RelationshipGraphControls } from './RelationshipGraphControls';
 
-/**
- * Props for the RelationshipGraphPanel component
- */
-export interface RelationshipGraphPanelProps {
+interface RelationshipGraphPanelProps {
+  graphData: GraphData;
+  title?: string;
   contentId?: string;
-  sourceId?: string;
-  hasAttemptedRetry?: boolean;
+  className?: string;
+  height?: number;
+  width?: number;
+  onNodeClick?: (nodeId: string) => void;
 }
 
-/**
- * RelationshipGraphPanel
- * 
- * A panel that displays a relationship graph for a specific content item.
- * This component wraps the RelationshipGraph in a Card with proper sizing
- * and error handling.
- */
-export function RelationshipGraphPanel({ 
-  contentId, 
-  sourceId,
-  hasAttemptedRetry = false
+export function RelationshipGraphPanel({
+  graphData,
+  title = 'Knowledge Graph',
+  contentId,
+  className = '',
+  height = 600,
+  width,
+  onNodeClick
 }: RelationshipGraphPanelProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  const graphRef = useRef<GraphRendererRef>(null);
+  const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
   
-  // Determine the starting node ID - use sourceId if available, otherwise contentId
-  const startingNodeId = ensureString(sourceId || contentId);
+  const handleNodeSelect = (nodeId: string) => {
+    setHighlightedNodeId(nodeId);
+    if (onNodeClick) {
+      onNodeClick(nodeId);
+    }
+  };
   
-  // Update dimensions based on container size
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setDimensions({
-          width: Math.max(rect.width - 2, 300), // Subtract border and ensure minimum width
-          height: Math.max(rect.height, 400) // Ensure minimum height
-        });
-      }
-    };
-    
-    // Initial update
-    updateDimensions();
-    
-    // Update on resize
-    window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
-  }, []);
-
-  if (!contentId && !sourceId) {
-    return (
-      <Card className="p-4 text-center text-muted-foreground">
-        No content ID provided for relationship graph.
-      </Card>
-    );
-  }
+  const handleZoomIn = () => {
+    if (graphRef.current) {
+      graphRef.current.zoomIn();
+    }
+  };
+  
+  const handleZoomOut = () => {
+    if (graphRef.current) {
+      graphRef.current.zoomOut();
+    }
+  };
+  
+  const handleResetZoom = () => {
+    if (graphRef.current) {
+      graphRef.current.resetZoom();
+    }
+  };
+  
+  const handleLinkClick = (source: string, target: string) => {
+    console.log(`Link clicked: ${source} -> ${target}`);
+  };
   
   return (
-    <div ref={containerRef} className="w-full h-[600px]">
-      <ErrorBoundary fallback={
-        <Card className="p-4 text-center text-destructive">
-          An error occurred while loading the relationship graph.
-        </Card>
-      }>
-        <Card className="overflow-hidden">
-          <div className="w-full h-full">
-            <RelationshipGraph
-              startingNodeId={startingNodeId}
-              width={dimensions.width} 
-              height={dimensions.height}
-              hasAttemptedRetry={hasAttemptedRetry}
-            />
-          </div>
-        </Card>
-      </ErrorBoundary>
-    </div>
+    <Card className={`flex flex-col overflow-hidden ${className}`}>
+      <div className="p-4 flex justify-between items-center border-b">
+        <h3 className="text-lg font-semibold">{title}</h3>
+        <RelationshipGraphControls
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onResetZoom={handleResetZoom}
+        />
+      </div>
+      
+      <div className="flex-1 relative" style={{ height: `${height}px` }}>
+        <GraphRenderer
+          ref={graphRef}
+          graphData={graphData}
+          width={width || '100%'}
+          height={height}
+          highlightedNodeId={highlightedNodeId}
+          zoom={zoomLevel}
+          onNodeClick={handleNodeSelect}
+          onLinkClick={handleLinkClick}
+        />
+      </div>
+    </Card>
   );
 }
