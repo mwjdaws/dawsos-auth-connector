@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { toast } from '@/hooks/use-toast';
-import { ErrorHandlingOptions, ErrorLevel } from './types';
+import { ErrorHandlingOptions, ErrorLevel, ErrorHandlingCompatOptions } from './types';
 
 /**
  * Default error handling options
@@ -102,4 +102,40 @@ export function createComponentErrorHandler(componentName: string) {
     level: ErrorLevel.ERROR,
     context: { source: 'component', component: componentName }
   });
+}
+
+/**
+ * Higher-order function to wrap operations with error handling
+ */
+export function withErrorHandling<T extends (...args: any[]) => any>(
+  fn: T,
+  errorHandler: (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => void,
+  userMessage?: string,
+  options?: Partial<ErrorHandlingOptions>
+): (...args: Parameters<T>) => ReturnType<T> | undefined {
+  return (...args: Parameters<T>): ReturnType<T> | undefined => {
+    try {
+      return fn(...args);
+    } catch (error) {
+      errorHandler(error, userMessage, options);
+      return undefined;
+    }
+  };
+}
+
+/**
+ * Function to handle API and async operations safely
+ */
+export async function tryAction<T>(
+  action: () => Promise<T>,
+  errorHandler: (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => void,
+  userMessage?: string,
+  options?: Partial<ErrorHandlingOptions>
+): Promise<T | undefined> {
+  try {
+    return await action();
+  } catch (error) {
+    errorHandler(error, userMessage, options);
+    return undefined;
+  }
 }

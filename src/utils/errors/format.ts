@@ -1,66 +1,75 @@
 
-/**
- * Error formatting utilities
- * 
- * Provides utilities for formatting errors for display to users
- * based on error type and context.
- */
 import { ErrorHandlingOptions } from './types';
 
 /**
- * Format an error for display to the user
+ * Format an error message for display to users
  * 
- * @param error The error to format
- * @param options Options that influence formatting
- * @returns A user-friendly error message
+ * @param error The error object
+ * @param userMessage Optional user-friendly message
+ * @param options Error handling options
+ * @returns A formatted string for display
  */
-export function formatErrorForDisplay(error: Error, options?: Partial<ErrorHandlingOptions>): string {
-  // For technical users, we can provide more details
+export function formatErrorForDisplay(
+  error: Error,
+  userMessage?: string,
+  options?: Partial<ErrorHandlingOptions>
+): string {
+  // If a user message is provided, use it
+  if (userMessage) {
+    return userMessage;
+  }
+
+  // If technical details are enabled and available, use them
   if (options?.technical) {
-    return `${error.name}: ${error.message}`;
+    return options.technical;
   }
-  
-  // For regular users, try to provide a friendly message
-  if (error.message.includes('permission denied') || error.message.includes('unauthorized')) {
-    return 'You don\'t have permission to perform this action. Please try logging in again.';
-  }
-  
-  if (error.message.includes('not found') || error.message.includes('does not exist')) {
-    return 'The requested resource could not be found. It may have been moved or deleted.';
-  }
-  
-  if (error.message.includes('timeout') || error.message.includes('timed out')) {
-    return 'The operation took too long to complete. Please try again.';
-  }
-  
-  if (error.message.includes('network') || error.message.includes('offline')) {
-    return 'There was a problem with your internet connection. Please check your connection and try again.';
-  }
-  
-  if (error.message.includes('validation') || error.message.includes('invalid')) {
-    return 'Some of the information provided is not valid. Please check your input and try again.';
-  }
-  
-  // Default friendly message
-  return error.message || 'An unexpected error occurred. Please try again.';
+
+  // Use the error's message
+  return error.message;
 }
 
 /**
- * Format error for reporting to analytics or logging systems
+ * Format a stack trace for logging purposes
  * 
- * @param error The error to format
- * @param options Options that influence formatting
- * @returns A structured error report
+ * @param error The error object
+ * @returns A formatted stack trace
  */
-export function formatErrorForReporting(error: Error, options?: Partial<ErrorHandlingOptions>) {
-  return {
-    name: error.name,
-    message: error.message,
-    stack: error.stack,
-    timestamp: new Date().toISOString(),
-    level: options?.level || 'error',
-    source: options?.source || 'unknown',
-    context: options?.context || {},
-    fingerprint: options?.fingerprint || ''
-  };
+export function formatStackTrace(error: Error): string {
+  if (!error.stack) {
+    return 'No stack trace available';
+  }
+
+  // Clean up the stack trace for better readability
+  return error.stack
+    .split('\n')
+    .map(line => line.trim())
+    .join('\n');
+}
+
+/**
+ * Format error for debugging purposes
+ * 
+ * @param error The error object
+ * @param options Error handling options
+ * @returns A debug-friendly string representation
+ */
+export function formatErrorForDebug(
+  error: Error,
+  options?: Partial<ErrorHandlingOptions>
+): string {
+  const parts = [
+    `Error: ${error.message}`,
+    `Source: ${options?.source || 'unknown'}`,
+    `Type: ${error.name}`,
+  ];
+
+  if (error.stack) {
+    parts.push(`Stack: ${formatStackTrace(error)}`);
+  }
+
+  if (options?.context) {
+    parts.push(`Context: ${JSON.stringify(options.context)}`);
+  }
+
+  return parts.join('\n');
 }

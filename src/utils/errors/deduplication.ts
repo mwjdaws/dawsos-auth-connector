@@ -1,84 +1,68 @@
 
-/**
- * Error deduplication utilities
- */
+import { ErrorHandlingOptions } from './types';
 
-// In-memory store for deduplication
-const recentErrors = new Map<string, { timestamp: number; count: number }>();
-
-// Default timeout for error deduplication (10 seconds)
-const DEDUPLICATION_TIMEOUT = 10 * 1000;
+// Error storage for deduplication
+const reportedErrors = new Set<string>();
 
 /**
- * Check if an error with the given fingerprint has been seen recently
- * If it has, increment the count but return true (it's a duplicate)
- * If not, store it and return false (it's not a duplicate)
+ * Generate a fingerprint for an error based on its details
  * 
- * @param errorFingerprint A unique identifier for the error
- * @returns True if this is a duplicate error, false otherwise
+ * @param error The error to generate a fingerprint for
+ * @param options Additional options
+ * @returns A string fingerprint uniquely identifying the error
  */
-export function deduplicateError(errorFingerprint: string): boolean {
-  const now = Date.now();
-  const existingError = recentErrors.get(errorFingerprint);
+function generateFingerprint(error: Error, options?: Partial<ErrorHandlingOptions>): string {
+  // Start with the error message and name
+  let parts = [error.name, error.message];
 
-  if (existingError) {
-    // Check if the error is still within the deduplication window
-    if (now - existingError.timestamp < DEDUPLICATION_TIMEOUT) {
-      // Increment error count but don't show notification
-      recentErrors.set(errorFingerprint, {
-        timestamp: now,
-        count: existingError.count + 1
-      });
-      return true; // This is a duplicate
+  // Add the source if available
+  if (options?.source) {
+    parts.push(String(options.source));
+  }
+
+  // Add the first line of stack trace if available (excluding the message part)
+  if (error.stack) {
+    const stackLines = error.stack.split('\n');
+    if (stackLines.length > 1) {
+      parts.push(stackLines[1].trim());
     }
   }
 
-  // Store the new error for deduplication
-  recentErrors.set(errorFingerprint, {
-    timestamp: now,
-    count: 1
-  });
-
-  // Clean up old errors (older than deduplication timeout)
-  for (const [hash, entry] of recentErrors.entries()) {
-    if (now - entry.timestamp > DEDUPLICATION_TIMEOUT) {
-      recentErrors.delete(hash);
-    }
-  }
-
-  return false; // This is not a duplicate
+  // Join and hash the parts to create a fingerprint
+  return parts.join('|');
 }
 
 /**
- * Get the count of a specific error fingerprint
+ * Check if an error has been reported before
  * 
- * @param errorFingerprint The error fingerprint
- * @returns The number of times this error has been seen, or 0 if it hasn't
+ * @param error The error to check
+ * @param options Additional options that may affect fingerprinting
+ * @returns True if the error has been reported, false otherwise
  */
-export function getErrorCount(errorFingerprint: string): number {
-  const error = recentErrors.get(errorFingerprint);
-  return error ? error.count : 0;
+export function hasErrorBeenReported(error: Error, options?: Partial<ErrorHandlingOptions>): boolean {
+  // Use the provided fingerprint or generate one
+  const fingerprint = options?.fingerprint || generateFingerprint(error, options);
+  return reportedErrors.has(fingerprint);
 }
 
 /**
- * Clear all stored errors from the deduplication cache
- * Useful when navigating between pages or routes
- */
-export function clearErrorCache(): void {
-  recentErrors.clear();
-}
-
-/**
- * Generate a fingerprint for an error based on its message and optional context
+ * Mark an error as reported to prevent duplicate reports
  * 
- * @param error The error to fingerprint
- * @param context Additional context to include in the fingerprint
- * @returns A string fingerprint for deduplication
+ * @param error The error to deduplicate
+ * @param options Additional options that may affect fingerprinting
+ * @returns The error object (for chaining)
  */
-export function generateErrorFingerprint(error: unknown, context?: Record<string, any>): string {
-  const message = error instanceof Error ? error.message : String(error);
-  const errorName = error instanceof Error ? error.name : 'UnknownError';
-  const contextString = context ? JSON.stringify(context) : '';
-  
-  return `${errorName}:${message}:${contextString}`;
+export function deduplicateError(error: Error, options?: Partial<ErrorHandlingOptions>): Error {
+  // Use the provided fingerprint or generate one
+  const fingerprint = options?.fingerprint || generateFingerprint(error, options);
+  reportedErrors.add(fingerprint);
+  return error;
+}
+
+/**
+ * Clear the set of reported errors
+ * Useful for testing or when changing contexts
+ */
+export function clearReportedErrors(): void {
+  reportedErrors.clear();
 }

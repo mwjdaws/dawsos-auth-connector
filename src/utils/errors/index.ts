@@ -6,8 +6,26 @@ export { ErrorLevel, ErrorSource, type ErrorHandlingOptions, type EnhancedError 
 // Re-export helper functions
 export { generateErrorId } from './generateId';
 export { categorizeError } from './categorize';
-export { formatErrorForDisplay, formatStackTrace } from './format';
-export { deduplicateError, hasErrorBeenReported } from './deduplication';
+export { formatErrorForDisplay } from './format';
+export { deduplicateError } from './deduplication';
 
-// For backward compatibility
-export { isNetworkError, isSuceededError, isUnauthorizedError } from './helper';
+// Re-export the wrapper functions
+export { 
+  createComponentErrorHandler as createComponentHandler,
+  createHookErrorHandler, 
+  createServiceErrorHandler,
+  withErrorHandling,
+  tryAction
+} from './wrappers';
+
+// Export error types
+export { ValidationError, ApiError } from './types';
+
+// Legacy helper functions for backward compatibility
+export { 
+  isNetworkError, 
+  isUnauthorizedError, 
+  isSuceededError,
+  stringToErrorLevel,
+  convertLegacyOptions
+} from './helper';

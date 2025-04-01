@@ -91,3 +91,39 @@ export function createServiceErrorHandler(serviceName: string) {
     handleError(error, userMessage, errorOptions);
   };
 }
+
+/**
+ * Higher-order function to wrap operations with error handling
+ */
+export function withErrorHandling<T extends (...args: any[]) => any>(
+  fn: T,
+  errorHandler: (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => void,
+  userMessage?: string,
+  options?: Partial<ErrorHandlingOptions>
+): (...args: Parameters<T>) => ReturnType<T> | undefined {
+  return (...args: Parameters<T>): ReturnType<T> | undefined => {
+    try {
+      return fn(...args);
+    } catch (error) {
+      errorHandler(error, userMessage, options);
+      return undefined;
+    }
+  };
+}
+
+/**
+ * Function to handle API and async operations safely
+ */
+export async function tryAction<T>(
+  action: () => Promise<T>,
+  errorHandler: (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => void,
+  userMessage?: string,
+  options?: Partial<ErrorHandlingOptions>
+): Promise<T | undefined> {
+  try {
+    return await action();
+  } catch (error) {
+    errorHandler(error, userMessage, options);
+    return undefined;
+  }
+}

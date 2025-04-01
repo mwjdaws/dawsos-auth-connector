@@ -1,78 +1,63 @@
 
-import { ErrorHandlingCompatOptions, ErrorLevel } from './types';
+import { ErrorLevel, ErrorHandlingOptions } from "./types";
 
 /**
- * Process error handling options with fallbacks
+ * Determine if an error is related to network connectivity
  */
-export function processErrorOptions(options?: ErrorHandlingCompatOptions) {
-  const defaults = {
-    errorMessage: 'An error occurred',
-    level: 'error' as const,
-    context: {},
-    silent: false,
-    technical: false,
-    actionLabel: undefined,
-    onRetry: undefined,
-    preventDuplicate: false,
-    deduplicate: false,
-    duration: 5000
-  };
-
-  if (!options) {
-    return defaults;
-  }
-
-  return {
-    ...defaults,
-    ...options
-  };
+export function isNetworkError(error: Error): boolean {
+  const message = error.message.toLowerCase();
+  return (
+    message.includes('network') ||
+    message.includes('offline') ||
+    message.includes('connection') ||
+    message.includes('unreachable')
+  );
 }
 
 /**
- * Map custom error levels to standard ones
+ * Determine if an error is an unauthorized error
  */
-export function mapErrorLevel(level?: string): ErrorLevel {
-  switch(level) {
-    case 'debug': return 'debug';
-    case 'info': return 'info';
-    case 'warning': return 'warning';
-    case 'error': return 'error';
-    default: return 'error';
+export function isUnauthorizedError(error: Error & { status?: number }): boolean {
+  return error.status === 401 || 
+    error.message.toLowerCase().includes('unauthorized') ||
+    error.message.toLowerCase().includes('not authenticated');
+}
+
+/**
+ * Determine if an operation succeeded with errors
+ */
+export function isSuceededError(error: Error & { succeeded?: boolean }): boolean {
+  return error.succeeded === true;
+}
+
+/**
+ * Convert a string level to the corresponding ErrorLevel enum
+ */
+export function stringToErrorLevel(level?: string): ErrorLevel {
+  if (!level) return ErrorLevel.ERROR;
+  
+  switch (level.toLowerCase()) {
+    case 'debug': return ErrorLevel.DEBUG;
+    case 'info': return ErrorLevel.INFO;
+    case 'warning': return ErrorLevel.WARNING;
+    case 'error': return ErrorLevel.ERROR;
+    default: return ErrorLevel.ERROR;
   }
 }
 
 /**
- * Format an error message with context
+ * Convert legacy error handling options to the current format
  */
-export function formatErrorMessage(
-  error: unknown, 
-  defaultMessage: string = 'An error occurred'
-): string {
-  if (!error) {
-    return defaultMessage;
+export function convertLegacyOptions(options?: Record<string, any>): Partial<ErrorHandlingOptions> {
+  if (!options) return {};
+  
+  const result: Partial<ErrorHandlingOptions> = { ...options };
+  
+  // Convert string level to enum
+  if (typeof options.level === 'string') {
+    result.level = stringToErrorLevel(options.level);
   }
-
-  if (typeof error === 'string') {
-    return error;
-  }
-
-  if (error instanceof Error) {
-    return error.message || defaultMessage;
-  }
-
-  if (typeof error === 'object') {
-    const errorObj = error as any;
-    
-    if (errorObj.message && typeof errorObj.message === 'string') {
-      return errorObj.message;
-    }
-    
-    try {
-      return JSON.stringify(error);
-    } catch {
-      // Fall through to default
-    }
-  }
-
-  return defaultMessage;
+  
+  // Convert other properties as needed
+  return result;
 }

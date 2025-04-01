@@ -10,6 +10,25 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
+// Define the interface for TemplateListCardProps
+interface TemplateListCardProps {
+  templates: KnowledgeTemplate[];
+  loading: boolean;
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    count: number;
+  };
+  searchQuery: string;
+  setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
+  handlePageChange: (page: number) => void;
+  handleTemplateSelect: (template: KnowledgeTemplate) => void;
+  filterType: 'all' | 'global' | 'custom';
+  onFilterChange: (type: 'all' | 'global' | 'custom') => void;
+  selectedTemplateId: string | null;
+}
+
 export function TemplatesPanel() {
   const [templates, setTemplates] = useState<KnowledgeTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -146,7 +165,7 @@ export function TemplatesPanel() {
         handleTemplateSelect={handleTemplateSelect}
         filterType={filterType}
         onFilterChange={handleFilterChange}
-        selectedTemplateId={selectedTemplate?.id}
+        selectedTemplateId={selectedTemplate?.id || null}
       />
     </div>
   );
