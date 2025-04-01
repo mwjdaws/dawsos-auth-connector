@@ -1,9 +1,9 @@
 
-import React from 'react';
 import { renderHook } from '@testing-library/react-hooks';
 import { MetadataProvider, useMetadataContext } from '../useMetadataContext';
-import { createValidResult } from '@/utils/validation/types';
+import { ValidationResult } from '@/utils/validation/types';
 import { Tag } from '@/types/tag';
+import React from 'react';
 
 // Mock data
 const mockContentId = 'test-content-id';
@@ -14,20 +14,33 @@ const mockTags: Tag[] = [{
   display_order: 0,
   type_id: null 
 }];
-const mockValidationResult = createValidResult('Valid content');
+const mockValidationResult: ValidationResult = { 
+  isValid: true, 
+  errorMessage: null, 
+  message: 'Valid content' 
+};
 
 describe('useMetadataContext', () => {
-  test('throws error when used outside of MetadataProvider', () => {
-    // Suppress console.error during this test to avoid noisy output
-    const originalError = console.error;
+  // Original console methods
+  const originalError = console.error;
+  const originalWarn = console.warn;
+  
+  beforeEach(() => {
+    // Mock console methods to suppress expected errors during testing
     console.error = jest.fn();
-    
+    console.warn = jest.fn();
+  });
+  
+  afterEach(() => {
+    // Restore original console methods
+    console.error = originalError;
+    console.warn = originalWarn;
+  });
+  
+  test('throws error when used outside of MetadataProvider', () => {
     expect(() => {
       renderHook(() => useMetadataContext());
     }).toThrow('useMetadataContext must be used within a MetadataProvider');
-    
-    // Restore console.error
-    console.error = originalError;
   });
   
   test('returns context values when used within MetadataProvider', () => {
@@ -43,7 +56,9 @@ describe('useMetadataContext', () => {
     
     // Create wrapper with provider
     const wrapper = ({ children }: { children: React.ReactNode }) => (
-      React.createElement(MetadataProvider, { value: contextValue }, children)
+      <MetadataProvider value={contextValue}>
+        {children}
+      </MetadataProvider>
     );
     
     // Render hook with provider wrapper
@@ -59,13 +74,10 @@ describe('useMetadataContext', () => {
   });
   
   test('warns when contentId does not match context contentId', () => {
-    // Mock console.warn
-    const originalWarn = console.warn;
-    console.warn = jest.fn();
-    
-    // Prepare context values
+    // Prepare context values with tags array
     const contextValue = {
       contentId: mockContentId,
+      tags: mockTags,
       validationResult: mockValidationResult,
       isEditable: true,
       isLoading: false,
@@ -74,7 +86,9 @@ describe('useMetadataContext', () => {
     
     // Create wrapper with provider
     const wrapper = ({ children }: { children: React.ReactNode }) => (
-      React.createElement(MetadataProvider, { value: contextValue }, children)
+      <MetadataProvider value={contextValue}>
+        {children}
+      </MetadataProvider>
     );
     
     // Render hook with different contentId
@@ -82,8 +96,5 @@ describe('useMetadataContext', () => {
     
     // Assert warning was logged
     expect(console.warn).toHaveBeenCalled();
-    
-    // Restore console.warn
-    console.warn = originalWarn;
   });
 });

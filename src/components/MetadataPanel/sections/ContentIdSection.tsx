@@ -1,39 +1,53 @@
 
 import React from 'react';
-import { Copy } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Copy } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface ContentIdSectionProps {
   contentId: string;
 }
 
-/**
- * Displays the content ID with a copy button
- */
-export const ContentIdSection: React.FC<ContentIdSectionProps> = ({
-  contentId
-}) => {
-  const handleCopyClick = () => {
-    navigator.clipboard.writeText(contentId);
+export function ContentIdSection({ contentId }: ContentIdSectionProps) {
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(contentId)
+      .then(() => {
+        toast({
+          title: 'Copied to clipboard',
+          description: 'Content ID copied to clipboard',
+          variant: 'default',
+        });
+      })
+      .catch((error) => {
+        console.error('Failed to copy content ID:', error);
+        toast({
+          title: 'Copy failed',
+          description: 'Failed to copy content ID to clipboard',
+          variant: 'destructive',
+        });
+      });
   };
-  
+
   return (
-    <div className="mb-4">
-      <h3 className="text-sm font-medium mb-1">Content ID</h3>
-      <div className="flex items-center gap-2">
-        <code className="bg-secondary p-1 rounded text-xs font-mono flex-1 overflow-x-auto">
-          {contentId}
-        </code>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-6 w-6" 
-          onClick={handleCopyClick}
-        >
-          <Copy className="h-3 w-3" />
-          <span className="sr-only">Copy ID</span>
-        </Button>
-      </div>
-    </div>
+    <Card className="mb-4">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-semibold flex items-center justify-between">
+          Content ID
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={copyToClipboard}
+            className="h-6 w-6 p-0"
+            aria-label="Copy content ID"
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <code className="bg-muted p-1 rounded text-xs break-all">{contentId}</code>
+      </CardContent>
+    </Card>
   );
-};
+}

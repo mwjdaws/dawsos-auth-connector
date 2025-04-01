@@ -15,13 +15,17 @@ describe('MetadataPanel Props Behavior', () => {
     const renderExternalSourceSection = ({
       externalSourceUrl,
       editable,
-      contentId
-    }: Omit<ExternalSourceSectionTestProps, 'url'>) => {
+      contentId,
+      lastCheckedAt,
+      needsExternalReview
+    }: ExternalSourceSectionTestProps) => {
       return render(
         <ExternalSourceSection
           externalSourceUrl={externalSourceUrl}
           editable={editable}
           contentId={contentId}
+          lastCheckedAt={lastCheckedAt}
+          needsExternalReview={needsExternalReview}
         />
       );
     };

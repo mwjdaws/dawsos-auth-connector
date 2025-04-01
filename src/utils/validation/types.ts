@@ -7,14 +7,15 @@
 export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
-  contentExists?: boolean; // Added to match usage in the codebase
+  message?: string | null;
+  contentExists?: boolean;
 }
 
 // Content validation result
 export interface ContentValidationResult extends ValidationResult {
   contentId: string;
   contentExists: boolean;
-  contentType?: string;
+  contentType?: string | undefined;
 }
 
 // Document validation options
@@ -23,6 +24,11 @@ export interface DocumentValidationOptions {
   maxLength?: number;
   contentRequired?: boolean;
   allowEmpty?: boolean;
+  requireTitle?: boolean;
+  minTitleLength?: number;
+  maxTitleLength?: number;
+  requireContent?: boolean;
+  minContentLength?: number;
 }
 
 // Tag validation options
@@ -31,6 +37,13 @@ export interface TagValidationOptions {
   maxLength?: number;
   allowEmpty?: boolean;
   allowDuplicates?: boolean;
+}
+
+// Tag validation result
+export interface TagValidationResult extends ValidationResult {
+  tagExists?: boolean;
+  isDuplicate?: boolean;
+  isReserved?: boolean;
 }
 
 // Tag position type for reordering
@@ -45,7 +58,8 @@ export enum ContentIdValidationResultType {
   INVALID_FORMAT = 'INVALID_FORMAT',
   EMPTY = 'EMPTY',
   TOO_LONG = 'TOO_LONG',
-  TEMPORARY = 'TEMPORARY'
+  TEMPORARY = 'TEMPORARY',
+  UUID = 'UUID'
 }
 
 // Define ContentId validation result interface
@@ -54,6 +68,7 @@ export interface ContentIdValidationResult {
   contentExists: boolean;
   resultType: ContentIdValidationResultType;
   errorMessage: string | null;
+  message?: string | null;
   isTemporary?: boolean;
   isUuid?: boolean;
 }

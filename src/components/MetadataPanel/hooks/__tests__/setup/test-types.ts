@@ -28,7 +28,7 @@ export const basicTerm: OntologyTerm = {
   id: "test-term-123",
   term: "Example Term",
   description: "This is a description of the example term",
-  review_required: false
+  domain: "Example Domain"
 };
 
 // Mock validation result

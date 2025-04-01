@@ -2,13 +2,13 @@
 import React from 'react';
 import { MetadataProvider, MetadataContextProps } from '../../useMetadataContext';
 import { Tag } from '@/types/tag';
-import { createValidResult } from '@/utils/validation/types';
+import { ValidationResult } from '@/utils/validation/types';
 
 // Default mock values for the MetadataContext
 export const DEFAULT_MOCK_METADATA_CONTEXT: MetadataContextProps = {
   contentId: 'test-content-id',
   tags: [],
-  validationResult: createValidResult('Test validation result'),
+  validationResult: { isValid: true, errorMessage: null, message: 'Test validation result' },
   isEditable: true,
   isLoading: false,
   error: null,

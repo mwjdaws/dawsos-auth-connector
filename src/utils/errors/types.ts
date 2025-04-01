@@ -25,23 +25,45 @@ export interface ErrorRecord {
   count?: number;
 }
 
+// Custom error class for validation errors
+export class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+// Custom error class for API errors
+export class ApiError extends Error {
+  statusCode?: number;
+  
+  constructor(message: string, statusCode?: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.statusCode = statusCode;
+  }
+}
+
 // Error options for customizing error handling
 export interface ErrorOptions {
-  level: ErrorLevel;
-  source: ErrorSource;
-  severity: ErrorSeverity;
-  technical: boolean;
-  context: Record<string, any>;
-  fingerprint: string;
-  deduplicate: boolean;
+  level?: ErrorLevel;
+  source?: ErrorSource;
+  severity?: ErrorSeverity;
+  technical?: boolean;
+  context?: Record<string, any>;
+  fingerprint?: string;
   deduplicationId?: string;
-  silent: boolean;
-  notifyUser: boolean;
+  deduplicate?: boolean;
+  silent?: boolean;
+  notifyUser?: boolean;
   category?: string;
 }
 
 // Simplified error options for better developer experience
 export type ErrorHandlingOptions = Partial<ErrorOptions>;
+
+// Error handling compatibility options (for backward compatibility)
+export type ErrorHandlingCompatOptions = ErrorHandlingOptions;
 
 // Toast variant mapper based on error level
 export const errorLevelToToastVariant = {

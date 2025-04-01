@@ -1,78 +1,64 @@
 
 import React from 'react';
-import { AlertTriangle, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
-import { CardHeader } from '@/components/ui/card';
+import { ChevronDown, ChevronUp, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface HeaderSectionProps {
-  needsExternalReview: boolean;
+  title: string;
+  lastUpdated?: string;
   handleRefresh: () => void;
-  isLoading: boolean;
-  isCollapsible: boolean;
-  isCollapsed: boolean;
   setIsCollapsed: (value: boolean) => void;
+  isCollapsed: boolean;
+  needsExternalReview?: boolean;
 }
 
-/**
- * Header section for the metadata panel with refresh and collapse controls
- */
-export const HeaderSection: React.FC<HeaderSectionProps> = ({
-  needsExternalReview,
+export function HeaderSection({
+  title,
+  lastUpdated,
   handleRefresh,
-  isLoading,
-  isCollapsible,
+  setIsCollapsed,
   isCollapsed,
-  setIsCollapsed
-}) => {
+  needsExternalReview = false
+}: HeaderSectionProps) {
   return (
-    <CardHeader className="flex flex-row items-center justify-between py-3 px-4 border-b">
-      <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold">Metadata</h2>
+    <div className="flex justify-between items-center mb-4">
+      <div className="flex items-center space-x-2">
+        <h2 className="text-xl font-semibold">{title}</h2>
         {needsExternalReview && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <AlertTriangle className="h-4 w-4 text-yellow-500" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="text-xs">External source needs review</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Badge variant="warning" className="flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            <span>Review Required</span>
+          </Badge>
         )}
       </div>
-      
-      <div className="flex items-center gap-1">
+
+      <div className="flex space-x-2">
         <Button
           variant="ghost"
-          size="icon"
-          className="h-8 w-8"
+          size="sm"
           onClick={handleRefresh}
-          disabled={isLoading}
+          aria-label="Refresh metadata"
+          className="h-8 w-8 p-0"
         >
-          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          <span className="sr-only">Refresh metadata</span>
+          <RefreshCw className="h-4 w-4" />
         </Button>
         
-        {isCollapsible && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-          >
-            {isCollapsed ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronUp className="h-4 w-4" />
-            )}
-            <span className="sr-only">
-              {isCollapsed ? 'Expand metadata' : 'Collapse metadata'}
-            </span>
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          aria-label="Toggle panel"
+          className="h-8 w-8 p-0"
+        >
+          {isCollapsed ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronUp className="h-4 w-4" />
+          )}
+        </Button>
       </div>
-    </CardHeader>
+    </div>
   );
-};
+}

@@ -5,11 +5,9 @@
 import {
   ValidationResult,
   ContentValidationResult,
-  TagValidationResult,
-  createValidResult,
-  createInvalidResult,
-  createContentValidationResult
+  TagValidationResult
 } from '../types';
+import { createValidResult, createInvalidResult, createContentValidationResult } from '../utils';
 
 /**
  * Create a mock validation result for testing
@@ -27,12 +25,13 @@ export function createMockContentValidationResult(
   errorMessage: string | null = null,
   contentId: string = 'test-content-id'
 ): ContentValidationResult {
-  return createContentValidationResult(
+  return {
+    contentId,
     isValid,
     contentExists,
-    isValid ? 'Test content is valid' : (errorMessage || 'Test content error'),
-    contentId
-  );
+    errorMessage: isValid ? null : (errorMessage || 'Test content error'),
+    message: isValid ? 'Test content is valid' : null
+  };
 }
 
 /**

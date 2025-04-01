@@ -59,7 +59,7 @@ describe('MetadataPanel Basic Rendering', () => {
       contentId,
       lastCheckedAt,
       needsExternalReview
-    }: Omit<ExternalSourceSectionTestProps, 'url'>) => {
+    }: ExternalSourceSectionTestProps) => {
       return render(
         <ExternalSourceSection
           externalSourceUrl={externalSourceUrl}

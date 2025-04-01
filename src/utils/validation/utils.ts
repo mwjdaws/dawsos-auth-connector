@@ -1,3 +1,4 @@
+
 /**
  * Validation utility functions
  */
@@ -9,7 +10,8 @@ import { ValidationResult, ContentValidationResult } from './types';
 export function createValidResult(message?: string): ValidationResult {
   return {
     isValid: true,
-    errorMessage: message || null
+    errorMessage: null,
+    message: message || null
   };
 }
 
@@ -19,7 +21,8 @@ export function createValidResult(message?: string): ValidationResult {
 export function createInvalidResult(message: string): ValidationResult {
   return {
     isValid: false,
-    errorMessage: message
+    errorMessage: message,
+    message: null
   };
 }
 

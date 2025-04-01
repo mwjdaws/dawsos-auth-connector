@@ -8,9 +8,9 @@ import { Tag } from '@/types/tag';
 export interface HeaderSectionTestProps {
   title: string;
   lastUpdated?: string;
-  handleRefresh?: () => void;
-  setIsCollapsed?: (value: boolean) => void;
-  isCollapsed?: boolean;
+  handleRefresh: () => void;
+  setIsCollapsed: (value: boolean) => void;
+  isCollapsed: boolean;
   needsExternalReview?: boolean;
 }
 
@@ -27,8 +27,8 @@ export interface TagsSectionTestProps {
 
 export interface OntologySectionTestProps {
   terms: { id: string; term: string; description: string }[];
-  editable?: boolean;
-  sourceId?: string;
+  editable: boolean;
+  sourceId: string;
 }
 
 export interface ContentIdSectionTestProps {
@@ -36,10 +36,7 @@ export interface ContentIdSectionTestProps {
 }
 
 export interface ExternalSourceSectionTestProps {
-  url: string;
   externalSourceUrl: string | null;
-  checkedAt?: string | null;
-  isValid?: boolean;
   editable: boolean;
   contentId: string;
   lastCheckedAt?: string | null;
