@@ -26,7 +26,8 @@ export enum ErrorSource {
   Unknown = 'unknown',
   System = 'system',
   Validation = 'validation',
-  Server = 'server'
+  Server = 'server',
+  User = 'user'
 }
 
 /**
@@ -57,6 +58,8 @@ export interface ErrorHandlingOptions {
   showToast: boolean;
   suppressToast?: boolean;
   reportToAnalytics?: boolean;
+  technical?: boolean;
+  originalError?: Error;
 }
 
 /**
@@ -93,6 +96,15 @@ export interface ContentIdValidationResult extends ValidationResult {
  */
 export interface TagValidationResult extends ValidationResult {
   resultType: 'tag';
+}
+
+/**
+ * API Error type
+ */
+export interface ApiError extends Error {
+  statusCode?: number;
+  apiMessage?: string;
+  apiErrorCode?: string;
 }
 
 // Helper function to create a content ID validation result
@@ -136,5 +148,19 @@ export function createValidationResult(
     message,
     errorMessage,
     resultType: 'generic'
+  };
+}
+
+// Helper to create content validation result (for compatibility)
+export function createContentValidationResult(
+  isValid: boolean,
+  message: string | null = null,
+  errorMessage: string | null = null
+): ValidationResult {
+  return {
+    isValid,
+    message,
+    errorMessage,
+    resultType: 'contentId'
   };
 }

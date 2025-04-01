@@ -1,16 +1,4 @@
 
-/**
- * useTagOperations Hook
- * 
- * This hook combines tag state management, fetching, and mutations into a single
- * interface for managing tag operations in the MetadataPanel component.
- * 
- * Architecture:
- * - State management: handled by useTagState
- * - Data fetching: handled by useTagFetch
- * - Data mutations: handled by useTagMutations
- */
-
 import { useState, useCallback } from 'react';
 import { useTagState } from './useTagState';
 import { useTagFetch } from './useTagFetch';
@@ -89,7 +77,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
       handleError(
         err,
         "Failed to refresh tags",
-        { level: ErrorLevel.WARNING }
+        { level: ErrorLevel.Warning }
       );
     }
   }, [fetchTags]);
@@ -107,7 +95,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
       handleError(
         new Error('Tag must be at least 2 characters long'),
         'Tag must be at least 2 characters long',
-        { level: ErrorLevel.WARNING }
+        { level: ErrorLevel.Warning }
       );
       return;
     }
@@ -126,7 +114,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
       handleError(
         err,
         "Failed to add tag",
-        { level: ErrorLevel.WARNING }
+        { level: ErrorLevel.Warning }
       );
     }
   };
@@ -143,7 +131,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
       handleError(
         err,
         "Failed to delete tag",
-        { level: ErrorLevel.WARNING }
+        { level: ErrorLevel.Warning }
       );
     }
   };
@@ -167,7 +155,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
       handleError(
         err,
         "Failed to reorder tags",
-        { level: ErrorLevel.WARNING }
+        { level: ErrorLevel.Warning }
       );
     }
   };

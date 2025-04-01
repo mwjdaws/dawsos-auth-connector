@@ -2,7 +2,7 @@
 import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
-import { OntologyTerm } from "@/hooks/markdown-editor/types";
+import { OntologyTerm } from "@/hooks/markdown-editor/types/ontology";
 
 interface AttachedTermsListProps {
   terms: OntologyTerm[];

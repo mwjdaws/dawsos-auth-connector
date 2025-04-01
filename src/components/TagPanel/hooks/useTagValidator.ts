@@ -9,6 +9,7 @@ export interface TagValidationOptions {
   allowedChars?: RegExp;
   preventDuplicates?: boolean;
   existingTags?: string[];
+  allowEmpty?: boolean; // Added this option
 }
 
 export interface ValidationResult {
@@ -26,7 +27,8 @@ export function useTagValidator() {
     minLength: 2,
     maxLength: 50,
     allowedChars: /^[\w\s\-\.]+$/,
-    preventDuplicates: true
+    preventDuplicates: true,
+    allowEmpty: false
   };
   
   /**
@@ -38,6 +40,9 @@ export function useTagValidator() {
     
     // Empty check
     if (!tag || tag.trim() === '') {
+      if (opts.allowEmpty) {
+        return { isValid: true, message: null };
+      }
       return { isValid: false, message: 'Tag cannot be empty' };
     }
     

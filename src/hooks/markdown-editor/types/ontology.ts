@@ -34,3 +34,38 @@ export interface TermAssociation {
   created_by?: string;
   review_required: boolean;
 }
+
+/**
+ * Interface for the result of useOntologySuggestions hook
+ */
+export interface UseOntologySuggestionsResult {
+  suggestions: {
+    terms: Array<{
+      id: string;
+      term: string;
+      description?: string;
+      domain?: string;
+      score?: number;
+      applied?: boolean;
+      rejected?: boolean;
+    }>;
+    relatedNotes: Array<{
+      id: string;
+      title?: string;
+      score?: number;
+      applied: boolean;
+      rejected: boolean;
+    }>;
+  };
+  isLoading: boolean;
+  error: Error | null;
+  refreshSuggestions: () => Promise<void>;
+  applySuggestion: (termId: string) => Promise<boolean>;
+  rejectSuggestion: (termId: string) => Promise<boolean>;
+  applyNoteRelation: (noteId: string) => Promise<boolean>;
+  rejectNoteRelation: (noteId: string) => Promise<boolean>;
+  analyzeContent: (content: string, title: string, sourceId: string) => Promise<void>;
+  applySuggestedTerm: (termId: string, sourceId: string) => Promise<boolean>;
+  rejectSuggestedTerm: (termId: string) => Promise<boolean>;
+  applyAllSuggestedTerms: (sourceId: string, confidenceThreshold?: number) => Promise<boolean>;
+}

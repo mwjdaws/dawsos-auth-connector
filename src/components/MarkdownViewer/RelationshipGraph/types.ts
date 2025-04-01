@@ -6,6 +6,7 @@
 export interface GraphNode {
   id: string;
   name: string;
+  title?: string; // Added title property
   type?: string;
   color?: string;
   val?: number;
@@ -63,6 +64,18 @@ export interface RelatedNote {
   score?: number;
   applied: boolean;
   rejected: boolean;
+}
+
+export interface GraphRendererRef {
+  centerOnNode: (nodeId: string) => void;
+  centerAt: (x: number, y: number, duration?: number) => void;
+  zoomToFit: (duration?: number) => void;
+  resetZoom: () => void;
+  zoom: (zoomLevel: number, duration?: number) => void;
+  setZoom: (zoomLevel: number) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  getGraphData: () => GraphData;
 }
 
 export type GraphReducer = (state: GraphState, action: GraphAction) => GraphState;

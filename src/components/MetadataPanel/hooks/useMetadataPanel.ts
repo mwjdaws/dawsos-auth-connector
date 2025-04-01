@@ -104,7 +104,7 @@ export const useMetadataPanel = ({
       handleError(
         err, 
         "Error refreshing metadata", 
-        { level: ErrorLevel.WARNING, context: { contentId } }
+        { level: ErrorLevel.Warning, context: { contentId } }
       );
     }
   }, [contentId, isValidContent, fetchSourceMetadata, refreshTags, handleMetadataChange]);

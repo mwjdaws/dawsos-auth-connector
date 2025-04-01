@@ -144,8 +144,8 @@ export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> =
         <>
           <div className="flex flex-wrap gap-2 mb-4">
             {suggestions.terms
-              .filter(term => !term.applied && !term.rejected)
-              .map(term => (
+              .filter((term) => !term.applied && !term.rejected)
+              .map((term) => (
                 <div 
                   key={term.id} 
                   className="flex items-center gap-1 border rounded-lg px-2 py-1 text-sm"
@@ -177,7 +177,7 @@ export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> =
               ))}
           </div>
 
-          {suggestions.terms.filter(term => !term.applied && !term.rejected && (term.score || 0) >= 70).length > 1 && (
+          {suggestions.terms.filter((term) => !term.applied && !term.rejected && (term.score || 0) >= 70).length > 1 && (
             <Button
               variant="outline"
               size="sm"
@@ -188,13 +188,13 @@ export const OntologySuggestionsPanel: React.FC<OntologySuggestionsPanelProps> =
             </Button>
           )}
 
-          {suggestions.terms.filter(term => term.applied).length > 0 && (
+          {suggestions.terms.filter((term) => term.applied).length > 0 && (
             <div className="mt-3">
               <h4 className="text-xs font-medium text-muted-foreground mb-2">Applied Terms</h4>
               <div className="flex flex-wrap gap-2">
                 {suggestions.terms
-                  .filter(term => term.applied)
-                  .map(term => (
+                  .filter((term) => term.applied)
+                  .map((term) => (
                     <Badge key={term.id} variant="secondary">
                       {term.domain && <span className="text-xs text-muted-foreground">{term.domain}:</span>}{' '}
                       {term.term}
