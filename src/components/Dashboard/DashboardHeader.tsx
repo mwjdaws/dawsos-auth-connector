@@ -29,8 +29,6 @@ export function DashboardHeader({
     ? withErrorHandling(async () => {
         // Convert regular function to async to satisfy the WrappableFunction type
         return await Promise.resolve(onRefresh());
-      }, {
-        errorMessage: 'Failed to refresh data'
       })
     : undefined;
 
