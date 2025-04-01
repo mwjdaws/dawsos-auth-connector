@@ -4,7 +4,7 @@ import { ContentIdValidationResult, createContentIdValidationResult } from './ty
 /**
  * Checks if a string is a valid UUID
  */
-export function isValidUuid(id: string): boolean {
+export function isUUID(id: string): boolean {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(id);
 }
@@ -21,7 +21,24 @@ export function isTempId(id: string): boolean {
  */
 export function isValidContentId(contentId?: string | null): boolean {
   if (!contentId) return false;
-  return isValidUuid(contentId) || isTempId(contentId);
+  return isUUID(contentId) || isTempId(contentId);
+}
+
+/**
+ * Try to convert a string to a UUID if possible
+ */
+export function tryConvertToUUID(contentId?: string | null): string | null {
+  if (!contentId) return null;
+  if (isUUID(contentId)) return contentId;
+  return null;
+}
+
+/**
+ * Check if a content ID is storable (must be a UUID)
+ */
+export function isStorableContentId(contentId?: string | null): boolean {
+  if (!contentId) return false;
+  return isUUID(contentId);
 }
 
 /**

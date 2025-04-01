@@ -1,19 +1,8 @@
 
 import { toast } from "@/hooks/use-toast";
-import { ErrorLevel, ErrorSource, ErrorHandlingOptions } from './types';
+import { ErrorLevel, ErrorSource, ErrorHandlingOptions, defaultErrorOptions } from './types';
 import { convertErrorOptions } from './compatibility';
 import { generateErrorId } from './generateId';
-
-// Default error handling options
-const DEFAULT_ERROR_OPTIONS: ErrorHandlingOptions = {
-  message: "An unexpected error occurred",
-  level: ErrorLevel.Error,
-  source: ErrorSource.Unknown,
-  toastTitle: "Error",
-  toastDescription: "An unexpected error occurred",
-  suppressToast: false,
-  context: {}
-};
 
 /**
  * Central error handling function
@@ -36,7 +25,7 @@ export function handleError(
   if (typeof message === 'string' && options) {
     // Handle case: handleError(error, "message", { level: ErrorLevel.Error })
     errorOptions = {
-      ...DEFAULT_ERROR_OPTIONS,
+      ...defaultErrorOptions,
       ...convertErrorOptions(options),
       message,
       toastTitle: message
@@ -44,19 +33,19 @@ export function handleError(
   } else if (typeof message === 'object') {
     // Handle case: handleError(error, { message: "message", level: ErrorLevel.Error })
     errorOptions = {
-      ...DEFAULT_ERROR_OPTIONS,
+      ...defaultErrorOptions,
       ...convertErrorOptions(message)
     };
   } else if (typeof message === 'string') {
     // Handle case: handleError(error, "message")
     errorOptions = {
-      ...DEFAULT_ERROR_OPTIONS,
+      ...defaultErrorOptions,
       message,
       toastTitle: message
     };
   } else {
     // Handle case: handleError(error)
-    errorOptions = { ...DEFAULT_ERROR_OPTIONS };
+    errorOptions = { ...defaultErrorOptions };
   }
 
   // Generate a unique ID for this error
@@ -68,7 +57,7 @@ export function handleError(
 
   // Log the error with context
   console.error(
-    `[${errorOptions.source}] ${errorOptions.message}`,
+    `[${errorOptions.source}] ${errorOptions.message || errorMessage}`,
     {
       errorId,
       originalError: error,
@@ -79,12 +68,12 @@ export function handleError(
   );
 
   // Show toast notification unless suppressed
-  if (!errorOptions.suppressToast) {
+  if (!errorOptions.suppressToast && !errorOptions.silent && errorOptions.showToast) {
     toast({
-      id: errorId,
-      title: errorOptions.toastTitle || errorOptions.message,
+      id: errorOptions.toastId || errorId,
+      title: errorOptions.toastTitle || errorOptions.message || (errorOptions.level === ErrorLevel.Error ? 'Error' : errorOptions.level === ErrorLevel.Warning ? 'Warning' : 'Notice'),
       description: errorOptions.toastDescription || errorMessage,
-      variant: "destructive"
+      variant: errorOptions.level === ErrorLevel.Error ? 'destructive' : 'default',
     });
   }
 

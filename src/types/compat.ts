@@ -1,84 +1,68 @@
 
 /**
- * Type compatibility utilities
+ * Utility functions for type compatibility
  */
 
 /**
- * Converts undefined to null for use with APIs that
- * expect null instead of undefined
+ * Converts undefined to null
+ * 
+ * This is useful for API parameters that accept null but not undefined
  */
 export function undefinedToNull<T>(value: T | undefined): T | null {
   return value === undefined ? null : value;
 }
 
 /**
- * Converts null to undefined for use with APIs that
- * expect undefined instead of null
+ * Converts null to undefined
+ * 
+ * This is useful for components that expect undefined instead of null
  */
 export function nullToUndefined<T>(value: T | null): T | undefined {
   return value === null ? undefined : value;
 }
 
 /**
- * Makes properties optional and allows undefined values
+ * Ensures a value is defined (not null or undefined)
+ * 
+ * @param value The value to check
+ * @param defaultValue The default value to use if the input is null/undefined
+ * @returns The value or default value
  */
-export type OptionalProps<T> = {
-  [P in keyof T]?: T[P] | undefined;
-};
+export function ensureDefined<T>(value: T | null | undefined, defaultValue: T): T {
+  return value === null || value === undefined ? defaultValue : value;
+}
 
 /**
- * Makes specified properties of T required
+ * Ensures a string value is defined, or empty string if not
  */
-export type RequiredProps<T, K extends keyof T> = T & {
-  [P in K]-?: T[P];
-};
+export function ensureString(value: string | null | undefined): string {
+  return value ?? '';
+}
 
 /**
- * Makes properties accept null instead of undefined
+ * Ensures a number value is defined, or 0 if not
  */
-export type NullableProps<T> = {
-  [P in keyof T]: T[P] | null;
-};
+export function ensureNumber(value: number | null | undefined): number {
+  return value ?? 0;
+}
 
 /**
- * Creates a new object with nulls instead of undefined values
+ * Ensures a boolean value is defined, or false if not
  */
-export function withNulls<T extends object>(obj: T): NullableProps<T> {
-  if (!obj) return {} as NullableProps<T>;
-  
-  const result: Record<string, any> = {};
-  for (const key in obj) {
-    result[key] = obj[key] === undefined ? null : obj[key];
+export function ensureBoolean(value: boolean | null | undefined): boolean {
+  return value ?? false;
+}
+
+/**
+ * Safely converts a value to a specific type or returns null
+ */
+export function safelyConvert<T, R>(value: T | null | undefined, converter: (val: T) => R): R | null {
+  if (value === null || value === undefined) {
+    return null;
   }
-  return result as NullableProps<T>;
-}
-
-/**
- * Creates a new object with undefined instead of null values
- */
-export function withUndefined<T extends object>(obj: T): OptionalProps<T> {
-  if (!obj) return {} as OptionalProps<T>;
-  
-  const result: Record<string, any> = {};
-  for (const key in obj) {
-    result[key] = obj[key] === null ? undefined : obj[key];
+  try {
+    return converter(value);
+  } catch (e) {
+    return null;
   }
-  return result as OptionalProps<T>;
-}
-
-/**
- * Safely access an object property that might be undefined
- */
-export function safe<T, K extends keyof T>(obj: T | null | undefined, key: K): T[K] | undefined {
-  return obj ? obj[key] : undefined;
-}
-
-/**
- * Safely call a function that might be undefined
- */
-export function safeCall<T extends (...args: any[]) => any>(
-  fn: T | null | undefined,
-  ...args: Parameters<T>
-): ReturnType<T> | undefined {
-  return fn ? fn(...args) : undefined;
 }

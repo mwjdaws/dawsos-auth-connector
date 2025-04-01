@@ -5,11 +5,11 @@
 
 // Error severity levels
 export enum ErrorLevel {
-  Debug = 0,
-  Info = 1,
-  Warning = 2,
-  Error = 3,
-  Critical = 4
+  Debug = "debug",
+  Info = "info",
+  Warning = "warning",
+  Error = "error",
+  Critical = "critical"
 }
 
 // Error sources
@@ -42,15 +42,32 @@ export interface EnhancedError extends Error {
 
 // Options for error handling
 export interface ErrorHandlingOptions {
-  message: string;
-  level: ErrorLevel;
-  source: ErrorSource;
+  message?: string;
+  level?: ErrorLevel;
+  source?: ErrorSource;
   toastTitle?: string;
   toastDescription?: string;
   context?: Record<string, any>;
   originalError?: Error;
   suppressToast?: boolean;
+  fingerprint?: string;
+  silent?: boolean;
+  reportToAnalytics?: boolean;
+  showToast?: boolean;
+  toastId?: string;
+  technical?: string;
 }
+
+// Default error options for compatibility
+export const defaultErrorOptions: ErrorHandlingOptions = {
+  level: ErrorLevel.Error,
+  source: ErrorSource.Unknown,
+  message: "An unexpected error occurred",
+  suppressToast: false,
+  silent: false,
+  reportToAnalytics: true,
+  showToast: true
+};
 
 // For users who need a custom type when upgrading
 export interface CustomErrorHandlingOptions extends ErrorHandlingOptions {

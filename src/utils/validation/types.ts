@@ -13,7 +13,7 @@ export interface ValidationResult {
 
 // Content ID specific validation result
 export interface ContentIdValidationResult extends ValidationResult {
-  contentExists: boolean;
+  contentExists?: boolean;
   resultType: 'contentId';
 }
 
@@ -67,4 +67,20 @@ export function createTagValidationResult(
     message,
     resultType: 'tag'
   };
+}
+
+// Function to check if a ValidationResult is valid
+export function isValidResult(result: ValidationResult): boolean {
+  return result.isValid;
+}
+
+// Function to combine multiple validation results
+export function combineValidationResults(results: ValidationResult[]): ValidationResult {
+  const invalidResult = results.find(r => !r.isValid);
+  
+  if (invalidResult) {
+    return invalidResult;
+  }
+  
+  return createValidResult();
 }
