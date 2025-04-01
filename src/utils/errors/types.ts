@@ -1,69 +1,81 @@
 
 /**
- * Error handling types
+ * Error handling type definitions
  */
 
+/**
+ * Error severity levels
+ */
 export enum ErrorLevel {
   Debug = 'debug',
   Info = 'info',
   Warning = 'warning',
   Error = 'error',
-  Critical = 'critical',
-  
-  // Backward compatibility with string error levels
-  DEBUG = 'debug',
-  INFO = 'info',
-  WARNING = 'warning',
-  ERROR = 'error',
-  CRITICAL = 'critical'
 }
 
+/**
+ * Error source categories
+ */
 export enum ErrorSource {
+  Unknown = 'unknown',
   API = 'api',
   Database = 'database',
-  Component = 'component',
-  Hook = 'hook',
-  Service = 'service',
-  Utils = 'utils',
   User = 'user',
-  System = 'system',
-  Unknown = 'unknown'
+  Utils = 'utils',
+  App = 'app',
+  UI = 'ui',
+  Auth = 'auth',
+  Network = 'network',
+  Validation = 'validation',
+  Server = 'server',
 }
 
-export type ErrorContext = Record<string, any>;
-
+/**
+ * Error handling options
+ */
 export interface ErrorHandlingOptions {
   level: ErrorLevel;
   source: ErrorSource;
   message: string;
-  toastTitle?: string;
-  toastDescription?: string;
-  error?: Error;
-  context?: ErrorContext;
+  context?: Record<string, any>;
   reportToAnalytics?: boolean;
-  silent?: boolean;
   showToast?: boolean;
+  silent?: boolean;
+  fingerprint?: string;
+  toastId?: string;
+  toastTitle?: string;
+  technical?: boolean;
+  suppressToast?: boolean;
+  originalError?: any;
 }
 
-export type ErrorHandlingFunction = (error: Error | string, options?: Partial<ErrorHandlingOptions>) => void;
-
-export interface ErrorMetadata {
-  timestamp: string;
-  userId?: string;
-  sessionId?: string;
-  source: ErrorSource;
-  level: ErrorLevel;
-  browser?: string;
-  os?: string;
-  url?: string;
-  component?: string;
-  context?: ErrorContext;
+/**
+ * Error with detailed information
+ */
+export interface DetailedError extends Error {
+  source?: ErrorSource;
+  level?: ErrorLevel;
+  context?: Record<string, any>;
+  fingerprint?: string;
+  originalError?: any;
 }
 
-export type ErrorHandlerCreator = (defaultOptions?: Partial<ErrorHandlingOptions>) => ErrorHandlingFunction;
-
-export interface ErrorHandlerFactory {
-  createComponentErrorHandler: (componentName: string) => ErrorHandlingFunction;
-  createHookErrorHandler: (hookName: string) => ErrorHandlingFunction;
-  createServiceErrorHandler: (serviceName: string) => ErrorHandlingFunction;
+/**
+ * Create a detailed error
+ */
+export function createDetailedError(
+  message: string,
+  options?: Partial<ErrorHandlingOptions>
+): DetailedError {
+  const error = new Error(message) as DetailedError;
+  
+  if (options) {
+    error.source = options.source;
+    error.level = options.level;
+    error.context = options.context;
+    error.fingerprint = options.fingerprint;
+    error.originalError = options.originalError;
+  }
+  
+  return error;
 }

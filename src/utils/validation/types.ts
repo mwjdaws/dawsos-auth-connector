@@ -1,95 +1,92 @@
 
 /**
- * Validation Result Types
+ * Validation result types
  */
 
-// Basic validation result interface
+/**
+ * Base validation result interface
+ */
 export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
   resultType: string;
 }
 
-// Content ID validation result
+/**
+ * Content ID validation result
+ */
 export interface ContentIdValidationResult extends ValidationResult {
-  contentExists: boolean;
-  resultType: "contentId";
+  contentExists: boolean | null;
+  resultType: 'contentId';
 }
 
-// Tag validation result
+/**
+ * Tag validation result
+ */
 export interface TagValidationResult extends ValidationResult {
-  resultType: "tag";
+  resultType: 'tag';
 }
 
-// Ontology term validation result
-export interface OntologyTermValidationResult extends ValidationResult {
-  resultType: "ontologyTerm";
-}
-
-// Document validation result
-export interface DocumentValidationResult extends ValidationResult {
-  resultType: "document";
-}
-
-// Factory functions to create validation results with proper typing
-export function createValidResult(resultType: string = "generic"): ValidationResult {
+/**
+ * Create a basic validation result
+ */
+export function createValidationResult(
+  isValid: boolean,
+  errorMessage: string | null,
+  resultType: string
+): ValidationResult {
   return {
-    isValid: true,
-    errorMessage: null,
-    resultType
-  };
-}
-
-export function createInvalidResult(errorMessage: string, resultType: string = "generic"): ValidationResult {
-  return {
-    isValid: false,
+    isValid,
     errorMessage,
     resultType
   };
 }
 
+/**
+ * Create a content ID validation result
+ */
 export function createContentIdValidationResult(
   isValid: boolean,
-  contentExists: boolean = false,
-  errorMessage: string | null = null
+  errorMessage: string | null,
+  contentExists: boolean | null
 ): ContentIdValidationResult {
   return {
     isValid,
-    contentExists,
     errorMessage,
-    resultType: "contentId"
+    contentExists,
+    resultType: 'contentId'
   };
 }
 
+/**
+ * Create a tag validation result
+ */
 export function createTagValidationResult(
   isValid: boolean,
-  errorMessage: string | null = null
+  errorMessage: string | null
 ): TagValidationResult {
   return {
     isValid,
     errorMessage,
-    resultType: "tag"
+    resultType: 'tag'
   };
 }
 
-export function createOntologyTermValidationResult(
-  isValid: boolean,
-  errorMessage: string | null = null
-): OntologyTermValidationResult {
-  return {
-    isValid,
-    errorMessage,
-    resultType: "ontologyTerm"
-  };
+/**
+ * Check if a validation result is valid
+ */
+export function isValidResult(result: ValidationResult): boolean {
+  return result.isValid;
 }
 
-export function createDocumentValidationResult(
-  isValid: boolean,
-  errorMessage: string | null = null
-): DocumentValidationResult {
-  return {
-    isValid,
-    errorMessage,
-    resultType: "document"
-  };
+/**
+ * Combine multiple validation results
+ */
+export function combineValidationResults(results: ValidationResult[]): ValidationResult {
+  const invalid = results.find(result => !result.isValid);
+  if (invalid) {
+    return invalid;
+  }
+  
+  return createValidationResult(true, null, 'combined');
 }

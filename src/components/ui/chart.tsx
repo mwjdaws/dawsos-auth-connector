@@ -1,357 +1,223 @@
 
-"use client";
-
 import * as React from "react";
-import { ChartProps, LineProps, AreaProps, BarProps, PieProps, ChartData } from "recharts";
+import { cn } from "@/lib/utils";
 import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ComposedChart,
-  Legend as RechartsLegend,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
   ResponsiveContainer,
-  Tooltip,
-  TooltipProps,
   XAxis,
   YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  Line,
+  LineChart,
+  Bar,
+  BarChart,
+  Area,
+  AreaChart,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 
-import { cn } from "@/lib/utils";
-
-// Base chart wrapper component
-const BaseChart = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("w-full h-[350px]", className)}
-    {...props}
-  />
-));
-BaseChart.displayName = "BaseChart";
-
-// Legend component
-const Legend = React.forwardRef<
-  SVGElement,
-  React.ComponentProps<typeof RechartsLegend>
->(({ className, ...props }, ref) => (
-  <RechartsLegend
-    className={cn("", className)}
-    {...props}
-    ref={ref}
-  />
-));
-Legend.displayName = "Legend";
-
-// Line component
-const LineComponent = React.forwardRef<
-  SVGPathElement,
-  LineProps & { className?: string }
->(({ className, ...props }, ref) => (
-  <Line
-    className={cn("", className)}
-    type="monotone"
-    strokeWidth={2}
-    activeDot={{ r: 6, style: { fill: "var(--chart-color)" } }}
-    {...props}
-    ref={ref}
-  />
-));
-LineComponent.displayName = "LineComponent";
-
-// Area component
-const AreaComponent = React.forwardRef<
-  SVGPathElement,
-  React.ComponentProps<typeof Area> & { className?: string; dataKey: string }
->(({ className, ...props }, ref) => (
-  <Area
-    className={cn("", className)}
-    type="monotone"
-    dataKey={props.dataKey}
-    ref={ref}
-  />
-));
-AreaComponent.displayName = "AreaComponent";
-
-// Bar component
-const BarComponent = React.forwardRef<
-  SVGPathElement,
-  React.ComponentProps<typeof Bar> & { className?: string; dataKey: string }
->(({ className, ...props }, ref) => (
-  <Bar
-    className={cn("", className)}
-    dataKey={props.dataKey}
-    fill="var(--chart-color)"
-    radius={4}
-    {...props}
-    ref={ref}
-  />
-));
-BarComponent.displayName = "BarComponent";
-
-// Line chart
-const LineChartComponent = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<typeof LineChart> & {
-    data: ChartData[];
-    className?: string;
-    showTooltip?: boolean;
-    showLegend?: boolean;
-    showXAxis?: boolean;
-    showYAxis?: boolean;
-    showCartesianGrid?: boolean;
-    children?: React.ReactNode;
-  }
->(
-  (
-    {
-      data,
-      className,
-      showTooltip = true,
-      showLegend = true,
-      showXAxis = true,
-      showYAxis = true,
-      showCartesianGrid = true,
-      children,
-      ...props
-    },
-    ref
-  ) => (
-    <BaseChart ref={ref} className={cn(className)}>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 0 }} {...props}>
-          {showXAxis && <XAxis />}
-          {showYAxis && <YAxis />}
-          {showCartesianGrid && <CartesianGrid strokeDasharray="3 3" />}
-          {showTooltip && <Tooltip />}
-          {showLegend && <Legend />}
-          {children}
-        </LineChart>
-      </ResponsiveContainer>
-    </BaseChart>
-  )
-);
-LineChartComponent.displayName = "LineChartComponent";
-
-// Bar chart
-const BarChartComponent = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<typeof BarChart> & {
-    data: ChartData[];
-    className?: string;
-    showTooltip?: boolean;
-    showLegend?: boolean;
-    showXAxis?: boolean;
-    showYAxis?: boolean;
-    showCartesianGrid?: boolean;
-    children?: React.ReactNode;
-  }
->(
-  (
-    {
-      data,
-      className,
-      showTooltip = true,
-      showLegend = true,
-      showXAxis = true,
-      showYAxis = true,
-      showCartesianGrid = true,
-      children,
-      ...props
-    },
-    ref
-  ) => (
-    <BaseChart ref={ref} className={cn(className)}>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 0 }} {...props}>
-          {showXAxis && <XAxis />}
-          {showYAxis && <YAxis />}
-          {showCartesianGrid && <CartesianGrid strokeDasharray="3 3" />}
-          {showTooltip && <Tooltip />}
-          {showLegend && <Legend />}
-          {children}
-        </BarChart>
-      </ResponsiveContainer>
-    </BaseChart>
-  )
-);
-BarChartComponent.displayName = "BarChartComponent";
-
-// Custom tooltip props
-interface CustomTooltipProps {
-  active: boolean;
-  payload?: Array<{
-    value: number;
-    name: string;
-    dataKey: string;
-    color: string;
-  }>;
-  label?: string;
+// Define chart component props
+export interface ChartProps extends React.HTMLAttributes<HTMLDivElement> {
+  data: Array<Record<string, any>>;
+  type?: "line" | "bar" | "area" | "pie";
+  xAxisKey?: string;
+  yAxisKeys?: string[];
+  height?: number;
+  colors?: string[];
+  stackKeys?: string[];
+  hideTooltip?: boolean;
+  hideGrid?: boolean;
+  hideLegend?: boolean;
+  hideXAxis?: boolean;
+  hideYAxis?: boolean;
 }
 
-// Bar chart with custom tooltip
-const BarChartWithTooltip = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<typeof BarChartComponent> & {
-    series: Array<{
-      dataKey: string;
-      name: string;
-      fill?: string;
-      stroke?: string;
-      stackId?: string;
-    }>;
-  }
->(({ data, series, ...props }, ref) => {
-  // Custom tooltip component
-  const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="rounded-lg border bg-background p-2 shadow-sm">
-          <div className="font-medium">{label}</div>
-          {payload.map((entry, index) => (
-            <div key={`item-${index}`} className="flex items-center truncate text-sm">
-              <div className="mr-1 h-2 w-2" style={{ backgroundColor: entry.color }} />
-              <span className="truncate">{entry.name}: </span>
-              <span className="ml-1 font-medium">{entry.value}</span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
+const defaultColors = [
+  "var(--chart-color)",
+  "var(--chart-color-2)",
+  "var(--chart-color-3)",
+  "var(--chart-color-4)",
+];
 
+/**
+ * Chart Component
+ * 
+ * A responsive charting component that supports line, bar, area, and pie charts
+ */
+export const Chart = React.forwardRef<
+  HTMLDivElement,
+  ChartProps
+>(({
+  className,
+  data,
+  type = "line",
+  xAxisKey = "name",
+  yAxisKeys = ["value"],
+  height = 300,
+  colors = defaultColors,
+  stackKeys,
+  hideTooltip = false,
+  hideGrid = false,
+  hideLegend = false,
+  hideXAxis = false,
+  hideYAxis = false,
+  ...props
+}, ref) => {
+  const chartKey = React.useId();
+  
+  if (!data || data.length === 0) {
+    return (
+      <div
+        ref={ref}
+        className={cn("w-full flex items-center justify-center", className)}
+        style={{ height: height || 300 }}
+        {...props}
+      >
+        <p className="text-sm text-muted-foreground">No data available</p>
+      </div>
+    );
+  }
+
+  // Configure chart components
+  const LegendComponent = !hideLegend ? (
+    <Legend 
+      iconType="circle" 
+      verticalAlign="top" 
+      align="right" 
+      iconSize={8}
+      wrapperStyle={{ paddingBottom: 10 }}
+    />
+  ) : null;
+  
+  const GridComponent = !hideGrid ? <CartesianGrid strokeDasharray="3 3" /> : null;
+  
+  const TooltipComponent = !hideTooltip ? <Tooltip /> : null;
+  
+  const XAxisComponent = !hideXAxis ? (
+    <XAxis 
+      dataKey={xAxisKey} 
+      axisLine={false} 
+      tickLine={false} 
+      fontSize={12}
+      tick={{ fill: "var(--muted-foreground)" }}
+    />
+  ) : null;
+  
+  const YAxisComponent = !hideYAxis ? (
+    <YAxis 
+      axisLine={false} 
+      tickLine={false} 
+      fontSize={12}
+      tick={{ fill: "var(--muted-foreground)" }}
+    />
+  ) : null;
+
+  // Render appropriate chart based on type
   return (
-    <BarChartComponent data={data} ref={ref} {...props}>
-      {series.map((s, index) => (
-        <Bar 
-          key={index}
-          dataKey={s.dataKey}
-          name={s.name}
-          fill={s.fill}
-          stroke={s.stroke}
-          stackId={s.stackId || undefined}
-        />
-      ))}
-      <Tooltip content={<CustomTooltip active={false} />} />
-    </BarChartComponent>
-  );
-});
-BarChartWithTooltip.displayName = "BarChartWithTooltip";
-
-// Area chart
-const AreaChartComponent = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<typeof AreaChart> & {
-    data: ChartData[];
-    className?: string;
-    showTooltip?: boolean;
-    showLegend?: boolean;
-    showXAxis?: boolean;
-    showYAxis?: boolean;
-    showCartesianGrid?: boolean;
-    children?: React.ReactNode;
-  }
->(
-  (
-    {
-      data,
-      className,
-      showTooltip = true,
-      showLegend = true,
-      showXAxis = true,
-      showYAxis = true,
-      showCartesianGrid = true,
-      children,
-      ...props
-    },
-    ref
-  ) => (
-    <BaseChart ref={ref} className={cn(className)}>
+    <div
+      ref={ref}
+      className={cn("w-full", className)}
+      style={{ height: height || 300 }}
+      {...props}
+    >
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 0 }} {...props}>
-          {showXAxis && <XAxis />}
-          {showYAxis && <YAxis />}
-          {showCartesianGrid && <CartesianGrid strokeDasharray="3 3" />}
-          {showTooltip && <Tooltip />}
-          {showLegend && <Legend />}
-          {children}
-        </AreaChart>
+        {type === "line" && (
+          <LineChart data={data}>
+            {GridComponent}
+            {XAxisComponent}
+            {YAxisComponent}
+            {TooltipComponent}
+            {LegendComponent}
+            {yAxisKeys.map((key, index) => (
+              <Line
+                key={`${chartKey}-line-${key}`}
+                type="monotone"
+                dataKey={key}
+                stroke={colors[index % colors.length]}
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                activeDot={{ r: 5, style: { fill: "var(--chart-color)" } }}
+                isAnimationActive={true}
+                animationDuration={500}
+              />
+            ))}
+          </LineChart>
+        )}
+
+        {type === "bar" && (
+          <BarChart data={data}>
+            {GridComponent}
+            {XAxisComponent}
+            {YAxisComponent}
+            {TooltipComponent}
+            {LegendComponent}
+            {yAxisKeys.map((key, index) => (
+              <Bar
+                key={index}
+                dataKey={key}
+                name={key}
+                fill={colors[index % colors.length]}
+                stroke={colors[index % colors.length]}
+                stackId={stackKeys?.[index]}
+              />
+            ))}
+          </BarChart>
+        )}
+
+        {type === "area" && (
+          <AreaChart data={data}>
+            {GridComponent}
+            {XAxisComponent}
+            {YAxisComponent}
+            {TooltipComponent}
+            {LegendComponent}
+            {yAxisKeys.map((key, index) => (
+              <Area
+                key={key}
+                type="monotone"
+                dataKey={key}
+                stroke={colors[index % colors.length]}
+                fill={colors[index % colors.length]}
+                strokeWidth={2}
+                activeDot={{ r: 5, style: { fill: "var(--chart-color)" } }}
+                stackId={stackKeys?.[index] || undefined}
+              />
+            ))}
+          </AreaChart>
+        )}
+
+        {type === "pie" && (
+          <PieChart>
+            {TooltipComponent}
+            {LegendComponent}
+            <Pie
+              data={data}
+              nameKey={xAxisKey}
+              dataKey={yAxisKeys[0]}
+              cx="50%"
+              cy="50%"
+              outerRadius={80}
+              innerRadius={50}
+              paddingAngle={2}
+              isAnimationActive={true}
+              animationDuration={500}
+              label
+            >
+              {data.map((entry, index) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={colors[index % colors.length]} 
+                />
+              ))}
+            </Pie>
+          </PieChart>
+        )}
       </ResponsiveContainer>
-    </BaseChart>
-  )
-);
-AreaChartComponent.displayName = "AreaChartComponent";
-
-// Area chart with custom tooltip
-const AreaChartWithTooltip = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<typeof AreaChartComponent> & {
-    series: Array<{
-      dataKey: string;
-      name?: string;
-      fill?: string;
-      stroke?: string;
-      stackId?: string;
-    }>;
-  }
->(({ data, series, ...props }, ref) => {
-  // Custom tooltip component
-  const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="rounded-lg border bg-background p-2 shadow-sm">
-          <div className="font-medium">{label}</div>
-          {payload.map((entry, index) => (
-            <div key={`item-${index}`} className="flex items-center truncate text-sm">
-              <div className="mr-1 h-2 w-2" style={{ backgroundColor: entry.color }} />
-              <span className="truncate">{entry.name || entry.dataKey}: </span>
-              <span className="ml-1 font-medium">{entry.value}</span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
-  return (
-    <AreaChartComponent data={data} ref={ref} {...props}>
-      {series.map((s, index) => (
-        <Area 
-          key={s.dataKey}
-          type="monotone"
-          dataKey={s.dataKey}
-          stroke={s.stroke}
-          fill={s.fill}
-          strokeWidth={2}
-          activeDot={{ r: 6, style: { fill: "var(--chart-color)" } }}
-          stackId={s.stackId || undefined}
-        />
-      ))}
-      <Tooltip content={<CustomTooltip active={false} />} />
-    </AreaChartComponent>
+    </div>
   );
 });
-AreaChartWithTooltip.displayName = "AreaChartWithTooltip";
 
-export {
-  BaseChart,
-  Legend,
-  LineComponent as Line,
-  AreaComponent as Area,
-  BarComponent as Bar,
-  LineChartComponent as LineChart,
-  BarChartComponent as BarChart,
-  BarChartWithTooltip,
-  AreaChartComponent as AreaChart,
-  AreaChartWithTooltip,
-};
+Chart.displayName = "Chart";

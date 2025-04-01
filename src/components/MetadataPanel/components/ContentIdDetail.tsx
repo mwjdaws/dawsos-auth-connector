@@ -55,7 +55,7 @@ export function ContentIdDetail({ contentId, className }: ContentIdDetailProps) 
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
+              <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
                 <Info className="h-3 w-3" />
               </Button>
             </TooltipTrigger>

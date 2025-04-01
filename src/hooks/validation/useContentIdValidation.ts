@@ -1,117 +1,41 @@
 
-/**
- * Hook for validating content IDs with error handling
- */
+import { useMemo } from 'react';
+import { 
+  validateContentId, 
+  isValidContentId, 
+  isUuid,
+  isTempId,
+  tryConvertToUUID
+} from '@/utils/validation/contentIdValidation';
+import { ContentIdValidationResult } from '@/utils/validation/types';
 
-import { useState, useCallback } from 'react';
-import { isValidContentId, isUUID, isTempId } from '@/utils/validation/contentIdValidation';
-import { ContentIdValidationResult, createContentIdValidationResult } from '@/utils/validation/types';
-import { handleError, ErrorLevel } from '@/utils/errors';
-
 /**
- * Hook for validating a content ID and providing friendly error messages
+ * Custom hook for content ID validation
  * 
- * @returns Validation state and functions
+ * @param contentId The content ID to validate
+ * @param contentExists Optional flag indicating if the content exists in the database
+ * @returns Object with validation result and utility functions
  */
-export function useContentIdValidation() {
-  const [validationResult, setValidationResult] = useState<ContentIdValidationResult>(
-    createContentIdValidationResult(false, false, null)
+export function useContentIdValidation(contentId: string, contentExists?: boolean) {
+  // Validate the content ID
+  const validationResult = useMemo<ContentIdValidationResult>(
+    () => validateContentId(contentId, contentExists),
+    [contentId, contentExists]
   );
-
-  /**
-   * Validate a content ID string
-   * 
-   * @param contentId - ID to validate
-   * @param contentExists - Whether the content exists in the database
-   * @returns ContentIdValidationResult
-   */
-  const validateContentId = useCallback((contentId: string, contentExists: boolean = false): ContentIdValidationResult => {
-    try {
-      if (!contentId || contentId.trim() === '') {
-        return createContentIdValidationResult(
-          false,
-          false,
-          'Content ID is required'
-        );
-      }
-      
-      // Check if content ID is valid
-      const isValid = isValidContentId(contentId);
-      
-      if (!isValid) {
-        return createContentIdValidationResult(
-          false,
-          false,
-          'Invalid content ID format'
-        );
-      }
-      
-      // If we get here, the ID format is valid
-      return createContentIdValidationResult(
-        true,
-        contentExists,
-        contentExists ? 'Content ID is valid and exists' : 'Content ID format is valid'
-      );
-    } catch (error) {
-      handleError(
-        error,
-        'Error validating content ID',
-        { level: ErrorLevel.WARNING }
-      );
-      
-      return createContentIdValidationResult(
-        false,
-        false,
-        'Error validating content ID'
-      );
-    }
-  }, []);
-
-  /**
-   * Set a new content ID to validate
-   * 
-   * @param contentId - New content ID to validate
-   * @param contentExists - Whether the content exists
-   */
-  const setContentId = useCallback((contentId: string, contentExists: boolean = false) => {
-    const result = validateContentId(contentId, contentExists);
-    setValidationResult(result);
-    return result;
-  }, [validateContentId]);
-
-  // Determine if the content ID is a UUID
-  const isUuid = useCallback((contentId: string): boolean => {
-    return isUUID(contentId);
-  }, []);
-
-  // Determine if the content ID is temporary
-  const isTemporary = useCallback((contentId: string): boolean => {
-    return isTempId(contentId);
-  }, []);
-
-  // Is the ID storable (either already a UUID or a temp ID that can be converted)
-  const isStorable = useCallback((contentId: string): boolean => {
-    return isUUID(contentId) || isTempId(contentId);
-  }, []);
-
-  // Convert a temporary ID to a UUID
-  const convertToUuid = useCallback((contentId: string): string => {
-    // This is a placeholder. In a real implementation, this would convert a temp ID to a UUID
-    return contentId;
-  }, []);
-
+  
+  // Utility functions
+  const validateId = (id: string, exists?: boolean) => validateContentId(id, exists);
+  const checkValid = (id: string) => isValidContentId(id);
+  const checkUuid = (id: string) => isUuid(id);
+  const checkTempId = (id: string) => isTempId(id);
+  const getUuid = (id: string) => tryConvertToUUID(id);
+  
   return {
     validationResult,
-    validateContentId,
-    setContentId,
-    isValid: validationResult.isValid,
-    contentExists: validationResult.contentExists,
-    errorMessage: validationResult.errorMessage,
-    isUuid,
-    isTemporary,
-    isStorable,
-    convertToUuid
+    validateContentId: validateId,
+    isValidContentId: checkValid,
+    isUUID: checkUuid,
+    isTempId: checkTempId,
+    convertToUuid: getUuid
   };
 }
-
-export default useContentIdValidation;
