@@ -2,14 +2,31 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { OntologyTerm } from '@/types/ontology';
 
 interface OntologySuggestionsPanelProps {
   sourceId: string;
-  onAddTerm: (termId: string) => void;
+  onAddTerm?: (termId: string) => void;
 }
 
 export function OntologySuggestionsPanel({ sourceId, onAddTerm }: OntologySuggestionsPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState<OntologyTerm[]>([]);
+
+  const handleGenerateSuggestions = () => {
+    setIsLoading(true);
+    // In a real implementation, this would fetch suggestions from an API
+    setTimeout(() => {
+      setIsLoading(false);
+      // For now, we're just simulating an empty result
+    }, 1500);
+  };
+
+  const handleAddTerm = (termId: string) => {
+    if (onAddTerm) {
+      onAddTerm(termId);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -34,7 +51,7 @@ export function OntologySuggestionsPanel({ sourceId, onAddTerm }: OntologySugges
         variant="outline" 
         size="sm" 
         className="w-full"
-        onClick={() => setIsLoading(true)}
+        onClick={handleGenerateSuggestions}
       >
         Generate Suggestions
       </Button>

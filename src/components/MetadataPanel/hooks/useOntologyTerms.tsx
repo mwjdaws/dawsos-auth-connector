@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { OntologyTerm } from '../types';
+import { OntologyTerm } from '@/types/ontology';
 import { supabase } from '@/integrations/supabase/client';
 
 interface UseOntologyTermsProps {
