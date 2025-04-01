@@ -23,3 +23,15 @@ export interface RequestOptions {
   retryCount?: number;
   abortSignal?: AbortSignal;
 }
+
+export interface PaginationParams {
+  page?: number;
+  pageSize?: number;
+  offset?: number;
+  limit?: number;
+}
+
+export interface SortParams {
+  field: string;
+  direction: 'asc' | 'desc';
+}

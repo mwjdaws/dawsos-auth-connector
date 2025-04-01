@@ -1,90 +1,80 @@
 
 import React from 'react';
-import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ZoomIn, ZoomOut, RefreshCw, PanelTop } from 'lucide-react';
+import { GraphZoomControl } from './GraphZoomControl';
+import { ensureNumber, ensureValidZoom } from '../compatibility';
 
 interface GraphControlsProps {
   zoomLevel: number;
   onZoomChange: (zoom: number) => void;
-  onResetZoom: () => void;
-  isDisabled: boolean;
+  onZoomReset: () => void;
+  onRefresh: () => void;
+  isLoading?: boolean;
 }
 
 export function GraphControls({
-  zoomLevel,
+  zoomLevel = 1,
   onZoomChange,
-  onResetZoom,
-  isDisabled
+  onZoomReset,
+  onRefresh,
+  isLoading = false
 }: GraphControlsProps) {
-  const handleSliderChange = (value: number[]) => {
-    onZoomChange(value[0]);
+  // Ensure zoom level is a number and within valid range
+  const currentZoom = ensureValidZoom(ensureNumber(zoomLevel, 1));
+  
+  const handleZoomIn = () => {
+    onZoomChange(Math.min(currentZoom + 0.25, 5));
+  };
+  
+  const handleZoomOut = () => {
+    onZoomChange(Math.max(currentZoom - 0.25, 0.1));
   };
   
   return (
-    <div className="absolute bottom-4 right-4 bg-background/90 rounded-lg shadow-md p-2 flex items-center space-x-2">
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => onZoomChange(Math.max(0.5, zoomLevel - 0.25))}
-              disabled={isDisabled || zoomLevel <= 0.5}
-            >
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Zoom out</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+    <div className="absolute top-4 right-4 flex flex-col space-y-2 z-10">
+      <Button
+        onClick={onRefresh}
+        variant="outline"
+        size="sm"
+        className="rounded-full w-8 h-8 p-0"
+        disabled={isLoading}
+      >
+        <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+      </Button>
       
-      <div className="w-24">
-        <Slider
-          value={[zoomLevel]}
-          min={0.5}
-          max={2}
-          step={0.1}
-          onValueChange={handleSliderChange}
-          disabled={isDisabled}
-        />
-      </div>
+      <Button
+        onClick={handleZoomIn}
+        variant="outline"
+        size="sm"
+        className="rounded-full w-8 h-8 p-0"
+      >
+        <ZoomIn className="h-4 w-4" />
+      </Button>
       
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => onZoomChange(Math.min(2, zoomLevel + 0.25))}
-              disabled={isDisabled || zoomLevel >= 2}
-            >
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Zoom in</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <GraphZoomControl 
+        value={currentZoom} 
+        onChange={onZoomChange} 
+      />
       
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={onResetZoom}
-              disabled={isDisabled}
-            >
-              <Maximize2 className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Reset zoom</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Button
+        onClick={handleZoomOut}
+        variant="outline"
+        size="sm"
+        className="rounded-full w-8 h-8 p-0"
+      >
+        <ZoomOut className="h-4 w-4" />
+      </Button>
+      
+      <Button
+        onClick={onZoomReset}
+        variant="outline"
+        size="sm"
+        className="rounded-full w-8 h-8 p-0"
+        disabled={currentZoom === 1}
+      >
+        <PanelTop className="h-4 w-4" />
+      </Button>
     </div>
   );
 }

@@ -16,5 +16,27 @@ export enum ErrorCode {
   SERVER_ERROR = 'server_error'
 }
 
+export enum ErrorLevel {
+  DEBUG = 'debug',
+  INFO = 'info',
+  WARNING = 'warning',
+  ERROR = 'error'
+}
+
+export interface ErrorHandlingOptions {
+  level?: ErrorLevel;
+  errorCode?: ErrorCode;
+  context?: Record<string, any>;
+  silent?: boolean;
+  toast?: boolean;
+  technical?: boolean; // Added to support technical error details
+}
+
+export interface ErrorDeduplicationOptions {
+  maxErrors?: number;
+  timeWindow?: number;
+  compareKeys?: string[];
+}
+
 // Re-export error types from utils/errors/types
-// This serves as a compatibility layer
+export * from '../utils/errors/types';

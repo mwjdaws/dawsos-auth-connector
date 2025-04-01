@@ -22,8 +22,8 @@ export interface GraphNode {
  * Core GraphLink representation
  */
 export interface GraphLink {
-  source: string;
-  target: string;
+  source: string | GraphNode;
+  target: string | GraphNode;
   type?: string;
   weight?: number;
   value?: number;
@@ -62,8 +62,10 @@ export interface GraphRendererProps {
  */
 export interface GraphRendererRef {
   centerOnNode: (nodeId: string) => void;
+  centerAt: (x: number, y: number, duration?: number) => void;
   zoomToFit: (duration?: number) => void;
   resetZoom: () => void;
+  zoom: (zoomLevel: number, duration?: number) => void;
   setZoom: (zoomLevel: number) => void;
   getGraphData: () => GraphData;
 }

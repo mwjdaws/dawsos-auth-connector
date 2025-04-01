@@ -1,160 +1,118 @@
 
-/**
- * useFetchGraphData Hook
- * 
- * Responsible for the data fetching logic for the graph
- */
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { GraphData, GraphNode, GraphLink } from '../../types';
+import { GraphData } from '../../types';
 import { handleError, ErrorLevel } from '@/utils/errors';
 
 /**
- * Hook for fetching graph data
+ * Custom hook for fetching and processing graph data from Supabase
  */
 export function useFetchGraphData() {
   /**
-   * Fetches data for the graph and transforms it into the proper format
+   * Fetches knowledge sources and their relationships to build the graph data
    */
-  const fetchAndProcessGraphData = useCallback(async (startingNodeId?: string) => {
+  const fetchAndProcessGraphData = useCallback(async (startingNodeId?: string): Promise<{ data: GraphData | null, error: string | null }> => {
     try {
-      let knowledgeSources: any[] = [];
-      let relationships: any[] = [];
+      // Set defaults in case of errors
+      let nodes: any[] = [];
+      let links: any[] = [];
       
-      // If a starting node ID is provided, we fetch related nodes
+      // Fetch content relationships from the knowledge_sources table
+      // We need to perform a custom query since we don't have the get_content_relationships function
+      const { data: sourceData, error: sourceError } = await supabase
+        .from('knowledge_sources')
+        .select('id, title')
+        .limit(100);
+      
+      if (sourceError) {
+        throw new Error(`Error fetching sources: ${sourceError.message}`);
+      }
+      
+      if (!sourceData || sourceData.length === 0) {
+        return { data: { nodes: [], links: [] }, error: null };
+      }
+      
+      // Convert sources to nodes
+      nodes = sourceData.map(source => ({
+        id: source.id,
+        name: source.title,
+        title: source.title,
+        type: 'source'
+      }));
+      
+      // Fetch links between knowledge sources from note_links table
+      const { data: linkData, error: linkError } = await supabase
+        .from('note_links')
+        .select('source_id, target_id, link_type');
+      
+      if (linkError) {
+        throw new Error(`Error fetching links: ${linkError.message}`);
+      }
+      
+      if (linkData && linkData.length > 0) {
+        // Convert links to graph links
+        links = linkData.map(link => ({
+          source: link.source_id,
+          target: link.target_id,
+          type: link.link_type
+        }));
+      }
+      
+      // If we have a starting node ID, fetch related ontology terms
       if (startingNodeId) {
-        // Use a direct SQL query instead of table name for type safety
-        // This approach uses RPC call for better type safety
-        const { data: directRelationships, error: directError } = await supabase
-          .rpc('get_content_relationships', { source_node_id: startingNodeId });
-          
-        if (directError) throw directError;
-        
-        if (directRelationships && directRelationships.length > 0) {
-          relationships = directRelationships;
-          
-          // Get all node IDs involved in relationships
-          const nodeIds = new Set<string>();
-          directRelationships.forEach((rel: any) => {
-            if (rel.source_id) nodeIds.add(rel.source_id);
-            if (rel.target_id) nodeIds.add(rel.target_id);
-          });
-          
-          // Fetch all involved knowledge sources
-          if (nodeIds.size > 0) {
-            const { data: sources, error: sourcesError } = await supabase
-              .from('knowledge_sources')
-              .select('id, title, content, published')
-              .in('id', Array.from(nodeIds));
-              
-            if (sourcesError) throw sourcesError;
+        try {
+          const { data: termData, error: termError } = await supabase
+            .rpc('get_related_ontology_terms', { knowledge_source_id: startingNodeId });
             
-            if (sources) {
-              knowledgeSources = sources;
-            }
+          if (termError) {
+            console.error('Error fetching related ontology terms:', termError);
+          } else if (termData && termData.length > 0) {
+            // Add ontology terms as nodes
+            const termNodes = termData.map(term => ({
+              id: term.term_id,
+              name: term.term,
+              title: term.term,
+              description: term.description,
+              domain: term.domain,
+              type: 'ontology'
+            }));
+            
+            // Add links between starting node and terms
+            const termLinks = termData.map(term => ({
+              source: startingNodeId,
+              target: term.term_id,
+              type: term.relation_type || 'ontology'
+            }));
+            
+            // Add to existing nodes and links
+            nodes = [...nodes, ...termNodes];
+            links = [...links, ...termLinks];
           }
-        }
-      } else {
-        // No starting node, fetch a limited set of nodes for an overview
-        const { data: sources, error: sourcesError } = await supabase
-          .from('knowledge_sources')
-          .select('id, title, content, published')
-          .limit(50);
-          
-        if (sourcesError) throw sourcesError;
-        
-        if (sources) {
-          knowledgeSources = sources;
-          
-          // Fetch relationships between these nodes
-          if (knowledgeSources.length > 0) {
-            const nodeIds = knowledgeSources.map(source => source.id);
-            
-            // Use RPC for type safety
-            const { data: rels, error: relsError } = await supabase
-              .rpc('get_relationships_between_nodes', { node_ids: nodeIds });
-              
-            if (relsError) throw relsError;
-            
-            if (rels) {
-              relationships = rels;
-            }
-          }
+        } catch (termError) {
+          console.error('Error processing ontology terms:', termError);
         }
       }
       
-      // Convert to graph data format
-      const graphData = transformToGraphData(knowledgeSources, relationships, startingNodeId);
+      // Return processed data
+      return {
+        data: {
+          nodes,
+          links
+        },
+        error: null
+      };
+    } catch (error) {
+      handleError(error, 'Failed to fetch graph data', {
+        level: ErrorLevel.ERROR,
+        context: { startingNodeId }
+      });
       
-      // Return the processed data
-      return { data: graphData, error: null };
-    } catch (err) {
-      console.error('Error fetching graph data:', err);
-      
-      handleError(
-        err,
-        "Failed to load graph data",
-        { level: ErrorLevel.ERROR }
-      );
-      
-      return { 
-        data: { nodes: [], links: [] }, 
-        error: err instanceof Error ? err.message : String(err)
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Unknown error fetching graph data'
       };
     }
   }, []);
   
   return { fetchAndProcessGraphData };
-}
-
-/**
- * Transform the raw database data into GraphData format
- */
-function transformToGraphData(
-  sources: any[],
-  relationships: any[],
-  highlightedNodeId?: string
-): GraphData {
-  const nodes: GraphNode[] = [];
-  const links: GraphLink[] = [];
-  
-  // Create nodes from knowledge sources
-  sources.forEach(source => {
-    const titleText = source.title || 'Untitled';
-    const isHighlighted = highlightedNodeId === source.id;
-    
-    // Extract content preview
-    let preview = '';
-    if (source.content) {
-      preview = source.content.substring(0, 100) + (source.content.length > 100 ? '...' : '');
-    }
-    
-    nodes.push({
-      id: source.id,
-      name: titleText,
-      title: titleText,
-      preview: preview,
-      size: isHighlighted ? 10 : 5,
-      type: source.published ? 'published' : 'draft',
-      highlighted: isHighlighted
-    });
-  });
-  
-  // Create links from relationships
-  relationships.forEach((rel: any) => {
-    // Make sure both nodes exist
-    const sourceExists = nodes.some(node => node.id === rel.source_id);
-    const targetExists = nodes.some(node => node.id === rel.target_id);
-    
-    if (sourceExists && targetExists && rel.source_id && rel.target_id) {
-      links.push({
-        source: rel.source_id,
-        target: rel.target_id,
-        id: rel.id,
-        type: rel.relation_type || 'default'
-      });
-    }
-  });
-  
-  return { nodes, links };
 }

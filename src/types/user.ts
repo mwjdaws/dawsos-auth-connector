@@ -14,24 +14,24 @@ export interface User {
   id: string;
   email: string;
   display_name?: string;
-  avatar_url?: string;
+  avatar_url?: string | null;
   role: UserRole;
-  last_sign_in?: string;
-  created_at?: string;
+  last_sign_in?: string | null;
+  created_at?: string | null;
 }
 
 export interface UserProfile {
   id: string;
   user_id: string;
-  display_name?: string;
-  bio?: string;
-  avatar_url?: string;
-  social_links?: Record<string, string>;
+  display_name?: string | null;
+  bio?: string | null;
+  avatar_url?: string | null;
+  social_links?: Record<string, string> | null;
 }
 
 export interface UserSettings {
   user_id: string;
   theme_preference?: 'light' | 'dark' | 'system';
-  notification_preferences?: Record<string, boolean>;
-  ui_preferences?: Record<string, any>;
+  notification_preferences?: Record<string, boolean> | null;
+  ui_preferences?: Record<string, any> | null;
 }

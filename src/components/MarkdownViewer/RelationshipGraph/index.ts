@@ -1,48 +1,39 @@
 
 /**
- * Relationship Graph Component Exports
+ * RelationshipGraph Main Export
  * 
- * This file exports all the components and types related to the relationship graph.
+ * This file exports all components, hooks, and utilities for the relationship graph
+ * to provide a unified API for consumers.
  */
 
-// Export the main component
+// Main Components
 export { RelationshipGraph } from './RelationshipGraph';
-
-// Export the panel version
 export { RelationshipGraphPanel } from './RelationshipGraphPanel';
 
-// Export the adapter for backward compatibility
-export { RelationshipGraphAdapter } from './RelationshipGraphAdapter';
+// Sub-components
+export { ErrorFallback } from './components/ErrorFallback';
+export { GraphContent } from './components/GraphContent';
+export { GraphControls } from './components/GraphControls';
+export { GraphRenderer } from './components/graph-renderer/GraphRenderer';
+export { GraphZoomControl } from './components/GraphZoomControl';
+export { NodeSearch } from './components/NodeSearch';
 
-// Export types from the types file
-export type { 
-  GraphData, 
-  GraphNode, 
-  GraphLink, 
-  GraphProps, 
-  GraphRendererRef,
-  GraphConfig,
-  GraphStats
-} from './types';
-
-// Export types from the graph-renderer module
-export type { GraphRendererProps } from './components/graph-renderer/GraphRendererTypes';
-
-// Export types from the RelationshipGraphPanel component
-export type { RelationshipGraphPanelProps } from './RelationshipGraphPanel';
-
-// Export hooks
+// Hooks
 export { useRelationshipGraph } from './hooks/useRelationshipGraph';
-export { useGraphData } from './hooks/graph-data';
+export { useGraphData } from './hooks/graph-data/useGraphData';
+export { useGraphState } from './hooks/graph-data/useGraphState';
+export { useFetchGraphData } from './hooks/graph-data/useFetchGraphData';
 
-// Export compatibility utilities
-export { 
-  createCompatibleGraphRef, 
-  createSafeGraphProps, 
-  ensureValidGraphData,
-  sanitizeGraphData,
+// Types
+export * from './types';
+
+// Utilities
+export {
   ensureNumber,
   ensureString,
   ensureBoolean,
-  ensureValidZoom
+  ensureValidZoom,
+  ensureValidGraphData,
+  sanitizeGraphData,
+  createCompatibleGraphRef
 } from './compatibility';

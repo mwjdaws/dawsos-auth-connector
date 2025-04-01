@@ -1,75 +1,57 @@
 
 import React from 'react';
-import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { ensureNumber, ensureValidZoom } from '../compatibility';
+import { Slider } from '@/components/ui/slider';
+import { formatPercentage } from '@/utils/formatting';
+
+// Ensure zoom value is a valid number and within range
+const ensureNumber = (value: any, defaultValue: number = 0): number => {
+  if (typeof value === 'number' && !isNaN(value)) {
+    return value;
+  }
+  return defaultValue;
+};
+
+const ensureValidZoom = (zoom: number | undefined, min: number = 0.1, max: number = 5): number => {
+  const validZoom = ensureNumber(zoom, 1);
+  return Math.min(Math.max(validZoom, min), max);
+};
 
 interface GraphZoomControlProps {
-  zoom: number;
-  setZoom: (zoom: number) => void;
-  onResetZoom: () => void;
+  value: number;
+  onChange: (value: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
 }
 
-/**
- * GraphZoomControl Component
- * 
- * This component provides zoom controls for the graph visualization,
- * allowing users to zoom in, zoom out, and reset the zoom level.
- */
-export function GraphZoomControl({ 
-  zoom, 
-  setZoom, 
-  onResetZoom 
+export function GraphZoomControl({
+  value = 1,
+  onChange,
+  min = 0.1,
+  max = 5,
+  step = 0.1
 }: GraphZoomControlProps) {
-  const safeZoom = ensureValidZoom(zoom);
+  // Ensure value is within valid range
+  const currentValue = ensureValidZoom(value, min, max);
   
-  // Zoom in by 10%
-  const handleZoomIn = () => {
-    const newZoom = Math.min(2, safeZoom * 1.1);
-    setZoom(newZoom);
-  };
-  
-  // Zoom out by 10%
-  const handleZoomOut = () => {
-    const newZoom = Math.max(0.1, safeZoom * 0.9);
-    setZoom(newZoom);
+  const handleChange = (newValue: number[]) => {
+    onChange(newValue[0]);
   };
   
   return (
-    <div className="flex items-center space-x-2 bg-background/90 p-1 rounded-md shadow-sm border">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleZoomOut}
-        aria-label="Zoom out"
-        className="h-8 w-8 p-0"
-      >
-        <ZoomOut className="h-4 w-4" />
-      </Button>
-      
-      <span className="text-xs font-mono w-12 text-center">
-        {Math.round(safeZoom * 100)}%
+    <div className="flex flex-col items-center bg-background/80 backdrop-blur-sm rounded-lg p-2 text-xs">
+      <span className="mb-1 text-muted-foreground">
+        {formatPercentage(currentValue)}
       </span>
-      
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleZoomIn}
-        aria-label="Zoom in"
-        className="h-8 w-8 p-0"
-      >
-        <ZoomIn className="h-4 w-4" />
-      </Button>
-      
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onResetZoom}
-        aria-label="Reset zoom"
-        className="h-8 w-8 p-0"
-      >
-        <Maximize className="h-4 w-4" />
-      </Button>
+      <Slider
+        value={[currentValue]}
+        min={min}
+        max={max}
+        step={step}
+        onValueChange={handleChange}
+        orientation="vertical"
+        className="h-24"
+      />
     </div>
   );
 }
