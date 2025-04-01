@@ -1,230 +1,166 @@
 
-import React, { createContext, useState, useCallback, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { createContext, useContext, ReactNode, useMemo } from 'react';
+import { useQuery, UseQueryResult } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/errors';
 import { Tag } from '@/types/tag';
-import { OntologyTerm } from '@/components/MetadataPanel/types';
+import { OntologyTerm, SourceMetadata } from '../types';
 import { isValidContentId } from '@/utils/validation/contentIdValidation';
-import { mapApiTagToTag } from '@/utils/api/tag-compatibility';
 
-// Source metadata type
-export interface SourceMetadata {
-  id: string;
-  title: string;
-  content: string;
-  external_source_url: string | null;
-  external_source_checked_at: string | null;
-  needs_external_review: boolean;
-  published: boolean;
-  published_at: string | null;
-  template_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-// Context value type
+// Define context types
 interface MetadataContextValue {
-  // Content and validation state
   contentId: string;
-  validationResult: { isValid: boolean; contentExists?: boolean; } | null;
+  validationResult: { isValid: boolean };
   isEditable: boolean;
-  
-  // Metadata state
   sourceMetadata: SourceMetadata | null;
   tags: Tag[];
   ontologyTerms: OntologyTerm[];
   isLoading: boolean;
   error: Error | null;
-  
-  // Operations
-  refreshMetadata?: () => void;
-  handleAddTag?: (tag: string, typeId?: string | null) => Promise<void>;
-  handleDeleteTag?: (tagId: string) => Promise<void>;
+  isSourceLoading: boolean;
+  isTagsLoading: boolean;
+  isOntologyLoading: boolean;
+  refreshMetadata: () => void;
+  handleDeleteTag: (tagId: string) => Promise<boolean>;
 }
-
-// Default context value
-const defaultContextValue: MetadataContextValue = {
-  contentId: '',
-  validationResult: null,
-  isEditable: false,
-  sourceMetadata: null,
-  tags: [],
-  ontologyTerms: [],
-  isLoading: false,
-  error: null,
-};
 
 // Create context
-export const MetadataContext = createContext<MetadataContextValue>(defaultContextValue);
+const MetadataContext = createContext<MetadataContextValue | null>(null);
 
-interface MetadataProviderProps {
+// Hook to use the context
+export const useMetadataContext = () => {
+  const context = useContext(MetadataContext);
+  if (!context) {
+    throw new Error('useMetadataContext must be used within a MetadataQueryProvider');
+  }
+  return context;
+};
+
+interface MetadataQueryProviderProps {
   contentId: string;
   editable?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-export function MetadataProvider({ 
-  contentId, 
+/**
+ * Provider component that handles fetching and caching metadata using React Query
+ */
+export function MetadataQueryProvider({
+  contentId,
   editable = false,
-  children 
-}: MetadataProviderProps) {
-  // State for metadata (source, tags, ontology terms)
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [ontologyTerms, setOntologyTerms] = useState<OntologyTerm[]>([]);
+  children
+}: MetadataQueryProviderProps) {
+  // Check if the content ID is valid
+  const isValid = isValidContentId(contentId);
   
-  // Check if contentId is valid
-  const isValid = useMemo(() => isValidContentId(contentId), [contentId]);
-  
-  // Query for source metadata
-  const { 
-    data: sourceData,
+  // Fetch source metadata
+  const {
+    data: sourceMetadata = null,
     isLoading: isSourceLoading,
     error: sourceError,
     refetch: refetchSource
   } = useQuery({
-    queryKey: ['metadata', 'source', contentId],
+    queryKey: isValid ? ['metadata', 'source', contentId] : null,
     queryFn: async () => {
-      if (!contentId || !isValid) return null;
-      
-      const { data, error } = await supabase
-        .from('knowledge_sources')
-        .select('*')
-        .eq('id', contentId)
-        .single();
-      
-      if (error) throw error;
-      return data as SourceMetadata;
+      try {
+        const { data, error } = await supabase
+          .from('knowledge_sources')
+          .select('*')
+          .eq('id', contentId)
+          .single();
+          
+        if (error) throw error;
+        return data as SourceMetadata;
+      } catch (err) {
+        console.error('Error fetching source metadata:', err);
+        handleError(err, 'Failed to fetch source metadata');
+        return null;
+      }
     },
-    enabled: Boolean(contentId && isValid),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: isValid && !contentId.startsWith('temp-'),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
   
-  // Query for tags
+  // Fetch tags
   const {
-    data: tagData,
+    data: tags = [],
     isLoading: isTagsLoading,
     error: tagsError,
     refetch: refetchTags
   } = useQuery({
-    queryKey: ['metadata', 'tags', contentId],
+    queryKey: isValid ? ['metadata', 'tags', contentId] : null,
     queryFn: async () => {
-      if (!contentId || !isValid) return [];
-      
-      const { data, error } = await supabase
-        .from('tags')
-        .select('*, tag_types(name)')
-        .eq('content_id', contentId)
-        .order('display_order', { ascending: true });
-      
-      if (error) throw error;
-      
-      // Transform the data to match the Tag interface
-      return data.map((tag: any) => ({
-        id: tag.id,
-        name: tag.name,
-        content_id: tag.content_id,
-        type_id: tag.type_id,
-        display_order: tag.display_order,
-        type_name: tag.tag_types?.name || ''
-      }));
+      try {
+        const { data, error } = await supabase
+          .from('tags')
+          .select('id, name, content_id, type_id, display_order, tag_types(name)')
+          .eq('content_id', contentId)
+          .order('display_order');
+          
+        if (error) throw error;
+        
+        // Transform data to match Tag interface
+        return (data || []).map(tag => ({
+          id: tag.id,
+          name: tag.name,
+          content_id: tag.content_id,
+          type_id: tag.type_id,
+          display_order: tag.display_order,
+          type_name: tag.tag_types?.name || ''
+        })) as Tag[];
+      } catch (err) {
+        console.error('Error fetching tags:', err);
+        handleError(err, 'Failed to fetch tags');
+        return [];
+      }
     },
-    enabled: Boolean(contentId && isValid),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    onSuccess: (data) => {
-      setTags(data.map(mapApiTagToTag));
-    }
+    enabled: isValid,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
   
-  // Query for ontology terms
+  // Fetch ontology terms
   const {
-    data: termData,
-    isLoading: isTermsLoading,
-    error: termsError,
-    refetch: refetchTerms
+    data: ontologyTerms = [],
+    isLoading: isOntologyLoading,
+    error: ontologyError,
+    refetch: refetchOntology
   } = useQuery({
-    queryKey: ['metadata', 'ontologyTerms', contentId],
+    queryKey: isValid ? ['metadata', 'ontology', contentId] : null,
     queryFn: async () => {
-      if (!contentId || !isValid) return [];
-      
-      const { data, error } = await supabase
-        .from('knowledge_source_ontology_terms')
-        .select(`
-          *,
-          ontology_terms(*)
-        `)
-        .eq('knowledge_source_id', contentId);
-      
-      if (error) throw error;
-      
-      // Transform the data to match the OntologyTerm interface
-      return data.map((item: any) => ({
-        id: item.ontology_terms.id,
-        term: item.ontology_terms.term,
-        description: item.ontology_terms.description || '',
-        domain: item.ontology_terms.domain || ''
-      }));
+      try {
+        const { data, error } = await supabase
+          .from('knowledge_source_ontology_terms')
+          .select(`
+            ontology_terms (
+              id, term, description, domain
+            )
+          `)
+          .eq('knowledge_source_id', contentId);
+          
+        if (error) throw error;
+        
+        // Transform the data to match OntologyTerm interface
+        return (data || []).map(item => {
+          const term = item.ontology_terms;
+          return {
+            id: term.id,
+            term: term.term,
+            description: term.description || '',
+            domain: term.domain
+          };
+        }) as OntologyTerm[];
+      } catch (err) {
+        console.error('Error fetching ontology terms:', err);
+        handleError(err, 'Failed to fetch ontology terms');
+        return [];
+      }
     },
-    enabled: Boolean(contentId && isValid),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    onSuccess: (data) => {
-      setOntologyTerms(data);
-    }
+    enabled: isValid,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
   
-  // Determine loading and error states
-  const isLoading = isSourceLoading || isTagsLoading || isTermsLoading;
-  const error = sourceError || tagsError || termsError || null;
-  
-  // Refresh all metadata
-  const refreshMetadata = useCallback(() => {
-    try {
-      refetchSource();
-      refetchTags();
-      refetchTerms();
-    } catch (err) {
-      handleError(err, "Failed to refresh metadata");
-    }
-  }, [refetchSource, refetchTags, refetchTerms]);
-  
-  // Add tag
-  const handleAddTag = useCallback(async (tagName: string, typeId?: string | null) => {
-    if (!contentId || !isValid || !tagName.trim()) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('tags')
-        .insert({
-          name: tagName.trim(),
-          content_id: contentId,
-          type_id: typeId || null
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      // Add the new tag to the state
-      setTags(prevTags => [
-        ...prevTags, 
-        {
-          id: data.id,
-          name: data.name,
-          content_id: data.content_id,
-          type_id: data.type_id,
-          display_order: data.display_order || 0,
-          type_name: ''
-        }
-      ]);
-    } catch (err) {
-      handleError(err, `Failed to add tag "${tagName}"`);
-    }
-  }, [contentId, isValid]);
-  
-  // Delete tag
-  const handleDeleteTag = useCallback(async (tagId: string) => {
-    if (!contentId || !isValid || !tagId) return;
-    
+  // Handle tag deletion
+  const handleDeleteTag = async (tagId: string): Promise<boolean> => {
     try {
       const { error } = await supabase
         .from('tags')
@@ -234,37 +170,55 @@ export function MetadataProvider({
       
       if (error) throw error;
       
-      // Remove the tag from the state
-      setTags(prevTags => prevTags.filter(tag => tag.id !== tagId));
+      // Refetch tags after deletion
+      refetchTags();
+      return true;
     } catch (err) {
-      handleError(err, "Failed to delete tag");
+      console.error('Error deleting tag:', err);
+      handleError(err, 'Failed to delete tag');
+      return false;
     }
-  }, [contentId, isValid]);
+  };
+  
+  // Combine loading and error states
+  const isLoading = isSourceLoading || isTagsLoading || isOntologyLoading;
+  const error = sourceError || tagsError || ontologyError || null;
+  
+  // Function to refresh all metadata
+  const refreshMetadata = () => {
+    refetchSource();
+    refetchTags();
+    refetchOntology();
+  };
   
   // Create context value
   const contextValue = useMemo(() => ({
     contentId,
     validationResult: { isValid },
     isEditable: editable,
-    sourceMetadata: sourceData,
+    sourceMetadata,
     tags,
     ontologyTerms,
     isLoading,
     error,
+    isSourceLoading,
+    isTagsLoading,
+    isOntologyLoading,
     refreshMetadata,
-    handleAddTag,
     handleDeleteTag
   }), [
     contentId,
     isValid,
     editable,
-    sourceData,
+    sourceMetadata,
     tags,
     ontologyTerms,
     isLoading,
     error,
+    isSourceLoading,
+    isTagsLoading,
+    isOntologyLoading,
     refreshMetadata,
-    handleAddTag,
     handleDeleteTag
   ]);
   

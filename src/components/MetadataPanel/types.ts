@@ -43,3 +43,17 @@ export interface DomainInfo {
   name: string;
   description: string;
 }
+
+// Source metadata for compatibility
+export interface SourceMetadata {
+  id?: string;
+  title?: string;
+  content?: string;
+  created_at?: string;
+  updated_at?: string;
+  external_source_url: string | null;
+  external_source_checked_at: string | null;
+  needs_external_review: boolean;
+  external_content_hash?: string | null;
+  user_id?: string | null;
+}

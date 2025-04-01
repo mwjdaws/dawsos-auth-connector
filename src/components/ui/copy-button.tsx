@@ -58,7 +58,7 @@ export function CopyButton({
   return (
     <Button 
       onClick={handleCopy} 
-      size="icon" 
+      size="sm" 
       variant="ghost" 
       {...props}
     >

@@ -36,7 +36,7 @@ export enum ErrorSource {
   
   // Legacy API compatibility
   Network = "network",
-  Auth = "auth",
+  Auth = "auth", 
   Server = "server",
   UI = "ui"
 }

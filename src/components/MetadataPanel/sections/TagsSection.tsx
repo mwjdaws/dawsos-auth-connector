@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
-import { Input } from '@/components/ui/input';
+import React from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import { TagList } from '../components/TagList';
+import { X, Tag as TagIcon } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { Tag } from '@/types/tag';
 
 export interface TagsSectionProps {
@@ -12,14 +12,18 @@ export interface TagsSectionProps {
   editable: boolean;
   newTag: string;
   setNewTag: (value: string) => void;
-  onAddTag: (typeId?: string | null) => Promise<void>;
-  onDeleteTag: (tagId: string) => Promise<void>;
-  onReorderTags?: (tags: Tag[]) => Promise<void>;
+  onAddTag: (typeId?: string | null) => Promise<boolean>;
+  onDeleteTag: (tagId: string) => Promise<boolean>;
   onMetadataChange?: () => void;
   className?: string;
 }
 
-export const TagsSection: React.FC<TagsSectionProps> = ({
+/**
+ * TagsSection Component
+ * 
+ * Displays and manages tags for a content item
+ */
+export function TagsSection({
   tags,
   contentId,
   editable,
@@ -27,77 +31,74 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
   setNewTag,
   onAddTag,
   onDeleteTag,
-  onReorderTags,
-  onMetadataChange = () => {},
-  className = "",
-}) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTag.trim() || isSubmitting) return;
-
-    setIsSubmitting(true);
-    try {
-      await onAddTag(null);
-      if (onMetadataChange) onMetadataChange();
-    } finally {
-      setIsSubmitting(false);
+  onMetadataChange,
+  className = ''
+}: TagsSectionProps) {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && newTag.trim()) {
+      onAddTag();
     }
   };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewTag(e.target.value);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleSubmit(e);
-    }
-  };
-
-  // Create a wrapper function that safely calls onReorderTags if it exists
-  const handleReorderTags = async (tagsToReorder: Tag[]): Promise<void> => {
-    if (onReorderTags) {
-      return onReorderTags(tagsToReorder);
-    }
-    return Promise.resolve();
-  };
-
+  
   return (
-    <div className={`space-y-4 ${className}`}>
-      <h3 className="text-lg font-medium">Tags</h3>
-
+    <div className={`space-y-3 ${className}`}>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium">Tags</h3>
+        {editable && (
+          <span className="text-xs text-muted-foreground">
+            {tags.length} tags
+          </span>
+        )}
+      </div>
+      
       {editable && (
-        <form onSubmit={handleSubmit} className="flex space-x-2">
+        <div className="flex gap-2">
           <Input
             value={newTag}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
+            onChange={(e) => setNewTag(e.target.value)}
             placeholder="Add a tag..."
-            className="flex-1"
-            disabled={isSubmitting}
+            className="h-8 text-sm"
+            onKeyPress={handleKeyPress}
           />
           <Button
-            type="submit"
             size="sm"
-            disabled={!newTag.trim() || isSubmitting}
+            variant="outline"
+            onClick={() => onAddTag()}
+            disabled={!newTag.trim()}
           >
-            <Plus className="h-4 w-4 mr-1" />
             Add
           </Button>
-        </form>
+        </div>
       )}
-
-      <TagList 
-        tags={tags} 
-        editable={editable} 
-        onDeleteTag={onDeleteTag}
-        onReorderTags={handleReorderTags}
-      />
+      
+      <div className="flex flex-wrap gap-1.5">
+        {tags.length > 0 ? (
+          tags.map((tag) => (
+            <Badge
+              key={tag.id}
+              variant="secondary"
+              className="inline-flex items-center gap-1 px-2 py-0.5"
+            >
+              {tag.name}
+              {editable && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                  onClick={() => onDeleteTag(tag.id)}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </Badge>
+          ))
+        ) : (
+          <div className="text-sm text-muted-foreground flex items-center gap-1.5">
+            <TagIcon className="h-3.5 w-3.5" />
+            <span>No tags</span>
+          </div>
+        )}
+      </div>
     </div>
   );
-};
-
-export default TagsSection;
+}

@@ -1,186 +1,162 @@
 
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { 
-  zoom, 
-  zoomIdentity,
-  type ZoomBehavior,
-  type ZoomTransform,
-  select,
-  Selection
-} from 'd3';
+import { useRef, useState, useCallback, useEffect } from 'react';
+import * as d3 from 'd3';
+import { GraphNode } from './GraphRendererTypes';
 
-interface UseZoomPanProps {
+export interface ZoomPanState {
+  transform: d3.ZoomTransform;
   width: number;
   height: number;
-  initialZoom?: number;
-  minZoom?: number;
-  maxZoom?: number;
-  onZoom?: (zoomLevel: number) => void;
 }
 
-interface UseZoomPanReturn {
-  transform: ZoomTransform;
-  isZooming: boolean;
-  setupZoom: (svgElement: SVGSVGElement | null) => void;
+export interface ZoomMethods {
+  zoomIn: () => void;
+  zoomOut: () => void;
   resetZoom: () => void;
-  setZoom: (zoomLevel: number) => void;
-  panTo: (x: number, y: number, scale?: number) => void;
-  centerOnNode: (nodeId: string, nodeElements: SVGGElement[] | null) => void;
-  canvasRef: React.RefObject<HTMLCanvasElement>;
-  initZoom: () => void;
-  zoomMethods: (nodes: any[]) => any;
+  fitToContent: () => void;
+  centerOnNode: (nodeId: string) => void;
+  setZoom: (zoom: number) => void;
 }
 
 export function useZoomPan({
   width,
   height,
-  initialZoom = 1,
-  minZoom = 0.25,
-  maxZoom = 2,
-  onZoom
-}: UseZoomPanProps): UseZoomPanReturn {
-  const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown>>();
-  const selectionRef = useRef<Selection<SVGSVGElement, unknown, null, undefined>>();
-  const [transform, setTransform] = useState<ZoomTransform>(zoomIdentity.scale(initialZoom));
-  const [isZooming, setIsZooming] = useState(false);
+  initialZoom = 1
+}: {
+  width: number;
+  height: number;
+  initialZoom?: number;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const zoomBehaviorRef = useRef<d3.ZoomBehavior<Element, unknown>>();
+  const [transform, setTransform] = useState<d3.ZoomTransform>(
+    d3.zoomIdentity.translate(width / 2, height / 2).scale(initialZoom)
+  );
 
-  // Setup zoom behavior
-  useEffect(() => {
-    if (!width || !height) return;
+  // Initialize zoom behavior
+  const initZoom = useCallback(() => {
+    if (!canvasRef.current) return;
 
-    const zoomBehavior = zoom<SVGSVGElement, unknown>()
-      .scaleExtent([minZoom, maxZoom])
-      .on('zoom', (event) => {
+    const zoom = d3
+      .zoom()
+      .scaleExtent([0.1, 4])
+      .on('zoom', (event: d3.D3ZoomEvent<Element, unknown>) => {
         setTransform(event.transform);
-        if (onZoom) {
-          onZoom(event.transform.k);
-        }
-      })
-      .on('start', () => setIsZooming(true))
-      .on('end', () => setIsZooming(false));
+      });
 
-    zoomRef.current = zoomBehavior;
+    // Store the zoom behavior reference
+    zoomBehaviorRef.current = zoom;
 
+    // Apply zoom behavior to the canvas
+    d3.select(canvasRef.current).call(zoom);
+
+    // Set initial transform
+    const initialTransform = d3.zoomIdentity
+      .translate(width / 2, height / 2)
+      .scale(initialZoom);
+
+    d3.select(canvasRef.current).call(zoom.transform, initialTransform);
+  }, [width, height, initialZoom]);
+
+  // Reset interactivity when component is unmounted
+  useEffect(() => {
     return () => {
-      if (selectionRef.current) {
-        selectionRef.current.on('.zoom', null);
+      if (canvasRef.current && zoomBehaviorRef.current) {
+        d3.select(canvasRef.current).on('.zoom', null);
       }
     };
-  }, [width, height, minZoom, maxZoom, onZoom]);
-
-  // Initialize zoom
-  const initZoom = useCallback(() => {
-    if (!canvasRef.current || !zoomRef.current) return;
-    
-    // Use canvas for zoom instead of SVG
-    const canvas = canvasRef.current;
-    const selection = select(canvas as unknown as SVGSVGElement);
-    selection.call(zoomRef.current);
-    selectionRef.current = selection as unknown as Selection<SVGSVGElement, unknown, null, undefined>;
-    
-    // Initialize with the starting transform
-    selection.call(
-      zoomRef.current.transform, 
-      zoomIdentity.scale(initialZoom)
-    );
-  }, [initialZoom]);
-
-  // Setup SVG element selection
-  const setupZoom = useCallback((svgElement: SVGSVGElement | null) => {
-    if (!svgElement || !zoomRef.current) return;
-
-    const selection = select<SVGSVGElement, unknown>(svgElement);
-    selection.call(zoomRef.current);
-    selectionRef.current = selection;
-
-    // Initialize with the starting transform
-    selection.call(
-      zoomRef.current.transform, 
-      zoomIdentity.scale(initialZoom)
-    );
-  }, [initialZoom]);
-
-  // Reset zoom to initial level
-  const resetZoom = useCallback(() => {
-    if (!selectionRef.current || !zoomRef.current) return;
-
-    selectionRef.current.transition().duration(500).call(
-      zoomRef.current.transform,
-      zoomIdentity.scale(initialZoom)
-    );
-  }, [initialZoom]);
-
-  // Zoom to a specific factor
-  const setZoom = useCallback((zoomLevel: number) => {
-    if (!selectionRef.current || !zoomRef.current) return;
-
-    selectionRef.current.transition().duration(250).call(
-      zoomRef.current.transform,
-      zoomIdentity.scale(zoomLevel)
-    );
   }, []);
 
-  // Pan to a specific point with optional zoom level
-  const panTo = useCallback((x: number, y: number, scale?: number) => {
-    if (!selectionRef.current || !zoomRef.current) return;
-
-    const targetScale = scale !== undefined ? scale : transform.k;
-    const targetX = -x * targetScale + width / 2;
-    const targetY = -y * targetScale + height / 2;
-
-    selectionRef.current.transition().duration(500).call(
-      zoomRef.current.transform,
-      zoomIdentity.translate(targetX, targetY).scale(targetScale)
-    );
-  }, [transform.k, width, height]);
-
-  // Center the view on a node
-  const centerOnNode = useCallback((nodeId: string, nodeElements: SVGGElement[] | null) => {
-    if (!nodeElements) return;
-
-    const nodeElement = nodeElements.find(el => el.dataset.id === nodeId);
-    if (!nodeElement) return;
-
-    const bbox = nodeElement.getBBox();
-    const nodeX = bbox.x + bbox.width / 2;
-    const nodeY = bbox.y + bbox.height / 2;
-
-    panTo(nodeX, nodeY);
-  }, [panTo]);
-
-  // Expose methods for the component to use
-  const zoomMethods = useCallback((nodes: any[]) => {
-    return {
-      zoomIn: () => {
-        const newZoom = Math.min(transform.k * 1.2, maxZoom);
-        setZoom(newZoom);
-      },
-      zoomOut: () => {
-        const newZoom = Math.max(transform.k / 1.2, minZoom);
-        setZoom(newZoom);
-      },
-      resetZoom: () => {
-        resetZoom();
-      },
-      centerOnNode: (nodeId: string) => {
-        const nodeElement = nodes.find(n => n.id === nodeId);
-        if (nodeElement) {
-          panTo(nodeElement.x, nodeElement.y);
+  // Create methods to control zoom/pan
+  const zoomMethods = useCallback(
+    (nodes: GraphNode[] = []) => {
+      // Helper to ensure we have the required references
+      const ensureZoomBehavior = () => {
+        if (!canvasRef.current || !zoomBehaviorRef.current) {
+          return false;
         }
-      }
-    };
-  }, [transform.k, maxZoom, minZoom, setZoom, resetZoom, panTo]);
+        return true;
+      };
+
+      return {
+        zoomIn: () => {
+          if (!ensureZoomBehavior()) return;
+          const newScale = transform.k * 1.2;
+          const newTransform = d3.zoomIdentity
+            .translate(transform.x, transform.y)
+            .scale(newScale);
+          d3.select(canvasRef.current!).call(zoomBehaviorRef.current!.transform, newTransform);
+        },
+
+        zoomOut: () => {
+          if (!ensureZoomBehavior()) return;
+          const newScale = transform.k * 0.8;
+          const newTransform = d3.zoomIdentity
+            .translate(transform.x, transform.y)
+            .scale(newScale);
+          d3.select(canvasRef.current!).call(zoomBehaviorRef.current!.transform, newTransform);
+        },
+
+        resetZoom: () => {
+          if (!ensureZoomBehavior()) return;
+          const newTransform = d3.zoomIdentity
+            .translate(width / 2, height / 2)
+            .scale(1);
+          d3.select(canvasRef.current!).call(zoomBehaviorRef.current!.transform, newTransform);
+        },
+
+        fitToContent: () => {
+          if (!ensureZoomBehavior() || nodes.length === 0) return;
+
+          // Find the bounds of all nodes
+          const padding = 50;
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+          nodes.forEach(node => {
+            if (node.x < minX) minX = node.x;
+            if (node.y < minY) minY = node.y;
+            if (node.x > maxX) maxX = node.x;
+            if (node.y > maxY) maxY = node.y;
+          });
+
+          // Calculate scale and translation to fit all nodes
+          const dx = maxX - minX + padding * 2;
+          const dy = maxY - minY + padding * 2;
+          const scale = Math.min(width / dx, height / dy);
+          const x = (width - scale * (minX + maxX)) / 2;
+          const y = (height - scale * (minY + maxY)) / 2;
+
+          const newTransform = d3.zoomIdentity.translate(x, y).scale(scale);
+          d3.select(canvasRef.current!).call(zoomBehaviorRef.current!.transform, newTransform);
+        },
+
+        centerOnNode: (nodeId: string) => {
+          if (!ensureZoomBehavior()) return;
+          
+          const node = nodes.find(n => n.id === nodeId);
+          if (!node) return;
+
+          const x = width / 2 - node.x * transform.k;
+          const y = height / 2 - node.y * transform.k;
+          const newTransform = d3.zoomIdentity.translate(x, y).scale(transform.k);
+          d3.select(canvasRef.current!).call(zoomBehaviorRef.current!.transform, newTransform);
+        },
+
+        setZoom: (zoom: number) => {
+          if (!ensureZoomBehavior()) return;
+          const newTransform = d3.zoomIdentity
+            .translate(transform.x, transform.y)
+            .scale(zoom);
+          d3.select(canvasRef.current!).call(zoomBehaviorRef.current!.transform, newTransform);
+        }
+      };
+    },
+    [width, height, transform]
+  );
 
   return {
-    transform,
-    isZooming,
-    setupZoom,
-    resetZoom,
-    setZoom,
-    panTo,
-    centerOnNode,
     canvasRef,
+    transform,
     initZoom,
     zoomMethods
   };

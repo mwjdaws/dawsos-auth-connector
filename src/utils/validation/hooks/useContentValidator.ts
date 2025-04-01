@@ -1,54 +1,61 @@
 
-import { useMemo } from 'react';
-import { validateContentId } from '../contentIdValidation';
-import { ContentIdValidationResult } from '../types';
-import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { validateContentId, isValidContentId } from '../contentIdValidation';
+import { supabase } from '@/integrations/supabase/client';
+import { ContentIdValidationResult } from '../types';
 
 /**
- * Custom hook to validate a content ID and check if it exists
+ * Custom hook to validate content IDs and check if they exist in the database
  * 
  * @param contentId The content ID to validate
- * @returns ContentIdValidationResult indicating validity and existence
+ * @returns ValidationResult object with validation details
  */
 export function useContentValidator(contentId: string): ContentIdValidationResult {
-  // Basic validation
-  const basicValidation = useMemo(() => 
-    validateContentId(contentId),
-    [contentId]
-  );
+  // First validate the format without a database check
+  const formatValidation = validateContentId(contentId);
   
-  // Check existence in database
-  const { data: contentExists, isLoading } = useQuery({
-    queryKey: basicValidation.isValid ? ['contentExists', contentId] : null,
+  // If the format is invalid, return early
+  if (!formatValidation.isValid) {
+    return formatValidation;
+  }
+  
+  // Use React Query to check existence if the format is valid
+  const { data: exists = false, isLoading } = useQuery({
+    queryKey: contentId ? ['contentExists', contentId] : null,
     queryFn: async () => {
+      // Skip DB check for temporary IDs (they won't be in the DB)
+      if (contentId.startsWith('temp-')) {
+        return false;
+      }
+      
       try {
         const { count, error } = await supabase
           .from('knowledge_sources')
           .select('id', { count: 'exact', head: true })
           .eq('id', contentId);
-          
-        if (error) throw error;
-        return !!count && count > 0;
+        
+        if (error) {
+          console.error('Error checking content existence:', error);
+          return false;
+        }
+        
+        return count > 0;
       } catch (err) {
-        console.error('Error checking content existence:', err);
+        console.error('Failed to check content existence:', err);
         return false;
       }
     },
-    enabled: basicValidation.isValid && contentId.length > 0,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: isValidContentId(contentId) && !contentId.startsWith('temp-'),
+    staleTime: 60000, // Cache for 1 minute
   });
   
-  // Return complete validation result
-  return useMemo(() => {
-    if (!basicValidation.isValid) {
-      return basicValidation;
-    }
-    
-    return {
-      ...basicValidation,
-      contentExists: contentExists === undefined ? false : contentExists,
-      isLoading
-    };
-  }, [basicValidation, contentExists, isLoading]);
+  // Return the combined validation result
+  return {
+    isValid: formatValidation.isValid,
+    contentExists: exists,
+    errorMessage: null,
+    resultType: "contentId"
+  };
 }
+
+export default useContentValidator;
