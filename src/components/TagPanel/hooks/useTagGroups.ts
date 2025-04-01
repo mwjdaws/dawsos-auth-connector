@@ -7,6 +7,7 @@ export interface TagGroup {
   id: string;
   name: string;
   tags: Tag[];
+  category?: string; // Add this for compatibility with GroupedTagList
 }
 
 /**
@@ -34,15 +35,17 @@ export function useTagGroups(tags: Tag[]) {
     });
     
     // Convert to array of groups
-    const result: TagGroup[] = Object.entries(groups).map(([id, tags]) => {
+    const result: TagGroup[] = Object.entries(groups).map(([id, groupTags]) => {
       // Determine content_id from the first tag in the group
-      const content_id = tags[0]?.content_id || '';
+      const firstTag = groupTags[0];
+      const content_id = firstTag?.content_id || '';
       
       return {
         id: id === 'default' ? 'default' : id,
         name: id === 'default' ? 'General' : id,
-        tags: tags,
-        content_id
+        tags: groupTags,
+        content_id,
+        category: id === 'default' ? 'General' : 'Custom' // Add a category for compatibility
       };
     });
     

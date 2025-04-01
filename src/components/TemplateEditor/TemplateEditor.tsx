@@ -49,6 +49,10 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
       try {
         setLoading(true);
         const loadedTemplate = await fetchKnowledgeTemplateById(templateId);
+        if (!loadedTemplate) {
+          throw new Error('Template not found');
+        }
+        
         setTemplate(loadedTemplate);
         
         // Initialize form state
@@ -108,14 +112,20 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
       // Update the template
       const updatedTemplate = await updateKnowledgeTemplate(templateId, updates);
       
+      if (!updatedTemplate || updatedTemplate.length === 0) {
+        throw new Error('Failed to update template');
+      }
+      
       toast({
         title: "Template Saved",
         description: `The template "${name}" has been updated successfully.`,
       });
       
       // Update local state and call onSave callback
-      setTemplate(updatedTemplate[0]);
-      if (onSave) onSave(updatedTemplate[0]);
+      if (updatedTemplate[0]) {
+        setTemplate(updatedTemplate[0]);
+        if (onSave) onSave(updatedTemplate[0]);
+      }
     } catch (err) {
       console.error('Error saving template:', err);
       toast({

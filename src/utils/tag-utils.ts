@@ -1,18 +1,16 @@
-
 import { Tag } from '@/types/tag';
 
 /**
  * Sort tags by display order
  */
-export const sortTagsByDisplayOrder = (tags: Tag[]): Tag[] => {
+export function sortTagsByDisplayOrder(tags: any[]): any[] {
   return [...tags].sort((a, b) => {
-    // Sort by display_order if available, otherwise alphabetically by name
-    if (a.display_order !== b.display_order) {
-      return a.display_order - b.display_order;
-    }
-    return a.name.localeCompare(b.name);
+    // Default to 0 if display_order is not defined
+    const orderA = a.display_order || 0;
+    const orderB = b.display_order || 0;
+    return orderA - orderB;
   });
-};
+}
 
 /**
  * Group tags by their type

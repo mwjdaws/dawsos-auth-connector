@@ -8,6 +8,7 @@ import { isValidContentId } from "@/utils/content-validation";
 import { useTagGeneration } from "@/hooks/tagGeneration";
 import { useSaveTags } from "./hooks/useSaveTags";
 import { useTagsQuery, useTagMutations } from "@/hooks/metadata";
+import { Tag } from "@/types/tag";
 
 // Import refactored components
 import { AutomaticTagTab } from "./AutomaticTagTab";
@@ -41,11 +42,14 @@ export function TagPanel({
   
   // Fetch existing tags with React Query
   const { 
-    data: existingTags = [], 
+    data: existingTagsData = [], 
     isLoading: isLoadingTags 
   } = useTagsQuery(contentId, {
     enabled: isValidContentId(contentId)
   });
+  
+  // Ensure we're working with the Tag type
+  const existingTags: Tag[] = existingTagsData as Tag[];
   
   // Tag mutations
   const { 

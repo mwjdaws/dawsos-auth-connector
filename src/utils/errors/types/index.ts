@@ -1,30 +1,12 @@
 
 /**
- * Base error types
+ * Core error types and enums
  */
 
-export enum ErrorSource {
-  // Error sources by component type
-  Component = 'component',
-  Hook = 'hook',
-  Service = 'service',
-  Util = 'util',
-  Api = 'api',
-  Database = 'database',
-  
-  // Error sources by feature area
-  Auth = 'auth',
-  Network = 'network',
-  Validation = 'validation',
-  UI = 'ui',
-  Server = 'server',
-  
-  // Default/unknown error source
-  Unknown = 'unknown'
-}
-
+/**
+ * Error severity level
+ */
 export enum ErrorLevel {
-  // Error severity levels (lowercase values)
   Debug = 'debug',
   Info = 'info',
   Warning = 'warning',
@@ -32,53 +14,54 @@ export enum ErrorLevel {
   Critical = 'critical'
 }
 
-// For backward compatibility
-export const ERROR_LEVELS = {
-  DEBUG: ErrorLevel.Debug,
-  INFO: ErrorLevel.Info,
-  WARNING: ErrorLevel.Warning,
-  ERROR: ErrorLevel.Error,
-  CRITICAL: ErrorLevel.Critical
-};
-
-export interface ErrorHandlingOptions {
-  // Source of the error
-  source: ErrorSource;
-  
-  // Message for display
-  message: string;
-  
-  // Severity level
-  level?: ErrorLevel;
-  
-  // Additional context for the error
-  context?: Record<string, any>;
-  
-  // Whether to report to analytics
-  reportToAnalytics?: boolean;
-  
-  // Whether to show a toast notification
-  showToast?: boolean;
-  
-  // Whether to suppress error handling completely
-  silent?: boolean;
-  
-  // For toast notifications
-  toastTitle?: string;
-  toastDescription?: string;
-  toastId?: string;
-  suppressToast?: boolean;
-  
-  // For error fingerprinting and deduplication
-  fingerprint?: string;
-  
-  // For technical details
-  technical?: string;
-  originalError?: Error;
+/**
+ * Error source categories
+ */
+export enum ErrorSource {
+  App = 'app',
+  API = 'api',
+  Utils = 'utils',
+  Database = 'database',
+  Component = 'component',
+  // For compatibility with existing code
+  Network = 'network',
+  Auth = 'auth',
+  Validation = 'validation',
+  Server = 'server',
+  UI = 'ui'
 }
 
-// Export API error types
-export * from './api-errors';
+/**
+ * Base error handling options
+ */
+export interface ErrorHandlingOptions {
+  // Required properties
+  source: ErrorSource | string;
+  message: string;
+  level: ErrorLevel;
 
-// Export validation error types
-export * from './validation-errors';
+  // Optional properties
+  reportToAnalytics?: boolean;
+  showToast?: boolean;
+  silent?: boolean;
+  
+  // For compatibility with existing code
+  fingerprint?: string;
+  suppressToast?: boolean;
+  toastId?: string;
+  technical?: boolean;
+  originalError?: any;
+}
+
+/**
+ * Default options for error handling
+ */
+export const defaultErrorOptions: Partial<ErrorHandlingOptions> = {
+  level: ErrorLevel.Error,
+  reportToAnalytics: true,
+  showToast: true,
+  silent: false
+};
+
+// Utility type for partial error options
+export type PartialErrorOptions = Partial<ErrorHandlingOptions>;

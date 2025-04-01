@@ -1,69 +1,109 @@
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
-import { useTagGroups } from "./hooks/useTagGroups";
-import { TagCardsList } from "./TagCardsList";
-import { TagCardsLoading } from "./TagCardsLoading";
-import { TagCardsEmpty } from "./TagCardsEmpty";
-import { TagCardsError } from "./TagCardsError";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { RefreshCw } from 'lucide-react';
+import { useTagGroups, TagGroup } from './hooks/useTagGroups';
+import { Tag } from '@/types/tag';
 
-export interface TagCardsProps {
-  title?: string;
-  tags?: string[];
+interface TagCardsProps {
+  tags?: Tag[];
+  isLoading?: boolean;
+  error?: Error | null;
+  handleRefresh?: () => void;
   onTagClick?: (tag: string) => void;
 }
 
-export function TagCards({ title, tags, onTagClick }: TagCardsProps) {
-  const { tagGroups, isLoading, error, handleRefresh } = useTagGroups();
+export function TagCards({ tags = [], isLoading = false, error = null, handleRefresh, onTagClick }: TagCardsProps) {
+  const [recentTags, setRecentTags] = useState<Tag[]>([]);
+  const groupedTags = useTagGroups(recentTags);
 
-  // If we have explicit tags provided, use those instead of fetched groups
-  if (tags && title) {
+  useEffect(() => {
+    // Use provided tags or fetch the most recent tags
+    if (tags && tags.length > 0) {
+      setRecentTags(tags);
+    } else {
+      // In a real implementation, you might fetch recent tags here
+      setRecentTags([]);
+    }
+  }, [tags]);
+
+  if (isLoading) {
     return (
       <div className="space-y-4">
-        <h3 className="text-sm font-medium">{title}</h3>
-        <div className="flex flex-wrap gap-2">
-          {tags.map((tag, index) => (
-            <span 
-              key={index}
-              className="px-2 py-1 bg-secondary text-secondary-foreground rounded-md text-sm"
-              onClick={() => onTagClick?.(tag)}
-              style={{ cursor: onTagClick ? 'pointer' : 'default' }}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
+        <Skeleton className="h-[100px] w-full" />
+        <Skeleton className="h-[100px] w-full" />
       </div>
     );
   }
 
-  if (isLoading) {
-    return <TagCardsLoading />;
-  }
-
   if (error) {
-    return <TagCardsError error={error} onRetry={handleRefresh} />;
+    return (
+      <Card className="border-red-300 bg-red-50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-red-700 text-lg flex justify-between items-center">
+            <span>Error Loading Tags</span>
+            {handleRefresh && (
+              <Button variant="ghost" size="sm" onClick={handleRefresh}>
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Retry
+              </Button>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-red-700">{error.message}</p>
+        </CardContent>
+      </Card>
+    );
   }
 
-  if (tagGroups.length === 0) {
-    return <TagCardsEmpty onRefresh={handleRefresh} />;
+  if (!groupedTags || groupedTags.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Recent Tags</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">No recent tags found.</p>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefresh} 
-          className="flex items-center"
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Refresh
-        </Button>
-      </div>
-      <TagCardsList tagGroups={tagGroups} />
+      {groupedTags.map((group) => (
+        <Card key={group.id}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex justify-between items-center">
+              <span>{group.name}</span>
+              {handleRefresh && (
+                <Button variant="ghost" size="sm" onClick={handleRefresh}>
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                  Refresh
+                </Button>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {group.tags.map((tag) => (
+                <Badge
+                  key={tag.id}
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground"
+                  onClick={() => onTagClick && onTagClick(tag.name)}
+                >
+                  {tag.name}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }

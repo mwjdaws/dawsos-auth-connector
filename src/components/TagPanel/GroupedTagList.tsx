@@ -3,9 +3,18 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tag, TagGroup } from '@/types/tag';
-import { TagPosition } from '@/types/validation';
-import { sortTagsByDisplayOrder } from '@/utils/tag-utils';
+import { Tag } from '@/types/tag';
+import { TagGroup } from './hooks/useTagGroups'; 
+
+// Helper function to sort tags by display_order
+function sortTagsByDisplayOrder(tags: Tag[]): Tag[] {
+  return [...tags].sort((a, b) => {
+    // Default to 0 if display_order is not defined
+    const orderA = a.display_order || 0;
+    const orderB = b.display_order || 0;
+    return orderA - orderB;
+  });
+}
 
 interface GroupedTagListProps {
   tagGroups: TagGroup[];
@@ -57,12 +66,13 @@ export function GroupedTagList({
         // Sort tags by display order
         const sortedTags = sortTagsByDisplayOrder(group.tags);
         
+        // Use group.name if available, or fallback to category-based naming
+        const displayName = group.name || (group.category ? `${group.category} Tags` : 'Other Tags');
+        
         return (
-          <Card key={group.name || 'default'} className="shadow-sm">
+          <Card key={group.id} className="shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-md">
-                {group.name || (group.category ? `${group.category} Tags` : 'Other Tags')}
-              </CardTitle>
+              <CardTitle className="text-md">{displayName}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
