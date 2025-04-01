@@ -1,26 +1,25 @@
-
 import { Tag } from '@/types/tag';
 import { OntologyTerm } from '@/types/ontology';
 import { ValidationResult } from '@/utils/validation/types';
 
 /**
- * Source metadata for a content item
+ * Source metadata for a knowledge source
  */
 export interface SourceMetadata {
   id: string;
   title: string;
   content: string;
-  created_at: string | null;
-  updated_at: string | null;
+  created_at: string;
+  updated_at: string;
   user_id: string | null;
   created_by: string | null;
-  published: boolean;
-  published_at: string | null;
+  template_id: string | null;
   external_source_url: string | null;
   external_source_checked_at: string | null;
   external_content_hash: string | null;
   needs_external_review: boolean;
-  template_id: string | null;
+  published: boolean;
+  metadata?: Record<string, any> | null;
 }
 
 /**
@@ -29,18 +28,17 @@ export interface SourceMetadata {
 export interface MetadataPanelProps {
   contentId: string;
   editable?: boolean;
-  isCollapsible?: boolean;
-  initialCollapsed?: boolean;
   showOntologyTerms?: boolean;
   showDomain?: boolean;
   domain?: string | null;
   className?: string;
-  onMetadataChange?: (() => void) | null;
-  children?: React.ReactNode;
+  onMetadataChange?: () => void;
+  initialCollapsed?: boolean;
+  isCollapsible?: boolean;
 }
 
 /**
- * Props for the MetadataContext
+ * Context props for the MetadataProvider
  */
 export interface MetadataContextProps {
   contentId: string;
@@ -49,12 +47,12 @@ export interface MetadataContextProps {
   isEditable: boolean;
   isLoading: boolean;
   error: Error | null;
-  ontologyTerms?: OntologyTerm[];
-  sourceMetadata?: SourceMetadata | null;
-  refreshMetadata?: () => Promise<void>;
-  fetchTags?: () => Promise<Tag[]>;
-  handleAddTag?: (tagName: string, typeId?: string | null) => Promise<void>;
-  handleDeleteTag?: (tagId: string) => Promise<void>;
+  ontologyTerms: OntologyTerm[];
+  sourceMetadata: SourceMetadata | null;
+  refreshMetadata: () => void;
+  fetchTags: () => void;
+  handleAddTag: (tagName: string, typeId?: string | null) => Promise<void>;
+  handleDeleteTag: (tagId: string) => Promise<void>;
 }
 
 /**

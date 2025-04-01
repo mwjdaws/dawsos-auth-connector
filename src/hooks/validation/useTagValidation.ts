@@ -1,98 +1,109 @@
 
 /**
- * useTagValidation hook
- * 
- * Validates tag operations based on tag content and rules
+ * Hook for validating tags with appropriate error handling
  */
-import { useState, useCallback } from 'react';
-import { isValidContentId } from '@/utils/validation/contentIdValidation';
+
+import { useCallback } from 'react';
+import { TagValidationResult, createTagValidationResult } from '@/utils/validation/types';
 import { handleError, ErrorLevel } from '@/utils/errors';
-import { ValidationResult, createValidResult, createInvalidResult } from '@/utils/validation/types';
+
+/**
+ * Minimum and maximum tag length constraints
+ */
+const MIN_TAG_LENGTH = 2;
+const MAX_TAG_LENGTH = 50;
 
 /**
  * Hook for validating tag operations
  */
 export function useTagValidation() {
-  const [lastValidatedTag, setLastValidatedTag] = useState<string>('');
-  
   /**
-   * Validate a tag name based on common rules
+   * Check if a tag name is valid
    * 
-   * @param tagName The tag name to validate
-   * @returns Validation result object
+   * @param tagName - Tag name to validate
+   * @returns TagValidationResult
    */
-  const validateTag = useCallback((tagName: string): ValidationResult => {
-    setLastValidatedTag(tagName);
-    
-    if (!tagName || tagName.trim() === '') {
-      return createInvalidResult('Tag name cannot be empty');
+  const validateTag = useCallback((tagName: string): TagValidationResult => {
+    try {
+      // Check if tag is empty
+      if (!tagName || tagName.trim() === '') {
+        return createTagValidationResult(false, 'Tag name cannot be empty');
+      }
+      
+      // Check minimum length
+      if (tagName.trim().length < MIN_TAG_LENGTH) {
+        return createTagValidationResult(
+          false, 
+          `Tag must be at least ${MIN_TAG_LENGTH} characters`
+        );
+      }
+      
+      // Check maximum length
+      if (tagName.trim().length > MAX_TAG_LENGTH) {
+        return createTagValidationResult(
+          false,
+          `Tag must be less than ${MAX_TAG_LENGTH} characters`
+        );
+      }
+      
+      // Check for invalid characters
+      if (!/^[a-zA-Z0-9\s-_:.#]+$/.test(tagName)) {
+        return createTagValidationResult(
+          false,
+          'Tag contains invalid characters'
+        );
+      }
+      
+      // Tag is valid
+      return createTagValidationResult(true);
+    } catch (error) {
+      handleError(
+        error,
+        'Error validating tag',
+        { level: ErrorLevel.WARNING }
+      );
+      
+      return createTagValidationResult(false, 'Error validating tag');
     }
-    
-    // Validate minimum length
-    if (tagName.trim().length < 2) {
-      return createInvalidResult('Tag must be at least 2 characters long');
-    }
-    
-    // Validate maximum length
-    if (tagName.trim().length > 50) {
-      return createInvalidResult('Tag must be less than 50 characters long');
-    }
-    
-    // Check for invalid characters (optional, adjust as needed)
-    const invalidCharsRegex = /[^\w\s\-\.]/;
-    if (invalidCharsRegex.test(tagName)) {
-      return createInvalidResult('Tag contains invalid characters');
-    }
-    
-    return createValidResult();
   }, []);
   
   /**
-   * Validate a tag operation with content ID validation
+   * Validate a tag operation against both content and tag validation
    * 
-   * @param tagName Tag name
-   * @param contentId Content ID
-   * @returns Whether the operation can proceed
+   * @param contentIsValid - Whether the content ID is valid
+   * @param tagName - Tag name to validate
+   * @returns TagValidationResult
    */
-  const validateTagOperation = useCallback((tagName: string, contentId?: string): boolean => {
-    // First validate the content ID
-    if (contentId && !isValidContentId(contentId)) {
+  const validateTagOperation = useCallback((
+    contentIsValid: boolean,
+    tagName: string
+  ): TagValidationResult => {
+    try {
+      // First check if the content is valid
+      if (!contentIsValid) {
+        return createTagValidationResult(
+          false,
+          'Cannot perform tag operation: invalid content ID'
+        );
+      }
+      
+      // Then validate the tag
+      return validateTag(tagName);
+    } catch (error) {
       handleError(
-        new Error('Invalid content ID'),
-        'Cannot perform tag operation: invalid content ID',
+        error,
+        'Error validating tag operation',
         { level: ErrorLevel.WARNING }
       );
-      return false;
+      
+      return createTagValidationResult(false, 'Error validating tag operation');
     }
-    
-    // Then validate the tag
-    const tagValidation = validateTag(tagName);
-    if (!tagValidation.isValid) {
-      handleError(
-        new Error(tagValidation.errorMessage || 'Invalid tag'),
-        tagValidation.errorMessage || 'Invalid tag',
-        { level: ErrorLevel.WARNING }
-      );
-      return false;
-    }
-    
-    return true;
-  }, [validateTag]);
-  
-  /**
-   * Get validation result for tag name
-   */
-  const isValidTag = useCallback((tagName: string): ValidationResult => {
-    return validateTag(tagName);
   }, [validateTag]);
   
   return {
     validateTag,
-    validateTagOperation,
-    isValidTag,
-    lastValidatedTag
+    validateTagOperation
   };
 }
 
-// Default export
 export default useTagValidation;

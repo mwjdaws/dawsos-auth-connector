@@ -1,13 +1,12 @@
 
 /**
- * Base validation result interface
+ * Common validation result type
  */
 export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
   message: string | null;
   resultType: string;
-  contentExists?: boolean;
 }
 
 /**
@@ -16,13 +15,6 @@ export interface ValidationResult {
 export interface ContentIdValidationResult extends ValidationResult {
   resultType: 'contentId';
   contentExists: boolean;
-}
-
-/**
- * Document content validation result
- */
-export interface DocumentValidationResult extends ValidationResult {
-  resultType: 'document';
 }
 
 /**
@@ -40,147 +32,51 @@ export interface OntologyTermValidationResult extends ValidationResult {
 }
 
 /**
- * Create a valid validation result
- * @param resultType Result type
- * @param message Optional success message
- * @returns Validation result
+ * Document validation result
  */
-export function createValidResult(
-  resultType: string, 
-  message: string | null = null
-): ValidationResult {
-  return {
-    isValid: true,
-    errorMessage: null,
-    message,
-    resultType
-  };
+export interface DocumentValidationResult extends ValidationResult {
+  resultType: 'document';
 }
 
-/**
- * Create an invalid validation result
- * @param resultType Result type
- * @param errorMessage Error message
- * @param message Optional context message
- * @returns Validation result
- */
-export function createInvalidResult(
-  resultType: string, 
-  errorMessage: string, 
-  message: string | null = null
-): ValidationResult {
-  return {
-    isValid: false,
-    errorMessage,
-    message,
-    resultType
-  };
-}
-
-/**
- * Create a content ID validation result
- * @param isValid Is valid flag
- * @param contentExists Content exists flag
- * @param errorMessage Optional error message
- * @param message Optional success message
- * @returns Content ID validation result
- */
-export function createContentIdValidationResult(
+// Utility functions to create validation results with default values
+export const createContentIdValidationResult = (
   isValid: boolean,
-  contentExists: boolean,
-  errorMessage: string | null = null,
+  contentExists: boolean = false,
   message: string | null = null
-): ContentIdValidationResult {
-  return {
-    isValid,
-    contentExists,
-    errorMessage,
-    message,
-    resultType: 'contentId'
-  };
-}
+): ContentIdValidationResult => ({
+  isValid,
+  contentExists,
+  errorMessage: isValid ? null : message,
+  message,
+  resultType: 'contentId'
+});
 
-/**
- * Create a document validation result 
- * @param isValid Is valid flag
- * @param errorMessage Error message
- * @param message Optional success message
- * @returns Document validation result
- */
-export function createDocumentValidationResult(
+export const createTagValidationResult = (
   isValid: boolean,
-  errorMessage: string | null = null,
   message: string | null = null
-): DocumentValidationResult {
-  return {
-    isValid,
-    errorMessage,
-    message,
-    resultType: 'document'
-  };
-}
+): TagValidationResult => ({
+  isValid,
+  errorMessage: isValid ? null : message,
+  message,
+  resultType: 'tag'
+});
 
-/**
- * Create a tag validation result
- * @param isValid Is valid flag
- * @param errorMessage Error message
- * @param message Optional success message
- * @returns Tag validation result
- */
-export function createTagValidationResult(
+export const createOntologyTermValidationResult = (
   isValid: boolean,
-  errorMessage: string | null = null,
   message: string | null = null
-): TagValidationResult {
-  return {
-    isValid,
-    errorMessage,
-    message,
-    resultType: 'tag'
-  };
-}
+): OntologyTermValidationResult => ({
+  isValid,
+  errorMessage: isValid ? null : message,
+  message,
+  resultType: 'ontologyTerm'
+});
 
-/**
- * Create an ontology term validation result
- * @param isValid Is valid flag
- * @param errorMessage Error message 
- * @param message Optional success message
- * @returns Ontology term validation result
- */
-export function createOntologyTermValidationResult(
+export const createDocumentValidationResult = (
   isValid: boolean,
-  errorMessage: string | null = null,
   message: string | null = null
-): OntologyTermValidationResult {
-  return {
-    isValid,
-    errorMessage,
-    message,
-    resultType: 'ontologyTerm'
-  };
-}
-
-/**
- * Check if a validation result is valid
- * @param result Validation result to check
- * @returns True if valid
- */
-export function isValidResult(result: ValidationResult | undefined): boolean {
-  return result?.isValid === true;
-}
-
-/**
- * Combine multiple validation results
- * @param results Results to combine
- * @returns Combined validation result
- */
-export function combineValidationResults(results: ValidationResult[]): ValidationResult {
-  // If any result is invalid, return the first invalid result
-  const firstInvalid = results.find(r => !r.isValid);
-  if (firstInvalid) {
-    return firstInvalid;
-  }
-  
-  // All results are valid, return a valid result
-  return createValidResult('combined');
-}
+): DocumentValidationResult => ({
+  isValid,
+  errorMessage: isValid ? null : message,
+  message,
+  resultType: 'document'
+});
