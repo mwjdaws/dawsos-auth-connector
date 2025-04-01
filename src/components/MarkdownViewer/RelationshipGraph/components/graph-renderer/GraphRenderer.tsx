@@ -1,19 +1,19 @@
 
 import React, { useRef, useImperativeHandle, useState, useCallback, forwardRef } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
-import { GraphData, GraphNode, GraphLink } from '../../types';
+import { GraphData, GraphNode, GraphLink, GraphRendererRef } from '../../types';
 import { useNodeRenderer } from './useNodeRenderer';
 import { useLinkRenderer } from './useLinkRenderer';
 
 // Constants for node and link colors
-const NODE_COLOR_MAP = {
+const DEFAULT_NODE_COLOR_MAP = {
   source: '#4ecdc4',
   ontology: '#f9c74f',
   document: '#6b7280',
   term: '#a0aec0'
 };
 
-const LINK_COLOR_MAP = {
+const DEFAULT_LINK_COLOR_MAP = {
   wikilink: '#63b3ed',
   manual: '#9f7aea',
   'AI-suggested': '#f6ad55',
@@ -33,7 +33,7 @@ interface GraphRendererProps {
   onLinkClick?: (source: string, target: string) => void;
 }
 
-export const GraphRenderer = forwardRef<any, GraphRendererProps>(({
+export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(({
   graphData,
   width,
   height,
@@ -47,14 +47,14 @@ export const GraphRenderer = forwardRef<any, GraphRendererProps>(({
   
   // Use node and link renderer hooks
   const nodeRenderer = useNodeRenderer({
-    nodeColorMap: NODE_COLOR_MAP,
+    nodeColorMap: DEFAULT_NODE_COLOR_MAP,
     defaultNodeColor: '#6b7280',
     nodeSizeRange: [4, 12],
     defaultNodeSize: 8
   });
   
   const linkRenderer = useLinkRenderer({
-    linkColorMap: LINK_COLOR_MAP,
+    linkColorMap: DEFAULT_LINK_COLOR_MAP,
     defaultLinkColor: '#d1d5db',
     linkWidthRange: [1, 3],
     defaultLinkWidth: 1.5

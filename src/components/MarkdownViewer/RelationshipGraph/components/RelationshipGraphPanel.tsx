@@ -3,8 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Card } from '@/components/ui/card';
 import { RelationshipGraph } from '../RelationshipGraph';
-import { GraphProps } from '../types';
-import { createSafeGraphProps } from '../compatibility';
+import { ensureString } from '@/utils/compatibility';
 
 /**
  * Props for the RelationshipGraphPanel component
@@ -31,7 +30,7 @@ export function RelationshipGraphPanel({
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   
   // Determine the starting node ID - use sourceId if available, otherwise contentId
-  const startingNodeId = sourceId || contentId || '';
+  const startingNodeId = ensureString(sourceId || contentId);
   
   // Update dimensions based on container size
   useEffect(() => {
@@ -61,14 +60,6 @@ export function RelationshipGraphPanel({
     );
   }
   
-  // Create props object for RelationshipGraph with correct types
-  const graphProps: GraphProps = {
-    startingNodeId,
-    width: dimensions.width,
-    height: dimensions.height,
-    hasAttemptedRetry
-  };
-  
   return (
     <div ref={containerRef} className="w-full h-[600px]">
       <ErrorBoundary fallback={
@@ -79,7 +70,10 @@ export function RelationshipGraphPanel({
         <Card className="overflow-hidden">
           <div className="w-full h-full">
             <RelationshipGraph
-              {...graphProps}
+              startingNodeId={startingNodeId}
+              width={dimensions.width} 
+              height={dimensions.height}
+              hasAttemptedRetry={hasAttemptedRetry}
             />
           </div>
         </Card>

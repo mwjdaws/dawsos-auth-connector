@@ -36,3 +36,8 @@ export function convertErrorOptions(options?: LegacyErrorHandlingOptions): Parti
   
   return newOptions;
 }
+
+/**
+ * Alias for convertErrorOptions for backward compatibility
+ */
+export const convertLegacyOptions = convertErrorOptions;
