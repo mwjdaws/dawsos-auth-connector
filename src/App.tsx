@@ -7,7 +7,7 @@ import { AuthProvider } from './context/AuthContext';
 import { QueryProvider } from './providers/QueryProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider } from './components/ui/use-toast-primitive';
-import { clearToasts } from './hooks/use-toast';
+import { clearToasts, useToast } from './hooks/use-toast';
 
 /**
  * RouteChangeHandler component to clear toasts on route changes

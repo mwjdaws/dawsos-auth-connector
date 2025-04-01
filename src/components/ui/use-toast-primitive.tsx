@@ -124,7 +124,7 @@ export const useToast = () => {
 // queue the toast to be shown when the toast provider mounts
 let queuedToasts: ToastProps[] = [];
 
-export const toast = (props: ToastProps) => {
+export const toast = (props: ToastProps): string => {
   if (toastFn) {
     return toastFn(props);
   } else {
@@ -136,9 +136,11 @@ export const toast = (props: ToastProps) => {
 };
 
 // Process any queued toasts when the provider mounts
-export const clearToasts = () => {
+export const clearToasts = (): void => {
   if (toastFn) {
-    const { dismiss } = useToast();
-    dismiss();
+    const context = React.useContext(ToastContext);
+    if (context) {
+      context.dismiss();
+    }
   }
 };
