@@ -16,6 +16,7 @@ export { GraphControls } from './components/GraphControls';
 export { GraphRenderer } from './components/graph-renderer/GraphRenderer';
 export { GraphSearch } from './components/GraphSearch';
 export { GraphZoomControl } from './components/GraphZoomControl';
+export { GraphContent } from './components/GraphContent';
 
 // Hooks
 export { useRelationshipGraph } from './hooks/useRelationshipGraph';

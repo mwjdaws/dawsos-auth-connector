@@ -1,89 +1,72 @@
 
 import React from 'react';
-import { Slider } from '@/components/ui/slider';
-import { MinusIcon, PlusIcon } from 'lucide-react';
+import { Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 
 interface GraphZoomControlProps {
   zoom: number;
-  onZoomChange: (zoom: number) => void;
+  onZoomChange: (newZoom: number) => void;
   onReset: () => void;
-  min?: number;
-  max?: number;
-  step?: number;
   disabled?: boolean;
 }
 
 /**
  * GraphZoomControl Component
  * 
- * Provides zoom controls for the graph visualization with a slider and buttons.
+ * A set of controls for zooming in and out of the graph.
  */
 export function GraphZoomControl({
   zoom,
   onZoomChange,
   onReset,
-  min = 0.1,
-  max = 5,
-  step = 0.1,
   disabled = false
 }: GraphZoomControlProps) {
-  const handleSliderChange = (values: number[]) => {
-    // Ensure values[0] is a number - if it's undefined, use current zoom
-    const newZoom = typeof values[0] === 'number' ? values[0] : zoom;
+  const handleZoomIn = () => {
+    const newZoom = Math.min(2, zoom + 0.2);
     onZoomChange(newZoom);
   };
 
-  const decreaseZoom = () => {
-    const newZoom = Math.max(min, zoom - step);
+  const handleZoomOut = () => {
+    const newZoom = Math.max(0.2, zoom - 0.2);
     onZoomChange(newZoom);
   };
 
-  const increaseZoom = () => {
-    const newZoom = Math.min(max, zoom + step);
-    onZoomChange(newZoom);
+  const handleSliderChange = (value: number[]) => {
+    onZoomChange(value[0]);
   };
 
   return (
-    <div className="flex items-center gap-2 w-full max-w-xs">
+    <div className="flex items-center gap-2">
       <Button
-        variant="outline"
-        size="icon"
-        className="h-8 w-8"
-        onClick={decreaseZoom}
-        disabled={disabled || zoom <= min}
+        variant="ghost"
+        size="sm"
+        onClick={handleZoomOut}
+        disabled={disabled || zoom <= 0.2}
+        title="Zoom out"
       >
-        <MinusIcon className="h-4 w-4" />
+        <Minus className="h-3 w-3" />
       </Button>
       
       <Slider
+        className="w-20"
         value={[zoom]}
-        min={min}
-        max={max}
-        step={step}
+        min={0.2}
+        max={2}
+        step={0.1}
         onValueChange={handleSliderChange}
         disabled={disabled}
-        className="flex-1"
+        aria-label="Zoom level"
       />
-      
-      <Button
-        variant="outline"
-        size="icon"
-        className="h-8 w-8"
-        onClick={increaseZoom}
-        disabled={disabled || zoom >= max}
-      >
-        <PlusIcon className="h-4 w-4" />
-      </Button>
       
       <Button
         variant="ghost"
         size="sm"
-        onClick={onReset}
-        disabled={disabled}
-        className="text-xs ml-2"
+        onClick={handleZoomIn}
+        disabled={disabled || zoom >= 2}
+        title="Zoom in"
       >
-        Reset
+        <Plus className="h-3 w-3" />
       </Button>
     </div>
   );

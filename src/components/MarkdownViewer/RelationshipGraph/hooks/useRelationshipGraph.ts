@@ -12,13 +12,8 @@
  */
 import { useState, useCallback, useRef, useEffect, useTransition, useMemo } from 'react';
 import { useGraphData } from './graph-data';
-import { GraphData, GraphRendererRef } from '../types';
+import { GraphData, GraphRendererRef, UseRelationshipGraphProps } from '../types';
 import { toast } from '@/hooks/use-toast';
-
-export interface UseRelationshipGraphProps {
-  startingNodeId: string;
-  hasAttemptedRetry?: boolean;
-}
 
 export function useRelationshipGraph({ 
   startingNodeId = '', 

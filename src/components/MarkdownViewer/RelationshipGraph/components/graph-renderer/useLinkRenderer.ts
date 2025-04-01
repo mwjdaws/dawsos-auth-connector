@@ -1,61 +1,92 @@
 
+/**
+ * useLinkRenderer hook
+ * 
+ * This hook provides a customized link renderer for the force graph
+ */
 import { useCallback, useMemo } from 'react';
 import { GraphLink } from '../../types';
 
 interface UseLinkRendererProps {
-  linkColorMap?: Record<string, string>;
-  defaultLinkColor?: string;
-  linkWidthRange?: [number, number];
-  defaultLinkWidth?: number;
+  highlightedNodeId: string | null;
+  onLinkClick?: (source: string, target: string) => void;
 }
 
-export function useLinkRenderer({
-  linkColorMap = {},
-  defaultLinkColor = '#cccccc',
-  linkWidthRange = [1, 3],
-  defaultLinkWidth = 1.5
-}: UseLinkRendererProps = {}) {
-  /**
-   * Get link color based on type or default
-   */
-  const getLinkColor = useCallback((link: GraphLink): string => {
-    const linkType = link.type || 'default';
-    return linkColorMap[linkType] || defaultLinkColor;
-  }, [linkColorMap, defaultLinkColor]);
-
-  /**
-   * Get link label for display
-   */
-  const getLinkLabel = useCallback((link: GraphLink): string => {
-    const linkType = link.type || '';
+export function useLinkRenderer({ 
+  highlightedNodeId,
+  onLinkClick
+}: UseLinkRendererProps) {
+  // Determine if a link is connected to the highlighted node
+  const isLinkHighlighted = useCallback((link: GraphLink): boolean => {
+    if (!highlightedNodeId) return false;
     
-    // Format link type for display
-    if (typeof linkType === 'string') {
-      return linkType.replace(/([A-Z])/g, ' $1')
-        .replace(/^./, (str) => str.toUpperCase())
-        .trim();
+    const sourceId = typeof link.source === 'string' 
+      ? link.source 
+      : link.source.id;
+      
+    const targetId = typeof link.target === 'string' 
+      ? link.target 
+      : link.target.id;
+    
+    return sourceId === highlightedNodeId || targetId === highlightedNodeId;
+  }, [highlightedNodeId]);
+  
+  // Get link color based on type and highlight status
+  const getLinkColor = useCallback((link: GraphLink): string => {
+    if (link.color) return link.color;
+    
+    if (isLinkHighlighted(link)) {
+      return '#ff6b6b';
     }
     
-    return '';
-  }, []);
-
-  /**
-   * Get link width based on weight or default
-   */
+    // Color based on link type
+    switch (link.type) {
+      case 'ontology':
+        return '#4ecdc4';
+      case 'wikilink':
+        return '#45b7d1';
+      case 'manual':
+        return '#ffd166';
+      case 'AI-suggested':
+        return '#6a0572';
+      default:
+        return '#aaa';
+    }
+  }, [isLinkHighlighted]);
+  
+  // Get link width based on weight and highlight status
   const getLinkWidth = useCallback((link: GraphLink): number => {
-    const weight = typeof link.weight === 'number' ? link.weight : defaultLinkWidth;
-    const [min, max] = linkWidthRange;
+    const baseWidth = link.width || 1;
+    const weightMultiplier = link.weight || 1;
     
-    if (weight <= 0) return min;
-    if (weight >= 1) return max;
+    return isLinkHighlighted(link)
+      ? baseWidth * weightMultiplier * 2
+      : baseWidth * weightMultiplier;
+  }, [isLinkHighlighted]);
+  
+  // Handle link click
+  const handleLinkClick = useCallback((link: GraphLink) => {
+    if (!onLinkClick) return;
     
-    // Linear interpolation between min and max
-    return min + weight * (max - min);
-  }, [linkWidthRange, defaultLinkWidth]);
-
-  return useMemo(() => ({
-    getLinkColor,
-    getLinkLabel,
-    getLinkWidth
-  }), [getLinkColor, getLinkLabel, getLinkWidth]);
+    const sourceId = typeof link.source === 'string' 
+      ? link.source 
+      : link.source.id;
+      
+    const targetId = typeof link.target === 'string' 
+      ? link.target 
+      : link.target.id;
+    
+    onLinkClick(sourceId, targetId);
+  }, [onLinkClick]);
+  
+  // Custom link object with paint method
+  const linkObject = useMemo(() => ({
+    color: getLinkColor,
+    width: getLinkWidth
+  }), [getLinkColor, getLinkWidth]);
+  
+  return { 
+    linkObject,
+    handleLinkClick
+  };
 }

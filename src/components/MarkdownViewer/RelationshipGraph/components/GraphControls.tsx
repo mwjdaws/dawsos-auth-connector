@@ -27,7 +27,7 @@ export function GraphControls({
       
       <Button
         variant="ghost"
-        size="icon"
+        size="sm"
         onClick={onResetZoom}
         disabled={isDisabled}
         title="Reset graph view"

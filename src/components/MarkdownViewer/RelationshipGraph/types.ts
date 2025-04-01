@@ -2,7 +2,6 @@
 /**
  * Type definitions for the Relationship Graph component
  */
-import { ForceGraphInstance } from 'react-force-graph-2d';
 import { OntologyTerm, RelatedTerm } from '@/types/ontology';
 
 // Re-export types properly for TS with isolatedModules
@@ -30,6 +29,7 @@ export interface GraphNode {
   size?: number;
   highlighted?: boolean;
   metadata?: Record<string, any>;
+  weight?: number;
 }
 
 /**
@@ -43,6 +43,7 @@ export interface GraphLink {
   color?: string;
   width?: number;
   highlighted?: boolean;
+  weight?: number;
 }
 
 /**
@@ -76,6 +77,14 @@ export interface GraphControlsProps {
   onZoomChange: (newZoom: number) => void;
   onResetZoom: () => void;
   isDisabled: boolean;
+}
+
+/**
+ * Props for UseRelationshipGraphProps hook
+ */
+export interface UseRelationshipGraphProps {
+  startingNodeId: string;
+  hasAttemptedRetry?: boolean;
 }
 
 /**

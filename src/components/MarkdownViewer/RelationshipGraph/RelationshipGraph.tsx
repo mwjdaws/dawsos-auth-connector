@@ -1,30 +1,32 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { Loader2, AlertTriangle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { GraphData, GraphProps, GraphRendererRef } from './types';
-import { useRelationshipGraph } from './hooks/useRelationshipGraph';
-import { GraphRenderer } from './components/graph-renderer/GraphRenderer';
-import { GraphControls } from './components/GraphControls';
-import { GraphSearch } from './components/GraphSearch';
-import { ensureValidZoom, createSafeGraphProps } from './compatibility';
+import React, { useState, useEffect } from "react";
+import { useResizeObserver } from "@/hooks/useResizeObserver";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { useRelationshipGraph } from "./hooks/useRelationshipGraph";
+import { GraphSearch } from "./components/GraphSearch";
+import { GraphControls } from "./components/GraphControls";
+import { GraphContent } from "./components/GraphContent";
+import { ErrorFallback } from "./components/ErrorFallback";
 
-/**
- * RelationshipGraph Component
- * 
- * Displays a knowledge graph visualization showing connections between content items.
- */
-export function RelationshipGraph({ 
-  startingNodeId = '',
-  width = 800,
-  height = 600,
-  hasAttemptedRetry = false
-}: GraphProps) {
-  // Create safe props
-  const safeProps = createSafeGraphProps({ startingNodeId, width, height, hasAttemptedRetry });
+interface RelationshipGraphProps {
+  startingNodeId: string;
+  width?: number;
+  height?: number;
+  className?: string;
+}
+
+export function RelationshipGraph({
+  startingNodeId,
+  width: externalWidth,
+  height: externalHeight,
+  className
+}: RelationshipGraphProps) {
+  const [hasAttemptedRetry, setHasAttemptedRetry] = useState(false);
+  const [containerRef, { width, height }] = useResizeObserver<HTMLDivElement>();
   
-  // Use the relationship graph hook
   const {
     graphData,
     loading,
@@ -32,104 +34,94 @@ export function RelationshipGraph({
     error,
     highlightedNodeId,
     zoomLevel,
-    isPending,
     graphRendererRef,
     handleNodeFound,
     handleZoomChange,
     handleResetZoom,
     handleRetry
-  } = useRelationshipGraph({
-    startingNodeId: safeProps.startingNodeId,
-    hasAttemptedRetry: safeProps.hasAttemptedRetry
+  } = useRelationshipGraph({ 
+    startingNodeId,
+    hasAttemptedRetry
   });
-
-  // Safe zoom level
-  const safeZoomLevel = ensureValidZoom(zoomLevel);
   
-  // Render loading state
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">
-          {loadingTime > 5 
-            ? "Loading knowledge graph... (this may take a minute for large graphs)" 
-            : "Loading knowledge graph..."}
-        </p>
-        {loadingTime > 15 && (
-          <Button 
-            variant="outline" 
-            className="mt-4" 
-            onClick={handleRetry}
-          >
-            Refresh Graph
-          </Button>
-        )}
-      </div>
-    );
-  }
+  // If loading takes too long, set the retry flag
+  useEffect(() => {
+    if (loading && loadingTime > 10 && !hasAttemptedRetry) {
+      setHasAttemptedRetry(true);
+    }
+  }, [loading, loadingTime, hasAttemptedRetry]);
   
-  // Render error state
+  // Calculate dimensions
+  const graphWidth = externalWidth || width || 800;
+  const graphHeight = externalHeight || height || 500;
+  
+  // Handle error state
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[300px] p-8 text-center">
-        <AlertTriangle className="h-8 w-8 text-destructive mb-4" />
-        <h3 className="text-lg font-medium mb-2">Error Loading Graph</h3>
-        <p className="text-muted-foreground mb-4">{error}</p>
-        <Button onClick={handleRetry}>Try Again</Button>
-      </div>
-    );
-  }
-  
-  // Render empty state
-  if (!graphData?.nodes?.length) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[300px] p-8 text-center">
-        <AlertTriangle className="h-8 w-8 text-amber-500 mb-4" />
-        <h3 className="text-lg font-medium mb-2">No Connections Found</h3>
-        <p className="text-muted-foreground mb-4">
-          {startingNodeId 
-            ? "This content doesn't have any knowledge connections yet." 
-            : "No knowledge connections found in the system."}
-        </p>
-      </div>
+      <ErrorFallback 
+        error={error}
+        onRetry={handleRetry}
+      />
     );
   }
   
   return (
-    <div className="flex flex-col gap-4 w-full" data-testid="relationship-graph">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-2">
-        <GraphSearch 
-          graphData={graphData} 
-          onNodeFound={handleNodeFound}
-        />
-        
-        <GraphControls
-          zoomLevel={safeZoomLevel}
-          onZoomChange={handleZoomChange}
-          onResetZoom={handleResetZoom}
-          isDisabled={isPending}
-        />
-      </div>
-
-      <ErrorBoundary fallback={
-        <div className="bg-destructive/10 text-destructive p-4 rounded-md">
-          The graph could not be rendered. Please try refreshing the page.
-        </div>
-      }>
-        <div className="relative overflow-hidden rounded-lg bg-card" style={{ width, height }}>
-          <GraphRenderer
-            ref={graphRendererRef}
+    <Card className={className}>
+      <CardContent className="p-4">
+        <div className="flex justify-between items-center mb-4">
+          <GraphSearch 
             graphData={graphData}
-            width={width}
-            height={height}
-            highlightedNodeId={highlightedNodeId}
-            zoom={safeZoomLevel}
+            onNodeFound={handleNodeFound}
+            disabled={loading || Boolean(error)}
+          />
+          
+          <GraphControls
+            zoomLevel={zoomLevel}
+            onZoomChange={handleZoomChange}
+            onResetZoom={handleResetZoom}
+            isDisabled={loading || Boolean(error)}
           />
         </div>
-      </ErrorBoundary>
-    </div>
+        
+        <div 
+          ref={containerRef}
+          className="relative w-full"
+          style={{ 
+            height: graphHeight,
+            minHeight: "400px"
+          }}
+        >
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
+              <div className="text-center">
+                <Skeleton className="h-[300px] w-[500px] mb-4" />
+                <p className="text-sm text-muted-foreground">
+                  Loading knowledge graph{loadingTime > 3 ? ` (${loadingTime}s)` : ''}...
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {graphData.nodes.length === 0 && !loading && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                No relationships found for this content.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          <GraphContent 
+            graphRef={graphRendererRef}
+            graphData={graphData}
+            width={graphWidth}
+            height={graphHeight}
+            highlightedNodeId={highlightedNodeId}
+            zoomLevel={zoomLevel}
+            onNodeSelect={handleNodeFound}
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
-
-export default RelationshipGraph;
