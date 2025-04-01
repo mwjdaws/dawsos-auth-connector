@@ -67,7 +67,7 @@ export const useTagFetch = ({
       handleError(
         err,
         `Failed to fetch tags for content: ${contentId}`,
-        { level: ErrorLevel.WARNING }
+        { level: ErrorLevel.Warning } // Changed from WARNING to Warning
       );
       setError(err instanceof Error ? err : new Error(String(err)));
       setTags([]);

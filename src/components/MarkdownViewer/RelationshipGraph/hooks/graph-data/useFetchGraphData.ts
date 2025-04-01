@@ -103,7 +103,7 @@ export function useFetchGraphData() {
       };
     } catch (error) {
       handleError(error, 'Failed to fetch graph data', {
-        level: ErrorLevel.ERROR,
+        level: ErrorLevel.Error, // Changed from ERROR to Error
         context: { startingNodeId }
       });
       

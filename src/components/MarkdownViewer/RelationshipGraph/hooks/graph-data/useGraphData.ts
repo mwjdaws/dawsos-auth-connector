@@ -159,7 +159,7 @@ export function useGraphData(startingNodeId = '') {
       new Error("Manually refreshing graph data"),
       "Refreshing graph data",
       {
-        level: ErrorLevel.INFO,
+        level: ErrorLevel.Info, // Changed from INFO to Info
         context: { startingNodeId }
       }
     );

@@ -19,7 +19,7 @@ export function AttachedTermsList({ terms, editable, onRemoveTerm }: AttachedTer
     <div className="flex flex-wrap gap-2">
       {terms.map((term) => (
         <Badge 
-          key={term.associationId} 
+          key={term.associationId || term.id} 
           variant="secondary"
           className="flex items-center gap-1 group"
         >
@@ -27,7 +27,7 @@ export function AttachedTermsList({ terms, editable, onRemoveTerm }: AttachedTer
             <span className="text-xs opacity-70">{term.domain}:</span>
           )}
           {term.term}
-          {editable && (
+          {editable && term.associationId && (
             <button 
               onClick={() => onRemoveTerm(term.associationId!)}
               className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-1"

@@ -1,123 +1,71 @@
 
-import { toast } from '@/hooks/use-toast';
-import { Tag } from '@/types/tag';
+import { useState, useCallback } from 'react';
+import { handleError, ErrorLevel } from '@/utils/errors';
 
-export interface TagValidationOptions {
-  allowEmpty?: boolean;
-  allowDuplicates?: boolean;
-  minLength?: number;
-  maxLength?: number;
-}
-
-export interface ValidationResult {
+interface ValidationResult {
   isValid: boolean;
   message: string | null;
 }
 
 /**
- * Hook for validating tags
+ * Tag validation hook for validating tags in the TagPanel
  */
 export function useTagValidator() {
+  const [lastValidated, setLastValidated] = useState<string>('');
   
   /**
-   * Validates a single tag
+   * Validates a tag string based on common rules
    */
-  const validateTag = (tag: string, options?: TagValidationOptions): ValidationResult => {
-    const opts = {
-      minLength: 1,
-      maxLength: 50,
-      allowEmpty: false,
-      ...options
-    };
+  const validateTag = useCallback((tag: string): ValidationResult => {
+    setLastValidated(tag);
     
-    if (!opts.allowEmpty && (!tag || tag.trim().length === 0)) {
-      return {
-        isValid: false,
-        message: 'Tag cannot be empty'
-      };
+    // Empty check
+    if (!tag || tag.trim() === '') {
+      return { isValid: false, message: 'Tag cannot be empty' };
     }
     
-    if (tag.length < opts.minLength) {
-      return {
-        isValid: false,
-        message: `Tag must be at least ${opts.minLength} characters`
-      };
+    // Minimum length check
+    if (tag.trim().length < 2) {
+      return { isValid: false, message: 'Tag must be at least 2 characters long' };
     }
     
-    if (tag.length > opts.maxLength) {
-      return {
-        isValid: false,
-        message: `Tag cannot be longer than ${opts.maxLength} characters`
-      };
+    // Maximum length check
+    if (tag.trim().length > 50) {
+      return { isValid: false, message: 'Tag must be less than 50 characters long' };
     }
-
-    return {
-      isValid: true,
-      message: null
-    };
-  };
+    
+    // Characters validation (allow alphanumeric, spaces, dashes, dots)
+    const invalidChars = /[^\w\s\-\.]/;
+    if (invalidChars.test(tag)) {
+      return { isValid: false, message: 'Tag contains invalid characters' };
+    }
+    
+    return { isValid: true, message: null };
+  }, []);
   
   /**
-   * Validates a tag against a list of existing tags
+   * Validates the tag and reports errors
    */
-  const validateTagUniqueness = (tag: string, existingTags: Tag[], options?: TagValidationOptions): ValidationResult => {
-    const opts = {
-      allowDuplicates: false,
-      ...options
-    };
+  const validateTagWithErrorHandling = useCallback((tag: string): boolean => {
+    const result = validateTag(tag);
     
-    if (!opts.allowDuplicates) {
-      const normalizedNewTag = tag.toLowerCase().trim();
-      const isDuplicate = existingTags.some(existing => 
-        existing.name.toLowerCase().trim() === normalizedNewTag
+    if (!result.isValid && result.message) {
+      handleError(
+        new Error(result.message),
+        result.message,
+        { level: ErrorLevel.Warning }
       );
-      
-      if (isDuplicate) {
-        return {
-          isValid: false,
-          message: 'This tag already exists'
-        };
-      }
-    }
-    
-    return {
-      isValid: true,
-      message: null
-    };
-  };
-  
-  /**
-   * Performs all tag validations and shows a toast on failure
-   */
-  const validateTagWithToast = (tag: string, existingTags: Tag[], options?: TagValidationOptions): boolean => {
-    // First validate the tag format
-    const formatResult = validateTag(tag, options);
-    if (!formatResult.isValid) {
-      toast({
-        title: "Invalid Tag",
-        description: formatResult.message || "Tag is invalid",
-        variant: "destructive"
-      });
-      return false;
-    }
-    
-    // Then validate uniqueness
-    const uniquenessResult = validateTagUniqueness(tag, existingTags, options);
-    if (!uniquenessResult.isValid) {
-      toast({
-        title: "Duplicate Tag",
-        description: uniquenessResult.message || "Tag already exists",
-        variant: "destructive"
-      });
       return false;
     }
     
     return true;
-  };
+  }, [validateTag]);
   
   return {
     validateTag,
-    validateTagUniqueness,
-    validateTagWithToast
+    validateTagWithErrorHandling,
+    lastValidated
   };
 }
+
+export default useTagValidator;
