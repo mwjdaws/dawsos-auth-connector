@@ -1,5 +1,10 @@
 
 import { useState, useCallback } from 'react';
+import { 
+  createValidResult, 
+  createInvalidResult, 
+  TagValidationResult 
+} from '@/utils/validation/types';
 
 export interface TagValidationResult {
   isValid: boolean;

@@ -41,31 +41,31 @@ export interface OntologyTermValidationResult extends ValidationResult {
 
 /**
  * Create a valid validation result
- * @param type Result type
+ * @param resultType Result type
  * @param message Optional success message
  * @returns Validation result
  */
 export function createValidResult(
-  type: string, 
+  resultType: string, 
   message: string | null = null
 ): ValidationResult {
   return {
     isValid: true,
     errorMessage: null,
     message,
-    resultType: type
+    resultType
   };
 }
 
 /**
  * Create an invalid validation result
- * @param type Result type
+ * @param resultType Result type
  * @param errorMessage Error message
  * @param message Optional context message
  * @returns Validation result
  */
 export function createInvalidResult(
-  type: string, 
+  resultType: string, 
   errorMessage: string, 
   message: string | null = null
 ): ValidationResult {
@@ -73,7 +73,7 @@ export function createInvalidResult(
     isValid: false,
     errorMessage,
     message,
-    resultType: type
+    resultType
   };
 }
 

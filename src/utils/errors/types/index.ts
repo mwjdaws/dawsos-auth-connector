@@ -31,6 +31,7 @@ export enum ErrorSource {
   Database = 'database',
   Component = 'component',
   App = 'app',
+  System = 'system',
   
   // For compatibility with existing code
   Network = 'network',
@@ -57,11 +58,14 @@ export interface ErrorHandlingOptions {
   reportToAnalytics?: boolean;
   showToast?: boolean;
   silent?: boolean;
+  context?: Record<string, any>;
+  toastTitle?: string;
+  toastDescription?: string;
+  toastId?: string;
   
   // For compatibility with existing code
   fingerprint?: string;
   suppressToast?: boolean;
-  toastId?: string;
   technical?: boolean;
   originalError?: any;
 }

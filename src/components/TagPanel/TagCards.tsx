@@ -1,110 +1,69 @@
 
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { TagGroup } from "./hooks/useTagGroups";
-import { Tag } from "@/types/tag";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useTagGroups } from './hooks/useTagGroups';
+import { Tag } from '@/types/tag';
 
-interface TagCardsProps {
-  tagGroupsResult: {
-    tagGroups: TagGroup[];
+export interface TagCardsProps {
+  tagGroupsResult?: {
+    groups: { category: string; tags: Tag[] }[];
     isLoading: boolean;
-    error: Error | null;
-    refreshGroups: () => boolean;
   };
-  onTagClick?: (tag: string) => void;
-  onTagDelete?: (tagId: string) => void;
-  editable?: boolean;
 }
 
-/**
- * Displays tags in cards grouped by type/category
- */
-export const TagCards: React.FC<TagCardsProps> = ({
-  tagGroupsResult,
-  onTagClick,
-  onTagDelete,
-  editable = false
-}) => {
-  const { tagGroups, isLoading, error, refreshGroups } = tagGroupsResult;
-  
+export function TagCards({ tagGroupsResult }: TagCardsProps) {
+  // If no tagGroups provided, use the hook to fetch them
+  const defaultTagGroups = useTagGroups();
+  const { groups, isLoading } = tagGroupsResult || defaultTagGroups;
+
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <Skeleton className="h-5 w-32" />
-          </CardHeader>
-          <CardContent className="pt-0 space-y-2">
-            <div className="flex flex-wrap gap-2">
-              <Skeleton className="h-8 w-16" />
-              <Skeleton className="h-8 w-20" />
-              <Skeleton className="h-8 w-14" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[1, 2, 3].map(i => (
+          <Card key={i} className="animate-pulse">
+            <CardHeader className="pb-2">
+              <div className="h-5 bg-gray-200 rounded w-1/3"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {[1, 2, 3, 4].map(j => (
+                  <div key={j} className="h-6 bg-gray-200 rounded w-20"></div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     );
   }
-  
-  if (error) {
+
+  if (!groups || groups.length === 0) {
     return (
-      <Alert variant="destructive">
-        <AlertDescription>
-          Failed to load tags: {error.message}
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={() => refreshGroups()} 
-            className="ml-2"
-          >
-            <RefreshCw className="h-3 w-3 mr-1" /> Retry
-          </Button>
-        </AlertDescription>
-      </Alert>
+      <Card>
+        <CardContent className="pt-6">
+          <p className="text-center text-muted-foreground">No tags available</p>
+        </CardContent>
+      </Card>
     );
   }
-  
-  if (!tagGroups || tagGroups.length === 0) {
-    return (
-      <div className="text-muted-foreground text-sm">
-        No tags found.
-      </div>
-    );
-  }
-  
+
   return (
-    <div className="space-y-4">
-      {tagGroups.map((group) => (
-        <Card key={group.category}>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {groups.map((group, index) => (
+        <Card key={index}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">{group.category}</CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
-            <div className="flex flex-wrap gap-1.5">
-              {group.tags.map((tag: Tag) => (
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {group.tags.map(tag => (
                 <Badge
                   key={tag.id}
-                  className={`${onTagClick ? 'cursor-pointer' : ''}`}
                   variant="secondary"
-                  onClick={() => onTagClick && onTagClick(tag.name)}
+                  className="text-xs font-normal"
                 >
                   {tag.name}
-                  {editable && onTagDelete && (
-                    <span
-                      className="ml-1 cursor-pointer text-muted-foreground hover:text-foreground"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onTagDelete(tag.id);
-                      }}
-                    >
-                      ×
-                    </span>
-                  )}
                 </Badge>
               ))}
             </div>
@@ -113,6 +72,6 @@ export const TagCards: React.FC<TagCardsProps> = ({
       ))}
     </div>
   );
-};
+}
 
 export default TagCards;
