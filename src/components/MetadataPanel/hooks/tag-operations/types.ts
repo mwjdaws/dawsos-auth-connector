@@ -68,4 +68,4 @@ export interface UseTagOperationsResult {
 }
 
 // Export TagPosition for backward compatibility
-export { TagPosition };
+export type { TagPosition };
