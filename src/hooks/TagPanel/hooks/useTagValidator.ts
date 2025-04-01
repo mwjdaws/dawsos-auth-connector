@@ -1,9 +1,8 @@
 
 import { useState, useCallback } from 'react';
 import { 
-  createValidResult, 
-  createInvalidResult, 
-  createTagValidationResult
+  createTagValidationResult, 
+  TagValidationResult 
 } from '@/utils/validation/types';
 
 /**

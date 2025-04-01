@@ -1,55 +1,90 @@
 
-
 /**
- * Ontology types for the application
+ * Ontology term interface
  */
-
 export interface OntologyTerm {
   id: string;
   term: string;
-  description: string | null;
+  description: string;
   domain?: string | null;
   review_required?: boolean;
-  associationId?: string; // Association ID for the term
 }
 
-export interface OntologyTermAssociation {
-  id: string;
-  ontology_term_id: string;
-  knowledge_source_id: string;
-  created_at?: string;
-  created_by?: string | null;
-  review_required?: boolean;
-}
-
+/**
+ * Ontology domain interface
+ */
 export interface OntologyDomain {
   id: string;
   name: string;
   description: string;
-  parent_id?: string | null;
 }
 
+/**
+ * Related term interface
+ */
 export interface RelatedTerm {
   id: string;
   term: string;
-  description: string | null;
-  similarity: number;
-  domain?: string | null;
+  description: string;
+  relation_type: string;
 }
 
-export interface OntologySuggestion {
-  id: string;
-  term: string;
-  description: string | null;
-  confidence: number;
-  domain?: string | null;
+/**
+ * Term link interface
+ */
+export interface TermLink {
+  source_id: string;
+  target_id: string;
+  link_type: string;
 }
 
+/**
+ * Related note interface for connecting knowledge sources
+ */
 export interface RelatedNote {
   id: string;
-  title?: string | null;
-  score?: number | null;
+  title: string;
+  score?: number;
   applied: boolean;
   rejected: boolean;
 }
 
+/**
+ * Check if an ontology term has a valid domain
+ * @param term The term to check
+ * @returns Whether the term has a valid domain
+ */
+export function hasValidDomain(term: OntologyTerm): boolean {
+  return !!term.domain && term.domain.trim().length > 0;
+}
+
+/**
+ * Get a list of unique domains from a set of terms
+ * @param terms List of ontology terms
+ * @returns Array of unique domains
+ */
+export function getUniqueDomains(terms: OntologyTerm[]): string[] {
+  const domains = new Set<string>();
+  
+  terms.forEach(term => {
+    if (term.domain) {
+      domains.add(term.domain);
+    }
+  });
+  
+  return Array.from(domains).sort();
+}
+
+/**
+ * Filter terms by a specific domain
+ * @param terms List of all terms
+ * @param domain Domain to filter by
+ * @returns Filtered list of terms
+ */
+export function filterTermsByDomain(terms: OntologyTerm[], domain: string | null): OntologyTerm[] {
+  if (!domain) {
+    return terms;
+  }
+  
+  return terms.filter(term => term.domain === domain);
+}

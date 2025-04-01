@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Tag } from '@/types/tag';
 
 export interface TagGroup {
@@ -8,86 +8,76 @@ export interface TagGroup {
 }
 
 /**
- * Custom hook for grouping tags by category (type)
+ * Hook for managing tag groups
  */
-export function useTagGroups(tags: Tag[]) {
+export function useTagGroups() {
   const [groups, setGroups] = useState<TagGroup[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  /**
-   * Group tags by their type
-   */
-  const groupTagsByType = useCallback((tagsToGroup: Tag[]): TagGroup[] => {
-    // Initialize with Uncategorized group
-    const groups: Record<string, TagGroup> = {
-      'Uncategorized': {
-        category: 'Uncategorized',
-        tags: []
+  // Sample function to group tags by type
+  const groupTagsByType = (tags: Tag[]): TagGroup[] => {
+    const groupMap = new Map<string, Tag[]>();
+    
+    // Group tags by their type
+    tags.forEach(tag => {
+      const category = tag.type_name || 'General';
+      if (!groupMap.has(category)) {
+        groupMap.set(category, []);
       }
-    };
-
-    // Group tags by type
-    tagsToGroup.forEach(tag => {
-      // Safety check for undefined tags
-      if (!tag) return;
-      
-      const typeName = tag.type_name || 'Uncategorized';
-      
-      if (!groups[typeName]) {
-        groups[typeName] = {
-          category: typeName,
-          tags: []
-        };
-      }
-      
-      groups[typeName].tags.push(tag);
+      groupMap.get(category)?.push(tag);
     });
+    
+    // Convert map to array of group objects
+    const result: TagGroup[] = [];
+    groupMap.forEach((tags, category) => {
+      result.push({
+        category,
+        tags: [...tags]
+      });
+    });
+    
+    return result;
+  };
 
-    // Convert to array and sort by category name
-    return Object.values(groups).sort((a, b) => 
-      a.category.localeCompare(b.category)
-    );
-  }, []);
-
-  /**
-   * Refresh groups when tags change
-   */
-  useEffect(() => {
-    setIsLoading(true);
+  // Function to refresh tag groups
+  const refreshGroups = (): boolean => {
     try {
-      const newGroups = groupTagsByType(tags || []);
-      setGroups(newGroups);
-      setError(null);
-    } catch (err) {
-      console.error("Error grouping tags:", err);
-      setError(err instanceof Error ? err : new Error(String(err)));
-      setGroups([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [tags, groupTagsByType]);
-
-  /**
-   * Refresh groups manually
-   */
-  const refreshGroups = useCallback(() => {
-    try {
-      const newGroups = groupTagsByType(tags || []);
-      setGroups(newGroups);
+      // This is a placeholder - in a real app, you'd fetch tags from an API
+      // and then group them
+      setIsLoading(true);
+      
+      // Example using mock data for demonstration
+      const mockTags: Tag[] = [
+        { id: '1', name: 'JavaScript', content_id: '1', type_id: '1', display_order: 0, type_name: 'Programming' },
+        { id: '2', name: 'TypeScript', content_id: '1', type_id: '1', display_order: 1, type_name: 'Programming' },
+        { id: '3', name: 'React', content_id: '1', type_id: '2', display_order: 2, type_name: 'Framework' },
+        { id: '4', name: 'Design', content_id: '1', type_id: '3', display_order: 3, type_name: 'Topic' }
+      ];
+      
+      const groupedTags = groupTagsByType(mockTags);
+      setGroups(groupedTags);
       setError(null);
       return true;
     } catch (err) {
-      console.error("Error refreshing tag groups:", err);
-      setError(err instanceof Error ? err : new Error(String(err)));
+      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
       return false;
+    } finally {
+      setIsLoading(false);
     }
-  }, [tags, groupTagsByType]);
+  };
+
+  // Load tags on mount
+  useEffect(() => {
+    refreshGroups();
+  }, []);
 
   return {
-    tagGroups: groups,
+    groups,
     isLoading,
     error,
     refreshGroups
   };
 }
+
+export default useTagGroups;

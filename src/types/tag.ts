@@ -128,3 +128,17 @@ export function convertTagPositionsToTags(positions: TagPosition[], existingTags
     };
   });
 }
+
+/**
+ * TagGroup interface for displaying tags in groups
+ */
+export interface TagGroup {
+  category: string;
+  tags: Tag[];
+}
+
+/**
+ * TagData and TagDisplay interfaces for backward compatibility
+ */
+export interface TagData extends Tag {}
+export interface TagDisplay extends Tag {}

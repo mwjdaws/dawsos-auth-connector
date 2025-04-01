@@ -1,7 +1,6 @@
 
 import React, { createContext, useContext } from 'react';
 import { Tag } from '@/types/tag';
-// Fix the import to use the correct path
 import { OntologyTerm } from '@/types/ontology';
 import { SourceMetadata } from '../types';
 import { ValidationResult } from '@/utils/validation/types';
@@ -10,7 +9,7 @@ import { ValidationResult } from '@/utils/validation/types';
 export interface MetadataContextProps {
   contentId: string;
   tags: Tag[];
-  validationResult: ValidationResult;
+  validationResult: ValidationResult | null;
   isEditable: boolean;
   isLoading: boolean;
   error: Error | null;

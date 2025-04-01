@@ -1,84 +1,155 @@
 
 /**
- * Core error types and enums
- */
-
-/**
- * Error severity level
+ * Error levels for categorization 
  */
 export enum ErrorLevel {
+  // Lower severity, typically for debugging
   Debug = 'debug',
-  Info = 'info',
-  Warning = 'warning',
-  Error = 'error',
-  Critical = 'critical',
   
-  // For backward compatibility
+  // Informational errors that don't require immediate attention
+  Info = 'info',
+  
+  // Issues that should be addressed but don't break functionality
+  Warning = 'warning',
+  
+  // Critical errors that break functionality
+  Error = 'error',
+  
+  // Legacy values for backward compatibility
   DEBUG = 'debug',
   INFO = 'info',
   WARNING = 'warning',
-  ERROR = 'error',
-  CRITICAL = 'critical'
+  ERROR = 'error'
 }
 
 /**
- * Error source categories
+ * Sources of errors for better categorization
  */
 export enum ErrorSource {
-  // Primary sources
-  API = 'api',
-  Utils = 'utils',
-  Database = 'database',
-  Component = 'component',
+  // Application logic errors
   App = 'app',
-  System = 'system',
   
-  // For compatibility with existing code
-  Network = 'network',
-  Auth = 'auth',
-  Validation = 'validation',
-  Server = 'server',
+  // UI component errors
   UI = 'ui',
-
-  // Backward compatibility
+  
+  // API-related errors
+  API = 'api',
+  
+  // Database errors
+  Database = 'database',
+  
+  // Authentication errors
+  Auth = 'auth',
+  
+  // Validation errors
+  Validation = 'validation',
+  
+  // Network errors
+  Network = 'network',
+  
+  // Server errors
+  Server = 'server',
+  
+  // Utility function errors
+  Utils = 'utils',
+  
+  // Legacy references for backward compatibility
+  APP = 'app',
+  DATABASE = 'database',
+  API = 'api',
+  Util = 'utils',
   Api = 'api',
-  Util = 'utils'
+  AUTH = 'auth'
 }
 
 /**
- * Base error handling options
+ * Error handling options interface
  */
 export interface ErrorHandlingOptions {
-  // Required properties
-  source: ErrorSource | string;
-  message: string;
-  level: ErrorLevel;
-
-  // Optional properties
+  // Error severity level
+  level?: ErrorLevel;
+  
+  // Source of the error
+  source?: ErrorSource;
+  
+  // Custom error message
+  message?: string;
+  
+  // Whether to report to analytics
   reportToAnalytics?: boolean;
+  
+  // Whether to show a toast notification
   showToast?: boolean;
+  
+  // Whether to suppress all output
   silent?: boolean;
+  
+  // Additional context for the error
   context?: Record<string, any>;
-  toastTitle?: string;
-  toastDescription?: string;
+  
+  // Optional toast ID for updating existing toasts
   toastId?: string;
   
-  // For compatibility with existing code
+  // Unique identifier for error deduplication
   fingerprint?: string;
-  suppressToast?: boolean;
+  
+  // Whether this is a technical error (not user-facing)
   technical?: boolean;
+  
+  // Whether to suppress toast notifications
+  suppressToast?: boolean;
+  
+  // Original error object if wrapping another error
   originalError?: any;
 }
 
 /**
- * Default options for error handling
+ * Default error options
  */
-export const defaultErrorOptions: Partial<ErrorHandlingOptions> = {
+export const defaultErrorOptions: ErrorHandlingOptions = {
   level: ErrorLevel.Error,
+  source: ErrorSource.App,
   reportToAnalytics: true,
   showToast: true,
   silent: false
 };
 
-// Utility type for partial error options
-export type PartialErrorOptions = Partial<ErrorHandlingOptions>;
+/**
+ * Base validation result interface
+ */
+export interface ValidationResult {
+  isValid: boolean;
+  errorMessage: string | null;
+  message: string | null;
+  resultType: string;
+  contentExists?: boolean;
+}
+
+/**
+ * Content ID validation result
+ */
+export interface ContentIdValidationResult extends ValidationResult {
+  resultType: 'contentId';
+  contentExists: boolean;
+}
+
+/**
+ * Document content validation result
+ */
+export interface DocumentValidationResult extends ValidationResult {
+  resultType: 'document';
+}
+
+/**
+ * Tag validation result
+ */
+export interface TagValidationResult extends ValidationResult {
+  resultType: 'tag';
+}
+
+/**
+ * Ontology term validation result
+ */
+export interface OntologyTermValidationResult extends ValidationResult {
+  resultType: 'ontologyTerm';
+}

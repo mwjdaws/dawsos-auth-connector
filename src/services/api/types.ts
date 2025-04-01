@@ -87,3 +87,22 @@ export interface PaginationResult<T> {
     count: number;
   };
 }
+
+/**
+ * Simplified KnowledgeSource for UI components
+ */
+export interface KnowledgeSourceUI {
+  id: string;
+  title: string;
+  content: string;
+}
+
+/**
+ * Version metadata structure
+ */
+export interface VersionMetadata {
+  reason?: string;
+  published?: boolean;
+  isAutoSave?: boolean;
+  [key: string]: any;
+}

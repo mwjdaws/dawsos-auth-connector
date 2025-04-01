@@ -141,6 +141,26 @@ export function createTagValidationResult(
 }
 
 /**
+ * Create an ontology term validation result
+ * @param isValid Is valid flag
+ * @param errorMessage Error message 
+ * @param message Optional success message
+ * @returns Ontology term validation result
+ */
+export function createOntologyTermValidationResult(
+  isValid: boolean,
+  errorMessage: string | null = null,
+  message: string | null = null
+): OntologyTermValidationResult {
+  return {
+    isValid,
+    errorMessage,
+    message,
+    resultType: 'ontologyTerm'
+  };
+}
+
+/**
  * Check if a validation result is valid
  * @param result Validation result to check
  * @returns True if valid
