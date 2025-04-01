@@ -66,3 +66,6 @@ export interface UseTagOperationsResult {
   isDeletingTag: boolean;
   isReordering: boolean;
 }
+
+// Export TagPosition for backward compatibility
+export { TagPosition };

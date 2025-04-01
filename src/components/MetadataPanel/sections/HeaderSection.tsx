@@ -63,7 +63,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
       </div>
       <Button
         variant="ghost"
-        size="icon"
+        size="sm"
         onClick={handleRefresh}
         disabled={isLoading}
         className="h-7 w-7"

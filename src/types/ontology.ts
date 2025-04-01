@@ -43,7 +43,5 @@ export enum OntologyRelationType {
   ANTONYM = 'antonym'
 }
 
-/**
- * Export the OntologyTerm to make it available in other files
- */
+// Make OntologyTerm available as both default and named export
 export default OntologyTerm;

@@ -5,6 +5,8 @@
 export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
+  contentExists?: boolean; // Added to support backward compatibility
+  message?: string | null; // Added to support backward compatibility
 }
 
 /**
@@ -39,6 +41,7 @@ export interface ContentValidationResult extends ValidationResult {
  */
 export interface TagValidationResult extends ValidationResult {
   message?: string | null;
+  tagExists?: boolean; // Added to support older code
 }
 
 /**
@@ -76,4 +79,41 @@ export interface ErrorHandlingCompatOptions {
   context?: Record<string, any>;
   technical?: boolean;
   category?: string;
+}
+
+// Add ErrorHandlingOptions for backwards compatibility
+export interface ErrorHandlingOptions {
+  level?: string;
+  source?: string;
+  severity?: string;
+  technical?: boolean;
+  context?: Record<string, any>;
+  fingerprint?: string;
+  deduplicate?: boolean;
+  silent?: boolean;
+  notifyUser?: boolean;
+  category?: string;
+}
+
+// Add constants for validation results
+export const VALIDATION_RESULTS = {
+  VALID: 'valid',
+  INVALID: 'invalid'
+};
+
+// Helper functions for creating validation results
+export function createValidResult(message: string | null = null): ValidationResult {
+  return {
+    isValid: true,
+    errorMessage: null,
+    message
+  };
+}
+
+export function createInvalidResult(errorMessage: string): ValidationResult {
+  return {
+    isValid: false,
+    errorMessage,
+    message: errorMessage
+  };
 }

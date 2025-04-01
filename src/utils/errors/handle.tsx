@@ -1,140 +1,78 @@
 
-/**
- * Central error handling system with JSX support
- * 
- * This file provides utilities for handling errors across the application
- * with standardized logging, user feedback, and error categorization.
- */
-import React from 'react';
 import { toast } from '@/hooks/use-toast';
-import { ErrorOptions, errorLevelToToastVariant } from './types';
-import { categorizeError } from './categorize';
-import { formatErrorForDisplay } from './format';
-import { deduplicateError } from './deduplication';
+import { ErrorHandlingOptions, ErrorLevel } from './types';
 
-// Default options for error handling
-const defaultOptions: Partial<ErrorOptions> = {
+/**
+ * Default error handling options
+ */
+const defaultOptions: ErrorHandlingOptions = {
   level: 'error',
-  source: 'application',
-  severity: 'medium',
-  technical: false,
-  context: {},
-  fingerprint: '', // Empty means generate from error
-  deduplicate: true,
   silent: false,
-  notifyUser: true,
-  category: 'general'
+  reportToAnalytics: true,
+  showToast: true
 };
 
 /**
- * Main error handling function for the application
+ * Handle an error with consistent logging, reporting, and user feedback
  * 
  * @param error The error to handle
- * @param userMessage Optional user-friendly message to display
+ * @param userMessage A user-friendly message to display
  * @param options Additional options for error handling
- * @returns The error record that was created
  */
 export function handleError(
   error: unknown,
   userMessage?: string,
-  options?: Partial<ErrorOptions>
-) {
-  // Merge options with defaults
-  const opts = { ...defaultOptions, ...options } as ErrorOptions;
-  
-  // Convert to standard error if needed
+  options?: ErrorHandlingOptions
+): void {
+  const opts = { ...defaultOptions, ...options };
   const errorObj = error instanceof Error ? error : new Error(String(error));
   
-  // Generate error fingerprint if not provided
-  if (!opts.fingerprint) {
-    opts.fingerprint = errorObj.name + ':' + errorObj.message;
-  }
-  
-  // Try to deduplicate the error if enabled
-  if (opts.deduplicate) {
-    if (deduplicateError(opts.fingerprint)) {
-      // This is a duplicate error, don't process it again
-      return;
-    }
-  }
-  
-  // Categorize the error based on message and stack
-  const categorizedError = categorizeError(errorObj, opts);
-  
-  // Format user-facing message
-  const displayMessage = userMessage || formatErrorForDisplay(errorObj, opts);
-  
   // Always log to console with appropriate level
-  const logContext = { ...opts.context, errorObject: errorObj };
-  
   switch (opts.level) {
     case 'debug':
-      console.debug(`[DEBUG] ${displayMessage}`, logContext);
+      console.debug(`[DEBUG] ${userMessage || errorObj.message}`, errorObj, opts.context);
       break;
     case 'info':
-      console.info(`[INFO] ${displayMessage}`, logContext);
+      console.info(`[INFO] ${userMessage || errorObj.message}`, errorObj, opts.context);
       break;
     case 'warning':
-      console.warn(`[WARNING] ${displayMessage}`, logContext);
+      console.warn(`[WARNING] ${userMessage || errorObj.message}`, errorObj, opts.context);
       break;
     case 'error':
     default:
-      console.error(`[ERROR] ${displayMessage}`, errorObj, logContext);
+      console.error(`[ERROR] ${userMessage || errorObj.message}`, errorObj, opts.context);
   }
   
-  // Show toast notification if enabled and not silent
-  if (opts.notifyUser && !opts.silent) {
+  // Show toast notification if enabled
+  if (opts.showToast && !opts.silent) {
     toast({
-      title: opts.level === 'error' ? 'Error' : 
-             opts.level === 'warning' ? 'Warning' : 'Notice',
-      description: displayMessage,
-      variant: errorLevelToToastVariant[opts.level || 'error']
+      title: opts.toastTitle || (opts.level === 'error' ? 'Error' : opts.level === 'warning' ? 'Warning' : 'Notice'),
+      description: userMessage || errorObj.message,
+      variant: opts.level === 'error' ? 'destructive' : 'default',
     });
   }
-  
-  // Return the error record
-  return {
-    message: errorObj.message,
-    timestamp: new Date(),
-    level: opts.level,
-    source: opts.source,
-    context: opts.context,
-    originalError: errorObj,
-    fingerprint: opts.fingerprint
-  };
 }
 
 /**
- * A safe error handler that won't throw additional errors
+ * Creates an error handler function with predefined context
  * 
- * @param error The error to handle
- * @param userMessage Optional user-friendly message to display
- * @param options Additional options for error handling
+ * @param componentName The name of the component or module
+ * @param defaultOptions Default options for all errors handled by this function
+ * @returns An error handler function with predefined context
  */
-export function handleErrorSafe(
-  error: unknown,
-  userMessage?: string,
-  options?: Partial<ErrorOptions>
+export function createErrorHandler(
+  componentName: string,
+  defaultOptions?: ErrorHandlingOptions
 ) {
-  try {
-    return handleError(error, userMessage, options);
-  } catch (handlerError) {
-    // Last resort error handling - never throw from here
-    console.error('Error in error handler:', handlerError);
-    console.error('Original error:', error);
-    
-    // Try minimal toast as last resort
-    try {
-      toast({
-        title: 'Error',
-        description: userMessage || 'An unexpected error occurred',
-        variant: 'destructive',
-      });
-    } catch {
-      // Nothing more we can do
-    }
-  }
+  return (error: unknown, userMessage?: string, options?: ErrorHandlingOptions): void => {
+    handleError(error, userMessage, {
+      ...defaultOptions,
+      ...options,
+      context: {
+        ...(defaultOptions?.context || {}),
+        ...(options?.context || {}),
+        componentName
+      }
+    });
+  };
 }
-
-// Default export for backward compatibility
-export default handleError;

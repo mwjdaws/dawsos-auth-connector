@@ -84,7 +84,7 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
         tags={tags} 
         editable={editable} 
         onDeleteTag={onDeleteTag} 
-        onReorderTags={onReorderTags}
+        onReorderTags={onReorderTags || undefined}
       />
     </div>
   );

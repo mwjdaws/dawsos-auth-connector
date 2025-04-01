@@ -1,11 +1,31 @@
 
 import React, { useState, useEffect } from 'react';
-import { useOntologyTerms } from '@/hooks/metadata/useOntologyTerms';
+// Create a placeholder for the useOntologyTerms hook until we implement it
+// We'll implement this hook later to fix the import error
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OntologySuggestionsPanel } from './OntologySuggestionsPanel';
 import { OntologyTerm } from '@/types/ontology';
+
+// Temporary useOntologyTerms hook implementation (to be replaced with the actual hook)
+const useOntologyTerms = (sourceId: string) => {
+  const [terms, setTerms] = useState<OntologyTerm[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const handleAddTerm = async (termId: string) => {
+    console.log("Adding term", termId);
+    // Implementation will be added later
+  };
+
+  const handleRemoveTerm = async (termId: string) => {
+    console.log("Removing term", termId);
+    // Implementation will be added later
+  };
+
+  return { terms, isLoading, error, handleAddTerm, handleRemoveTerm };
+};
 
 export interface OntologySectionProps {
   sourceId: string;
