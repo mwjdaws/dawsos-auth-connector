@@ -11,7 +11,8 @@ export function createMockTag(id: string, name: string, contentId: string): Tag 
     name,
     content_id: contentId,
     type_id: null,
-    display_order: 0
+    display_order: 0,
+    type_name: '' // Add the missing type_name property
   };
 }
 
@@ -36,7 +37,8 @@ export function createMockTags(contentId: string, count = 3): Tag[] {
     name: `Mock Tag ${i + 1}`,
     content_id: contentId,
     type_id: null,
-    display_order: i
+    display_order: i,
+    type_name: '' // Add the missing type_name property
   }));
 }
 
@@ -60,7 +62,8 @@ export const basicTag: Tag = {
   name: 'Test Tag',
   content_id: 'test-content-1',
   type_id: null,
-  display_order: 0
+  display_order: 0,
+  type_name: '' // Add the missing type_name property
 };
 
 /**

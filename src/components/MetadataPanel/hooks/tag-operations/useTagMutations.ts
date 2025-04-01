@@ -11,17 +11,6 @@ interface UseTagMutationsProps {
   setTags: (tags: Tag[]) => void;
 }
 
-interface AddTagParams {
-  name: string;
-  contentId: string;
-  typeId: string | null;
-}
-
-interface DeleteTagParams {
-  tagId: string;
-  contentId: string;
-}
-
 export interface TagPosition {
   id: string;
   position: number;
@@ -43,7 +32,7 @@ export const useTagMutations = ({
   /**
    * Add a new tag to the content
    */
-  const addTag = useCallback(async ({ name, contentId, typeId }: AddTagParams) => {
+  const addTag = useCallback(async ({ name, contentId, typeId }: { name: string; contentId: string; typeId: string | null; }) => {
     if (!name.trim() || !contentId) return false;
     
     setIsAddingTag(true);
@@ -69,8 +58,13 @@ export const useTagMutations = ({
       
       if (error) throw error;
       
-      // Add the new tag to the state
-      setTags([...tags, data]);
+      // Add the new tag to the state, ensuring it has a type_name
+      const newTag: Tag = {
+        ...data,
+        type_name: '' // Add default type_name if needed
+      };
+      
+      setTags([...tags, newTag]);
       
       return true;
     } catch (err) {
@@ -88,7 +82,7 @@ export const useTagMutations = ({
   /**
    * Delete a tag from the content
    */
-  const deleteTag = useCallback(async ({ tagId, contentId }: DeleteTagParams) => {
+  const deleteTag = useCallback(async ({ tagId, contentId }: { tagId: string; contentId: string; }) => {
     if (!tagId || !contentId) return false;
     
     setIsDeletingTag(true);
@@ -128,18 +122,23 @@ export const useTagMutations = ({
     setIsReordering(true);
     
     try {
-      // Update the display_order of all affected tags
+      // Update the display_order of all affected tags directly with individual updates
       const updates = tagPositions.map(item => ({
         id: item.id,
         display_order: item.position,
         content_id: contentId
       }));
       
-      const { error } = await supabase.rpc('update_tag_positions', {
-        tag_updates: updates
-      });
-      
-      if (error) throw error;
+      // Update each tag individually since the batch RPC may not be available
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('tags')
+          .update({ display_order: update.display_order })
+          .eq('id', update.id)
+          .eq('content_id', update.content_id);
+        
+        if (error) throw error;
+      }
       
       // Update the local state with the new order
       const updatedTags = [...tags].map(tag => {

@@ -36,7 +36,7 @@ export const useSourceMetadata = ({ contentId, enabled = true }: UseSourceMetada
           external_source_url,
           external_source_checked_at,
           external_content_hash,
-          is_published,
+          published,
           title,
           created_at,
           updated_at
@@ -56,7 +56,7 @@ export const useSourceMetadata = ({ contentId, enabled = true }: UseSourceMetada
         external_source_checked_at: sourceData.external_source_checked_at,
         external_content_hash: sourceData.external_content_hash,
         needs_external_review: sourceData.external_source_url && !sourceData.external_source_checked_at,
-        is_published: sourceData.is_published,
+        is_published: sourceData.published || false,
         created_at: sourceData.created_at,
         updated_at: sourceData.updated_at
       };

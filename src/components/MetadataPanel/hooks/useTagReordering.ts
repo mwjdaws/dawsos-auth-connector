@@ -1,8 +1,14 @@
 
 import { useState, useCallback } from "react";
-import { Tag, TagPosition } from "@/types/tag";
-import { handleError } from "@/utils/errors/handle";
+import { Tag } from "@/types/tag";
+import { handleError, ErrorLevel } from "@/utils/errors/handle";
 import { supabase } from "@/integrations/supabase/client";
+
+// Define the TagPosition interface locally if needed
+interface TagPosition {
+  id: string;
+  position: number;
+}
 
 interface UseTagReorderingProps {
   contentId: string;
@@ -63,7 +69,7 @@ export function useTagReordering({
       handleError(
         err,
         "Failed to update tag order",
-        { level: "error", context: { contentId } }
+        { level: ErrorLevel.ERROR, context: { contentId } }
       );
       
       return false;

@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { withErrorHandling } from '@/utils/errors/wrappers';
+import { handleError, ErrorLevel } from '@/utils/errors';
 
 interface DashboardHeaderProps {
   title: string;
@@ -26,10 +26,17 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   // Wrap the refresh handler with error handling
   const handleRefresh = onRefresh
-    ? withErrorHandling(async () => {
-        // Convert regular function to async to satisfy the WrappableFunction type
-        return await Promise.resolve(onRefresh());
-      })
+    ? async () => {
+        try {
+          await onRefresh();
+        } catch (err) {
+          handleError(
+            err,
+            `Failed to refresh ${title}`,
+            { level: ErrorLevel.WARNING }
+          );
+        }
+      }
     : undefined;
 
   return (

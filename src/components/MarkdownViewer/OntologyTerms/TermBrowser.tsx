@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
-import { OntologyTerm } from "@/hooks/markdown-editor";
+import { OntologyTerm } from "@/hooks/markdown-editor/types";
 
 interface TermBrowserProps {
   availableTerms: OntologyTerm[];

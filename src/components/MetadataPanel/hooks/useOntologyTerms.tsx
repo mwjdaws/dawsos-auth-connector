@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { OntologyTerm } from '@/types/ontology';
 import { supabase } from '@/integrations/supabase/client';
-import { handleError } from '@/utils/errors/handle';
+import { handleError, ErrorLevel } from '@/utils/errors/handle';
 
 interface UseOntologyTermsProps {
   contentId: string;
@@ -59,7 +59,7 @@ export const useOntologyTerms = ({ contentId }: UseOntologyTermsProps) => {
       handleError(
         error,
         'Error fetching ontology terms',
-        { level: 'warning' }
+        { level: ErrorLevel.WARNING }
       );
       return [];
     } finally {
@@ -93,7 +93,7 @@ export const useOntologyTerms = ({ contentId }: UseOntologyTermsProps) => {
       handleError(
         error,
         'Error adding ontology term',
-        { level: 'warning' }
+        { level: ErrorLevel.WARNING }
       );
       return false;
     } finally {
@@ -125,7 +125,7 @@ export const useOntologyTerms = ({ contentId }: UseOntologyTermsProps) => {
       handleError(
         error,
         'Error removing ontology term',
-        { level: 'warning' }
+        { level: ErrorLevel.WARNING }
       );
       return false;
     } finally {
