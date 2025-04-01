@@ -1,98 +1,118 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MetadataProvider } from '../hooks/useMetadataContext';
-import { useTagOperations } from '../hooks/tag-operations';
-import { createContentValidationResult } from '@/utils/validation/utils';
-import { useContentValidator } from '@/hooks/validation/useContentValidator';
-import { createComponentErrorHandler } from '@/utils/errors/wrappers';
+import { fetchKnowledgeSourceById } from '@/services/api/knowledgeSources';
+import { Tag } from '@/types/tag';
+import { OntologyTerm } from '@/types/ontology';
+import { createContentIdValidationResult } from '@/utils/validation/types';
+import { useTagOperations } from '../hooks/tag-operations/useTagOperations';
+import { SourceMetadata } from '../types';
 
-const handleError = createComponentErrorHandler('MetadataQueryProvider');
-
+// Props interface for the provider
 interface MetadataQueryProviderProps {
   contentId: string;
   isEditable?: boolean;
   children: React.ReactNode;
 }
 
-/**
- * Provider that handles metadata fetching with React Query
- * and provides data via MetadataContext
- */
 export const MetadataQueryProvider: React.FC<MetadataQueryProviderProps> = ({
   contentId,
   isEditable = false,
   children
 }) => {
-  // Validate the content ID
-  const contentValidation = useContentValidator(contentId);
-  
   // Get tag operations
   const {
     tags,
     isLoading: isTagsLoading,
     error: tagsError,
+    newTag,
+    setNewTag,
     handleAddTag,
     handleDeleteTag,
     handleRefresh: refreshTags
   } = useTagOperations(contentId);
-  
-  // Get source metadata
-  const { 
-    data: sourceMetadata,
-    isLoading: isSourceLoading,
-    error: sourceError 
-  } = useQuery({
-    queryKey: ['sourceMetadata', contentId],
-    queryFn: async () => {
-      // In a real implementation, this would fetch from the API
-      // For now, we'll return mock data
-      return {
-        id: contentId,
-        title: 'Sample content',
-        external_source_url: "https://example.com/article",
-        external_source_checked_at: new Date().toISOString(),
-        needs_external_review: false,
-        published: true,
-        updated_at: new Date().toISOString()
-      };
-    },
-    enabled: contentValidation.isValid
+
+  // Content validation
+  const validationResult = createContentIdValidationResult({
+    contentId,
+    isValid: true,
+    contentExists: true,
+    errorMessage: null,
+    message: null
   });
-  
-  // Combined loading and error states
-  const isLoading = isTagsLoading || isSourceLoading;
-  const error = tagsError || sourceError;
-  
-  // Refresh all metadata
+
+  // Source metadata query
+  const { 
+    data: sourceData,
+    isLoading: isSourceLoading,
+    error: sourceError,
+    refetch: refetchSource
+  } = useQuery({
+    queryKey: contentId ? ['metadata', 'source', contentId] : null,
+    queryFn: async () => {
+      if (!contentId) return null;
+      const data = await fetchKnowledgeSourceById(contentId);
+      return data ? {
+        id: data.id,
+        title: data.title,
+        content: data.content,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        user_id: data.user_id,
+        created_by: data.created_by,
+        published: data.published || false,
+        published_at: data.published_at,
+        external_source_url: data.external_source_url,
+        external_source_checked_at: data.external_source_checked_at,
+        external_content_hash: data.external_content_hash,
+        needs_external_review: data.needs_external_review || false,
+        template_id: data.template_id
+      } as SourceMetadata : null;
+    },
+    enabled: !!contentId
+  });
+
+  // Combined refresh function
   const refreshMetadata = async () => {
+    if (!contentId) return;
+    
     try {
-      await refreshTags();
-      // Additional refresh logic would go here
-    } catch (err) {
-      handleError(err, "Failed to refresh metadata", {
-        context: { contentId }
-      });
+      await Promise.all([
+        refetchSource(),
+        refreshTags()
+      ]);
+    } catch (error) {
+      console.error('Error refreshing metadata:', error);
     }
   };
-  
-  // The context value
-  const contextValue = {
-    contentId,
-    tags,
-    validationResult: contentValidation,
-    isEditable,
-    isLoading,
-    error: error instanceof Error ? error : null,
-    sourceMetadata: sourceMetadata || null, // Ensure it's never undefined
-    refreshMetadata,
-    handleAddTag,
-    handleDeleteTag
-  };
-  
+
+  // Determine combined loading and error states
+  const isLoading = isSourceLoading || isTagsLoading;
+  const error = sourceError || tagsError;
+
   return (
-    <MetadataProvider value={contextValue}>
+    <MetadataProvider
+      value={{
+        contentId,
+        tags,
+        validationResult,
+        isEditable,
+        isLoading,
+        error,
+        sourceMetadata: sourceData,
+        refreshMetadata,
+        handleAddTag: async (tagName, typeId) => {
+          if (!handleAddTag) return;
+          setNewTag(tagName);
+          await handleAddTag(typeId);
+        },
+        handleDeleteTag
+      }}
+    >
       {children}
     </MetadataProvider>
   );
 };
+
+export default MetadataQueryProvider;

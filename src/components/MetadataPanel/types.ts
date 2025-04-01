@@ -1,4 +1,28 @@
 
+import { Tag } from '@/types/tag';
+import { OntologyTerm } from '@/types/ontology';
+import { ValidationResult } from '@/utils/validation/types';
+
+/**
+ * Source metadata for a content item
+ */
+export interface SourceMetadata {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string | null;
+  updated_at: string | null;
+  user_id: string | null;
+  created_by: string | null;
+  published: boolean;
+  published_at: string | null;
+  external_source_url: string | null;
+  external_source_checked_at: string | null;
+  external_content_hash: string | null;
+  needs_external_review: boolean;
+  template_id: string | null;
+}
+
 /**
  * Props for the MetadataPanel component
  */
@@ -11,88 +35,46 @@ export interface MetadataPanelProps {
   showDomain?: boolean;
   domain?: string | null;
   className?: string;
-  children?: React.ReactNode;
   onMetadataChange?: (() => void) | null;
+  children?: React.ReactNode;
 }
 
 /**
- * Tag interface for MetadataPanel
- */
-export interface Tag {
-  id: string;
-  name: string;
-  content_id: string;
-  type_id: string;
-  display_order: number;
-  type_name: string;
-  color?: string;
-  icon?: string;
-}
-
-/**
- * Validation result type for content
- */
-export interface ValidationResult {
-  isValid: boolean;
-  errorMessage: string | null;
-  contentExists: boolean;
-  message?: string | null;
-}
-
-/**
- * Source metadata interface for knowledge sources
- */
-export interface SourceMetadata {
-  id: string;
-  content: string;
-  title: string;
-  created_at: string | null;
-  updated_at: string | null;
-  user_id: string | null;
-  created_by: string | null;
-  external_source_url: string | null;
-  external_content_hash: string | null;
-  external_source_checked_at: string | null;
-  needs_external_review: boolean;
-  published: boolean;
-  published_at: string | null;
-  template_id: string | null;
-  metadata: Record<string, any> | null;
-}
-
-/**
- * Ontology term interface
- */
-export interface OntologyTerm {
-  id: string;
-  term: string;
-  description: string;
-  domain?: string | null;
-  review_required?: boolean;
-}
-
-/**
- * Related term interface
- */
-export interface RelatedTerm {
-  id: string;
-  term: string;
-  description: string;
-  relation_type: string;
-}
-
-/**
- * Metadata panel context props
+ * Props for the MetadataContext
  */
 export interface MetadataContextProps {
   contentId: string;
   tags: Tag[];
-  isLoading: boolean;
-  error: Error | null;
-  refreshMetadata?: () => void;
-  handleAddTag?: (tagName: string, typeId?: string | null) => Promise<void>;
-  handleDeleteTag?: (tagId: string) => Promise<void>;
   validationResult: ValidationResult | null;
   isEditable: boolean;
-  sourceMetadata: SourceMetadata | null;
+  isLoading: boolean;
+  error: Error | null;
+  ontologyTerms?: OntologyTerm[];
+  sourceMetadata?: SourceMetadata | null;
+  refreshMetadata?: () => Promise<void>;
+  fetchTags?: () => Promise<Tag[]>;
+  handleAddTag?: (tagName: string, typeId?: string | null) => Promise<void>;
+  handleDeleteTag?: (tagId: string) => Promise<void>;
+}
+
+/**
+ * Props for the MetadataContent component
+ */
+export interface MetadataContentProps {
+  contentId: string;
+  data: SourceMetadata | null;
+  tags: Tag[];
+  error: Error | null;
+  editable: boolean;
+  newTag: string;
+  setNewTag: (value: string) => void;
+  onAddTag: (typeId?: string | null) => Promise<void>;
+  onDeleteTag: (tagId: string) => Promise<void>;
+  onRefresh: () => void;
+  externalSourceUrl: string | null;
+  lastCheckedAt: string | null;
+  needsExternalReview: boolean;
+  showOntologyTerms?: boolean;
+  domain?: string | null;
+  showDomain?: boolean;
 }

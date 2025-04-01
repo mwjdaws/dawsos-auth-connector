@@ -23,18 +23,18 @@ export interface KnowledgeSource {
   id: string;
   title: string;
   content: string;
-  user_id: string | null;
-  created_by: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-  template_id: string | null;
-  external_source_url: string | null;
-  external_content_hash: string | null;
-  external_source_checked_at: string | null;
-  needs_external_review: boolean;
-  published: boolean;
-  published_at: string | null;
-  metadata: Json | null;
+  user_id?: string | null;
+  created_by?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  template_id?: string | null;
+  external_source_url?: string | null;
+  external_content_hash?: string | null;
+  external_source_checked_at?: string | null;
+  needs_external_review?: boolean;
+  published?: boolean;
+  published_at?: string | null;
+  metadata?: Json | null;
 }
 
 /**
@@ -43,6 +43,7 @@ export interface KnowledgeSource {
 export interface DocumentOperationResult {
   success: boolean;
   contentId: string | null;
+  documentId?: string | null; // Add documentId field for compatibility
   error?: any;
 }
 
@@ -52,6 +53,7 @@ export interface DocumentOperationResult {
 export interface PublishResult {
   success: boolean;
   documentId: string | null;
+  contentId?: string | null; // Add contentId field for compatibility
   error?: any;
 }
 

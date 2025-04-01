@@ -7,11 +7,11 @@ export interface Tag {
   id: string;
   name: string;
   content_id: string;
-  type_id: string;
+  type_id: string | null;  // Allow null for type_id
   display_order: number;
   type_name: string;
-  color?: string;
-  icon?: string;
+  color?: string | null;  // Make color optional and nullable
+  icon?: string | null;   // Make icon optional and nullable
 }
 
 /**
@@ -21,8 +21,8 @@ export interface Tag {
 export interface TagType {
   id: string;
   name: string;
-  color?: string;
-  icon?: string;
+  color?: string | null;
+  icon?: string | null;
 }
 
 /**
@@ -44,11 +44,11 @@ export function mapApiTagToTag(apiTag: any): Tag {
     id: apiTag.id,
     name: apiTag.name,
     content_id: apiTag.content_id,
-    type_id: apiTag.type_id || '',
+    type_id: apiTag.type_id || null,
     display_order: apiTag.display_order || 0,
     type_name: apiTag.type_name || '',
-    color: apiTag.color,
-    icon: apiTag.icon
+    color: apiTag.color || null,
+    icon: apiTag.icon || null
   };
 }
 
@@ -75,11 +75,11 @@ export function ensureNonNullableTag(tag: Partial<Tag> | null): Tag | null {
     id: tag.id,
     name: tag.name,
     content_id: tag.content_id || '',
-    type_id: tag.type_id || '',
+    type_id: tag.type_id || null,
     display_order: tag.display_order || 0,
     type_name: tag.type_name || '',
-    color: tag.color,
-    icon: tag.icon
+    color: tag.color || null,
+    icon: tag.icon || null
   };
 }
 

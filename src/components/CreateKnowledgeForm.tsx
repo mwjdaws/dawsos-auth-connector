@@ -64,11 +64,15 @@ export function CreateKnowledgeForm() {
 
     try {
       setLoading(true);
+      // Fix the issue by providing the proper type structure for createKnowledgeSource
       const result = await createKnowledgeSource({
         title: formData.title,
         content: formData.content || "# New Document\n\nStart writing here...",
         user_id: user.id,
-        template_id: templateId || "" // Convert null to empty string for API
+        template_id: templateId,
+        published: false,
+        needs_external_review: false, 
+        metadata: null
       });
 
       if (result) {

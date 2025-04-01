@@ -8,6 +8,7 @@ export interface OntologyTerm {
   description: string;
   domain?: string | null;
   review_required?: boolean;
+  associationId?: string; // Add associationId for compatibility
 }
 
 /**
@@ -47,6 +48,18 @@ export interface RelatedNote {
   score?: number;
   applied: boolean;
   rejected: boolean;
+}
+
+/**
+ * Ontology suggestion interface
+ */
+export interface OntologySuggestion {
+  id: string;
+  term: string;
+  description: string;
+  domain?: string | null;
+  confidence: number;
+  source?: string;
 }
 
 /**
