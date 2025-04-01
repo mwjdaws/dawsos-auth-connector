@@ -10,7 +10,7 @@ import { useKnowledgeSources } from '@/hooks/markdown-editor/useKnowledgeSources
 import EditorHeader from './EditorHeader';
 import EditorActions from './EditorActions';
 import { Skeleton } from '@/components/ui/skeleton';
-import { VersionHistoryModal } from './VersionHistoryModal';
+import VersionHistoryModal from './VersionHistoryModal';
 import SplitEditor from './SplitEditor';
 import FullscreenEditor from './FullscreenEditor';
 import EditorToolbar from './EditorToolbar';

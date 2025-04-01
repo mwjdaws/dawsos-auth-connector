@@ -10,7 +10,7 @@ export { default as MarkdownContent } from './MarkdownContent';
 export { default as MarkdownPreview } from './MarkdownPreview';
 export { default as EditorHeader } from './EditorHeader';
 export { default as EditorActions } from './EditorActions';
-export { VersionHistoryModal } from './VersionHistoryModal';
+export { default as VersionHistoryModal } from './VersionHistoryModal';
 export { default as SplitEditor } from './SplitEditor';
 export { default as FullscreenEditor } from './FullscreenEditor';
 export { default as EditorToolbar } from './EditorToolbar';

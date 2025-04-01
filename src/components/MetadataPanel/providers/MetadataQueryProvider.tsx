@@ -1,118 +1,156 @@
-
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { MetadataProvider } from '../hooks/useMetadataContext';
-import { fetchKnowledgeSourceById } from '@/services/api/knowledgeSources';
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  ReactNode,
+  useCallback
+} from 'react';
+import { useTagsQuery, useTagMutations } from '@/hooks/metadata';
+import { useMetadataQuery } from '@/hooks/metadata/useMetadataQuery';
+import { useOntologyTermsQuery } from '@/hooks/metadata/useOntologyTermsQuery';
+import { createContentIdValidationResult } from '@/utils/validation/contentIdValidation';
 import { Tag } from '@/types/tag';
 import { OntologyTerm } from '@/types/ontology';
-import { createContentIdValidationResult } from '@/utils/validation/types';
-import { useTagOperations } from '../hooks/tag-operations/useTagOperations';
-import { SourceMetadata } from '../types';
+import { MetadataContextProps, MetadataPanelProps, SourceMetadata } from '../types';
+import { ValidationResult } from '@/utils/validation/types';
 
-// Props interface for the provider
-interface MetadataQueryProviderProps {
-  contentId: string;
-  isEditable?: boolean;
-  children: React.ReactNode;
+interface MetadataProviderProps extends MetadataPanelProps {
+  children: ReactNode;
 }
 
-export const MetadataQueryProvider: React.FC<MetadataQueryProviderProps> = ({
+// Create the MetadataContext
+const MetadataContext = createContext<MetadataContextProps | undefined>(undefined);
+
+// Create a provider component for the MetadataContext
+export const MetadataProvider: React.FC<MetadataProviderProps> = ({
   contentId,
-  isEditable = false,
+  editable = false,
+  showOntologyTerms = false,
+  showDomain = false,
+  domain = null,
+  className,
+  onMetadataChange,
+  initialCollapsed = false,
+  isCollapsible = false,
   children
 }) => {
-  // Get tag operations
+  // Validate contentId and set initial state
+  const [isValidContentId, setValidContentId] = useState(false);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  
+  useEffect(() => {
+    const validation = createContentIdValidationResult(contentId);
+    setValidContentId(validation.isValid);
+    setValidationResult(validation);
+  }, [contentId]);
+  
+  // Fetch source metadata
   const {
-    tags,
+    data: sourceMetadata,
+    isLoading: isMetadataLoading,
+    error: metadataError,
+    refresh: refreshMetadata
+  } = useMetadataQuery(contentId, {
+    enabled: isValidContentId
+  });
+  
+  // Fetch tags
+  const {
+    data: tagsData = [],
     isLoading: isTagsLoading,
     error: tagsError,
-    newTag,
-    setNewTag,
-    handleAddTag,
-    handleDeleteTag,
-    handleRefresh: refreshTags
-  } = useTagOperations(contentId);
-
-  // Content validation
-  const validationResult = createContentIdValidationResult({
-    contentId,
-    isValid: true,
-    contentExists: true,
-    errorMessage: null,
-    message: null
+    refetch: fetchTags
+  } = useTagsQuery(contentId, {
+    enabled: isValidContentId
   });
-
-  // Source metadata query
-  const { 
-    data: sourceData,
-    isLoading: isSourceLoading,
-    error: sourceError,
-    refetch: refetchSource
-  } = useQuery({
-    queryKey: contentId ? ['metadata', 'source', contentId] : null,
-    queryFn: async () => {
-      if (!contentId) return null;
-      const data = await fetchKnowledgeSourceById(contentId);
-      return data ? {
-        id: data.id,
-        title: data.title,
-        content: data.content,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        user_id: data.user_id,
-        created_by: data.created_by,
-        published: data.published || false,
-        published_at: data.published_at,
-        external_source_url: data.external_source_url,
-        external_source_checked_at: data.external_source_checked_at,
-        external_content_hash: data.external_content_hash,
-        needs_external_review: data.needs_external_review || false,
-        template_id: data.template_id
-      } as SourceMetadata : null;
-    },
-    enabled: !!contentId
+  
+  // Ensure we're working with the Tag type
+  const tags: Tag[] = tagsData as Tag[];
+  
+  // Fetch ontology terms
+  const {
+    data: ontologyTermsData = [],
+    isLoading: isOntologyTermsLoading,
+    error: ontologyTermsError
+  } = useOntologyTermsQuery(contentId, {
+    enabled: isValidContentId && showOntologyTerms
   });
-
-  // Combined refresh function
-  const refreshMetadata = async () => {
-    if (!contentId) return;
+  
+  // Ensure we're working with the OntologyTerm type
+  const ontologyTerms: OntologyTerm[] = ontologyTermsData as OntologyTerm[];
+  
+  // Tag mutations
+  const {
+    addTag,
+    deleteTag,
+    isAddingTag,
+    isDeletingTag
+  } = useTagMutations();
+  
+  // Handle add tag
+  const handleAddTag = async (tagName: string, typeId?: string | null) => {
+    if (!tagName.trim()) return;
     
-    try {
-      await Promise.all([
-        refetchSource(),
-        refreshTags()
-      ]);
-    } catch (error) {
-      console.error('Error refreshing metadata:', error);
+    await addTag({
+      contentId,
+      name: tagName,
+      typeId: typeId || null
+    });
+    
+    // Refresh tags after adding
+    await fetchTags();
+    
+    if (onMetadataChange) {
+      onMetadataChange();
     }
   };
-
-  // Determine combined loading and error states
-  const isLoading = isSourceLoading || isTagsLoading;
-  const error = sourceError || tagsError;
-
+  
+  // Handle delete tag
+  const handleDeleteTag = async (tagId: string) => {
+    await deleteTag({
+      tagId,
+      contentId
+    });
+    
+    // Refresh tags after deleting
+    await fetchTags();
+    
+    if (onMetadataChange) {
+      onMetadataChange();
+    }
+  };
+  
+  const isLoading = isMetadataLoading || isTagsLoading || isOntologyTermsLoading;
+  const error = metadataError || tagsError || ontologyTermsError;
+  
+  const value: MetadataContextProps = {
+    contentId,
+    tags,
+    validationResult: validationResult,
+    isEditable: editable,
+    isLoading,
+    error,
+    ontologyTerms,
+    sourceMetadata,
+    refreshMetadata,
+    fetchTags,
+    handleAddTag: handleAddTag,
+    handleDeleteTag: handleDeleteTag
+  };
+  
   return (
-    <MetadataProvider
-      value={{
-        contentId,
-        tags,
-        validationResult,
-        isEditable,
-        isLoading,
-        error,
-        sourceMetadata: sourceData,
-        refreshMetadata,
-        handleAddTag: async (tagName, typeId) => {
-          if (!handleAddTag) return;
-          setNewTag(tagName);
-          await handleAddTag(typeId);
-        },
-        handleDeleteTag
-      }}
-    >
+    <MetadataContext.Provider value={value}>
       {children}
-    </MetadataProvider>
+    </MetadataContext.Provider>
   );
 };
 
-export default MetadataQueryProvider;
+// Create a hook to use the MetadataContext
+export const useMetadataContext = (): MetadataContextProps => {
+  const context = useContext(MetadataContext);
+  if (!context) {
+    throw new Error('useMetadataContext must be used within a MetadataProvider');
+  }
+  return context;
+};
