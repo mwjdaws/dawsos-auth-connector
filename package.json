@@ -53,6 +53,7 @@
     "embla-carousel-react": "^8.3.0",
     "fuse.js": "^6.6.2",
     "input-otp": "^1.2.4",
+    "lovable-tagger": "^1.1.8",
     "lucide-react": "^0.269.0",
     "next-themes": "^0.3.0",
     "path": "^0.12.7",

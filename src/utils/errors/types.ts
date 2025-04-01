@@ -73,3 +73,25 @@ export const defaultErrorOptions: ErrorHandlingOptions = {
 export interface CustomErrorHandlingOptions extends ErrorHandlingOptions {
   [key: string]: any;
 }
+
+/**
+ * Create a new enhanced error
+ */
+export function createEnhancedError(
+  message: string,
+  options?: {
+    code?: string;
+    level?: ErrorLevel;
+    source?: ErrorSource;
+    context?: Record<string, any>;
+  }
+): EnhancedError {
+  const error = new Error(message) as EnhancedError;
+  if (options) {
+    error.code = options.code;
+    error.level = options.level;
+    error.source = options.source;
+    error.context = options.context;
+  }
+  return error;
+}

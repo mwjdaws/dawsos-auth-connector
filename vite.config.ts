@@ -16,7 +16,8 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
-    port: 8080,
+    port: 3000,
+    open: true,
     // Improve handling of static assets
     fs: {
       strict: true,

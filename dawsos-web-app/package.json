@@ -47,7 +47,8 @@
     "vitest": "^0.34.3",
     "jsdom": "^22.1.0",
     "@testing-library/react": "^14.0.0",
-    "@testing-library/jest-dom": "^6.1.2"
+    "@testing-library/jest-dom": "^6.1.2",
+    "lovable-tagger": "latest"
   },
   "keywords": [
     "react",

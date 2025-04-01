@@ -1,175 +1,121 @@
-import { toast, errorToast, deduplicateToast } from "@/hooks/use-toast";
-import { ErrorHandlingOptions, ErrorLevel, ErrorSource, defaultErrorOptions } from "./errors/types";
+
+import { toast } from "@/hooks/use-toast";
+import { ErrorLevel, ErrorSource, ErrorHandlingOptions, defaultErrorOptions } from './errors/types';
 
 /**
- * Centralized error handler for the application
+ * Central error handling function
  * 
- * @param error The error to handle
- * @param options Options for how to handle the error
+ * This function processes all errors in the application in a consistent way
+ * by providing informative toasts, logging, and context preservation.
+ * 
+ * @param error The error object that was caught
+ * @param message Custom error message (optional)
+ * @param options Additional options for error handling
  */
-export const handleError = (error: Error | unknown, options?: Partial<ErrorHandlingOptions>) => {
-  const mergedOptions: ErrorHandlingOptions = {
-    ...defaultErrorOptions,
-    ...options
-  };
-
-  // Convert unknown errors to Error objects
-  const normalizedError = error instanceof Error ? error : new Error(String(error));
+export const handleError = (
+  error: unknown,
+  message?: string | Partial<ErrorHandlingOptions>,
+  options?: Partial<ErrorHandlingOptions>
+) => {
+  // Parse options based on different argument patterns
+  let errorOptions: ErrorHandlingOptions;
   
-  // Log error to console based on level
-  logError(normalizedError, mergedOptions);
-  
-  // Report to analytics service if enabled
-  if (mergedOptions.reportToAnalytics) {
-    reportToAnalytics(normalizedError, mergedOptions);
-  }
-  
-  // Show toast notification if enabled
-  if (mergedOptions.showToast) {
-    showErrorToast(normalizedError, mergedOptions);
-  }
-  
-  return normalizedError;
-};
-
-/**
- * Log error to console with appropriate severity
- */
-const logError = (error: Error, options: ErrorHandlingOptions) => {
-  const { level, context, technical } = options;
-  const message = `[${level.toUpperCase()}] ${error.message}`;
-  const details = { context, technical, stack: error.stack };
-  
-  switch (level) {
-    case ErrorLevel.DEBUG:
-      console.debug(message, details);
-      break;
-    case ErrorLevel.INFO:
-      console.info(message, details);
-      break;
-    case ErrorLevel.WARNING:
-      console.warn(message, details);
-      break;
-    case ErrorLevel.ERROR:
-    default:
-      console.error(message, details);
-  }
-};
-
-/**
- * Report error to analytics service
- */
-const reportToAnalytics = (error: Error, options: ErrorHandlingOptions) => {
-  // This would integrate with your analytics service
-  // For now, we'll just note that we would report this
-  console.log(`[Analytics] Would report error: ${error.message}`, {
-    level: options.level,
-    source: options.source,
-    fingerprint: options.fingerprint,
-    context: options.context
-  });
-};
-
-/**
- * Show toast notification for error
- */
-const showErrorToast = (error: Error, options: ErrorHandlingOptions) => {
-  const title = options.toastTitle || 'An error occurred';
-  const description = options.message || error.message;
-  
-  if (options.toastId) {
-    // Use deduplication if an ID is provided
-    deduplicateToast(options.toastId, {
-      title,
-      description, 
-      variant: 'destructive'
-    });
+  if (typeof message === 'string' && options) {
+    // Handle case: handleError(error, "message", { level: ErrorLevel.Error })
+    errorOptions = {
+      ...defaultErrorOptions,
+      ...options,
+      message,
+      toastTitle: message
+    };
+  } else if (typeof message === 'object') {
+    // Handle case: handleError(error, { message: "message", level: ErrorLevel.Error })
+    errorOptions = {
+      ...defaultErrorOptions,
+      ...message
+    };
+  } else if (typeof message === 'string') {
+    // Handle case: handleError(error, "message")
+    errorOptions = {
+      ...defaultErrorOptions,
+      message,
+      toastTitle: message
+    };
   } else {
-    // Otherwise just show a normal error toast
-    errorToast(title, description);
+    // Handle case: handleError(error)
+    errorOptions = { ...defaultErrorOptions };
   }
-};
 
-/**
- * Create a component-specific error handler
- */
-export const createErrorHandler = (defaultOptions?: Partial<ErrorHandlingOptions>) => {
-  return (error: Error | unknown, options?: Partial<ErrorHandlingOptions>) => {
-    return handleError(error, {
-      ...defaultOptions,
-      ...options
+  // Extract information from the error
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorStack = error instanceof Error ? error.stack : undefined;
+
+  // Log the error with context
+  console.error(
+    `[${errorOptions.source}] ${errorOptions.message || errorMessage}`,
+    {
+      originalError: error,
+      level: errorOptions.level,
+      context: errorOptions.context,
+      stack: errorStack
+    }
+  );
+
+  // Show toast notification unless suppressed
+  if (!errorOptions.suppressToast && !errorOptions.silent && errorOptions.showToast) {
+    toast({
+      id: errorOptions.toastId,
+      title: errorOptions.toastTitle || errorOptions.message || (errorOptions.level === ErrorLevel.Error ? 'Error' : errorOptions.level === ErrorLevel.Warning ? 'Warning' : 'Notice'),
+      description: errorOptions.toastDescription || errorMessage,
+      variant: errorOptions.level === ErrorLevel.Error ? 'destructive' : 'default',
     });
+  }
+
+  // Return enhanced error information for further processing if needed
+  return {
+    message: errorOptions.message,
+    originalError: error,
+    level: errorOptions.level,
+    source: errorOptions.source,
+    context: errorOptions.context
   };
 };
 
 /**
- * Helper function to check if an error is of a specific type
+ * Create an error handler for components
  */
-export const isErrorType = (error: unknown, errorType: any): boolean => {
-  return error instanceof errorType;
-};
-
-/**
- * Convert errors to user-friendly messages
- */
-export const getUserFriendlyErrorMessage = (error: Error | unknown): string => {
-  if (error instanceof Error) {
-    // Check for specific error types and customize messages
-    if (error.message.includes('network')) {
-      return 'Unable to connect to the server. Please check your internet connection.';
-    }
-    
-    if (error.message.includes('timeout')) {
-      return 'The request timed out. Please try again later.';
-    }
-    
-    if (error.message.includes('permission')) {
-      return 'You do not have permission to perform this action.';
-    }
-    
-    // Default case for other Error instances
-    return error.message;
-  }
-  
-  // For non-Error objects
-  return 'An unexpected error occurred';
-};
-
-/**
- * Create a component-specific error handler
- */
-export const createComponentErrorHandler = (componentName: string, defaultOptions?: Partial<ErrorHandlingOptions>) => {
-  return (error: Error | unknown, options?: Partial<ErrorHandlingOptions>) => {
-    return handleError(error, {
+export function createComponentErrorHandler(componentName: string) {
+  return (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => {
+    return handleError(error, message, {
+      source: ErrorSource.UI,
       context: { component: componentName },
-      ...defaultOptions,
       ...options
     });
   };
-};
+}
 
 /**
- * Create a hook-specific error handler
+ * Create an error handler for hooks
  */
-export const createHookErrorHandler = (hookName: string, defaultOptions?: Partial<ErrorHandlingOptions>) => {
-  return (error: Error | unknown, options?: Partial<ErrorHandlingOptions>) => {
-    return handleError(error, {
+export function createHookErrorHandler(hookName: string) {
+  return (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => {
+    return handleError(error, message, {
+      source: ErrorSource.System,
       context: { hook: hookName },
-      ...defaultOptions,
       ...options
     });
   };
-};
+}
 
 /**
- * Create a service-specific error handler
+ * Create an error handler for services
  */
-export const createServiceErrorHandler = (serviceName: string, defaultOptions?: Partial<ErrorHandlingOptions>) => {
-  return (error: Error | unknown, options?: Partial<ErrorHandlingOptions>) => {
-    return handleError(error, {
+export function createServiceErrorHandler(serviceName: string) {
+  return (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => {
+    return handleError(error, message, {
+      source: ErrorSource.API,
       context: { service: serviceName },
-      ...defaultOptions,
       ...options
     });
   };
-};
+}
