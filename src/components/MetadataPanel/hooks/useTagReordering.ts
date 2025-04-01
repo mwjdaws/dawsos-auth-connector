@@ -1,70 +1,103 @@
 
-import { useState, useCallback } from 'react';
-import { 
-  DragStartEvent, 
-  DragEndEvent,
-  DragOverEvent,
-  useDndMonitor
-} from '@dnd-kit/core';
-import { Tag } from '@/types/tag';
-import { arrayMove } from '@dnd-kit/sortable';
+import { useState, useCallback } from "react";
+import { Tag, TagPosition } from "@/types/tag";
+import { handleError } from "@/utils/errors/handle";
+import { supabase } from "@/integrations/supabase/client";
+
+interface UseTagReorderingProps {
+  contentId: string;
+  tags: Tag[];
+  setTags: (tags: Tag[]) => void;
+}
 
 /**
- * Custom hook for managing tag drag-and-drop reordering
+ * Hook for handling tag reordering
  */
-export const useTagReordering = (
-  tags: Tag[], 
-  onReorder: (tags: Tag[]) => void
-) => {
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [reordering, setReordering] = useState(false);
+export function useTagReordering({
+  contentId,
+  tags,
+  setTags
+}: UseTagReorderingProps) {
+  const [isReordering, setIsReordering] = useState(false);
   
-  // When drag starts, set the active tag ID
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    const { active } = event;
-    setActiveId(active.id as string);
-    setReordering(true);
-  }, []);
-  
-  // When drag ends, update the tag order
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    if (over && active.id !== over.id) {
-      // Find the indices of the tags being dragged
-      const activeIndex = tags.findIndex(tag => tag.id === active.id);
-      const overIndex = tags.findIndex(tag => tag.id === over.id);
-      
-      // Only proceed if both tags were found
-      if (activeIndex !== -1 && overIndex !== -1) {
-        // Create a new array with the updated order
-        const newTags = arrayMove(tags, activeIndex, overIndex);
-        
-        // Update display_order to match the array index
-        const reorderedTags = newTags.map((tag, index) => {
-          if (tag) {
-            return { ...tag, display_order: index };
-          }
-          return tag;
-        }).filter((tag): tag is Tag => tag !== undefined);
-        
-        // Call the onReorder callback with the new order
-        onReorder(reorderedTags);
-      }
+  /**
+   * Save the reordered tags to the database
+   */
+  const saveTagOrder = useCallback(async (reorderedTags: Tag[]): Promise<boolean> => {
+    if (!contentId || !reorderedTags.length) {
+      return false;
     }
     
-    setActiveId(null);
-    setReordering(false);
-  }, [tags, onReorder]);
+    setIsReordering(true);
+    
+    try {
+      // Create tag positions
+      const tagPositions: TagPosition[] = reorderedTags.map((tag, index) => ({
+        id: tag.id,
+        position: index
+      }));
+      
+      // Update local state immediately for better UX
+      setTags(reorderedTags.map((tag, index) => ({
+        ...tag,
+        display_order: index
+      })));
+      
+      // Update the database
+      const updates = tagPositions.map(position => ({
+        id: position.id,
+        display_order: position.position
+      }));
+      
+      const { error } = await supabase
+        .from('tags')
+        .upsert(updates, { onConflict: 'id' });
+      
+      if (error) throw error;
+      
+      return true;
+    } catch (err) {
+      handleError(
+        err,
+        "Failed to update tag order",
+        { level: "warning", context: { contentId } }
+      );
+      
+      return false;
+    } finally {
+      setIsReordering(false);
+    }
+  }, [contentId, setTags]);
   
-  // Set up monitors for drag events
-  useDndMonitor({
-    onDragStart: handleDragStart,
-    onDragEnd: handleDragEnd
-  });
+  /**
+   * Type guard to ensure the tag has a display_order property
+   */
+  const hasDisplayOrder = (tag: Tag): tag is Tag & { display_order: number } => {
+    return typeof tag.display_order === 'number';
+  };
+  
+  /**
+   * Handle reordering of tags
+   */
+  const handleReorderTags = useCallback(async (reorderedTags: Tag[]): Promise<void> => {
+    // Create a copy of the tags and ensure each has a display_order
+    const tagsWithOrder = reorderedTags.map((tag, index) => {
+      if (hasDisplayOrder(tag)) {
+        return tag;
+      }
+      return {
+        ...tag,
+        display_order: index
+      };
+    });
+    
+    await saveTagOrder(tagsWithOrder);
+  }, [saveTagOrder]);
   
   return {
-    activeId,
-    reordering
+    isReordering,
+    handleReorderTags
   };
-};
+}
+
+export default useTagReordering;

@@ -11,7 +11,7 @@ interface HeaderSectionProps {
   handleRefresh: () => void;
   setIsCollapsed: (value: boolean) => void;
   isCollapsed: boolean;
-  needsExternalReview?: boolean;
+  needsExternalReview: boolean;
   isLoading?: boolean;
 }
 

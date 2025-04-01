@@ -71,7 +71,6 @@ const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'edi
           needsExternalReview={false}
           handleRefresh={() => refreshMetadata ? refreshMetadata() : {}}
           isLoading={true}
-          isCollapsible={isCollapsible}
           isCollapsed={isCollapsed}
           setIsCollapsed={setIsCollapsed}
         />
@@ -98,7 +97,6 @@ const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'edi
         needsExternalReview={needsExternalReview}
         handleRefresh={() => refreshMetadata ? refreshMetadata() : {}}
         isLoading={false}
-        isCollapsible={isCollapsible}
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
       />

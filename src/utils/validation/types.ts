@@ -72,3 +72,54 @@ export interface ContentIdValidationResult {
   isTemporary?: boolean;
   isUuid?: boolean;
 }
+
+// Helper functions for creating validation results
+export function createValidResult(message?: string): ValidationResult {
+  return {
+    isValid: true,
+    errorMessage: null,
+    message: message || null
+  };
+}
+
+export function createInvalidResult(errorMessage: string): ValidationResult {
+  return {
+    isValid: false,
+    errorMessage,
+    message: errorMessage
+  };
+}
+
+export function createContentValidationResult(
+  contentId: string,
+  isValid: boolean,
+  contentExists: boolean,
+  errorMessage: string | null,
+  contentType?: string
+): ContentValidationResult {
+  return {
+    contentId,
+    isValid,
+    contentExists,
+    errorMessage,
+    contentType
+  };
+}
+
+export function isValidResult(result: ValidationResult): boolean {
+  return result.isValid;
+}
+
+export function combineValidationResults(results: ValidationResult[]): ValidationResult {
+  const invalidResult = results.find(result => !result.isValid);
+  if (invalidResult) {
+    return invalidResult;
+  }
+  return createValidResult();
+}
+
+// For backward compatibility
+export const VALIDATION_RESULTS = {
+  VALID: createValidResult(),
+  INVALID: createInvalidResult('Invalid')
+};

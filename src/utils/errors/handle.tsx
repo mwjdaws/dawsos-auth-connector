@@ -7,13 +7,13 @@
  */
 import React from 'react';
 import { toast } from '@/hooks/use-toast';
-import { ErrorHandlingOptions, errorLevelToToastVariant } from './types';
+import { ErrorOptions, errorLevelToToastVariant } from './types';
 import { categorizeError } from './categorize';
 import { formatErrorForDisplay } from './format';
 import { deduplicateError } from './deduplication';
 
 // Default options for error handling
-const defaultOptions: ErrorHandlingOptions = {
+const defaultOptions: Partial<ErrorOptions> = {
   level: 'error',
   source: 'application',
   severity: 'medium',
@@ -37,10 +37,10 @@ const defaultOptions: ErrorHandlingOptions = {
 export function handleError(
   error: unknown,
   userMessage?: string,
-  options?: Partial<ErrorHandlingOptions>
+  options?: Partial<ErrorOptions>
 ) {
   // Merge options with defaults
-  const opts = { ...defaultOptions, ...options };
+  const opts = { ...defaultOptions, ...options } as ErrorOptions;
   
   // Convert to standard error if needed
   const errorObj = error instanceof Error ? error : new Error(String(error));
@@ -88,7 +88,7 @@ export function handleError(
       title: opts.level === 'error' ? 'Error' : 
              opts.level === 'warning' ? 'Warning' : 'Notice',
       description: displayMessage,
-      variant: errorLevelToToastVariant[opts.level] || 'destructive',
+      variant: errorLevelToToastVariant[opts.level || 'error']
     });
   }
   
@@ -114,7 +114,7 @@ export function handleError(
 export function handleErrorSafe(
   error: unknown,
   userMessage?: string,
-  options?: Partial<ErrorHandlingOptions>
+  options?: Partial<ErrorOptions>
 ) {
   try {
     return handleError(error, userMessage, options);
@@ -135,3 +135,6 @@ export function handleErrorSafe(
     }
   }
 }
+
+// Default export for backward compatibility
+export default handleError;
