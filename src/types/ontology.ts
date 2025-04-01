@@ -9,7 +9,7 @@ export interface OntologyTerm {
   description: string;
   domain?: string;
   review_required?: boolean;
-  associationId?: string; // Added to fix type error
+  associationId?: string; // Association ID for the term
 }
 
 export interface OntologyTermAssociation {
@@ -25,7 +25,7 @@ export interface OntologyDomain {
   id: string;
   name: string;
   description: string;
-  parent_id?: string;
+  parent_id?: string | null;
 }
 
 export interface RelatedTerm {

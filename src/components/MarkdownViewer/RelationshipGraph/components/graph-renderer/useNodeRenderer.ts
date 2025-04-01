@@ -2,7 +2,7 @@
 import { useCallback, useRef } from 'react';
 import { GraphNode, NodeRendererOptions } from './GraphRendererTypes';
 
-export function useNodeRenderer(options?: NodeRendererOptions) {
+export function useNodeRenderer(options?: Partial<NodeRendererOptions>) {
   const hoveredNodeRef = useRef<GraphNode | null>(null);
 
   const handleNodeClick = useCallback((node: GraphNode) => {
@@ -25,7 +25,7 @@ export function useNodeRenderer(options?: NodeRendererOptions) {
     
     // Draw nodes
     nodes.forEach(node => {
-      if (!node.x || !node.y) return;
+      if (!node?.x || !node?.y) return;
       
       const isHighlighted = highlightedNodeId === node.id;
       const isHovered = hoveredNodeRef.current === node;
@@ -81,7 +81,7 @@ export function useNodeRenderer(options?: NodeRendererOptions) {
     // Check if any node contains the point
     for (let i = nodes.length - 1; i >= 0; i--) {
       const node = nodes[i];
-      if (!node.x || !node.y) continue;
+      if (!node?.x || !node?.y) continue;
       
       const nodeSize = node.val || 10;
       const dx = graphX - node.x;

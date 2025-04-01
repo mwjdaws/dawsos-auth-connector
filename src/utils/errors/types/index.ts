@@ -24,14 +24,14 @@ export enum ErrorSource {
 }
 
 export enum ErrorLevel {
-  // Error severity levels
+  // Error severity levels (both camelCase and uppercase for compatibility)
   Debug = 'debug',
   Info = 'info',
   Warning = 'warning',
   Error = 'error',
   Critical = 'critical',
   
-  // Aliases to make older code work
+  // Legacy uppercase aliases
   WARNING = 'warning',
   ERROR = 'error',
   CRITICAL = 'critical'

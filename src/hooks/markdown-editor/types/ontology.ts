@@ -30,5 +30,13 @@ export interface UseRelatedNotesResult {
   rejectRelatedNote: (noteId: string) => Promise<void>;
 }
 
-// Re-export the base types for convenience
+// Make sure we export the base types for convenience including the OntologyDomain type
 export type { OntologyTerm, RelatedTerm, OntologySuggestion, RelatedNote };
+
+// Domain type
+export interface OntologyDomain {
+  id: string;
+  name: string;
+  description: string;
+  parent_id?: string | null;
+}
