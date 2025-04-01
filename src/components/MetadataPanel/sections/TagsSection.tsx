@@ -57,6 +57,13 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
     }
   };
 
+  // Create a handler that only calls onReorderTags if it exists
+  const handleReorderTags = async (tagsToReorder: Tag[]): Promise<void> => {
+    if (onReorderTags) {
+      await onReorderTags(tagsToReorder);
+    }
+  };
+
   return (
     <div className={`space-y-4 ${className}`}>
       <h3 className="text-lg font-medium">Tags</h3>
@@ -86,7 +93,7 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
         tags={tags} 
         editable={editable} 
         onDeleteTag={onDeleteTag} 
-        onReorderTags={onReorderTags}
+        onReorderTags={onReorderTags ? handleReorderTags : undefined}
       />
     </div>
   );
