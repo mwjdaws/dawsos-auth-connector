@@ -1,244 +1,130 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
-import { zoom, zoomIdentity, D3ZoomEvent } from 'd3-zoom';
-import { select } from 'd3-selection';
-import { GraphNode, GraphRendererRef } from './GraphRendererTypes';
+
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { 
+  zoom, 
+  zoomIdentity,
+  type ZoomBehavior,
+  type ZoomTransform,
+  select,
+  Selection
+} from 'd3';
 
 interface UseZoomPanProps {
   width: number;
   height: number;
   initialZoom?: number;
+  minZoom?: number;
+  maxZoom?: number;
+  onZoom?: (zoomLevel: number) => void;
 }
 
-export function useZoomPan({ width, height, initialZoom = 1 }: UseZoomPanProps) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [transform, setTransform] = useState({ x: 0, y: 0, k: initialZoom });
-  const transformRef = useRef(transform);
-  
-  // Update transform ref when state changes
+export function useZoomPan({
+  width,
+  height,
+  initialZoom = 1,
+  minZoom = 0.25,
+  maxZoom = 2,
+  onZoom
+}: UseZoomPanProps) {
+  const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown>>();
+  const selectionRef = useRef<Selection<SVGSVGElement, unknown, null, undefined>>();
+  const [transform, setTransform] = useState<ZoomTransform>(zoomIdentity.scale(initialZoom));
+  const [isZooming, setIsZooming] = useState(false);
+
+  // Setup zoom behavior
   useEffect(() => {
-    transformRef.current = transform;
-  }, [transform]);
-  
-  // Initialize zoom behavior
-  const initZoom = useCallback(() => {
-    if (!canvasRef.current) return;
-    
-    const canvas = select(canvasRef.current);
-    
-    const zoomBehavior = zoom<HTMLCanvasElement, unknown>()
-      .scaleExtent([0.1, 8])
-      .on('zoom', (event: D3ZoomEvent<HTMLCanvasElement, unknown>) => {
+    if (!width || !height) return;
+
+    const zoomBehavior = zoom<SVGSVGElement, unknown>()
+      .scaleExtent([minZoom, maxZoom])
+      .on('zoom', (event) => {
         setTransform(event.transform);
-      });
-    
-    canvas.call(zoomBehavior);
-    
-    // Set initial transform
-    canvas.call(
-      zoomBehavior.transform,
-      zoomIdentity.translate(width / 2, height / 2).scale(initialZoom)
-    );
-  }, [width, height, initialZoom]);
-  
-  // Public methods for the graph renderer
-  const zoomMethods = useCallback((nodes: GraphNode[]): GraphRendererRef => {
-    return {
-      centerOnNode: (nodeId: string) => {
-        if (!canvasRef.current || !nodes.length) return;
-        
-        const node = nodes.find(n => n.id === nodeId);
-        if (!node || typeof node.x !== 'number' || typeof node.y !== 'number') return;
-        
-        const canvas = select<HTMLCanvasElement, unknown>(canvasRef.current);
-        const zoomBehavior = zoom<HTMLCanvasElement, unknown>();
-        
-        const currentTransform = transformRef.current;
-        const targetX = width / 2 - node.x * currentTransform.k;
-        const targetY = height / 2 - node.y * currentTransform.k;
-        
-        canvas.transition().duration(750).call(
-          zoomBehavior.transform,
-          zoomIdentity.translate(targetX, targetY).scale(currentTransform.k)
-        );
-      },
-      
-      centerAt: (x: number, y: number, duration = 750) => {
-        if (!canvasRef.current) return;
-        
-        const canvas = select<HTMLCanvasElement, unknown>(canvasRef.current);
-        const zoomBehavior = zoom<HTMLCanvasElement, unknown>();
-        
-        const currentTransform = transformRef.current;
-        const targetX = width / 2 - x * currentTransform.k;
-        const targetY = height / 2 - y * currentTransform.k;
-        
-        canvas.transition().duration(duration).call(
-          zoomBehavior.transform,
-          zoomIdentity.translate(targetX, targetY).scale(currentTransform.k)
-        );
-      },
-      
-      zoomToFit: (duration = 750) => {
-        if (!canvasRef.current || !nodes.length) return;
-        
-        const canvas = select<HTMLCanvasElement, unknown>(canvasRef.current);
-        const zoomBehavior = zoom<HTMLCanvasElement, unknown>();
-        
-        // Calculate bounds
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        
-        nodes.forEach(node => {
-          if (typeof node.x !== 'number' || typeof node.y !== 'number') return;
-          minX = Math.min(minX, node.x);
-          minY = Math.min(minY, node.y);
-          maxX = Math.max(maxX, node.x);
-          maxY = Math.max(maxY, node.y);
-        });
-        
-        if (minX === Infinity) return; // No valid nodes
-        
-        const dx = maxX - minX;
-        const dy = maxY - minY;
-        const x = (minX + maxX) / 2;
-        const y = (minY + maxY) / 2;
-        
-        const scale = 0.8 / Math.max(dx / width, dy / height);
-        const translateX = width / 2 - x * scale;
-        const translateY = height / 2 - y * scale;
-        
-        canvas.transition().duration(duration).call(
-          zoomBehavior.transform,
-          zoomIdentity.translate(translateX, translateY).scale(scale)
-        );
-      },
-      
-      resetZoom: () => {
-        if (!canvasRef.current) return;
-        
-        const canvas = select<HTMLCanvasElement, unknown>(canvasRef.current);
-        const zoomBehavior = zoom<HTMLCanvasElement, unknown>();
-        
-        canvas.transition().duration(750).call(
-          zoomBehavior.transform,
-          zoomIdentity.translate(width / 2, height / 2).scale(1)
-        );
-      },
-      
-      zoom: (zoomLevel: number, duration = 750) => {
-        if (!canvasRef.current) return;
-        
-        const canvas = select<HTMLCanvasElement, unknown>(canvasRef.current);
-        const zoomBehavior = zoom<HTMLCanvasElement, unknown>();
-        
-        const currentTransform = transformRef.current;
-        // Maintain the center point
-        const centerX = width / 2;
-        const centerY = height / 2;
-        
-        // Calculate the point in graph coordinates
-        const graphX = (centerX - currentTransform.x) / currentTransform.k;
-        const graphY = (centerY - currentTransform.y) / currentTransform.k;
-        
-        // Calculate new translate to keep the same point centered
-        const newX = centerX - graphX * zoomLevel;
-        const newY = centerY - graphY * zoomLevel;
-        
-        canvas.transition().duration(duration).call(
-          zoomBehavior.transform,
-          zoomIdentity.translate(newX, newY).scale(zoomLevel)
-        );
-      },
-      
-      setZoom: (zoomLevel: number) => {
-        if (!canvasRef.current) return;
-        
-        const canvas = select<HTMLCanvasElement, unknown>(canvasRef.current);
-        const zoomBehavior = zoom<HTMLCanvasElement, unknown>();
-        
-        const currentTransform = transformRef.current;
-        // Maintain the center point
-        const centerX = width / 2;
-        const centerY = height / 2;
-        
-        // Calculate the point in graph coordinates
-        const graphX = (centerX - currentTransform.x) / currentTransform.k;
-        const graphY = (centerY - currentTransform.y) / currentTransform.k;
-        
-        // Calculate new translate to keep the same point centered
-        const newX = centerX - graphX * zoomLevel;
-        const newY = centerY - graphY * zoomLevel;
-        
-        canvas.call(
-          zoomBehavior.transform,
-          zoomIdentity.translate(newX, newY).scale(zoomLevel)
-        );
-      },
-      
-      zoomIn: () => {
-        if (!canvasRef.current) return;
-        
-        const currentTransform = transformRef.current;
-        const newZoom = Math.min(currentTransform.k * 1.3, 8);
-        
-        const canvas = select<HTMLCanvasElement, unknown>(canvasRef.current);
-        const zoomBehavior = zoom<HTMLCanvasElement, unknown>();
-        
-        // Maintain the center point
-        const centerX = width / 2;
-        const centerY = height / 2;
-        
-        // Calculate the point in graph coordinates
-        const graphX = (centerX - currentTransform.x) / currentTransform.k;
-        const graphY = (centerY - currentTransform.y) / currentTransform.k;
-        
-        // Calculate new translate to keep the same point centered
-        const newX = centerX - graphX * newZoom;
-        const newY = centerY - graphY * newZoom;
-        
-        canvas.transition().duration(300).call(
-          zoomBehavior.transform,
-          zoomIdentity.translate(newX, newY).scale(newZoom)
-        );
-      },
-      
-      zoomOut: () => {
-        if (!canvasRef.current) return;
-        
-        const currentTransform = transformRef.current;
-        const newZoom = Math.max(currentTransform.k / 1.3, 0.1);
-        
-        const canvas = select<HTMLCanvasElement, unknown>(canvasRef.current);
-        const zoomBehavior = zoom<HTMLCanvasElement, unknown>();
-        
-        // Maintain the center point
-        const centerX = width / 2;
-        const centerY = height / 2;
-        
-        // Calculate the point in graph coordinates
-        const graphX = (centerX - currentTransform.x) / currentTransform.k;
-        const graphY = (centerY - currentTransform.y) / currentTransform.k;
-        
-        // Calculate new translate to keep the same point centered
-        const newX = centerX - graphX * newZoom;
-        const newY = centerY - graphY * newZoom;
-        
-        canvas.transition().duration(300).call(
-          zoomBehavior.transform,
-          zoomIdentity.translate(newX, newY).scale(newZoom)
-        );
-      },
-      
-      getGraphData: () => ({
-        nodes: [],
-        links: []
+        if (onZoom) {
+          onZoom(event.transform.k);
+        }
       })
+      .on('start', () => setIsZooming(true))
+      .on('end', () => setIsZooming(false));
+
+    zoomRef.current = zoomBehavior;
+
+    return () => {
+      if (selectionRef.current) {
+        selectionRef.current.on('.zoom', null);
+      }
     };
-  }, [width, height]);
-  
+  }, [width, height, minZoom, maxZoom, onZoom]);
+
+  // Setup SVG element selection
+  const setupZoom = useCallback((svgElement: SVGSVGElement | null) => {
+    if (!svgElement || !zoomRef.current) return;
+
+    const selection = select<SVGSVGElement, unknown>(svgElement);
+    selection.call(zoomRef.current);
+    selectionRef.current = selection;
+
+    // Initialize with the starting transform
+    selection.call(
+      zoomRef.current.transform, 
+      zoomIdentity.scale(initialZoom)
+    );
+  }, [initialZoom]);
+
+  // Reset zoom to initial level
+  const resetZoom = useCallback(() => {
+    if (!selectionRef.current || !zoomRef.current) return;
+
+    selectionRef.current.transition().duration(500).call(
+      zoomRef.current.transform,
+      zoomIdentity.scale(initialZoom)
+    );
+  }, [initialZoom]);
+
+  // Zoom to a specific factor
+  const setZoom = useCallback((zoomLevel: number) => {
+    if (!selectionRef.current || !zoomRef.current) return;
+
+    selectionRef.current.transition().duration(250).call(
+      zoomRef.current.transform,
+      zoomIdentity.scale(zoomLevel)
+    );
+  }, []);
+
+  // Pan to a specific point with optional zoom level
+  const panTo = useCallback((x: number, y: number, scale?: number) => {
+    if (!selectionRef.current || !zoomRef.current) return;
+
+    const targetScale = scale !== undefined ? scale : transform.k;
+    const targetX = -x * targetScale + width / 2;
+    const targetY = -y * targetScale + height / 2;
+
+    selectionRef.current.transition().duration(500).call(
+      zoomRef.current.transform,
+      zoomIdentity.translate(targetX, targetY).scale(targetScale)
+    );
+  }, [transform.k, width, height]);
+
+  // Center the view on a node
+  const centerOnNode = useCallback((nodeId: string, nodeElements: SVGGElement[] | null) => {
+    if (!nodeElements) return;
+
+    const nodeElement = nodeElements.find(el => el.dataset.id === nodeId);
+    if (!nodeElement) return;
+
+    const bbox = nodeElement.getBBox();
+    const nodeX = bbox.x + bbox.width / 2;
+    const nodeY = bbox.y + bbox.height / 2;
+
+    panTo(nodeX, nodeY);
+  }, [panTo]);
+
   return {
-    canvasRef,
     transform,
-    initZoom,
-    zoomMethods
+    isZooming,
+    setupZoom,
+    resetZoom,
+    setZoom,
+    panTo,
+    centerOnNode,
   };
 }

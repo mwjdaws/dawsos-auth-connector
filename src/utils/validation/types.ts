@@ -16,6 +16,7 @@ export interface ValidationResult {
 export interface ContentIdValidationResult extends ValidationResult {
   resultType: 'contentId';
   contentExists: boolean;
+  isLoading?: boolean;
 }
 
 /**
@@ -96,3 +97,26 @@ export const createDocumentValidationResult = (
   message,
   resultType: 'document'
 });
+
+// Additional utility functions
+export const isValidResult = (result: ValidationResult): boolean => {
+  return result.isValid;
+};
+
+export const combineValidationResults = (
+  results: ValidationResult[]
+): ValidationResult => {
+  if (!results.length) {
+    return createValidResult();
+  }
+  
+  const isValid = results.every(r => r.isValid);
+  const firstInvalid = results.find(r => !r.isValid);
+  
+  return {
+    isValid,
+    errorMessage: isValid ? null : firstInvalid?.errorMessage || 'Validation failed',
+    message: isValid ? 'All validations passed' : firstInvalid?.errorMessage || 'Validation failed',
+    resultType: 'combined'
+  };
+};

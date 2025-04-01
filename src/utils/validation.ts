@@ -1,76 +1,40 @@
-/**
- * Validation Hooks
- * 
- * Central export point for all validation-related hooks.
- */
-
-// Content validation
-export * from './useContentIdValidation';
-export * from './useContentValidator';
-export * from './useValidateContentId';
-
-// Tag validation
-export * from './useTagValidation';
-export * from './useValidatedTagOperations';
-
-// Export compatibility types
-export type { ValidationResult, ContentIdValidationResult } from '@/utils/validation/types';
 
 /**
- * Content ID validation result
+ * Central export point for validation utilities
  */
-export interface ContentIdValidationResult extends ValidationResult {
-  resultType: 'contentId';
-  contentExists: boolean;
-}
 
-/**
- * Create ContentIdValidationResult
- */
-export function createContentIdValidationResult(isValid: boolean, message: string | null, errorMessage: string | null, contentExists: boolean): ContentIdValidationResult {
-  return {
-    isValid,
-    message,
-    errorMessage,
-    resultType: 'contentId',
-    contentExists
-  };
-}
+// Re-export from validation submodules
+export * from './validation/contentIdValidation';
+export * from './validation/documentValidation';
+export * from './validation/tagValidation';
+export * from './validation/types';
+export * from './validation/utils';
 
-/**
- * Tag validation result
- */
-export interface TagValidationResult extends ValidationResult {
-  resultType: 'tag';
-}
+// Re-export hooks
+export { useContentIdValidation } from './validation/hooks/useContentIdValidation';
+export { useContentValidator } from './validation/hooks/useContentValidator';
+export { useValidateContentId } from './validation/hooks/useValidateContentId';
+export { useTagValidation } from './validation/hooks/useTagValidation';
+export { useValidatedTagOperations } from './validation/hooks/useValidatedTagOperations';
 
-/**
- * Create TagValidationResult
- */
-export function createTagValidationResult(isValid: boolean, message: string | null, errorMessage: string | null): TagValidationResult {
-  return {
-    isValid,
-    message,
-    errorMessage,
-    resultType: 'tag'
-  };
-}
+// Export specific types
+export type {
+  ValidationResult,
+  ContentIdValidationResult,
+  TagValidationResult,
+  OntologyTermValidationResult,
+  DocumentValidationResult
+} from './validation/types';
 
-/**
- * Ontology term validation result
- */
-export interface OntologyTermValidationResult extends ValidationResult {
-  resultType: 'ontologyTerm';
-}
+// Export result creation functions with proper type checking
+export {
+  createValidResult,
+  createInvalidResult,
+  createContentIdValidationResult,
+  createTagValidationResult,
+  createOntologyTermValidationResult,
+  createDocumentValidationResult
+} from './validation/types';
 
-/**
- * Create OntologyTermValidationResult
- */
-export function createOntologyTermValidationResult(isValid: boolean, message: string | null, errorMessage: string | null): OntologyTermValidationResult {
-  return {
-    isValid,
-    message,
-    errorMessage,
-    resultType: 'ontologyTerm'
-  };
-}
+// Export additional utilities
+export { isValidResult, combineValidationResults } from './validation/utils';

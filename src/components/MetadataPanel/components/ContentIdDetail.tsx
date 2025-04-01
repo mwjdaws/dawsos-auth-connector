@@ -1,89 +1,112 @@
 
-/**
- * ContentIdDetail Component
- * 
- * Displays information about content ID format and validity
- * Useful for debugging and development
- */
-import React from "react";
-import { useContentIdValidation } from "@/hooks/validation/useContentIdValidation";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import React from 'react';
+import { Badge } from '@/components/ui/badge';
+import { CopyButton } from './CopyButton';
+import { isValidContentId, isUUID, isTempId } from '@/utils/validation/contentIdValidation';
+import { ContentIdValidationResult } from '@/utils/validation/types';
 
 interface ContentIdDetailProps {
   contentId: string;
-  className?: string;
-  showDetail?: boolean;
+  validationResult?: ContentIdValidationResult;
+  children?: React.ReactNode;
 }
 
-export function ContentIdDetail({ 
-  contentId, 
-  className, 
-  showDetail = false 
-}: ContentIdDetailProps) {
-  const { 
-    isValid, 
-    isUuid, 
-    isTemporary, 
-    isStorable,
-    convertToUuid,
-    error
-  } = useContentIdValidation(contentId);
+/**
+ * Displays content ID details with validation state indicators
+ */
+export function ContentIdDetail({ contentId, validationResult, children }: ContentIdDetailProps) {
+  // Validate the content ID if a validation result wasn't provided
+  const isValid = validationResult ? validationResult.isValid : isValidContentId(contentId);
   
-  if (!showDetail) {
+  // Determine if it's a UUID or temporary ID
+  const isUuid = isUUID(contentId);
+  const isTempID = isTempId(contentId);
+  
+  // Extract the content existence information if available
+  const contentExists = validationResult ? validationResult.contentExists : undefined;
+  
+  /**
+   * Generates a human-readable display for the content ID type
+   */
+  const getDisplayType = () => {
+    if (isUuid) {
+      return (
+        <Badge variant="outline" className="bg-green-50 text-green-800 hover:bg-green-100">
+          UUID
+        </Badge>
+      );
+    }
+    
+    if (isTempID) {
+      return (
+        <Badge variant="outline" className="bg-amber-50 text-amber-800 hover:bg-amber-100">
+          Temporary ID
+        </Badge>
+      );
+    }
+    
+    return (
+      <Badge variant="outline" className="bg-red-50 text-red-800 hover:bg-red-100">
+        Invalid Format
+      </Badge>
+    );
+  };
+  
+  /**
+   * Generates a human-readable display for the content existence state
+   */
+  const getExistenceState = () => {
+    if (contentExists === true) {
+      return (
+        <Badge variant="outline" className="bg-green-50 text-green-800 hover:bg-green-100">
+          Content Exists
+        </Badge>
+      );
+    }
+    
+    if (contentExists === false) {
+      return (
+        <Badge variant="outline" className="bg-red-50 text-red-800 hover:bg-red-100">
+          Content Not Found
+        </Badge>
+      );
+    }
+    
+    // If we don't know if the content exists
     return null;
-  }
+  };
+  
+  const formatContentId = (contentId: string) => {
+    if (!contentId) return "No content ID";
+    
+    // For UUIDs, display in a more readable format with dashes
+    if (isUUID(contentId)) {
+      return contentId;
+    }
+    
+    // For temporary IDs, display as-is but indicate it's temporary
+    if (isTempID(contentId)) {
+      return contentId;
+    }
+    
+    // For invalid IDs, just display as-is
+    return contentId;
+  };
   
   return (
-    <div className={cn("text-xs space-y-1", className)}>
-      <div className="flex flex-wrap gap-1 mb-1">
-        {isValid ? (
-          <Badge variant="outline" className="bg-green-50 text-green-800 border-green-200">
-            Valid Content ID
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="bg-red-50 text-red-800 border-red-200">
-            Invalid Content ID
-          </Badge>
-        )}
-        
-        {isUuid && (
-          <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
-            UUID Format
-          </Badge>
-        )}
-        
-        {isTemporary && (
-          <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200">
-            Temporary ID
-          </Badge>
-        )}
-        
-        {isStorable && (
-          <Badge variant="outline" className="bg-purple-50 text-purple-800 border-purple-200">
-            Storable
-          </Badge>
-        )}
+    <div className="p-3 bg-slate-50 rounded-md space-y-2">
+      <div className="flex items-center gap-2 mb-1">
+        <h4 className="text-sm font-semibold">Content ID</h4>
+        {getDisplayType()}
+        {getExistenceState()}
       </div>
       
-      {error && (
-        <p className="text-red-500">{error}</p>
-      )}
+      <div className="flex items-center gap-2 text-xs text-slate-700 font-mono break-all">
+        {formatContentId(contentId)}
+        <CopyButton textToCopy={contentId} />
+      </div>
       
-      {contentId && (
-        <div className="font-mono bg-gray-100 p-1 rounded max-w-full overflow-hidden text-ellipsis">
-          {contentId}
-        </div>
-      )}
-      
-      {convertToUuid && convertToUuid !== contentId && (
-        <div>
-          <span className="text-gray-500">UUID: </span>
-          <span className="font-mono">{convertToUuid}</span>
-        </div>
-      )}
+      {children}
     </div>
   );
 }
-
-export default ContentIdDetail;
