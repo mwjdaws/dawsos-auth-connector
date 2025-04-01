@@ -1,6 +1,6 @@
 
 import { useCallback } from 'react';
-import { ValidationResult } from '@/utils/validation/types';
+import { ValidationResult, TagValidationResult } from '@/utils/validation/types';
 
 /**
  * Hook for validating tags

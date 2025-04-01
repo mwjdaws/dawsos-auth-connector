@@ -11,24 +11,33 @@ export enum ErrorLevel {
   Info = 'info',
   Warning = 'warning',
   Error = 'error',
-  Critical = 'critical'
+  Critical = 'critical',
+  
+  // For backward compatibility
+  DEBUG = 'debug',
+  INFO = 'info',
+  WARNING = 'warning',
+  ERROR = 'error',
+  CRITICAL = 'critical'
 }
 
 /**
  * Error source categories
  */
 export enum ErrorSource {
-  App = 'app',
+  // Primary sources
   API = 'api',
   Utils = 'utils',
   Database = 'database',
   Component = 'component',
+  
   // For compatibility with existing code
   Network = 'network',
   Auth = 'auth',
   Validation = 'validation',
   Server = 'server',
-  UI = 'ui'
+  UI = 'ui',
+  App = 'app'
 }
 
 /**

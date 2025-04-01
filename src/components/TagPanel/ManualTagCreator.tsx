@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PlusCircle, Loader2 } from 'lucide-react';
-import { useTagValidator } from '../hooks/useTagValidator';
+import { useTagValidator } from '@/hooks/tagGeneration/useTagValidator';
 import { toast } from '@/hooks/use-toast';
 import { Tag } from '@/types/tag';
 

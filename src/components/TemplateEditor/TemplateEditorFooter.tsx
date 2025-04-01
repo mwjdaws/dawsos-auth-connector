@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 
 export interface TemplateEditorFooterProps {
-  onCancel?: (() => void) | undefined;
+  onCancel?: (() => void);
   onSave: () => Promise<void>;
   saving: boolean;
 }

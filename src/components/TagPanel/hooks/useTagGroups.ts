@@ -1,58 +1,92 @@
 
-import { useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Tag } from '@/types/tag';
 
 export interface TagGroup {
-  content_id: string;
-  id: string;
-  name: string;
+  category: string;
   tags: Tag[];
-  category?: string; // Add this for compatibility with GroupedTagList
 }
 
 /**
- * Hook for grouping tags
+ * Custom hook for grouping tags by category (type)
  */
 export function useTagGroups(tags: Tag[]) {
-  const groupedTags = useMemo(() => {
-    // Group tags by type_id
-    const groups: Record<string, Tag[]> = {};
-    
-    // First, handle tags with no type (default group)
-    const defaultGroup = tags.filter(tag => !tag.type_id);
-    if (defaultGroup.length > 0) {
-      groups['default'] = defaultGroup;
-    }
-    
-    // Then group the rest by type_id
-    tags.forEach(tag => {
-      if (tag.type_id) {
-        if (!groups[tag.type_id]) {
-          groups[tag.type_id] = [];
-        }
-        groups[tag.type_id].push(tag);
-      }
-    });
-    
-    // Convert to array of groups
-    const result: TagGroup[] = Object.entries(groups).map(([id, groupTags]) => {
-      // Determine content_id from the first tag in the group
-      const firstTag = groupTags[0];
-      const content_id = firstTag?.content_id || '';
-      
-      return {
-        id: id === 'default' ? 'default' : id,
-        name: id === 'default' ? 'General' : id,
-        tags: groupTags,
-        content_id,
-        category: id === 'default' ? 'General' : 'Custom' // Add a category for compatibility
-      };
-    });
-    
-    return result;
-  }, [tags]);
-  
-  return groupedTags;
-}
+  const [groups, setGroups] = useState<TagGroup[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<Error | null>(null);
 
-export default useTagGroups;
+  /**
+   * Group tags by their type
+   */
+  const groupTagsByType = useCallback((tagsToGroup: Tag[]): TagGroup[] => {
+    // Initialize with Uncategorized group
+    const groups: Record<string, TagGroup> = {
+      'Uncategorized': {
+        category: 'Uncategorized',
+        tags: []
+      }
+    };
+
+    // Group tags by type
+    tagsToGroup.forEach(tag => {
+      // Safety check for undefined tags
+      if (!tag) return;
+      
+      const typeName = tag.type_name || 'Uncategorized';
+      
+      if (!groups[typeName]) {
+        groups[typeName] = {
+          category: typeName,
+          tags: []
+        };
+      }
+      
+      groups[typeName].tags.push(tag);
+    });
+
+    // Convert to array and sort by category name
+    return Object.values(groups).sort((a, b) => 
+      a.category.localeCompare(b.category)
+    );
+  }, []);
+
+  /**
+   * Refresh groups when tags change
+   */
+  useEffect(() => {
+    setIsLoading(true);
+    try {
+      const newGroups = groupTagsByType(tags);
+      setGroups(newGroups);
+      setError(null);
+    } catch (err) {
+      console.error("Error grouping tags:", err);
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [tags, groupTagsByType]);
+
+  /**
+   * Refresh groups manually
+   */
+  const refreshGroups = useCallback(() => {
+    try {
+      const newGroups = groupTagsByType(tags);
+      setGroups(newGroups);
+      setError(null);
+      return true;
+    } catch (err) {
+      console.error("Error refreshing tag groups:", err);
+      setError(err instanceof Error ? err : new Error(String(err)));
+      return false;
+    }
+  }, [tags, groupTagsByType]);
+
+  return {
+    tagGroups: groups,
+    isLoading,
+    error,
+    refreshGroups
+  };
+}

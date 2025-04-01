@@ -1,56 +1,62 @@
 
+import { useState, useCallback } from 'react';
+import { KnowledgeSourceVersion } from '@/services/api/types';
 import { useVersionCreation } from './useVersionCreation';
 import { useVersionFetching } from './useVersionFetching';
 import { useVersionRestoration } from './useVersionRestoration';
 
 /**
- * Main hook for version control operations
+ * Unified hook for version control operations
  * 
- * This is a composition hook that combines creation, fetching, and restoration
- * functionalities for document versioning.
+ * Combines creation, fetching, and restoration functionality
  */
 export const useVersionControl = () => {
-  // Version creation hooks
+  const [versionError, setVersionError] = useState<Error | null>(null);
+
+  // Version creation
   const { 
-    createVersion, 
-    isCreatingVersion, 
-    versionError: creationError 
-  } = useVersionCreation();
-  
-  // Version fetching hooks
-  const { 
-    fetchVersions, 
-    versions, 
-    isLoadingVersions,
-    versionError: fetchError
-  } = useVersionFetching();
-  
-  // Version restoration hooks
-  const { 
-    restoreVersion, 
-    isRestoringVersion,
-    versionError: restorationError
-  } = useVersionRestoration();
-  
-  // Combine error states
-  const error = creationError || fetchError || restorationError;
-  
-  return {
-    // Creation
-    createVersion,
     isCreatingVersion,
-    
-    // Fetching
+    createVersion
+  } = useVersionCreation();
+
+  // Version fetching
+  const {
+    versions,
+    isLoading: isLoadingVersions,
     fetchVersions,
+  } = useVersionFetching();
+
+  // Version restoration
+  const {
+    restoreVersion,
+    isRestoring: isRestoringVersion
+  } = useVersionRestoration();
+
+  /**
+   * Handle any errors in the version control process
+   */
+  const handleVersionError = useCallback((error: Error) => {
+    setVersionError(error);
+    console.error('Version control error:', error);
+  }, []);
+
+  return {
+    // Version creation
+    isCreatingVersion,
+    createVersion,
+    
+    // Version fetching
     versions,
     isLoadingVersions,
+    fetchVersions,
     
-    // Restoration
-    restoreVersion,
+    // Version restoration
     isRestoringVersion,
+    restoreVersion,
     
-    // Combined state
-    error
+    // Error handling
+    versionError,
+    handleVersionError
   };
 };
 

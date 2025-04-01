@@ -1,7 +1,7 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/utils/error-handling';
 import { SaveDraftResult } from '../types';
+import { ErrorLevel } from '@/utils/error-handling';
 
 /**
  * Hook for database operations related to drafts
@@ -62,8 +62,8 @@ export const useDatabaseOperations = () => {
         const response = await supabase
           .from('knowledge_sources')
           .update({ 
-            ...knowledgeData,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            ...knowledgeData
           })
           .eq('id', documentId)
           .select()
@@ -96,7 +96,7 @@ export const useDatabaseOperations = () => {
         handleError(
           error,
           "Database error while saving draft",
-          { level: "error", technical: true, silent: false }
+          { level: ErrorLevel.Error, technical: true, silent: false }
         );
         return { 
           success: false, 
@@ -122,7 +122,7 @@ export const useDatabaseOperations = () => {
       handleError(
         error,
         "Unexpected error in database operation",
-        { level: "error", technical: true, silent: false }
+        { level: ErrorLevel.Error, technical: true, silent: false }
       );
       return { 
         success: false, 

@@ -1,10 +1,10 @@
 
 import { useState } from 'react';
-import { handleError } from '@/utils/error-handling';
-import { ErrorLevel } from '@/utils/errors/types';
 import { usePublishDatabase } from './usePublishDatabase';
 import { usePublishValidation } from './usePublishValidation';
-import { DocumentOperationResult, PublishResult } from '../types';
+import { ErrorLevel, ErrorSource } from '@/utils/errors/types';
+import { handleError } from '@/utils/error-handling';
+import { DocumentOperationResult, PublishResult } from '@/services/api/types';
 
 interface UsePublishOperationsProps {
   saveDraft: (title: string, content: string, templateId: string | null, externalSourceUrl: string, userId?: string) => Promise<string | null>;
@@ -17,10 +17,10 @@ export const usePublishOperations = ({ saveDraft }: UsePublishOperationsProps) =
   const [error, setError] = useState<Error | null>(null);
   
   // Use database operations
-  const { publishToDatabase } = usePublishDatabase();
+  const { updatePublishStatus } = usePublishDatabase();
   
   // Use validation
-  const { validatePublish } = usePublishValidation();
+  const { validateForPublish } = usePublishValidation();
   
   /**
    * Publish a document with validation
@@ -36,7 +36,7 @@ export const usePublishOperations = ({ saveDraft }: UsePublishOperationsProps) =
       setError(null);
       
       // Validate inputs
-      const validation = validatePublish(title, content);
+      const validation = validateForPublish(title, content);
       if (!validation.isValid) {
         throw new Error(validation.errorMessage || 'Invalid document');
       }
@@ -49,7 +49,7 @@ export const usePublishOperations = ({ saveDraft }: UsePublishOperationsProps) =
       }
       
       // Then publish the content
-      const result = await publishToDatabase(documentId);
+      const result = await updatePublishStatus(documentId);
       
       return {
         success: true,
@@ -64,7 +64,7 @@ export const usePublishOperations = ({ saveDraft }: UsePublishOperationsProps) =
         'Failed to publish document',
         { 
           level: ErrorLevel.Warning,
-          source: 'app'
+          source: ErrorSource.App
         }
       );
       
