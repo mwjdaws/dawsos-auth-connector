@@ -1,50 +1,141 @@
 
 /**
- * Content ID validation utilities
+ * Content ID Validation 
  * 
- * Provides functions to validate content IDs in various formats.
+ * Utility functions for validating content IDs across the application.
  */
+import { 
+  ContentIdValidationResult, 
+  ContentIdValidationResultType 
+} from './types';
+
+// Regex for UUID validation
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Regex for temporary ID validation (typically starting with "temp-" followed by alphanumeric chars)
+const TEMP_ID_REGEX = /^temp-[a-zA-Z0-9_-]+$/;
+
+// Max length for a content ID
+const MAX_CONTENT_ID_LENGTH = 100;
 
 /**
- * Validates if a string is a valid content ID
- * Accepts both UUID format and temporary IDs (starting with 'temp-')
- * 
- * @param contentId Content ID to validate
- * @returns True if the content ID is valid, false otherwise
+ * Checks if a string is a valid UUID
  */
-export function isValidContentId(contentId: string | null | undefined): boolean {
+export function isUUID(str: string): boolean {
+  return UUID_REGEX.test(str);
+}
+
+/**
+ * Checks if a string is a temporary ID
+ */
+export function isTempId(str: string): boolean {
+  return TEMP_ID_REGEX.test(str);
+}
+
+/**
+ * Checks if a content ID is valid (either UUID or temporary ID)
+ */
+export function isValidContentId(contentId?: string | null): boolean {
   if (!contentId) return false;
+  if (contentId.length > MAX_CONTENT_ID_LENGTH) return false;
   
-  // Allow temporary IDs (used during content creation)
-  if (contentId.startsWith('temp-')) {
-    return contentId.length > 5; // Make sure there's something after 'temp-'
+  return isUUID(contentId) || isTempId(contentId);
+}
+
+/**
+ * Try to convert a string to a UUID if possible
+ */
+export function tryConvertToUUID(str?: string | null): string | null {
+  if (!str) return null;
+  
+  // If already a UUID, return as is
+  if (isUUID(str)) return str;
+  
+  // Remove non-alphanumeric characters and try to format as UUID
+  try {
+    const clean = str.replace(/[^a-f0-9]/gi, '').toLowerCase();
+    if (clean.length < 32) return null;
+    
+    const uuid = [
+      clean.substring(0, 8),
+      clean.substring(8, 12),
+      clean.substring(12, 16),
+      clean.substring(16, 20),
+      clean.substring(20, 32)
+    ].join('-');
+    
+    return isUUID(uuid) ? uuid : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Checks if a content ID can be stored in the database
+ * (only UUIDs, not temporary IDs)
+ */
+export function isStorableContentId(contentId?: string | null): boolean {
+  if (!contentId) return false;
+  return isUUID(contentId);
+}
+
+/**
+ * Get detailed validation result for a content ID
+ */
+export function getContentIdValidationResult(contentId?: string | null): ContentIdValidationResult {
+  if (!contentId) {
+    return {
+      isValid: false,
+      contentExists: false,
+      resultType: ContentIdValidationResultType.EMPTY,
+      errorMessage: 'Content ID is required',
+      isTemporary: false,
+      isUuid: false
+    };
   }
   
-  // Validate UUID format
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(contentId);
-}
-
-/**
- * Checks if a content ID is a temporary ID
- * 
- * @param contentId Content ID to check
- * @returns True if the content ID is temporary, false otherwise
- */
-export function isTemporaryContentId(contentId: string | null | undefined): boolean {
-  if (!contentId) return false;
-  return contentId.startsWith('temp-');
-}
-
-/**
- * Validates if a string is specifically a UUID format content ID
- * 
- * @param contentId Content ID to validate
- * @returns True if the content ID is a valid UUID, false otherwise
- */
-export function isUuidContentId(contentId: string | null | undefined): boolean {
-  if (!contentId) return false;
+  if (contentId.length > MAX_CONTENT_ID_LENGTH) {
+    return {
+      isValid: false,
+      contentExists: false,
+      resultType: ContentIdValidationResultType.TOO_LONG,
+      errorMessage: `Content ID exceeds maximum length (${MAX_CONTENT_ID_LENGTH})`,
+      isTemporary: false,
+      isUuid: false
+    };
+  }
   
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(contentId);
+  // Check for temp ID
+  if (isTempId(contentId)) {
+    return {
+      isValid: true,
+      contentExists: false, // Temp IDs are not assumed to exist in the database
+      resultType: ContentIdValidationResultType.TEMPORARY,
+      errorMessage: null,
+      isTemporary: true,
+      isUuid: false
+    };
+  }
+  
+  // Check for UUID
+  if (isUUID(contentId)) {
+    return {
+      isValid: true,
+      contentExists: true, // We assume UUIDs exist, but this should be checked separately
+      resultType: ContentIdValidationResultType.VALID,
+      errorMessage: null,
+      isTemporary: false,
+      isUuid: true
+    };
+  }
+  
+  // Invalid format
+  return {
+    isValid: false,
+    contentExists: false,
+    resultType: ContentIdValidationResultType.INVALID_FORMAT,
+    errorMessage: 'Invalid content ID format',
+    isTemporary: false,
+    isUuid: false
+  };
 }

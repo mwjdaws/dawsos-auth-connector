@@ -3,7 +3,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MetadataProvider } from '../hooks/useMetadataContext';
 import { useTagOperations } from '../hooks/tag-operations';
-import { createValidationResult } from '@/utils/validation/utils';
+import { createContentValidationResult } from '@/utils/validation/utils';
 import { useContentValidator } from '@/hooks/validation/useContentValidator';
 import { createComponentErrorHandler } from '@/utils/errors/wrappers';
 

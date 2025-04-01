@@ -48,7 +48,7 @@ const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'edi
   
   // Content validation check
   const isValidContent = validationResult.isValid;
-  const contentExists = validationResult.contentExists;
+  const contentExists = validationResult.contentExists || false;
   
   if (!isValidContent) {
     return (
@@ -68,7 +68,7 @@ const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'edi
       <Card className={className}>
         <HeaderSection 
           needsExternalReview={false}
-          handleRefresh={refreshMetadata}
+          handleRefresh={refreshMetadata ? () => refreshMetadata() : () => {}}
           isLoading={true}
           isCollapsible={isCollapsible}
           isCollapsed={isCollapsed}
@@ -85,8 +85,8 @@ const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'edi
   
   // Handle add tag wrapper
   const handleAddTagWrapper = async (typeId?: string | null) => {
-    if (!newTag.trim()) return;
-    await handleAddTag?.(newTag, typeId);
+    if (!newTag.trim() || !handleAddTag) return;
+    await handleAddTag(newTag, typeId);
     setNewTag("");
   };
   
@@ -94,7 +94,7 @@ const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'edi
     <Card className={`${needsExternalReview ? 'border border-yellow-400' : ''} ${className}`}>
       <HeaderSection 
         needsExternalReview={needsExternalReview}
-        handleRefresh={refreshMetadata}
+        handleRefresh={refreshMetadata ? () => refreshMetadata() : () => {}}
         isLoading={isLoading}
         isCollapsible={isCollapsible}
         isCollapsed={isCollapsed}
@@ -103,7 +103,7 @@ const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'edi
       
       {!isCollapsed && (
         <MetadataContent
-          data={sourceMetadata}
+          data={sourceMetadata || null}
           contentId={contentId}
           error={error}
           tags={tags}
@@ -111,8 +111,8 @@ const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'edi
           newTag={newTag}
           setNewTag={setNewTag}
           onAddTag={handleAddTagWrapper}
-          onDeleteTag={handleDeleteTag}
-          onRefresh={refreshMetadata}
+          onDeleteTag={handleDeleteTag || (async () => {})}
+          onRefresh={refreshMetadata ? () => refreshMetadata() : () => {}}
           externalSourceUrl={externalSourceUrl}
           lastCheckedAt={lastCheckedAt}
           needsExternalReview={needsExternalReview}

@@ -19,7 +19,7 @@ export interface ExternalSourceSectionProps {
 
 export function ExternalSourceSection({
   externalSourceUrl,
-  lastCheckedAt,
+  lastCheckedAt = null,
   needsExternalReview = false,
   editable,
   isLoading = false,

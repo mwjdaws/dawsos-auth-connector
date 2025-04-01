@@ -1,86 +1,59 @@
 
 /**
- * Shared validation types
+ * Validation-related type definitions
  */
 
 // Basic validation result interface
 export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
-  message?: string;
-  warnings?: string[];
+  contentExists?: boolean; // Added to match usage in the codebase
 }
 
-// Content validation result with existence checks
+// Content validation result
 export interface ContentValidationResult extends ValidationResult {
+  contentId: string;
   contentExists: boolean;
-  contentId?: string | null;
+  contentType?: string;
 }
 
-// Tag validation result with specific tag error types
-export interface TagValidationResult extends ValidationResult {
-  tagExists?: boolean;
-  isDuplicate?: boolean;
-  isReserved?: boolean;
+// Document validation options
+export interface DocumentValidationOptions {
+  minLength?: number;
+  maxLength?: number;
+  contentRequired?: boolean;
+  allowEmpty?: boolean;
 }
 
-// Form field validation result
-export interface FieldValidationResult extends ValidationResult {
-  fieldName: string;
-  value: any;
+// Tag validation options
+export interface TagValidationOptions {
+  minLength?: number;
+  maxLength?: number;
+  allowEmpty?: boolean;
+  allowDuplicates?: boolean;
 }
 
-// Form validation result containing field validations
-export interface FormValidationResult extends ValidationResult {
-  fields: Record<string, FieldValidationResult>;
+// Tag position type for reordering
+export interface TagPosition {
+  id: string;
+  position: number;
 }
 
-// External source validation result
-export interface ExternalSourceValidationResult extends ValidationResult {
-  isValidUrl: boolean;
-  isAccessible?: boolean;
-  lastCheckedAt?: string | null;
+// Define ContentId validation result type enum
+export enum ContentIdValidationResultType {
+  VALID = 'VALID',
+  INVALID_FORMAT = 'INVALID_FORMAT',
+  EMPTY = 'EMPTY',
+  TOO_LONG = 'TOO_LONG',
+  TEMPORARY = 'TEMPORARY'
 }
 
-/**
- * Create a valid validation result
- * Utility function to create a validation result that is valid
- */
-export function createValidResult(message?: string): ValidationResult {
-  return {
-    isValid: true,
-    errorMessage: null,
-    message: message || 'Valid'
-  };
-}
-
-/**
- * Create an invalid validation result
- * Utility function to create a validation result that is invalid
- */
-export function createInvalidResult(errorMessage: string): ValidationResult {
-  return {
-    isValid: false,
-    errorMessage,
-    message: null
-  };
-}
-
-/**
- * Create a content validation result
- * Utility function to create a validation result for content
- */
-export function createContentValidationResult(
-  isValid: boolean,
-  contentExists: boolean,
-  message: string | null = null,
-  contentId: string | null = null
-): ContentValidationResult {
-  return {
-    isValid,
-    contentExists,
-    errorMessage: isValid ? null : message,
-    message: isValid ? message : null,
-    contentId
-  };
+// Define ContentId validation result interface
+export interface ContentIdValidationResult {
+  isValid: boolean;
+  contentExists: boolean;
+  resultType: ContentIdValidationResultType;
+  errorMessage: string | null;
+  isTemporary?: boolean;
+  isUuid?: boolean;
 }
