@@ -30,17 +30,15 @@ interface RelationshipGraphPanelProps {
 export function RelationshipGraphPanel({
   graphData,
   title = 'Knowledge Graph',
-  contentId,
+  contentId = '',
   className = '',
   height = 600,
   width,
   onNodeClick
 }: RelationshipGraphPanelProps) {
-  const handleNodeClick = (nodeId: string) => {
-    if (onNodeClick) {
-      onNodeClick(ensureString(nodeId));
-    }
-  };
+  const handleNodeClick = onNodeClick ? (nodeId: string) => {
+    onNodeClick(ensureString(nodeId));
+  } : undefined;
   
   return (
     <GraphPanel
@@ -51,6 +49,7 @@ export function RelationshipGraphPanel({
       height={height}
       width={width}
       onNodeClick={handleNodeClick}
+      hasAttemptedRetry={false}
     />
   );
 }

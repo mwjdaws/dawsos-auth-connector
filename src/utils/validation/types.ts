@@ -10,6 +10,7 @@ export interface ValidationResult {
   isValid: boolean;
   message: string | null;
   errorMessage: string | null;
+  contentExists?: boolean; // Added for compatibility with existing code
 }
 
 /**

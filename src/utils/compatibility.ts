@@ -1,47 +1,75 @@
 
 /**
- * Compatibility utilities for handling type safety across the application
+ * Compatibility utility functions
+ * 
+ * These utilities help with type conversions and compatibility between different
+ * components and data structures in the application.
  */
 
-// Value type guards
-export function ensureString(value: any): string {
-  if (typeof value === 'string') return value;
-  if (value === null || value === undefined) return '';
+/**
+ * Ensures a value is a string
+ * 
+ * @param value Any value that should be treated as a string
+ * @param defaultValue Optional default value if input is null/undefined
+ */
+export function ensureString(value: any, defaultValue: string = ''): string {
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
   return String(value);
 }
 
-export function ensureNumber(value: any): number {
-  if (typeof value === 'number') return value;
-  if (value === null || value === undefined) return 0;
-  const parsed = parseFloat(value);
-  return isNaN(parsed) ? 0 : parsed;
+/**
+ * Ensures a value is a number
+ * 
+ * @param value Any value that should be treated as a number
+ * @param defaultValue Optional default value if input is null/undefined or NaN
+ */
+export function ensureNumber(value: any, defaultValue: number = 0): number {
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
+  const num = Number(value);
+  return isNaN(num) ? defaultValue : num;
 }
 
-export function ensureBoolean(value: any): boolean {
-  if (typeof value === 'boolean') return value;
+/**
+ * Ensures a value is a boolean
+ * 
+ * @param value Any value that should be treated as a boolean
+ * @param defaultValue Optional default value if input is null/undefined
+ */
+export function ensureBoolean(value: any, defaultValue: boolean = false): boolean {
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
   return Boolean(value);
 }
 
-// Null/undefined handling
-export function ensureValidZoom(zoom: any): number {
-  const parsed = ensureNumber(zoom);
-  return parsed <= 0 ? 1 : parsed > 10 ? 10 : parsed;
+/**
+ * Converts undefined to null for APIs that expect null
+ * 
+ * @param value Any value that might be undefined
+ */
+export function undefinedToNull<T>(value: T | undefined): T | null {
+  return value === undefined ? null : value;
 }
 
-// Prop validation
-export function createSafeGraphProps(props: any): any {
-  return {
-    ...props,
-    onNodeClick: props.onNodeClick || undefined,
-    onLinkClick: props.onLinkClick || undefined,
-    highlightedNodeId: props.highlightedNodeId || null,
-    width: ensureNumber(props.width) || 800,
-    height: ensureNumber(props.height) || 600,
-    zoom: ensureValidZoom(props.zoom) || 1
-  };
+/**
+ * Converts null to undefined for APIs that expect undefined
+ * 
+ * @param value Any value that might be null
+ */
+export function nullToUndefined<T>(value: T | null): T | undefined {
+  return value === null ? undefined : value;
 }
 
-// Safe callback executor
+/**
+ * Safely calls a callback function if it exists
+ * 
+ * @param callback Optional callback function
+ * @param args Arguments to pass to the callback
+ */
 export function safeCallback<T extends (...args: any[]) => any>(
   callback: T | undefined,
   ...args: Parameters<T>
@@ -52,53 +80,49 @@ export function safeCallback<T extends (...args: any[]) => any>(
   return undefined;
 }
 
-// Graph data validation
-export function ensureValidGraphData(graphData: any): { nodes: any[]; links: any[] } {
-  if (!graphData) return { nodes: [], links: [] };
-  return {
-    nodes: Array.isArray(graphData.nodes) ? graphData.nodes : [],
-    links: Array.isArray(graphData.links) ? graphData.links : []
-  };
+/**
+ * Makes all properties in T accept undefined
+ */
+export type WithUndefined<T> = {
+  [P in keyof T]?: T[P] | undefined;
 }
 
-export function sanitizeGraphData(graphData: any): { nodes: any[]; links: any[] } {
-  const safeData = ensureValidGraphData(graphData);
+/**
+ * Makes all properties in T accept null
+ */
+export type WithNull<T> = {
+  [P in keyof T]: T[P] | null;
+}
+
+/**
+ * Makes all properties in T optional
+ */
+export type Optional<T> = {
+  [P in keyof T]?: T[P];
+}
+
+/**
+ * Creates a new object with null values instead of undefined
+ */
+export function objectWithNulls<T extends object>(obj: T): WithNull<T> {
+  if (!obj) return {} as WithNull<T>;
   
-  return {
-    nodes: safeData.nodes.map(node => ({
-      id: ensureString(node.id),
-      name: ensureString(node.name || node.title),
-      title: ensureString(node.title),
-      color: node.color || null,
-      size: ensureNumber(node.size) || 15,
-      ...node
-    })),
-    links: safeData.links.map(link => ({
-      source: ensureString(link.source),
-      target: ensureString(link.target),
-      type: ensureString(link.type || 'default'),
-      ...link
-    }))
-  };
-}
-
-// Type conversions
-export function undefinedToNull<T>(value: T | undefined): T | null {
-  return value === undefined ? null : value;
-}
-
-export function nullToUndefined<T>(value: T | null): T | undefined {
-  return value === null ? undefined : value;
-}
-
-// Error handling compatibility
-export function compatibleErrorOptions(options: any = {}): any {
-  const safeOptions = { ...options };
-  
-  // Convert from new format to older format if needed
-  if (safeOptions.level && !safeOptions.severity) {
-    safeOptions.severity = safeOptions.level;
+  const result: Record<string, any> = {};
+  for (const key in obj) {
+    result[key] = obj[key] === undefined ? null : obj[key];
   }
+  return result as WithNull<T>;
+}
+
+/**
+ * Creates a new object with undefined values instead of null
+ */
+export function objectWithUndefined<T extends object>(obj: T): WithUndefined<T> {
+  if (!obj) return {} as WithUndefined<T>;
   
-  return safeOptions;
+  const result: Record<string, any> = {};
+  for (const key in obj) {
+    result[key] = obj[key] === null ? undefined : obj[key];
+  }
+  return result as WithUndefined<T>;
 }

@@ -1,10 +1,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { 
-  validateContentId, 
+  validateContentId,
   isValidContentId,
-  ContentIdValidationResult
+  getContentIdValidationResult 
 } from '@/utils/validation/contentIdValidation';
+import { ContentIdValidationResult } from '@/utils/validation/types';
 
 /**
  * Hook for validating content IDs and checking existence
@@ -14,17 +15,17 @@ import {
  */
 export function useContentValidator(contentId: string | null | undefined) {
   const [validationResult, setValidationResult] = useState<ContentIdValidationResult>(() => 
-    validateContentId(contentId)
+    getContentIdValidationResult(contentId)
   );
   
   // Update validation when contentId changes
   useEffect(() => {
-    setValidationResult(validateContentId(contentId));
+    setValidationResult(getContentIdValidationResult(contentId));
   }, [contentId]);
   
   // Function to manually validate
   const validate = useCallback(() => {
-    const newResult = validateContentId(contentId);
+    const newResult = getContentIdValidationResult(contentId);
     setValidationResult(newResult);
     return newResult;
   }, [contentId]);

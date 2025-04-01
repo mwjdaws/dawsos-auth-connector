@@ -8,6 +8,7 @@ import { useOntologyTerms } from "@/hooks/markdown-editor/useOntologyTerms";
 import { useSourceLinks } from "@/hooks/markdown-editor/useNoteLinks";
 import { toast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
+import { ensureString } from "@/utils/compatibility";
 
 interface RelationshipGraphTabProps {
   contentId: string;
@@ -40,6 +41,31 @@ export function RelationshipGraphTab({ contentId }: RelationshipGraphTabProps) {
   const isLoading = isLoadingTerms || isLoadingLinks;
   const hasConnections = sourceTerms.length > 0 || outboundLinks.length > 0 || inboundLinks.length > 0;
 
+  // Helper function to safely get title from knowledge_sources
+  const getTargetTitle = (link: any) => {
+    if (link.target_title) {
+      return link.target_title;
+    }
+    
+    if (link.knowledge_sources && typeof link.knowledge_sources === 'object') {
+      return link.knowledge_sources.title || 'Unknown';
+    }
+    
+    return 'Unknown';
+  };
+  
+  const getSourceTitle = (link: any) => {
+    if (link.source_title) {
+      return link.source_title;
+    }
+    
+    if (link.knowledge_sources && typeof link.knowledge_sources === 'object') {
+      return link.knowledge_sources.title || 'Unknown';
+    }
+    
+    return 'Unknown';
+  };
+
   // Prepare graph data
   const graphData = {
     nodes: [
@@ -54,15 +80,15 @@ export function RelationshipGraphTab({ contentId }: RelationshipGraphTabProps) {
       // Add nodes from links
       ...outboundLinks.map(link => ({
         id: link.target_id,
-        name: link.target_title || 'Unknown',
-        title: link.target_title || 'Unknown',
+        name: getTargetTitle(link),
+        title: getTargetTitle(link),
         color: '#16a34a',
         type: 'outbound'
       })),
       ...inboundLinks.map(link => ({
         id: link.source_id,
-        name: link.source_title || 'Unknown',
-        title: link.source_title || 'Unknown',
+        name: getSourceTitle(link),
+        title: getSourceTitle(link),
         color: '#ea580c',
         type: 'inbound'
       }))
@@ -78,13 +104,13 @@ export function RelationshipGraphTab({ contentId }: RelationshipGraphTabProps) {
       ...outboundLinks.map(link => ({
         source: contentId,
         target: link.target_id,
-        type: link.link_type
+        type: ensureString(link.link_type)
       })),
       // Add inbound links
       ...inboundLinks.map(link => ({
         source: link.source_id,
         target: contentId,
-        type: link.link_type
+        type: ensureString(link.link_type)
       }))
     ]
   };

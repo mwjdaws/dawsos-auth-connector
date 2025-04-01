@@ -20,7 +20,7 @@ interface RelationshipGraphPanelProps {
 export function RelationshipGraphPanel({
   graphData,
   title = 'Knowledge Graph',
-  contentId,
+  contentId = '',
   className = '',
   height = 600,
   width,
@@ -31,6 +31,7 @@ export function RelationshipGraphPanel({
   const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
   
+  // Create safe handler functions that handle optional callbacks
   const handleNodeSelect = (nodeId: string) => {
     setHighlightedNodeId(nodeId);
     if (onNodeClick) {

@@ -53,8 +53,22 @@ export interface GraphRendererProps {
   height: number;
   highlightedNodeId?: string | null;
   zoom?: number;
-  onNodeClick?: (nodeId: string) => void;
-  onLinkClick?: (source: string, target: string) => void;
+  onNodeClick?: ((nodeId: string) => void) | undefined;
+  onLinkClick?: ((source: string, target: string) => void) | undefined;
+}
+
+/**
+ * Node renderer options
+ */
+export interface NodeRendererOptions {
+  onNodeClick?: ((nodeId: string) => void) | undefined;
+}
+
+/**
+ * Link renderer options
+ */
+export interface LinkRendererOptions {
+  onLinkClick?: ((source: string, target: string) => void) | undefined;
 }
 
 /**

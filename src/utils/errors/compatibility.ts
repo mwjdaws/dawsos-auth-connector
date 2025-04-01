@@ -1,43 +1,82 @@
-
-import { ErrorHandlingOptions, ErrorLevel } from './types';
-
 /**
- * Compatibility layer for error handling options
+ * Error handling compatibility utilities
  * 
- * This handles legacy error options that might still be used in the codebase
+ * These utilities help bridge the gap between different error handling approaches
+ * in the codebase.
  */
-export interface LegacyErrorHandlingOptions {
-  level?: ErrorLevel;
-  technical?: boolean;  // Legacy property
-  silent?: boolean;
-  context?: Record<string, any>;
-  toastTitle?: string;
-  fingerprint?: string;
-  category?: string;
-  [key: string]: any;
+import { ErrorLevel } from './types';
+import { handleError as handleErrorInternal } from './handle';
+
+// Map from new ErrorLevel to old error severity types
+const errorLevelMap: Record<string, string> = {
+  'DEBUG': 'debug',
+  'INFO': 'info',
+  'WARNING': 'warning',
+  'ERROR': 'error'
+};
+
+/**
+ * Compatibility function for handling errors
+ * Supports both new and old error handling formats
+ */
+export function handleError(
+  error: unknown,
+  userMessage?: string,
+  options?: any
+): void {
+  // Normalize options
+  const normalizedOptions: any = { ...options };
+  
+  // Handle technical details for legacy support
+  if (normalizedOptions && normalizedOptions.technical) {
+    // If 'technical' property exists, add it to context for logging
+    normalizedOptions.context = {
+      ...normalizedOptions.context,
+      technicalDetails: normalizedOptions.technical
+    };
+    delete normalizedOptions.technical;
+  }
+  
+  // Map ErrorLevel enum values to string values expected by handleErrorInternal
+  if (normalizedOptions && normalizedOptions.level && typeof normalizedOptions.level === 'string') {
+    if (normalizedOptions.level in ErrorLevel) {
+      normalizedOptions.level = errorLevelMap[normalizedOptions.level] || 'error';
+    }
+  }
+  
+  // Support showToast option
+  if (normalizedOptions && 'showToast' in normalizedOptions) {
+    // Keep for compatibility
+  }
+  
+  // Call internal handler
+  handleErrorInternal(error, userMessage, normalizedOptions);
 }
 
 /**
- * Convert legacy error handling options to current format
+ * Create a compatibility layer for older error handler calls
  */
-export function convertErrorOptions(options?: LegacyErrorHandlingOptions): Partial<ErrorHandlingOptions> {
-  if (!options) return {};
-  
-  const { technical, category, ...standardOptions } = options;
-  
-  // Handle special properties
-  const newOptions: Partial<ErrorHandlingOptions> = {
-    ...standardOptions,
-    // If technical is true, don't show toast (unless explicitly set)
-    showToast: technical === true 
-      ? options.showToast ?? false
-      : options.showToast ?? true
+export function createErrorHandlerCompat(
+  componentName: string,
+  defaultOptions?: any
+) {
+  return (error: unknown, userMessage?: string, options?: any): void => {
+    handleError(error, userMessage, {
+      ...defaultOptions,
+      ...options,
+      context: {
+        ...(defaultOptions?.context || {}),
+        ...(options?.context || {}),
+        componentName
+      }
+    });
   };
-  
-  return newOptions;
 }
 
-/**
- * Alias for convertErrorOptions for backward compatibility
- */
-export const convertLegacyOptions = convertErrorOptions;
+// Export error level enum for compatibility
+export enum ErrorLevelCompat {
+  DEBUG = 'debug',
+  INFO = 'info',
+  WARNING = 'warning',
+  ERROR = 'error'
+}

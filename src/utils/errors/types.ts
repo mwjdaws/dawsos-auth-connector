@@ -1,102 +1,86 @@
 
 /**
+ * Error handling types
+ */
+
+/**
  * Error severity levels
  */
+export type ErrorSeverity = 'debug' | 'info' | 'warning' | 'error';
+
+/**
+ * Error level enum
+ */
 export enum ErrorLevel {
-  DEBUG = 'debug',
-  INFO = 'info',
-  WARNING = 'warning',
-  ERROR = 'error',
-  CRITICAL = 'critical'
-}
-
-// For backward compatibility
-export type ErrorSeverity = ErrorLevel | string;
-
-/**
- * Error handling options for consistent error processing
- */
-export interface ErrorHandlingOptions {
-  level?: ErrorLevel | undefined;
-  severity?: ErrorSeverity | undefined; // Backward compatibility
-  context?: Record<string, any> | undefined;
-  silent?: boolean | undefined;
-  userVisible?: boolean | undefined;
-  fingerprint?: string | undefined;
-  source?: string | undefined;
-  category?: string | undefined;
-  technical?: boolean | undefined;
+  DEBUG = 'DEBUG',
+  INFO = 'INFO',
+  WARNING = 'WARNING',
+  ERROR = 'ERROR'
 }
 
 /**
- * Basic error metadata structure
- */
-export interface ErrorMetadata {
-  timestamp: number;
-  level: ErrorLevel | string;
-  context: any;
-  fingerprint: string;
-  stack: string | undefined;
-  isUserVisible: boolean;
-  message: string;
-  originalError: unknown;
-  code: any;
-}
-
-/**
- * Enhanced error with additional metadata
- */
-export interface EnhancedError extends Error {
-  metadata?: ErrorMetadata;
-  code?: string;
-  context?: Record<string, any>;
-  level?: ErrorLevel;
-  fingerprint?: string;
-}
-
-/**
- * Error sources for categorization
+ * Error source categories
  */
 export enum ErrorSource {
-  COMPONENT = 'component',
-  HOOK = 'hook',
-  SERVICE = 'service',
-  API = 'api',
-  DATABASE = 'database',
-  VALIDATION = 'validation',
-  UNKNOWN = 'unknown'
+  API = 'API',
+  DATABASE = 'DATABASE',
+  UI = 'UI',
+  NETWORK = 'NETWORK',
+  AUTHENTICATION = 'AUTHENTICATION',
+  VALIDATION = 'VALIDATION',
+  PERMISSIONS = 'PERMISSIONS',
+  UNKNOWN = 'UNKNOWN'
 }
 
 /**
- * API Error type
+ * Error handling options
  */
-export class ApiError extends Error {
-  statusCode: number;
-  code?: string;
+export interface ErrorHandlingOptions {
+  level?: ErrorSeverity | ErrorLevel;
   context?: Record<string, any>;
-
-  constructor(message: string, statusCode = 500, code?: string, context?: Record<string, any>) {
-    super(message);
-    this.name = 'ApiError';
-    this.statusCode = statusCode;
-    this.code = code;
-    this.context = context;
-  }
+  silent?: boolean;
+  reportToAnalytics?: boolean;
+  showToast?: boolean;
+  toastTitle?: string;
+  toastId?: string;
 }
 
 /**
- * Validation Error type
+ * Error with enhanced properties
  */
-export class ValidationError extends Error {
-  field?: string;
+export interface EnhancedError extends Error {
   code?: string;
+  level?: ErrorLevel;
+  source?: ErrorSource;
   context?: Record<string, any>;
+}
 
-  constructor(message: string, field?: string, code?: string, context?: Record<string, any>) {
-    super(message);
-    this.name = 'ValidationError';
-    this.field = field;
-    this.code = code;
-    this.context = context;
+/**
+ * Error boundary fallback props
+ */
+export interface ErrorBoundaryFallbackProps {
+  error: Error;
+  resetErrorBoundary: () => void;
+}
+
+/**
+ * Create a new enhanced error
+ */
+export function createEnhancedError(
+  message: string,
+  options?: {
+    code?: string;
+    level?: ErrorLevel;
+    source?: ErrorSource;
+    context?: Record<string, any>;
   }
+): EnhancedError {
+  const error = new Error(message) as EnhancedError;
+  if (options) {
+    error.code = options.code;
+    error.level = options.level;
+    error.source = options.source;
+    error.context = options.context;
+  }
+  return error;
 }

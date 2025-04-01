@@ -1,189 +1,149 @@
+
+// Importing required modules
+import { toast } from "@/hooks/use-toast";
+import { ErrorHandlingOptions, ErrorLevel, ErrorSeverity, ErrorSource, EnhancedError } from "./types";
+import { categorizeError } from "./categorize";
+
+// Default error handling options
+const defaultOptions: ErrorHandlingOptions = {
+  level: 'error',
+  context: {},
+  silent: false,
+  reportToAnalytics: true,
+  showToast: true,
+  toastTitle: undefined
+};
+
 /**
- * Core error handling functionality
+ * Internal function to determine error level text for logging
  */
-import { toast } from '@/hooks/use-toast';
-import { deduplicateError, hasErrorBeenSeen } from './deduplication';
-import { formatErrorForDisplay, formatErrorForDebug } from './format';
-import { generateErrorId } from './generateId';
-import { ErrorLevel, ErrorSource, type ErrorHandlingOptions, type EnhancedError } from './types';
-import { convertLegacyOptions } from './helper';
-
-// Re-export ErrorLevel
-export { ErrorLevel };
+function getErrorLevelText(level?: ErrorSeverity | ErrorLevel): string {
+  if (!level) return 'ERROR';
+  
+  // Convert ErrorLevel enum values to strings
+  if (typeof level === 'string') {
+    // Handle string-based level values
+    switch (level.toUpperCase()) {
+      case 'DEBUG': return 'DEBUG';
+      case 'INFO': return 'INFO';
+      case 'WARNING': return 'WARNING';
+      default: return 'ERROR';
+    }
+  }
+  
+  // Use the enum value directly
+  return level;
+}
 
 /**
- * Central error handler function
- * 
- * This function processes errors in a consistent way across the application:
- * - Logs errors with appropriate detail level
- * - Displays user-friendly messages via toast notifications
- * - Deduplicates repeated errors to avoid flooding
- * - Tracks errors with unique IDs
+ * Handle an error with consistent logging, reporting, and user feedback
  * 
  * @param error The error to handle
- * @param message Optional user-friendly message
- * @param options Additional error handling options
- * @returns The processed error (for chaining)
+ * @param userMessage A user-friendly message to display
+ * @param options Additional options for error handling
  */
 export function handleError(
   error: unknown,
-  message?: string,
+  userMessage?: string,
   options?: Partial<ErrorHandlingOptions>
-): Error {
-  // Convert legacy options format if needed
-  const normalizedOptions = convertLegacyOptions(options);
+): void {
+  // Combine options with defaults
+  const opts = { ...defaultOptions, ...options };
   
-  // Normalize the error to Error type
-  const normalizedError = error instanceof Error 
-    ? error 
-    : new Error(typeof error === 'string' ? error : 'Unknown error');
+  // Make sure we have an Error object to work with
+  const errorObj = error instanceof Error ? error : new Error(String(error));
   
-  // Apply enhanced properties and deduplicate
-  const enhancedError = enhanceError(normalizedError, normalizedOptions);
-  
-  // Check if this is a duplicate error we've seen before
-  if (hasErrorBeenSeen(enhancedError, normalizedOptions)) {
-    console.info('Skipping duplicate error:', enhancedError.message);
-    return enhancedError;
+  // Add enhanced properties if they don't exist
+  const enhancedError = errorObj as EnhancedError;
+  if (!enhancedError.source) {
+    enhancedError.source = categorizeError(errorObj).source;
   }
   
-  // Mark the error as seen for future deduplication
-  deduplicateError(enhancedError, normalizedOptions);
+  // Determine error level text for logging
+  const levelText = getErrorLevelText(opts.level);
   
-  // Determine error level for logging
-  const level = normalizedOptions?.level || ErrorLevel.ERROR;
+  // Default user message if none provided
+  const displayMessage = userMessage || errorObj.message;
   
-  // Format the message for display (if one was provided)
-  const displayMessage = formatErrorForDisplay(
-    enhancedError, 
-    message,
-    normalizedOptions
-  );
-  
-  // Format a detailed debug message
-  const debugMessage = formatErrorForDebug(enhancedError, normalizedOptions);
-  
-  // Log the error with appropriate level
-  switch (level) {
-    case ErrorLevel.DEBUG:
-      console.debug(debugMessage);
+  // Always log to console with appropriate level
+  switch (levelText) {
+    case 'DEBUG':
+      console.debug(`[DEBUG] ${displayMessage}`, errorObj, opts.context);
       break;
-    case ErrorLevel.INFO:
-      console.info(debugMessage);
+    case 'INFO':
+      console.info(`[INFO] ${displayMessage}`, errorObj, opts.context);
       break;
-    case ErrorLevel.WARNING:
-      console.warn(debugMessage);
+    case 'WARNING':
+      console.warn(`[WARNING] ${displayMessage}`, errorObj, opts.context);
       break;
-    case ErrorLevel.ERROR:
+    case 'ERROR':
     default:
-      console.error(debugMessage);
-      break;
+      console.error(`[ERROR] ${displayMessage}`, errorObj, opts.context);
   }
   
-  // Show toast notification if requested (default for errors)
-  if (normalizedOptions?.showToast !== false && level === ErrorLevel.ERROR) {
+  // Show toast notification if enabled
+  if (opts.showToast && !opts.silent) {
     toast({
-      title: 'Error',
+      id: opts.toastId,
+      title: opts.toastTitle || getLevelTitle(levelText),
       description: displayMessage,
-      variant: 'destructive',
-      id: normalizedOptions?.toastId
+      variant: getVariantFromLevel(levelText),
     });
   }
-  
-  return enhancedError;
 }
 
 /**
- * Enhance an error with additional context and metadata
+ * Get toast title based on error level
  */
-function enhanceError(
-  error: Error,
-  options?: Partial<ErrorHandlingOptions>
-): EnhancedError {
-  const enhancedError = error as EnhancedError;
-  
-  // Add context from options
-  if (options) {
-    enhancedError.level = options.level;
-    enhancedError.source = options.source;
-    enhancedError.fingerprint = options.fingerprint;
-    enhancedError.context = options.context;
-  }
-  
-  return enhancedError;
-}
-
-/**
- * Safe error handler that won't throw additional errors
- */
-export function handleErrorSafe(
-  error: unknown,
-  message?: string,
-  options?: Partial<ErrorHandlingOptions>
-): Error {
-  try {
-    return handleError(error, message, options);
-  } catch (handlingError) {
-    // Last resort error handling
-    console.error('Error in error handler:', handlingError);
-    console.error('Original error:', error);
-    
-    // Return a generic error if everything fails
-    return new Error(
-      typeof message === 'string'
-        ? message
-        : 'An error occurred and could not be processed'
-    );
+function getLevelTitle(level: string): string {
+  switch (level) {
+    case 'DEBUG': return 'Debug Info';
+    case 'INFO': return 'Information';
+    case 'WARNING': return 'Warning';
+    default: return 'Error';
   }
 }
 
 /**
- * Creates an error handler with pre-configured options for a specific context
+ * Get toast variant based on error level
  */
-export function createErrorHandler(
-  defaultOptions: Partial<ErrorHandlingOptions>
-): (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => Error {
-  return (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => {
-    return handleError(error, message, {
+function getVariantFromLevel(level: string): 'default' | 'destructive' {
+  switch (level) {
+    case 'ERROR': return 'destructive';
+    default: return 'default';
+  }
+}
+
+/**
+ * Creates an error handler function with predefined context
+ * 
+ * @param componentName The name of the component or module
+ * @param defaultOptions Default options for all errors handled by this function
+ * @returns An error handler function with predefined context
+ */
+export function createComponentErrorHandler(
+  componentName: string,
+  defaultOptions?: Partial<ErrorHandlingOptions>
+) {
+  return (error: unknown, userMessage?: string, options?: Partial<ErrorHandlingOptions>): void => {
+    handleError(error, userMessage, {
       ...defaultOptions,
       ...options,
       context: {
-        ...(defaultOptions.context || {}),
-        ...(options?.context || {})
+        ...(defaultOptions?.context || {}),
+        ...(options?.context || {}),
+        componentName
       }
     });
   };
 }
 
 /**
- * Creates an error handler for a specific component
+ * Creates an error handler function for hooks
  */
-export function createComponentErrorHandler(
-  componentName: string
-): (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => Error {
-  return createErrorHandler({
-    source: `${ErrorSource.COMPONENT}:${componentName}`
-  });
-}
+export const createHookErrorHandler = createComponentErrorHandler;
 
 /**
- * Creates an error handler for a specific hook
+ * Creates an error handler function for services
  */
-export function createHookErrorHandler(
-  hookName: string
-): (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => Error {
-  return createErrorHandler({
-    source: `${ErrorSource.HOOK}:${hookName}`
-  });
-}
-
-/**
- * Creates an error handler for a specific service
- */
-export function createServiceErrorHandler(
-  serviceName: string
-): (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => Error {
-  return createErrorHandler({
-    source: `${ErrorSource.SERVICE}:${serviceName}`
-  });
-}
+export const createServiceErrorHandler = createComponentErrorHandler;

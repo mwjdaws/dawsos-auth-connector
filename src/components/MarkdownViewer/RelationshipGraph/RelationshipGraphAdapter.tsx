@@ -24,6 +24,15 @@ export const RelationshipGraphAdapter = React.forwardRef<GraphRendererRef, Relat
     onNodeClick,
     onLinkClick
   }, ref) => {
+    // Create safe handler functions
+    const handleNodeClick = onNodeClick 
+      ? (nodeId: string) => onNodeClick(nodeId)
+      : undefined;
+      
+    const handleLinkClick = onLinkClick 
+      ? (source: string, target: string) => onLinkClick(source, target)
+      : undefined;
+    
     // Ensure data is in the correct format
     const sanitizedData: GraphData = {
       nodes: graphData.nodes.map((node: GraphNode) => ({
@@ -47,8 +56,8 @@ export const RelationshipGraphAdapter = React.forwardRef<GraphRendererRef, Relat
         height={ensureNumber(height)}
         zoom={ensureNumber(zoom)}
         highlightedNodeId={highlightedNodeId}
-        onNodeClick={onNodeClick}
-        onLinkClick={onLinkClick}
+        onNodeClick={handleNodeClick}
+        onLinkClick={handleLinkClick}
       />
     );
   }
