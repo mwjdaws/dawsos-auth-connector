@@ -1,97 +1,104 @@
 
+import { KnowledgeTemplate } from '@/services/api/types';
+
 /**
- * Generate structure from template content
- * 
- * This function analyzes template content and generates a structure object
- * that can be used to understand the template's organization.
- * 
- * @param content The template content to analyze
- * @returns A structured representation of the content
+ * Parse a template content into blocks for analysis
  */
-export function generateStructureFromContent(content: string) {
-  const structure: {
-    sections: Array<{level: number; title: string; position: number}>;
-    totalWordCount: number;
-    hasHeadings: boolean;
-    hasLists: boolean;
-    hasCodeBlocks: boolean;
-  } = {
+export const parseTemplateContent = (content: string): string[] => {
+  // Simple parsing based on line breaks and separators
+  const blocks = content
+    .split(/\n\n+/)                      // Split on multiple newlines
+    .filter(block => block.trim() !== '') // Remove empty blocks
+    .map(block => block.trim());
+  
+  return blocks;
+};
+
+/**
+ * Generate a structure object from template content
+ */
+export const generateStructureFromContent = (content: string): Record<string, any> => {
+  const blocks = parseTemplateContent(content);
+  
+  // Find headers
+  const headerBlocks = blocks.filter(block => block.startsWith('#'));
+  
+  // Basic structure detection
+  const structure: Record<string, any> = {
     sections: [],
-    totalWordCount: 0,
-    hasHeadings: false,
-    hasLists: false,
-    hasCodeBlocks: false
+    fields: [],
+    type: 'document'
   };
   
-  if (!content) return structure;
-  
-  // Count total words
-  structure.totalWordCount = content.split(/\s+/).filter(Boolean).length;
-  
-  // Check for headings
-  structure.hasHeadings = /^#{1,6}\s+.+$/m.test(content);
-  
-  // Check for lists
-  structure.hasLists = /^[\s-*+][\s\w].+$/m.test(content);
-  
-  // Check for code blocks
-  structure.hasCodeBlocks = /```[\s\S]*?```/.test(content);
-  
-  // Extract sections based on headings
-  const headingRegex = /^(#{1,6})\s+(.+)$/gm;
-  let match;
-  
-  while ((match = headingRegex.exec(content)) !== null) {
-    const level = match[1].length;
-    const title = match[2].trim();
-    
-    structure.sections.push({
-      level,
-      title,
-      position: match.index
+  // Parse headers into sections
+  if (headerBlocks.length > 0) {
+    structure.sections = headerBlocks.map(header => {
+      const level = header.match(/^#+/)?.[0].length || 1;
+      const title = header.replace(/^#+\s*/, '');
+      
+      return {
+        title,
+        level,
+        required: false
+      };
     });
   }
   
+  // Look for potential input fields with placeholders
+  const placeholderRegex = /\{\{([^}]+)\}\}/g;
+  const placeholders: string[] = [];
+  
+  let match;
+  const contentToSearch = content || '';
+  
+  while ((match = placeholderRegex.exec(contentToSearch)) !== null) {
+    if (match[1]?.trim()) {
+      placeholders.push(match[1].trim());
+    }
+  }
+  
+  // Add unique fields
+  const uniqueFields = [...new Set(placeholders)];
+  structure.fields = uniqueFields.map(field => ({
+    name: field,
+    type: 'text',
+    required: false
+  }));
+  
   return structure;
-}
+};
 
 /**
- * Generate an empty template with predefined sections
- * 
- * @returns A string containing a basic template structure
+ * Generate title suggestions from template content
  */
-export function generateEmptyTemplate() {
-  return `# Title
-
-## Introduction
-Enter an introduction here...
-
-## Main Content
-Enter your main content here...
-
-## Conclusion
-Enter a conclusion here...
-`;
-}
+export const generateTitleSuggestions = (template: KnowledgeTemplate): string[] => {
+  const suggestions: string[] = [];
+  
+  // Use the template name
+  suggestions.push(template.name);
+  
+  // Look for title in the content
+  const lines = template.content.split('\n');
+  const titleLine = lines.find(line => line.startsWith('# '));
+  
+  if (titleLine) {
+    const title = titleLine.replace(/^#\s+/, '');
+    if (title && !suggestions.includes(title)) {
+      suggestions.push(title);
+    }
+  }
+  
+  return suggestions;
+};
 
 /**
- * Validate template content
- * 
- * @param content The template content to validate
- * @returns Object with validation result and any error messages
+ * Format a template for display
  */
-export function validateTemplateContent(content: string) {
-  if (!content) {
-    return { isValid: false, message: 'Template content cannot be empty' };
-  }
-  
-  if (content.length < 10) {
-    return { isValid: false, message: 'Template content is too short' };
-  }
-  
-  if (!content.includes('#')) {
-    return { isValid: false, message: 'Template should include at least one heading' };
-  }
-  
-  return { isValid: true, message: null };
-}
+export const formatTemplate = (template: KnowledgeTemplate) => {
+  return {
+    ...template,
+    shortContent: template.content.substring(0, 100) + '...',
+    updatedAt: template.updated_at ? new Date(template.updated_at).toLocaleString() : 'Unknown',
+    isGlobal: template.is_global || false
+  };
+};

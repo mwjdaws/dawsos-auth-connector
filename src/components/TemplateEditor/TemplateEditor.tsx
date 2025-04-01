@@ -53,12 +53,18 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
           throw new Error('Template not found');
         }
         
-        setTemplate(loadedTemplate);
+        // Convert the template to match the KnowledgeTemplate interface
+        const normalizedTemplate: KnowledgeTemplate = {
+          ...loadedTemplate,
+          is_global: loadedTemplate.is_global === null ? false : !!loadedTemplate.is_global
+        };
+        
+        setTemplate(normalizedTemplate);
         
         // Initialize form state
         setName(loadedTemplate.name);
         setContent(loadedTemplate.content);
-        setIsGlobal(loadedTemplate.is_global || false);
+        setIsGlobal(loadedTemplate.is_global === null ? false : !!loadedTemplate.is_global);
         setMetadata(JSON.stringify(loadedTemplate.metadata || {}, null, 2));
         setStructure(JSON.stringify(loadedTemplate.structure || {}, null, 2));
       } catch (err) {
@@ -123,8 +129,14 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
       
       // Update local state and call onSave callback
       if (updatedTemplate[0]) {
-        setTemplate(updatedTemplate[0]);
-        if (onSave) onSave(updatedTemplate[0]);
+        // Normalize the template data
+        const normalizedTemplate: KnowledgeTemplate = {
+          ...updatedTemplate[0],
+          is_global: updatedTemplate[0].is_global === null ? false : !!updatedTemplate[0].is_global
+        };
+        
+        setTemplate(normalizedTemplate);
+        if (onSave) onSave(normalizedTemplate);
       }
     } catch (err) {
       console.error('Error saving template:', err);

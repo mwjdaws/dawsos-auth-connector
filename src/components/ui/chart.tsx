@@ -1,7 +1,20 @@
-import * as React from "react"
-import * as RechartsPrimitive from "recharts"
+import React from 'react';
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Legend,
+  LineChart,
+  Line
+} from 'recharts';
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const
@@ -351,6 +364,174 @@ function getPayloadConfigFromPayload(
   return configLabelKey in config
     ? config[configLabelKey]
     : config[key as keyof typeof config]
+}
+
+/**
+ * Format large numbers with K/M/B suffixes
+ */
+const formatLargeNumber = (value: number) => {
+  if (value >= 1000000000) {
+    return `${(value / 1000000000).toFixed(1)}B`;
+  }
+  if (value >= 1000000) {
+    return `${(value / 1000000).toFixed(1)}M`;
+  }
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)}K`;
+  }
+  return value.toString();
+};
+
+/**
+ * The main Chart component that adapts to different chart types
+ */
+export function Chart({
+  type = 'line',
+  data,
+  x,
+  y,
+  categories = [],
+  colors = ['#2563eb', '#16a34a', '#ef4444', '#f59e0b'],
+  valueFormatter,
+  showLegend = true,
+  showXAxis = true,
+  showYAxis = true,
+  showGrid = true,
+  showTooltip = true,
+  yAxisWidth = 50,
+  areaType = 'monotone',
+  ...props
+}: ChartProps) {
+  const yKeys = Array.isArray(y) ? y : [y];
+  
+  // Generate a color mapping
+  const colorMapping = yKeys.reduce((acc, key, index) => {
+    acc[key] = colors[index % colors.length];
+    return acc;
+  }, {} as Record<string, string>);
+  
+  // Apply valueFormatter
+  const formatValue = (value: number) => {
+    if (valueFormatter) {
+      return valueFormatter(value);
+    }
+    return formatLargeNumber(value);
+  };
+  
+  // Add an ID to each data item if missing
+  const dataWithIds = data.map((item, index) => {
+    if (item && 'id' in item) {
+      return item;
+    }
+    return { ...(item || {}), id: `item-${index}` };
+  });
+
+  return (
+    <div className="w-full aspect-[4/3]" {...props}>
+      <ResponsiveContainer width="100%" height="100%">
+        {type === 'bar' ? (
+          <BarChart
+            data={dataWithIds}
+            margin={{
+              top: 10,
+              right: 10,
+              left: 0,
+              bottom: 0,
+            }}
+          >
+            {showGrid && <CartesianGrid strokeDasharray="3 3" />}
+            {showXAxis && <XAxis dataKey={x} />}
+            {showYAxis && <YAxis width={yAxisWidth} tickFormatter={formatValue} />}
+            {showTooltip && (
+              <Tooltip 
+                formatter={(value: number) => [formatValue(value), '']} 
+                labelFormatter={(label) => `${label}`}
+              />
+            )}
+            {showLegend && <Legend />}
+            
+            {yKeys.map((key, index) => (
+              <Bar 
+                key={key} 
+                dataKey={key}
+                fill={colorMapping[key]}
+                stroke={colorMapping[key]}
+                name={categories[index] || key}
+                activeDot={typeof dataWithIds[0]?.[key] !== 'undefined' ? { r: 6 } : undefined}
+              />
+            ))}
+          </BarChart>
+        ) : type === 'area' ? (
+          <AreaChart
+            data={dataWithIds}
+            margin={{
+              top: 10,
+              right: 10,
+              left: 0,
+              bottom: 0,
+            }}
+          >
+            {showGrid && <CartesianGrid strokeDasharray="3 3" />}
+            {showXAxis && <XAxis dataKey={x} />}
+            {showYAxis && <YAxis width={yAxisWidth} tickFormatter={formatValue} />}
+            {showTooltip && (
+              <Tooltip 
+                formatter={(value: number) => [formatValue(value), '']} 
+                labelFormatter={(label) => `${label}`}
+              />
+            )}
+            {showLegend && <Legend />}
+            
+            {yKeys.map((key, index) => (
+              <Area
+                key={key}
+                type={areaType}
+                dataKey={key}
+                fill={colorMapping[key]}
+                stroke={colorMapping[key]}
+                name={categories[index] || key}
+                fillOpacity={0.3}
+              />
+            ))}
+          </AreaChart>
+        ) : (
+          <LineChart
+            data={dataWithIds}
+            margin={{
+              top: 10,
+              right: 10,
+              left: 0,
+              bottom: 0,
+            }}
+          >
+            {showGrid && <CartesianGrid strokeDasharray="3 3" />}
+            {showXAxis && <XAxis dataKey={x} />}
+            {showYAxis && <YAxis width={yAxisWidth} tickFormatter={formatValue} />}
+            {showTooltip && (
+              <Tooltip 
+                formatter={(value: number) => [formatValue(value), '']} 
+                labelFormatter={(label) => `${label}`}
+              />
+            )}
+            {showLegend && <Legend />}
+            
+            {yKeys.map((key, index) => (
+              <Line
+                key={key}
+                type="monotone"
+                dataKey={key}
+                stroke={colorMapping[key]}
+                name={categories[index] || key}
+                strokeWidth={2}
+                dot={{ r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            ))}
+          </LineChart>
+        )}
+      </ResponsiveContainer>
+    </div>
+  );
 }
 
 export {

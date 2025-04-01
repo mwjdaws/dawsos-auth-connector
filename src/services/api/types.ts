@@ -1,61 +1,61 @@
-import { Json } from '@/integrations/supabase/types';
 
+import { Json } from '@/types/supabase';
+
+/**
+ * Knowledge template interface
+ */
+export interface KnowledgeTemplate {
+  id: string;
+  name: string;
+  content: string;
+  is_global: boolean;
+  metadata: Json;
+  structure: Json;
+  created_at: string | null;
+  updated_at: string | null;
+  user_id: string | null;
+}
+
+/**
+ * Pagination parameters
+ */
 export interface PaginationParams {
   page?: number;
   pageSize?: number;
 }
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  count: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
+/**
+ * API response interface
+ */
+export interface ApiResponse<T> {
+  data: T;
+  error: string | null;
 }
 
-export interface KnowledgeSource {
-  id: string;
-  title: string;
-  content: string;
-  user_id?: string;
-  created_at?: string;
-  updated_at?: string;
-  template_id?: string;
-  external_source_url?: string;
-  external_source_checked_at?: string;
-  external_content_hash?: string;
-  needs_external_review?: boolean;
-  published?: boolean;
-  published_at?: string;
+// Add more types as needed
+export interface DocumentOperationResult {
+  success: boolean;
+  contentId: string | null;
+  error?: any;
 }
 
-export interface KnowledgeSourceVersion {
-  id: string;
-  source_id: string;
-  version_number: number;
-  content: string;
-  metadata?: any;
-  created_at: string;
+export interface SaveDraftResult {
+  success: boolean;
+  documentId: string | null;
+  error?: any;
 }
 
-export interface KnowledgeTemplate {
-  id: string;
-  name: string;
-  content: string;
-  metadata?: Json;
-  structure?: Json;
-  is_global?: boolean;
-  user_id?: string;
-  created_at?: string;
-  updated_at?: string;
+export interface PublishResult {
+  success: boolean;
+  documentId: string | null;
+  error?: any;
 }
 
-export interface NoteLink {
-  id: string;
-  source_id: string;
-  target_id: string;
-  link_type: 'wikilink' | 'manual' | 'AI-suggested';
-  created_by?: string;
-  created_at?: string;
-  knowledge_sources?: KnowledgeSource;
+export interface DraftOperationsContext {
+  userId?: string;
+  createVersion?: (documentId: string, content: string, metadata?: any) => Promise<void>;
+}
+
+export interface PublishOperationsContext {
+  userId?: string;
 }

@@ -7,6 +7,7 @@ export interface ValidationResult {
   message: string | null;
   errorMessage: string | null;
   resultType: string;
+  contentExists?: boolean;
 }
 
 /**
@@ -29,6 +30,30 @@ export interface TagValidationResult extends ValidationResult {
  */
 export interface OntologyTermValidationResult extends ValidationResult {
   resultType: 'ontologyTerm';
+}
+
+/**
+ * Create a valid result
+ */
+export function createValidResult(message: string | null = null, resultType: string = 'general'): ValidationResult {
+  return {
+    isValid: true,
+    message,
+    errorMessage: null,
+    resultType
+  };
+}
+
+/**
+ * Create an invalid result
+ */
+export function createInvalidResult(errorMessage: string, message: string | null = null, resultType: string = 'general'): ValidationResult {
+  return {
+    isValid: false,
+    message,
+    errorMessage,
+    resultType
+  };
 }
 
 /**
@@ -67,3 +92,25 @@ export function createOntologyTermValidationResult(isValid: boolean, message: st
     resultType: 'ontologyTerm'
   };
 }
+
+/**
+ * Check if a result is valid
+ */
+export const isValidResult = (result: ValidationResult): boolean => result.isValid;
+
+/**
+ * Combine multiple validation results
+ */
+export const combineValidationResults = (results: ValidationResult[]): ValidationResult => {
+  if (results.length === 0) {
+    return createValidResult();
+  }
+  
+  const invalidResults = results.filter(result => !result.isValid);
+  if (invalidResults.length === 0) {
+    return createValidResult();
+  }
+  
+  // Return the first invalid result
+  return invalidResults[0];
+};
