@@ -1,22 +1,39 @@
 
 import { useState, useCallback } from 'react';
-import { handleError, ErrorLevel } from '@/utils/errors';
+import { handleError } from '@/utils/errors';
+import { ErrorLevel } from '@/utils/errors/types';
 
-interface ValidationResult {
+export interface TagValidationOptions {
+  minLength?: number;
+  maxLength?: number;
+  allowedChars?: RegExp;
+  preventDuplicates?: boolean;
+  existingTags?: string[];
+}
+
+export interface ValidationResult {
   isValid: boolean;
   message: string | null;
 }
 
 /**
- * Tag validation hook for validating tags in the TagPanel
+ * Hook for validating tag inputs
  */
 export function useTagValidator() {
   const [lastValidated, setLastValidated] = useState<string>('');
   
+  const defaultOptions: TagValidationOptions = {
+    minLength: 2,
+    maxLength: 50,
+    allowedChars: /^[\w\s\-\.]+$/,
+    preventDuplicates: true
+  };
+  
   /**
    * Validates a tag string based on common rules
    */
-  const validateTag = useCallback((tag: string): ValidationResult => {
+  const validateTag = useCallback((tag: string, options?: TagValidationOptions): ValidationResult => {
+    const opts = { ...defaultOptions, ...options };
     setLastValidated(tag);
     
     // Empty check
@@ -25,19 +42,24 @@ export function useTagValidator() {
     }
     
     // Minimum length check
-    if (tag.trim().length < 2) {
-      return { isValid: false, message: 'Tag must be at least 2 characters long' };
+    if (tag.trim().length < (opts.minLength || 2)) {
+      return { isValid: false, message: `Tag must be at least ${opts.minLength} characters long` };
     }
     
     // Maximum length check
-    if (tag.trim().length > 50) {
-      return { isValid: false, message: 'Tag must be less than 50 characters long' };
+    if (tag.trim().length > (opts.maxLength || 50)) {
+      return { isValid: false, message: `Tag must be less than ${opts.maxLength} characters long` };
     }
     
-    // Characters validation (allow alphanumeric, spaces, dashes, dots)
-    const invalidChars = /[^\w\s\-\.]/;
-    if (invalidChars.test(tag)) {
+    // Characters validation
+    const invalidChars = opts.allowedChars ? !opts.allowedChars.test(tag) : false;
+    if (invalidChars) {
       return { isValid: false, message: 'Tag contains invalid characters' };
+    }
+    
+    // Duplicate check
+    if (opts.preventDuplicates && opts.existingTags && opts.existingTags.includes(tag.trim())) {
+      return { isValid: false, message: 'Tag already exists' };
     }
     
     return { isValid: true, message: null };
@@ -46,8 +68,8 @@ export function useTagValidator() {
   /**
    * Validates the tag and reports errors
    */
-  const validateTagWithErrorHandling = useCallback((tag: string): boolean => {
-    const result = validateTag(tag);
+  const validateTagWithErrorHandling = useCallback((tag: string, options?: TagValidationOptions): boolean => {
+    const result = validateTag(tag, options);
     
     if (!result.isValid && result.message) {
       handleError(
