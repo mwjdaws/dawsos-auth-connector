@@ -67,5 +67,5 @@ export interface UseTagOperationsResult {
   isReordering: boolean;
 }
 
-// Export TagPosition for backward compatibility
-export type { TagPosition };
+// Remove the conflicting export that was causing the error
+// export type { TagPosition };

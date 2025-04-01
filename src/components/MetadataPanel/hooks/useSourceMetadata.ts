@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
+// Fix the import to use the correct types
 import { SourceMetadata, SimpleSourceMetadata } from '../types';
 import { handleError } from '@/utils/errors/handle';
 import { tryAction } from '@/utils/errors/wrappers';

@@ -1,7 +1,9 @@
 
 import React, { createContext, useContext } from 'react';
 import { Tag } from '@/types/tag';
-import { OntologyTerm, SourceMetadata } from '../types';
+// Fix the import to use the correct path
+import { OntologyTerm } from '@/types/ontology';
+import { SourceMetadata } from '../types';
 import { ValidationResult } from '@/utils/validation/types';
 
 // Define the context interface

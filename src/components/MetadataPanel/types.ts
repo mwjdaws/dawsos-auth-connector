@@ -1,6 +1,8 @@
-
 import { Tag } from '@/types/tag';
 import { OntologyTerm } from '@/types/ontology';
+
+// Export OntologyTerm to resolve the error
+export type { OntologyTerm };
 
 /**
  * Metadata context props interface
@@ -43,6 +45,14 @@ export interface ExternalSourceMetadata {
   externalSourceUrl: string | null;
   lastCheckedAt: string | null;
   needsExternalReview: boolean;
+}
+
+// Add SimpleSourceMetadata interface to fix the error in useSourceMetadata.ts
+export interface SimpleSourceMetadata extends SourceMetadata {
+  content: string;
+  created_at: string;
+  published_at: string | null;
+  metadata: any | null;
 }
 
 /**

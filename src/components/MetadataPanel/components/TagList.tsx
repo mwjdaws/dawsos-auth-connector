@@ -9,6 +9,7 @@ export interface TagListProps {
   tags: Tag[];
   editable: boolean;
   onDeleteTag: (tagId: string) => Promise<void>;
+  // Make onReorderTags explicitly optional to fix the type error
   onReorderTags?: (tags: Tag[]) => Promise<void>;
 }
 
