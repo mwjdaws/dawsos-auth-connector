@@ -3,7 +3,6 @@
 // Re-export the Tag types from the centralized location
 export type { 
   Tag, 
-  AugmentedTag, 
   TagPosition 
 } from './tag';
 
@@ -12,9 +11,12 @@ export {
   mapApiTagsToTags,
   ensureNonNullableTag,
   filterDuplicateTags,
-  convertTagPositionsToTags,
-  isValidTag
+  convertTagPositionsToTags
 } from './tag';
+
+// Export ontology types
+export type { OntologyTerm, OntologyDomain } from './ontology';
+export { OntologyRelationType, isOntologyTerm } from './ontology';
 
 export interface KnowledgeSource {
     id: string;

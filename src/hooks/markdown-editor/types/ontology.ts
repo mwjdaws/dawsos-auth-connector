@@ -34,8 +34,8 @@ export interface OntologySuggestion {
 // Note relationship suggestion
 export interface RelatedNote {
   id: string;
-  title?: string;
-  score?: number;
+  title?: string | undefined;
+  score?: number | undefined;
   applied: boolean;
   rejected: boolean;
 }

@@ -19,7 +19,7 @@ export { useOntologyTermMutations } from './useOntologyTermMutation';
 // Export types
 export type { MetadataState, ExternalSourceMetadata } from './useMetadataBase';
 export type { Tag } from '@/types/tag';
-export type { OntologyTerm } from '@/components/MetadataPanel/types';
+export type { OntologyTerm } from '@/types/ontology';
 
 // Bridge for backward compatibility
 export { useTagMutations as useAddTagMutation } from './useTagMutation';
