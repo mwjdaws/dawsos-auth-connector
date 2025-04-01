@@ -1,77 +1,144 @@
-
 import { ErrorHandlingOptions, ErrorLevel, ErrorSource } from './types';
 
 /**
- * Interface for legacy error handling options
+ * Type for legacy error handling options for backward compatibility
  */
 export interface LegacyErrorHandlingOptions {
-  level?: string;
-  silent?: boolean;
+  level?: string; 
+  severity?: string;
+  source?: string;
+  category?: string;
+  message?: string;
   toastTitle?: string;
-  retryCount?: number;
+  toastDescription?: string;
   context?: Record<string, any>;
+  originalError?: Error;
   suppressToast?: boolean;
-  technical?: string;
+  silent?: boolean;
+  fingerprint?: string;
+  reportToAnalytics?: boolean;
+  technical?: boolean;
+  user?: string | { id: string };
   [key: string]: any;
 }
 
 /**
  * Convert legacy error options to the new format
+ * This is used to maintain backward compatibility with older code
  */
-export function convertErrorOptions(options?: LegacyErrorHandlingOptions): Partial<ErrorHandlingOptions> {
-  if (!options) return {};
-  
-  const result: Partial<ErrorHandlingOptions> = { ...options };
-  
-  // Convert string level to enum if needed
-  if (typeof options.level === 'string') {
-    switch (options.level.toLowerCase()) {
-      case 'debug':
-        result.level = ErrorLevel.Debug;
-        break;
-      case 'info':
-        result.level = ErrorLevel.Info;
-        break;
-      case 'warning':
-        result.level = ErrorLevel.Warning;
-        break;
-      case 'error':
-        result.level = ErrorLevel.Error;
-        break;
-      case 'critical':
-        result.level = ErrorLevel.Critical;
-        break;
-    }
+export function convertErrorOptions(
+  legacyOptions: LegacyErrorHandlingOptions | undefined
+): Partial<ErrorHandlingOptions> {
+  if (!legacyOptions) return {};
+
+  // Map severity/level to ErrorLevel enum
+  let level: ErrorLevel | undefined;
+  if (legacyOptions.level) {
+    level = mapStringToErrorLevel(legacyOptions.level);
+  } else if (legacyOptions.severity) {
+    level = mapStringToErrorLevel(legacyOptions.severity);
   }
-  
-  // Preserve retryCount for backward compatibility if needed
-  if (options.retryCount !== undefined) {
-    result.context = {
-      ...(result.context || {}),
-      retryCount: options.retryCount
-    };
+
+  // Map category/source to ErrorSource enum
+  let source: ErrorSource | undefined;
+  if (legacyOptions.source) {
+    source = mapStringToErrorSource(legacyOptions.source);
+  } else if (legacyOptions.category) {
+    source = mapStringToErrorSource(legacyOptions.category);
   }
-  
-  return result;
+
+  // Map the rest of the options
+  return {
+    level,
+    source,
+    message: legacyOptions.message,
+    toastTitle: legacyOptions.toastTitle,
+    toastDescription: legacyOptions.toastDescription,
+    context: legacyOptions.context,
+    originalError: legacyOptions.originalError,
+    suppressToast: legacyOptions.suppressToast,
+    silent: legacyOptions.silent,
+    fingerprint: legacyOptions.fingerprint,
+    reportToAnalytics: legacyOptions.reportToAnalytics,
+    showToast: !legacyOptions.technical // Map technical flag to showToast
+  };
 }
 
 /**
- * Function to ensure backward compatibility with older error handling code
+ * Make the options compatible with the new error handling system
+ * This is a convenience function to support backward compatibility
  */
 export function compatibleErrorOptions(
-  options?: Partial<ErrorHandlingOptions> | LegacyErrorHandlingOptions
+  options: LegacyErrorHandlingOptions | Partial<ErrorHandlingOptions> | undefined
 ): Partial<ErrorHandlingOptions> {
   if (!options) return {};
   
-  // Check if this is a legacy options object
+  // If there are legacy properties, convert them
   if (
-    typeof options.level === 'string' ||
-    options.hasOwnProperty('retryCount') ||
-    options.hasOwnProperty('technical')
+    'severity' in options || 
+    'category' in options || 
+    'technical' in options
   ) {
     return convertErrorOptions(options as LegacyErrorHandlingOptions);
   }
   
-  // Already in the right format
+  // Otherwise, assume it's already in the new format
   return options as Partial<ErrorHandlingOptions>;
+}
+
+/**
+ * Map string severity to ErrorLevel enum
+ */
+function mapStringToErrorLevel(level: string): ErrorLevel {
+  const lowerLevel = level.toLowerCase();
+  
+  switch (lowerLevel) {
+    case 'debug':
+      return ErrorLevel.Debug;
+    case 'info':
+      return ErrorLevel.Info;
+    case 'warning':
+    case 'warn':
+      return ErrorLevel.Warning;
+    case 'error':
+      return ErrorLevel.Error;
+    case 'critical':
+    case 'fatal':
+      return ErrorLevel.Critical;
+    default:
+      return ErrorLevel.Error;
+  }
+}
+
+/**
+ * Map string category to ErrorSource enum
+ */
+function mapStringToErrorSource(source: string): ErrorSource {
+  const lowerSource = source.toLowerCase();
+  
+  switch (lowerSource) {
+    case 'user':
+      return ErrorSource.User;
+    case 'system':
+      return ErrorSource.System;
+    case 'network':
+      return ErrorSource.Network;
+    case 'database':
+    case 'db':
+      return ErrorSource.Database;
+    case 'server':
+      return ErrorSource.Server;
+    case 'auth':
+    case 'authentication':
+      return ErrorSource.Auth;
+    case 'validation':
+      return ErrorSource.Validation;
+    case 'ui':
+    case 'interface':
+      return ErrorSource.UI;
+    case 'api':
+      return ErrorSource.API;
+    default:
+      return ErrorSource.Unknown;
+  }
 }
