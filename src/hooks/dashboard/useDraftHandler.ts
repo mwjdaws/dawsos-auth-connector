@@ -2,7 +2,10 @@
 import { useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { handleError } from "@/utils/errors";
+import { handleError, ErrorLevel, createHookErrorHandler } from "@/utils/errors";
+
+// Create hook-specific error handler
+const errorHandler = createHookErrorHandler('useDraftHandler');
 
 type UseDraftHandlerProps = {
   user: any;
@@ -31,7 +34,7 @@ export const useDraftHandler = ({ user }: UseDraftHandlerProps) => {
         
       if (error) {
         console.error("Error checking saved draft:", error);
-        handleError(error, "Error verifying saved draft");
+        errorHandler(error, "Error verifying saved draft");
         return;
       }
       
@@ -48,7 +51,7 @@ export const useDraftHandler = ({ user }: UseDraftHandlerProps) => {
             
           if (updateError) {
             console.error("Failed to update user ID:", updateError);
-            handleError(updateError, "Failed to update user ID for draft");
+            errorHandler(updateError, "Failed to update user ID for draft");
           } else {
             console.log("Fixed user ID for draft:", id);
           }
@@ -61,7 +64,7 @@ export const useDraftHandler = ({ user }: UseDraftHandlerProps) => {
       });
     } catch (error) {
       console.error("Error checking saved draft:", error);
-      handleError(error, "Error saving draft");
+      errorHandler(error, "Error saving draft");
     }
   }, [user]);
 

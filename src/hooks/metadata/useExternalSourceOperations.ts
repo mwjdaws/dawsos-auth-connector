@@ -6,7 +6,10 @@ import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { ExternalSourceMetadata } from "./useMetadataBase";
-import { handleError } from "@/utils/error-handling";
+import { handleError, ErrorLevel, createHookErrorHandler } from "@/utils/errors";
+
+// Create hook-specific error handler
+const errorHandler = createHookErrorHandler('useExternalSourceOperations');
 
 interface UseExternalSourceOperationsProps {
   contentId?: string;
@@ -47,14 +50,14 @@ export function useExternalSourceOperations({
       if (externalSource) {
         setExternalSource({
           ...externalSource,
-          external_source_url: externalSourceUrl,
-          needs_external_review: needsExternalReview
+          externalSourceUrl,
+          needsExternalReview
         });
       } else {
         setExternalSource({
-          external_source_url: externalSourceUrl,
-          needs_external_review: needsExternalReview,
-          external_source_checked_at: null
+          externalSourceUrl,
+          needsExternalReview,
+          lastCheckedAt: null
         });
       }
       
@@ -65,13 +68,12 @@ export function useExternalSourceOperations({
       
       return true;
     } catch (error) {
-      handleError(
+      errorHandler(
         error,
         "Failed to update external source metadata",
         { 
-          level: "warning", 
-          technical: false,
-          contentId
+          level: ErrorLevel.WARNING, 
+          context: { contentId }
         }
       );
       
@@ -100,8 +102,8 @@ export function useExternalSourceOperations({
       if (externalSource) {
         setExternalSource({
           ...externalSource,
-          external_source_checked_at: new Date().toISOString(),
-          needs_external_review: false
+          lastCheckedAt: new Date().toISOString(),
+          needsExternalReview: false
         });
       }
       
@@ -112,13 +114,12 @@ export function useExternalSourceOperations({
       
       return true;
     } catch (error) {
-      handleError(
+      errorHandler(
         error,
         "Failed to mark external source as checked",
         { 
-          level: "warning", 
-          technical: false,
-          contentId
+          level: ErrorLevel.WARNING, 
+          context: { contentId }
         }
       );
       

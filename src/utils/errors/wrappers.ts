@@ -1,12 +1,18 @@
 
+/**
+ * Error handling wrapper functions
+ * 
+ * This module provides higher-order functions and wrappers to simplify
+ * error handling across the application.
+ */
 import { handleError } from './handle';
 import { ErrorHandlingOptions, ErrorLevel } from './types';
 
 /**
- * Creates an error handler that captures component errors
+ * Creates an error handler function for a specific component
  * 
  * @param componentName The name of the component for context
- * @returns Error handler function with component context
+ * @returns A function to handle errors with the component context included
  */
 export function createComponentErrorHandler(componentName: string) {
   return (
@@ -14,29 +20,23 @@ export function createComponentErrorHandler(componentName: string) {
     userMessage?: string, 
     options?: Partial<ErrorHandlingOptions>
   ) => {
-    const errorOptions: Partial<ErrorHandlingOptions> = {
+    handleError(error, userMessage, {
       ...options,
       context: {
         ...options?.context,
         component: componentName,
         source: 'component'
-      }
-    };
-    
-    // If no level was specified, default to ERROR for component errors
-    if (!errorOptions.level) {
-      errorOptions.level = ErrorLevel.ERROR;
-    }
-    
-    handleError(error, userMessage, errorOptions);
+      },
+      level: options?.level || ErrorLevel.ERROR
+    });
   };
 }
 
 /**
- * Creates an error handler that captures hook errors
+ * Creates an error handler function for a specific hook
  * 
  * @param hookName The name of the hook for context
- * @returns Error handler function with hook context
+ * @returns A function to handle errors with the hook context included
  */
 export function createHookErrorHandler(hookName: string) {
   return (
@@ -44,29 +44,23 @@ export function createHookErrorHandler(hookName: string) {
     userMessage?: string, 
     options?: Partial<ErrorHandlingOptions>
   ) => {
-    const errorOptions: Partial<ErrorHandlingOptions> = {
+    handleError(error, userMessage, {
       ...options,
       context: {
         ...options?.context,
         hook: hookName,
         source: 'hook'
-      }
-    };
-    
-    // If no level was specified, default to ERROR for hook errors
-    if (!errorOptions.level) {
-      errorOptions.level = ErrorLevel.ERROR;
-    }
-    
-    handleError(error, userMessage, errorOptions);
+      },
+      level: options?.level || ErrorLevel.ERROR
+    });
   };
 }
 
 /**
- * Creates an error handler that captures service errors
+ * Creates an error handler function for a specific service
  * 
  * @param serviceName The name of the service for context
- * @returns Error handler function with service context
+ * @returns A function to handle errors with the service context included
  */
 export function createServiceErrorHandler(serviceName: string) {
   return (
@@ -74,26 +68,26 @@ export function createServiceErrorHandler(serviceName: string) {
     userMessage?: string, 
     options?: Partial<ErrorHandlingOptions>
   ) => {
-    const errorOptions: Partial<ErrorHandlingOptions> = {
+    handleError(error, userMessage, {
       ...options,
       context: {
         ...options?.context,
         service: serviceName,
         source: 'service'
-      }
-    };
-    
-    // If no level was specified, default to ERROR for service errors
-    if (!errorOptions.level) {
-      errorOptions.level = ErrorLevel.ERROR;
-    }
-    
-    handleError(error, userMessage, errorOptions);
+      },
+      level: options?.level || ErrorLevel.ERROR
+    });
   };
 }
 
 /**
- * Higher-order function to wrap operations with error handling
+ * Wraps a function with error handling
+ * 
+ * @param fn The function to wrap
+ * @param errorHandler The error handler to use
+ * @param userMessage An optional user-friendly message for errors
+ * @param options Additional error handling options
+ * @returns The wrapped function
  */
 export function withErrorHandling<T extends (...args: any[]) => any>(
   fn: T,
@@ -112,7 +106,13 @@ export function withErrorHandling<T extends (...args: any[]) => any>(
 }
 
 /**
- * Function to handle API and async operations safely
+ * Safely executes an async action with error handling
+ * 
+ * @param action The async action to execute
+ * @param errorHandler The error handler to use
+ * @param userMessage An optional user-friendly message for errors
+ * @param options Additional error handling options
+ * @returns A promise that resolves to the action result or undefined on error
  */
 export async function tryAction<T>(
   action: () => Promise<T>,

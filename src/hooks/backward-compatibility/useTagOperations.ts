@@ -9,7 +9,10 @@ import { useTagMutations } from '../metadata/useTagMutation';
 import { Tag } from '@/types/tag';
 import { toast } from '../use-toast';
 import { isValidContentId } from '@/utils/content-validation';
-import { handleError, ErrorLevel } from '@/utils/errors';
+import { handleError, ErrorLevel, createHookErrorHandler } from '@/utils/errors';
+
+// Create hook-specific error handler
+const errorHandler = createHookErrorHandler('useTagOperations');
 
 /**
  * useTagOperations hook (compatibility layer)
@@ -63,7 +66,7 @@ export function useTagOperations(contentId: string) {
       
       setNewTag('');
     } catch (err) {
-      handleError(
+      errorHandler(
         err,
         "Failed to add tag",
         { level: ErrorLevel.WARNING }
@@ -87,7 +90,7 @@ export function useTagOperations(contentId: string) {
     try {
       await deleteTag({ tagId, contentId });
     } catch (err) {
-      handleError(
+      errorHandler(
         err,
         "Failed to delete tag",
         { level: ErrorLevel.WARNING }
@@ -102,7 +105,7 @@ export function useTagOperations(contentId: string) {
     try {
       await fetchTags();
     } catch (err) {
-      handleError(
+      errorHandler(
         err,
         "Failed to refresh tags",
         { level: ErrorLevel.WARNING }
@@ -125,7 +128,7 @@ export function useTagOperations(contentId: string) {
     try {
       await updateTagOrder(positions);
     } catch (err) {
-      handleError(
+      errorHandler(
         err,
         "Failed to reorder tags",
         { level: ErrorLevel.WARNING }

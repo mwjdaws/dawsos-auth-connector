@@ -1,7 +1,14 @@
 
-// This is a barrel file that re-exports all error handling functionality
-// from the new modular structure for backward compatibility
+/**
+ * @deprecated This file is deprecated and will be removed in a future version.
+ * Import from '@/utils/errors' instead.
+ */
+
+// Re-export all error handling functionality from the new modular system
 export * from './errors';
 
-// This file will be deprecated in the future
-// Please import directly from '@/utils/errors' instead
+// Console warning to encourage migration
+console.warn(
+  'Warning: Using deprecated error-handling.tsx. ' +
+  'Please import from @/utils/errors instead.'
+);

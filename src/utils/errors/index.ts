@@ -1,15 +1,22 @@
 
-// Re-export core error handling functionality
+/**
+ * Central error handling module
+ * 
+ * This module exports all error handling functionality from a single entry point.
+ * It provides a consistent interface for error handling across the application.
+ */
+
+// Export core error handling functionality
 export { handleError, handleErrorSafe, createErrorHandler, createComponentErrorHandler } from './handle';
 export { ErrorLevel, ErrorSource, type ErrorHandlingOptions, type EnhancedError } from './types';
 
-// Re-export helper functions
+// Export helper utilities
 export { generateErrorId } from './generateId';
 export { categorizeError } from './categorize';
 export { formatErrorForDisplay } from './format';
 export { deduplicateError } from './deduplication';
 
-// Re-export the wrapper functions
+// Export wrapper functions
 export { 
   createComponentErrorHandler as createComponentHandler,
   createHookErrorHandler, 

@@ -1,4 +1,6 @@
-
+/**
+ * Error formatting utilities
+ */
 import { ErrorHandlingOptions } from './types';
 
 /**

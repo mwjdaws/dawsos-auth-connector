@@ -1,68 +1,48 @@
 
-import { ErrorHandlingOptions } from './types';
-
-// Error storage for deduplication
-const reportedErrors = new Set<string>();
-
 /**
- * Generate a fingerprint for an error based on its details
- * 
- * @param error The error to generate a fingerprint for
- * @param options Additional options
- * @returns A string fingerprint uniquely identifying the error
+ * Error deduplication utilities
  */
-function generateFingerprint(error: Error, options?: Partial<ErrorHandlingOptions>): string {
-  // Start with the error message and name
-  let parts = [error.name, error.message];
+import { ErrorHandlingOptions } from './types';
+import { generateErrorFingerprint } from './generateId';
 
-  // Add the source if available
-  if (options?.source) {
-    parts.push(String(options.source));
-  }
-
-  // Add the first line of stack trace if available (excluding the message part)
-  if (error.stack) {
-    const stackLines = error.stack.split('\n');
-    if (stackLines.length > 1) {
-      parts.push(stackLines[1].trim());
-    }
-  }
-
-  // Join and hash the parts to create a fingerprint
-  return parts.join('|');
-}
+// Store seen error fingerprints
+const seenErrors = new Set<string>();
 
 /**
- * Check if an error has been reported before
+ * Check if an error has been seen before
  * 
  * @param error The error to check
- * @param options Additional options that may affect fingerprinting
- * @returns True if the error has been reported, false otherwise
+ * @param options Additional options
+ * @returns Whether the error has been seen before
  */
-export function hasErrorBeenReported(error: Error, options?: Partial<ErrorHandlingOptions>): boolean {
-  // Use the provided fingerprint or generate one
-  const fingerprint = options?.fingerprint || generateFingerprint(error, options);
-  return reportedErrors.has(fingerprint);
+export function hasErrorBeenSeen(
+  error: Error,
+  options?: Partial<ErrorHandlingOptions>
+): boolean {
+  const fingerprint = options?.fingerprint || generateErrorFingerprint(error, options?.context);
+  return seenErrors.has(fingerprint);
 }
 
 /**
- * Mark an error as reported to prevent duplicate reports
+ * Mark an error as seen to prevent duplicate reporting
  * 
- * @param error The error to deduplicate
- * @param options Additional options that may affect fingerprinting
- * @returns The error object (for chaining)
+ * @param error The error to mark as seen
+ * @param options Additional options
+ * @returns The error (for chaining)
  */
-export function deduplicateError(error: Error, options?: Partial<ErrorHandlingOptions>): Error {
-  // Use the provided fingerprint or generate one
-  const fingerprint = options?.fingerprint || generateFingerprint(error, options);
-  reportedErrors.add(fingerprint);
+export function deduplicateError(
+  error: Error,
+  options?: Partial<ErrorHandlingOptions>
+): Error {
+  const fingerprint = options?.fingerprint || generateErrorFingerprint(error, options?.context);
+  seenErrors.add(fingerprint);
   return error;
 }
 
 /**
- * Clear the set of reported errors
- * Useful for testing or when changing contexts
+ * Clear the set of seen errors
+ * This is useful for testing or when context changes
  */
-export function clearReportedErrors(): void {
-  reportedErrors.clear();
+export function clearSeenErrors(): void {
+  seenErrors.clear();
 }

@@ -2,7 +2,10 @@
 import { useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { handleError } from "@/utils/errors";
+import { handleError, ErrorLevel, createHookErrorHandler } from "@/utils/errors";
+
+// Create hook-specific error handler
+const errorHandler = createHookErrorHandler('usePublishHandler');
 
 type UsePublishHandlerProps = {
   user: any;
@@ -31,7 +34,7 @@ export const usePublishHandler = ({ user }: UsePublishHandlerProps) => {
         
       if (error) {
         console.error("Error verifying published status:", error);
-        handleError(error, "Error verifying published status");
+        errorHandler(error, "Error verifying published status");
         return;
       }
       
@@ -52,7 +55,7 @@ export const usePublishHandler = ({ user }: UsePublishHandlerProps) => {
             
           if (updateError) {
             console.error("Failed to update published status:", updateError);
-            handleError(updateError, "Failed to update published status");
+            errorHandler(updateError, "Failed to update published status");
           } else {
             console.log("Fixed published status for content:", id);
           }
@@ -69,7 +72,7 @@ export const usePublishHandler = ({ user }: UsePublishHandlerProps) => {
             
           if (updateError) {
             console.error("Failed to update user ID:", updateError);
-            handleError(updateError, "Failed to update user ID for published content");
+            errorHandler(updateError, "Failed to update user ID for published content");
           } else {
             console.log("Fixed user ID for published content:", id);
           }
@@ -82,10 +85,10 @@ export const usePublishHandler = ({ user }: UsePublishHandlerProps) => {
       });
     } catch (error) {
       console.error("Error checking published content:", error);
-      handleError(
+      errorHandler(
         error,
         "There was an error verifying the published status. The content may still be published.",
-        { level: "warning" }
+        { level: ErrorLevel.WARNING }
       );
     }
   }, [user]);
