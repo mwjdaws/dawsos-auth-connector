@@ -71,5 +71,6 @@ export const typedTag: Tag = {
   name: 'Typed Tag',
   content_id: 'test-content-1',
   type_id: 'tag-type-1',
-  display_order: 1
+  display_order: 1,
+  type_name: 'Category'
 };

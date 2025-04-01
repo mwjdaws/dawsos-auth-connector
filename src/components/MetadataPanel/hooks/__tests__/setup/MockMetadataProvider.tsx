@@ -1,57 +1,43 @@
 
-import React from 'react';
-import { MetadataProvider, MetadataContextProps } from '../../useMetadataContext';
-import { Tag } from '@/types/tag';
+import React, { ReactNode } from 'react';
+import { MetadataProvider } from '../../useMetadataContext';
 import { ValidationResult } from '@/utils/validation/types';
-
-// Default mock values for the MetadataContext
-export const DEFAULT_MOCK_METADATA_CONTEXT: MetadataContextProps = {
-  contentId: 'test-content-id',
-  tags: [],
-  validationResult: { isValid: true, errorMessage: null, message: 'Test validation result' },
-  isEditable: true,
-  isLoading: false,
-  error: null,
-  refreshMetadata: jest.fn().mockResolvedValue(undefined),
-  fetchTags: jest.fn().mockResolvedValue([]),
-  handleAddTag: jest.fn().mockResolvedValue(undefined),
-  handleDeleteTag: jest.fn().mockResolvedValue(undefined)
-};
+import { Tag } from '@/types/tag';
+import { OntologyTerm } from '@/types/ontology';
 
 interface MockMetadataProviderProps {
+  children: ReactNode;
   contentId?: string;
   tags?: Tag[];
+  validationResult?: ValidationResult;
   isEditable?: boolean;
   isLoading?: boolean;
   error?: Error | null;
-  children: React.ReactNode;
-  customValue?: Partial<MetadataContextProps>;
+  ontologyTerms?: OntologyTerm[];
 }
 
 /**
- * A mock MetadataProvider for testing
- * 
- * @param props Provider props including test data
- * @returns MockMetadataProvider component
+ * Mock provider for testing components that consume MetadataContext
  */
 export const MockMetadataProvider: React.FC<MockMetadataProviderProps> = ({
-  contentId = DEFAULT_MOCK_METADATA_CONTEXT.contentId,
-  tags = DEFAULT_MOCK_METADATA_CONTEXT.tags,
-  isEditable = DEFAULT_MOCK_METADATA_CONTEXT.isEditable,
-  isLoading = DEFAULT_MOCK_METADATA_CONTEXT.isLoading,
-  error = DEFAULT_MOCK_METADATA_CONTEXT.error,
   children,
-  customValue = {}
+  contentId = 'test-content-123',
+  tags = [],
+  validationResult = { isValid: true, errorMessage: null, message: 'Valid content' },
+  isEditable = true,
+  isLoading = false,
+  error = null,
+  ontologyTerms = []
 }) => {
-  // Merge default mock with any custom values
-  const contextValue: MetadataContextProps = {
-    ...DEFAULT_MOCK_METADATA_CONTEXT,
+  // Create context value with provided or default values
+  const contextValue = {
     contentId,
     tags,
+    validationResult,
     isEditable,
     isLoading,
     error,
-    ...customValue
+    ontologyTerms
   };
 
   return (

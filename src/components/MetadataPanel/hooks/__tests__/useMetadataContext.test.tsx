@@ -3,6 +3,7 @@ import { renderHook } from '@testing-library/react-hooks';
 import { MetadataProvider, useMetadataContext } from '../useMetadataContext';
 import { ValidationResult } from '@/utils/validation/types';
 import { Tag } from '@/types/tag';
+import { OntologyTerm } from '@/types/ontology';
 import React from 'react';
 
 // Mock data

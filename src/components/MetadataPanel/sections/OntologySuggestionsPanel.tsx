@@ -19,6 +19,7 @@ export function OntologySuggestionsPanel({ sourceId, onAddTerm }: OntologySugges
     setTimeout(() => {
       setIsLoading(false);
       // For now, we're just simulating an empty result
+      setSuggestions([]);
     }, 1500);
   };
 

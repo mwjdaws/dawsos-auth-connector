@@ -43,5 +43,5 @@ export enum OntologyRelationType {
   ANTONYM = 'antonym'
 }
 
-// Make OntologyTerm available as both default and named export
+// Export the OntologyTerm interface
 export default OntologyTerm;

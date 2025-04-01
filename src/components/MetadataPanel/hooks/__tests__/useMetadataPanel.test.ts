@@ -3,9 +3,9 @@ import { renderHook, act } from "@testing-library/react-hooks";
 import { useMetadataPanel } from "../useMetadataPanel";
 import { useMetadataQuery } from "@/hooks/metadata/useMetadataQuery";
 import { useTagsQuery } from "@/hooks/metadata/useTagsQuery";
-import { useTagMutations } from "@/hooks/metadata/useTagMutations";
+import { useTagMutations } from "../tag-operations/useTagMutations"; // Updated import path
 import { useOntologyTermsQuery } from "@/hooks/metadata/useOntologyTermsQuery";
-import { basicTag, typedTag } from "../../__tests__/setup/test-types";
+import { basicTag, typedTag } from "../__tests__/setup/test-types";
 
 // Mock the hooks we're using inside useMetadataPanel
 jest.mock("@/hooks/metadata/useMetadataQuery", () => ({
@@ -16,7 +16,7 @@ jest.mock("@/hooks/metadata/useTagsQuery", () => ({
   useTagsQuery: jest.fn()
 }));
 
-jest.mock("@/hooks/metadata/useTagMutations", () => ({
+jest.mock("../tag-operations/useTagMutations", () => ({  // Updated mock path
   useTagMutations: jest.fn()
 }));
 
@@ -47,8 +47,10 @@ describe("useMetadataPanel", () => {
     (useTagMutations as jest.Mock).mockReturnValue({
       addTag: jest.fn(),
       deleteTag: jest.fn(),
+      reorderTags: jest.fn(), // Added reorderTags function
       isAddingTag: false,
-      isDeletingTag: false
+      isDeletingTag: false,
+      isReordering: false // Added isReordering state
     });
     
     (useOntologyTermsQuery as jest.Mock).mockReturnValue({
@@ -112,8 +114,10 @@ describe("useMetadataPanel", () => {
     (useTagMutations as jest.Mock).mockReturnValue({
       addTag: mockAddTag,
       deleteTag: jest.fn(),
+      reorderTags: jest.fn(), // Added reorderTags function
       isAddingTag: false,
-      isDeletingTag: false
+      isDeletingTag: false,
+      isReordering: false // Added isReordering state
     });
     
     const { result } = renderHook(() => 

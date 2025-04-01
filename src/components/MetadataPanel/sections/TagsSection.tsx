@@ -28,6 +28,7 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
   onAddTag,
   onDeleteTag,
   onReorderTags,
+  onMetadataChange = () => {},
   className = "",
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,6 +40,7 @@ export const TagsSection: React.FC<TagsSectionProps> = ({
     setIsSubmitting(true);
     try {
       await onAddTag(null);
+      if (onMetadataChange) onMetadataChange();
     } finally {
       setIsSubmitting(false);
     }
