@@ -8,7 +8,8 @@ import { convertErrorOptions, compatibleErrorOptions, LegacyErrorHandlingOptions
 import React from 'react';
 
 // Re-export error compatibility helpers
-export { convertErrorOptions, compatibleErrorOptions, LegacyErrorHandlingOptions };
+export { convertErrorOptions, compatibleErrorOptions };
+export type { LegacyErrorHandlingOptions };
 
 /**
  * Ensures a value is a string
