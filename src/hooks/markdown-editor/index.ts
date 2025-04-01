@@ -1,45 +1,27 @@
 
-// Re-export types
-export type * from './types/ontology';
+// Main editor hooks
+export { default as useMarkdownEditor } from './useMarkdownEditor';
+export { useSafeMarkdownEditor } from './useSafeMarkdownEditor';
+export { default as useContentProcessor } from '../markdown-viewer/useContentProcessor';
+export { default as useTemplates } from './useTemplates';
+export { default as useEditorState } from './useEditorState';
+export { default as useWikiLinks } from './useWikiLinks';
+export { default as useNoteLinks } from './useNoteLinks';
 
-// Re-export hooks
-export { useContentLoader } from './useContentLoader';
-export { useContentProcessor } from './useContentProcessor';
-export { useContentState } from './useContentState';
-export { useDocumentLifecycle } from './useDocumentLifecycle';
-export { useDocumentOperations } from './useDocumentOperations';
-export { useDocumentVersioning } from './useDocumentVersioning';
-export { useDraftOperations } from './useDraftOperations';
-export { useKnowledgeSources } from './useKnowledgeSources';
-export { useMarkdownEditor } from './useMarkdownEditor';
-export { useNoteLinks } from './useNoteLinks';
-export { useOntologyEnrichment } from './useOntologyEnrichment';
-export { useOntologySuggestions } from './useOntologySuggestions';
-export { usePublishOperations } from './usePublishOperations';
-export { useTemplateHandling } from './useTemplateHandling';
-export { useWikiLinks } from './useWikiLinks';
+// Document operations
+export { default as useDocumentOperations } from './useDocumentOperations';
+export { default as useDraftOperations } from './useDraftOperations';
+export { default as usePublishOperations } from './usePublishOperations';
 
-// Re-export draft operations
-export * from './draft-operations/useDatabaseOperations';
-export * from './draft-operations/useDraftOperations';
-export * from './draft-operations/useValidation';
-export * from './draft-operations/useVersioning';
+// Version control
+export { default as useVersionControl } from './versioning/useVersionControl';
+export { default as useVersionCreation } from './versioning/useVersionCreation';
+export { default as useVersionFetching } from './versioning/useVersionFetching';
+export { default as useVersionRestoration } from './versioning/useVersionRestoration';
 
-// Re-export handlers
-export * from './handlers/usePublishHandler';
-export * from './handlers/useSaveDraftHandler';
+// Ontology and enrichment
+export { default as useOntologyEnrichment } from './useOntologyEnrichment';
+export { default as useOntologySuggestions } from './useOntologySuggestions';
 
-// Re-export ontology operations
-export * from './ontology-terms/useAllTermsAndDomains';
-export * from './ontology-terms/useRelatedTerms';
-export * from './ontology-terms/useSourceTerms';
-export * from './ontology-terms/useTermMutations';
-
-// Re-export publish operations
-export * from './publish-operations/usePublishDatabase';
-export * from './publish-operations/usePublishValidation';
-
-// Re-export versioning
-export * from './versioning/useVersionCreation';
-export * from './versioning/useVersionFetching';
-export * from './versioning/useVersionRestoration';
+// Types
+export * from './types';

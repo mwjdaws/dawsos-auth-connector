@@ -59,7 +59,7 @@ export const useTagFetch = ({
         content_id: tag.content_id,
         type_id: tag.type_id,
         display_order: tag.display_order,
-        type_name: tag.tag_types ? tag.tag_types.name : null
+        type_name: tag.tag_types ? tag.tag_types.name : ''
       }));
       
       setTags(formattedTags);

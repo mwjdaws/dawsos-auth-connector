@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 /**
- * Hook for processing markdown content in the viewer component
+ * Hook for processing markdown content
  */
 export function useContentProcessor(initialContent: string = '') {
   const [content, setContent] = useState(initialContent);
