@@ -1,6 +1,6 @@
 
 import React, { useRef, useEffect, useImperativeHandle, forwardRef, useState } from 'react';
-import { GraphData, GraphNode, GraphLink, GraphRendererProps, GraphRendererRef } from '../../../types';
+import { GraphData, GraphNode, GraphLink, GraphRendererProps, GraphRendererRef } from './GraphRendererTypes';
 import { useForceSimulation } from './useForceSimulation';
 import { useNodeRenderer } from './useNodeRenderer';
 import { useLinkRenderer } from './useLinkRenderer';

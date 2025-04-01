@@ -6,7 +6,7 @@
 export interface GraphNode {
   id: string;
   name: string;
-  title?: string; // Added title property
+  title?: string; // Adding title property
   type?: string;
   color?: string;
   val?: number;
@@ -26,6 +26,7 @@ export interface GraphLink {
   value?: number;
   color?: string;
   label?: string;
+  width?: number;
 }
 
 export interface GraphData {
@@ -79,3 +80,22 @@ export interface GraphRendererRef {
 }
 
 export type GraphReducer = (state: GraphState, action: GraphAction) => GraphState;
+
+// Renderer specific interfaces
+export interface NodeRendererOptions {
+  onNodeClick?: (nodeId: string) => void;
+}
+
+export interface LinkRendererOptions {
+  onLinkClick?: (source: string, target: string) => void;
+}
+
+export interface GraphRendererProps {
+  graphData: GraphData;
+  width: number;
+  height: number;
+  highlightedNodeId?: string | null;
+  zoom?: number;
+  onNodeClick?: (nodeId: string) => void;
+  onLinkClick?: (source: string, target: string) => void;
+}

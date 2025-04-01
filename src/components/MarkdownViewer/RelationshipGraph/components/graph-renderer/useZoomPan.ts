@@ -1,7 +1,8 @@
+
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { zoom, zoomIdentity } from 'd3-zoom';
 import { select } from 'd3-selection';
-import { GraphNode, GraphRendererRef } from '../../../types';
+import { GraphNode, GraphRendererRef } from './GraphRendererTypes';
 
 interface UseZoomPanProps {
   width: number;

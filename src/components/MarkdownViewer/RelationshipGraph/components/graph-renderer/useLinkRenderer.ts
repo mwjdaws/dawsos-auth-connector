@@ -1,6 +1,6 @@
 
 import { useCallback } from 'react';
-import { GraphLink, LinkRendererOptions } from '../../../types';
+import { GraphLink, LinkRendererOptions } from './GraphRendererTypes';
 
 export function useLinkRenderer(options?: LinkRendererOptions) {
   const handleLinkClick = useCallback((link: GraphLink) => {

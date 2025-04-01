@@ -1,98 +1,80 @@
 
 import { useState, useCallback } from 'react';
-import { handleError } from '@/utils/errors';
-import { ErrorLevel } from '@/utils/errors/types';
 
 export interface TagValidationOptions {
   minLength?: number;
   maxLength?: number;
-  allowedChars?: RegExp;
-  preventDuplicates?: boolean;
-  existingTags?: string[];
-  allowEmpty?: boolean; // Added this option
+  allowSpecialChars?: boolean;
+  allowEmpty?: boolean;
 }
 
-export interface ValidationResult {
+export interface TagValidationResult {
   isValid: boolean;
   message: string | null;
 }
 
-/**
- * Hook for validating tag inputs
- */
-export function useTagValidator() {
-  const [lastValidated, setLastValidated] = useState<string>('');
-  
-  const defaultOptions: TagValidationOptions = {
-    minLength: 2,
-    maxLength: 50,
-    allowedChars: /^[\w\s\-\.]+$/,
-    preventDuplicates: true,
-    allowEmpty: false
-  };
-  
-  /**
-   * Validates a tag string based on common rules
-   */
-  const validateTag = useCallback((tag: string, options?: TagValidationOptions): ValidationResult => {
-    const opts = { ...defaultOptions, ...options };
-    setLastValidated(tag);
-    
-    // Empty check
-    if (!tag || tag.trim() === '') {
-      if (opts.allowEmpty) {
+export const useTagValidator = (options: TagValidationOptions = {}) => {
+  const {
+    minLength = 2,
+    maxLength = 50,
+    allowSpecialChars = true,
+    allowEmpty = false
+  } = options;
+
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const validateTag = useCallback(
+    (tag: string): TagValidationResult => {
+      // Trim the tag
+      const trimmedTag = tag.trim();
+
+      // Check if empty
+      if (!trimmedTag && !allowEmpty) {
+        const message = "Tag cannot be empty";
+        setValidationError(message);
+        return { isValid: false, message };
+      }
+
+      // Skip further validation if empty is allowed and the tag is empty
+      if (!trimmedTag && allowEmpty) {
+        setValidationError(null);
         return { isValid: true, message: null };
       }
-      return { isValid: false, message: 'Tag cannot be empty' };
-    }
-    
-    // Minimum length check
-    if (tag.trim().length < (opts.minLength || 2)) {
-      return { isValid: false, message: `Tag must be at least ${opts.minLength} characters long` };
-    }
-    
-    // Maximum length check
-    if (tag.trim().length > (opts.maxLength || 50)) {
-      return { isValid: false, message: `Tag must be less than ${opts.maxLength} characters long` };
-    }
-    
-    // Characters validation
-    const invalidChars = opts.allowedChars ? !opts.allowedChars.test(tag) : false;
-    if (invalidChars) {
-      return { isValid: false, message: 'Tag contains invalid characters' };
-    }
-    
-    // Duplicate check
-    if (opts.preventDuplicates && opts.existingTags && opts.existingTags.includes(tag.trim())) {
-      return { isValid: false, message: 'Tag already exists' };
-    }
-    
-    return { isValid: true, message: null };
-  }, []);
-  
-  /**
-   * Validates the tag and reports errors
-   */
-  const validateTagWithErrorHandling = useCallback((tag: string, options?: TagValidationOptions): boolean => {
-    const result = validateTag(tag, options);
-    
-    if (!result.isValid && result.message) {
-      handleError(
-        new Error(result.message),
-        result.message,
-        { level: ErrorLevel.Warning }
-      );
-      return false;
-    }
-    
-    return true;
-  }, [validateTag]);
-  
+
+      // Check length
+      if (trimmedTag.length < minLength) {
+        const message = `Tag must be at least ${minLength} characters`;
+        setValidationError(message);
+        return { isValid: false, message };
+      }
+
+      if (trimmedTag.length > maxLength) {
+        const message = `Tag must be no more than ${maxLength} characters`;
+        setValidationError(message);
+        return { isValid: false, message };
+      }
+
+      // Check for special characters if not allowed
+      if (!allowSpecialChars) {
+        const specialCharsRegex = /[^a-zA-Z0-9 -]/;
+        if (specialCharsRegex.test(trimmedTag)) {
+          const message = "Tag contains special characters that are not allowed";
+          setValidationError(message);
+          return { isValid: false, message };
+        }
+      }
+
+      // If we reach here, the tag is valid
+      setValidationError(null);
+      return { isValid: true, message: null };
+    },
+    [minLength, maxLength, allowSpecialChars, allowEmpty]
+  );
+
   return {
     validateTag,
-    validateTagWithErrorHandling,
-    lastValidated
+    validationError
   };
-}
+};
 
 export default useTagValidator;

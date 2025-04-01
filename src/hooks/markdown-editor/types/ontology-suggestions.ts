@@ -1,4 +1,5 @@
 
+// Ontology suggestion types
 export interface OntologySuggestion {
   id: string;
   term: string;

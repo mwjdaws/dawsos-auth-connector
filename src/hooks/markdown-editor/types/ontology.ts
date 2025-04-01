@@ -1,71 +1,74 @@
 
-/**
- * Types related to ontology terms and relationships
- */
-
+// Basic ontology term interface
 export interface OntologyTerm {
   id: string;
   term: string;
   description: string;
   domain?: string;
-  associationId?: string; // ID of the association between content and term
+  associationId?: string; // Adding associationId property
   review_required?: boolean;
 }
 
+// Related term data structure
 export interface RelatedTerm {
-  term_id: string;
+  id: string;
   term: string;
-  description: string;
   domain?: string;
-  relation_type: string;
+  description?: string;
+  confidence?: number;
+  score?: number;
 }
 
-export interface OntologyDomain {
+// Term suggestions interface
+export interface TermSuggestion {
+  id: string;
+  term: string;
+  domain?: string;
+  description?: string;
+  confidence?: number;
+}
+
+// Domain structure
+export interface Domain {
   id: string;
   name: string;
-  description: string;
+  description?: string;
 }
 
-export interface TermAssociation {
+// Term relationship types
+export enum TermRelationshipType {
+  BROADER = 'broader',
+  NARROWER = 'narrower',
+  RELATED = 'related',
+  EQUIVALENT = 'equivalent'
+}
+
+// Term relationship structure
+export interface TermRelationship {
   id: string;
-  knowledge_source_id: string;
-  ontology_term_id: string;
-  created_at?: string;
-  created_by?: string;
-  review_required: boolean;
+  sourceTermId: string;
+  targetTermId: string;
+  type: TermRelationshipType;
+  confidence?: number;
 }
 
-/**
- * Interface for the result of useOntologySuggestions hook
- */
-export interface UseOntologySuggestionsResult {
-  suggestions: {
-    terms: Array<{
-      id: string;
-      term: string;
-      description?: string;
-      domain?: string;
-      score?: number;
-      applied?: boolean;
-      rejected?: boolean;
-    }>;
-    relatedNotes: Array<{
-      id: string;
-      title?: string;
-      score?: number;
-      applied: boolean;
-      rejected: boolean;
-    }>;
-  };
-  isLoading: boolean;
-  error: Error | null;
-  refreshSuggestions: () => Promise<void>;
-  applySuggestion: (termId: string) => Promise<boolean>;
-  rejectSuggestion: (termId: string) => Promise<boolean>;
-  applyNoteRelation: (noteId: string) => Promise<boolean>;
-  rejectNoteRelation: (noteId: string) => Promise<boolean>;
-  analyzeContent: (content: string, title: string, sourceId: string) => Promise<void>;
-  applySuggestedTerm: (termId: string, sourceId: string) => Promise<boolean>;
-  rejectSuggestedTerm: (termId: string) => Promise<boolean>;
-  applyAllSuggestedTerms: (sourceId: string, confidenceThreshold?: number) => Promise<boolean>;
+// Term hierarchy item
+export interface TermHierarchyItem {
+  id: string;
+  term: string;
+  domain?: string;
+  description?: string;
+  children?: TermHierarchyItem[];
+  level: number;
 }
+
+// Term suggestion count
+export interface TermSuggestionCount {
+  count: number;
+  sourceId: string;
+}
+
+// Define export types
+export type OntologyTermMap = Record<string, OntologyTerm>;
+export type DomainMap = Record<string, Domain>;
+export type TermRelationshipMap = Record<string, TermRelationship[]>;

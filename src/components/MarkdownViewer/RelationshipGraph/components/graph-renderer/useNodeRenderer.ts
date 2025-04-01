@@ -1,6 +1,6 @@
 
 import { useCallback, useRef } from 'react';
-import { GraphNode, NodeRendererOptions } from '../../../types';
+import { GraphNode, NodeRendererOptions } from './GraphRendererTypes';
 
 export function useNodeRenderer(options?: NodeRendererOptions) {
   const hoveredNodeRef = useRef<GraphNode | null>(null);
@@ -29,7 +29,7 @@ export function useNodeRenderer(options?: NodeRendererOptions) {
       
       const isHighlighted = highlightedNodeId === node.id;
       const isHovered = hoveredNodeRef.current === node;
-      const nodeSize = node.size || 10;
+      const nodeSize = node.val || 10;
       
       // Draw node circle
       context.beginPath();
@@ -61,7 +61,7 @@ export function useNodeRenderer(options?: NodeRendererOptions) {
         context.fillStyle = '#333';
         context.textAlign = 'center';
         context.textBaseline = 'middle';
-        context.fillText(node.name || node.title || node.id, node.x, node.y + nodeSize + 12);
+        context.fillText(node.title || node.name || node.id, node.x, node.y + nodeSize + 12);
       }
     });
     
@@ -83,7 +83,7 @@ export function useNodeRenderer(options?: NodeRendererOptions) {
       const node = nodes[i];
       if (!node.x || !node.y) continue;
       
-      const nodeSize = node.size || 10;
+      const nodeSize = node.val || 10;
       const dx = graphX - node.x;
       const dy = graphY - node.y;
       const distance = Math.sqrt(dx * dx + dy * dy);

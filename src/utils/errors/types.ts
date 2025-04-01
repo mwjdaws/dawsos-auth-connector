@@ -1,166 +1,69 @@
 
 /**
- * Error types and interfaces for the application
+ * Error handling types
  */
 
-/**
- * Error severity levels
- */
 export enum ErrorLevel {
   Debug = 'debug',
   Info = 'info',
   Warning = 'warning',
   Error = 'error',
-  Critical = 'critical'
+  Critical = 'critical',
+  
+  // Backward compatibility with string error levels
+  DEBUG = 'debug',
+  INFO = 'info',
+  WARNING = 'warning',
+  ERROR = 'error',
+  CRITICAL = 'critical'
 }
 
-/**
- * Error source categories
- */
 export enum ErrorSource {
-  UI = 'ui',
   API = 'api',
-  Network = 'network',
   Database = 'database',
-  Auth = 'auth',
-  Unknown = 'unknown',
+  Component = 'component',
+  Hook = 'hook',
+  Service = 'service',
+  Utils = 'utils',
+  User = 'user',
   System = 'system',
-  Validation = 'validation',
-  Server = 'server',
-  User = 'user'
+  Unknown = 'unknown'
 }
 
-/**
- * Error context structure
- */
-export interface ErrorContext {
-  [key: string]: any;
-}
+export type ErrorContext = Record<string, any>;
 
-/**
- * Core error handling options
- */
 export interface ErrorHandlingOptions {
-  // Error metadata
   level: ErrorLevel;
   source: ErrorSource;
   message: string;
-  context?: ErrorContext;
-  
-  // Toast options
   toastTitle?: string;
   toastDescription?: string;
-  toastId?: string;
-  fingerprint?: string;
-  
-  // Behavior flags
-  silent?: boolean;
-  showToast: boolean;
-  suppressToast?: boolean;
+  error?: Error;
+  context?: ErrorContext;
   reportToAnalytics?: boolean;
-  technical?: boolean;
-  originalError?: Error;
+  silent?: boolean;
+  showToast?: boolean;
 }
 
-/**
- * Default error options to use when not specified
- */
-export const defaultErrorOptions: ErrorHandlingOptions = {
-  level: ErrorLevel.Error,
-  source: ErrorSource.Unknown,
-  message: 'An unexpected error occurred',
-  showToast: true,
-  silent: false
-};
+export type ErrorHandlingFunction = (error: Error | string, options?: Partial<ErrorHandlingOptions>) => void;
 
-/**
- * Validation result structure
- */
-export interface ValidationResult {
-  isValid: boolean;
-  message: string | null;
-  errorMessage: string | null;
-  resultType: 'generic' | 'contentId' | 'tag';
+export interface ErrorMetadata {
+  timestamp: string;
+  userId?: string;
+  sessionId?: string;
+  source: ErrorSource;
+  level: ErrorLevel;
+  browser?: string;
+  os?: string;
+  url?: string;
+  component?: string;
+  context?: ErrorContext;
 }
 
-/**
- * Content ID validation result
- */
-export interface ContentIdValidationResult extends ValidationResult {
-  resultType: 'contentId';
-  contentExists: boolean;
-}
+export type ErrorHandlerCreator = (defaultOptions?: Partial<ErrorHandlingOptions>) => ErrorHandlingFunction;
 
-/**
- * Tag validation result
- */
-export interface TagValidationResult extends ValidationResult {
-  resultType: 'tag';
-}
-
-/**
- * API Error type
- */
-export interface ApiError extends Error {
-  statusCode?: number;
-  apiMessage?: string;
-  apiErrorCode?: string;
-}
-
-// Helper function to create a content ID validation result
-export function createContentIdValidationResult(
-  isValid: boolean, 
-  contentExists: boolean,
-  message: string | null = null,
-  errorMessage: string | null = null
-): ContentIdValidationResult {
-  return {
-    isValid,
-    contentExists,
-    message,
-    errorMessage,
-    resultType: 'contentId'
-  };
-}
-
-// Helper function to create a tag validation result
-export function createTagValidationResult(
-  isValid: boolean,
-  message: string | null = null,
-  errorMessage: string | null = null
-): TagValidationResult {
-  return {
-    isValid,
-    message,
-    errorMessage,
-    resultType: 'tag'
-  };
-}
-
-// Helper function to create a generic validation result
-export function createValidationResult(
-  isValid: boolean,
-  message: string | null = null,
-  errorMessage: string | null = null
-): ValidationResult {
-  return {
-    isValid,
-    message,
-    errorMessage,
-    resultType: 'generic'
-  };
-}
-
-// Helper to create content validation result (for compatibility)
-export function createContentValidationResult(
-  isValid: boolean,
-  message: string | null = null,
-  errorMessage: string | null = null
-): ValidationResult {
-  return {
-    isValid,
-    message,
-    errorMessage,
-    resultType: 'contentId'
-  };
+export interface ErrorHandlerFactory {
+  createComponentErrorHandler: (componentName: string) => ErrorHandlingFunction;
+  createHookErrorHandler: (hookName: string) => ErrorHandlingFunction;
+  createServiceErrorHandler: (serviceName: string) => ErrorHandlingFunction;
 }

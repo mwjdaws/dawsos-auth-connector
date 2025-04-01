@@ -8,7 +8,7 @@ import {
   SimulationNodeDatum,
   Simulation
 } from 'd3-force';
-import { GraphData, GraphNode, GraphLink } from '../../../types';
+import { GraphData, GraphNode, GraphLink } from './GraphRendererTypes';
 
 interface UseForceSimulationProps {
   graphData: GraphData;
@@ -36,7 +36,7 @@ export function useForceSimulation({
     // Initialize the simulation
     if (!simulationRef.current) {
       // Extend nodes with D3 simulation properties
-      const nodes = graphData.nodes.map(node => ({
+      const nodes = graphData.nodes.map((node: GraphNode) => ({
         ...node,
         x: node.x || Math.random() * width, 
         y: node.y || Math.random() * height,
@@ -66,7 +66,7 @@ export function useForceSimulation({
       const simulation = simulationRef.current;
       
       // Update nodes
-      const nodes = graphData.nodes.map(node => ({
+      const nodes = graphData.nodes.map((node: GraphNode) => ({
         ...node,
         x: node.x || Math.random() * width,
         y: node.y || Math.random() * height,
