@@ -33,7 +33,7 @@ export function useZoomPan({
 }: UseZoomPanProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<HTMLCanvasElement, unknown>>();
-  const [transform, setTransform] = useState<d3.ZoomTransform>(d3.zoomIdentity.scale(initialZoom));
+  const [transform, setTransform] = useState<d3.ZoomTransform>(d3.zoomIdentity.translate(0, 0).scale(initialZoom));
   const [zoomState, setZoomState] = useState<ZoomState>({
     zoom: initialZoom,
     translateX: 0,
@@ -71,7 +71,7 @@ export function useZoomPan({
     // Apply zoom behavior to canvas
     d3.select(canvasRef.current)
       .call(zoomBehavior)
-      .call(zoomBehavior.transform, d3.zoomIdentity.scale(initialZoom));
+      .call(zoomBehavior.transform, d3.zoomIdentity.translate(0, 0).scale(initialZoom));
   }, [initialZoom, maxZoom, minZoom, onZoomChange]);
 
   // Helper functions for external zoom control
@@ -136,7 +136,7 @@ export function useZoomPan({
         .duration(300)
         .call(
           zoomBehaviorRef.current.transform,
-          d3.zoomIdentity.scale(initialZoom)
+          d3.zoomIdentity.translate(0, 0).scale(initialZoom)
         );
     },
     

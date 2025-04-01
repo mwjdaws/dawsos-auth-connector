@@ -1,35 +1,39 @@
 
-import { useState, useCallback } from 'react';
-
-interface UseMetadataPanelProps {
-  contentId: string;
-  onMetadataChange: (() => void) | null;
-  isCollapsible?: boolean;
-  initialCollapsed?: boolean;
-}
+import { useState, useCallback, useEffect } from 'react';
+import { useMetadataContext } from './useMetadataContext';
+import { UseMetadataPanelProps } from '../types';
 
 /**
- * Hook for managing the metadata panel state
+ * Hook for managing the state and behavior of the metadata panel
  */
 export function useMetadataPanel({
   contentId,
-  onMetadataChange,
+  onMetadataChange = null,
   isCollapsible = false,
   initialCollapsed = false
 }: UseMetadataPanelProps) {
-  // State
-  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed && isCollapsible);
   
-  // Refresh metadata
+  // Get metadata state from context
+  const { isLoading, error, refetchAll } = useMetadataContext();
+  
+  // Reset collapsed state when content ID changes
+  useEffect(() => {
+    if (isCollapsible) {
+      setIsCollapsed(initialCollapsed);
+    }
+  }, [contentId, initialCollapsed, isCollapsible]);
+  
+  // Handle refresh button click
   const handleRefresh = useCallback(() => {
-    // This would trigger a refresh of the metadata
-    // Currently handled by the MetadataQueryProvider
+    // Refetch all metadata
+    refetchAll();
+    
+    // Notify parent if needed
     if (onMetadataChange) {
       onMetadataChange();
     }
-  }, [onMetadataChange]);
+  }, [refetchAll, onMetadataChange]);
   
   return {
     isCollapsed,

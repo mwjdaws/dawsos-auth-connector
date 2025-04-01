@@ -38,6 +38,16 @@ export function ensureBoolean(value: any, defaultValue = false): boolean {
 }
 
 /**
+ * Ensure an array is valid, providing an empty array if null or undefined
+ */
+export function ensureArray<T>(value: T[] | null | undefined): T[] {
+  if (!value) {
+    return [];
+  }
+  return Array.isArray(value) ? value : [value] as T[];
+}
+
+/**
  * Ensure zoom value is within valid range
  */
 export function ensureValidZoom(zoom: any, minZoom = 0.1, maxZoom = 4, defaultZoom = 1): number {
@@ -117,4 +127,18 @@ export function safeCallback<T extends (...args: any[]) => any>(
     return callback(...args);
   }
   return undefined;
+}
+
+/**
+ * Convert null to undefined or vice versa
+ */
+export function nullToUndefined<T>(value: T | null): T | undefined {
+  return value === null ? undefined : value;
+}
+
+/**
+ * Convert undefined to null
+ */
+export function undefinedToNull<T>(value: T | undefined): T | null {
+  return value === undefined ? null : value;
 }

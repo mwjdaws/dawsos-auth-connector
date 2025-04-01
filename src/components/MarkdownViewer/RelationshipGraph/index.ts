@@ -30,6 +30,9 @@ export {
   ensureString, 
   ensureNumber, 
   ensureBoolean,
+  ensureArray,
+  nullToUndefined,
+  undefinedToNull,
   sanitizeGraphData
 } from '@/utils/compatibility';
 
@@ -37,5 +40,6 @@ export {
 export {
   ensureValidZoom,
   ensureValidGraphData,
-  createSafeGraphProps
+  createSafeGraphProps,
+  safeCallback
 } from '@/utils/compatibility';

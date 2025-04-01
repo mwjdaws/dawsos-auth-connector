@@ -27,7 +27,28 @@ export function ExternalSourceSection({
   className = ''
 }: ExternalSourceSectionProps) {
   // Check if we have a valid external source URL
-  const hasExternalSource = !!externalSource?.external_source_url;
+  const hasExternalSource = externalSource && 
+    ('externalSource' in externalSource 
+      ? !!externalSource.externalSource
+      : !!externalSource.external_source_url);
+  
+  // Get the URL (handle both formats)
+  const sourceUrl = externalSource && 
+    ('externalSource' in externalSource 
+      ? externalSource.externalSource 
+      : externalSource.external_source_url);
+  
+  // Get the last checked time
+  const lastChecked = externalSource && 
+    ('lastCheckedAt' in externalSource 
+      ? externalSource.lastCheckedAt 
+      : externalSource.external_source_checked_at);
+  
+  // Get the needs review flag
+  const needsReview = externalSource && 
+    ('needsExternalReview' in externalSource 
+      ? externalSource.needsExternalReview
+      : externalSource.needs_external_review);
   
   // Format the last checked time
   const formatLastChecked = (timestamp: string | null) => {
@@ -46,31 +67,31 @@ export function ExternalSourceSection({
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <a
-              href={externalSource.external_source_url || '#'}
+              href={sourceUrl || '#'}
               target="_blank"
               rel="noreferrer"
               className="text-blue-600 hover:underline truncate max-w-[80%]"
             >
-              {truncateUrl(externalSource.external_source_url || '')}
+              {truncateUrl(sourceUrl || '')}
             </a>
             
-            <CopyButton value={externalSource.external_source_url || ''} />
+            <CopyButton value={sourceUrl || ''} />
           </div>
           
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
               <span>
-                Last checked: {formatLastChecked(externalSource.external_source_checked_at)}
+                Last checked: {formatLastChecked(lastChecked)}
               </span>
               
-              {externalSource.needs_external_review && (
+              {needsReview && (
                 <div className="inline-flex items-center text-amber-600 gap-1">
                   <AlertTriangle className="h-3 w-3" />
                   <span>Needs review</span>
                 </div>
               )}
               
-              {!externalSource.needs_external_review && externalSource.external_source_checked_at && (
+              {!needsReview && lastChecked && (
                 <div className="inline-flex items-center text-green-600 gap-1">
                   <Check className="h-3 w-3" />
                   <span>Valid</span>

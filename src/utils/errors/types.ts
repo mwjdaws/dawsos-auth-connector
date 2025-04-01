@@ -5,7 +5,7 @@
 export enum ErrorLevel {
   Debug = 'debug',
   Info = 'info',
-  Warning = 'warning',   // Correct capitalization
+  Warning = 'warning',
   Error = 'error',
   Critical = 'critical'
 }
@@ -17,14 +17,17 @@ export enum ErrorSource {
   Unknown = 'unknown',
   User = 'user',
   App = 'app',
-  API = 'api',         // Correct capitalization
+  API = 'api',
   Database = 'database',
   Network = 'network',
   Auth = 'auth',
   Utils = 'utils',
   Component = 'component',
   Hook = 'hook',
-  Service = 'service'
+  Service = 'service',
+  UI = 'ui',
+  Validation = 'validation',
+  Server = 'server'
 }
 
 /**
@@ -34,6 +37,7 @@ export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
   resultType?: string;
+  message?: string | null;
 }
 
 /**
@@ -62,6 +66,7 @@ export function createValidationResult(
   return {
     isValid,
     errorMessage,
+    message: null,
     resultType
   };
 }
@@ -77,6 +82,7 @@ export function createContentIdValidationResult(
   return {
     isValid,
     errorMessage,
+    message: null,
     contentExists,
     resultType: 'contentId'
   };
@@ -92,6 +98,7 @@ export function createTagValidationResult(
   return {
     isValid,
     errorMessage,
+    message: null,
     resultType: 'tag'
   };
 }
@@ -107,6 +114,13 @@ export interface ErrorHandlingOptions {
   silent?: boolean;
   showToast?: boolean;
   reportToAnalytics?: boolean;
+  suppressToast?: boolean;
+  toastTitle?: string;
+  toastDescription?: string;
+  toastId?: string;
+  fingerprint?: string;
+  technical?: string;
+  originalError?: Error;
 }
 
 /**
@@ -144,6 +158,7 @@ export function createOntologyTermValidationResult(
   return {
     isValid,
     errorMessage,
+    message: null,
     resultType: 'ontologyTerm'
   };
 }
@@ -155,6 +170,7 @@ export function createDocumentValidationResult(
   return {
     isValid,
     errorMessage,
+    message: null,
     resultType: 'document'
   };
 }

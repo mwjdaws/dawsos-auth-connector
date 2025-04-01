@@ -27,9 +27,23 @@ export function usePanelContent(initialCollapsed = false) {
   }, [contentId]);
   
   // Extract external source info
-  const externalSourceUrl = sourceMetadata?.external_source_url || null;
-  const needsExternalReview = sourceMetadata?.needs_external_review || false;
-  const lastCheckedAt = sourceMetadata?.external_source_checked_at || null;
+  const externalSourceUrl = 
+    sourceMetadata?.external_source_url || 
+    ('externalSource' in (sourceMetadata || {}) ? sourceMetadata?.externalSource : null);
+    
+  const needsExternalReview = 
+    ('needs_external_review' in (sourceMetadata || {})) 
+      ? sourceMetadata?.needs_external_review 
+      : ('needsExternalReview' in (sourceMetadata || {}))
+        ? sourceMetadata?.needsExternalReview 
+        : false;
+        
+  const lastCheckedAt = 
+    ('external_source_checked_at' in (sourceMetadata || {}))
+      ? sourceMetadata?.external_source_checked_at
+      : ('lastCheckedAt' in (sourceMetadata || {}))
+        ? sourceMetadata?.lastCheckedAt
+        : null;
   
   return {
     isCollapsed,

@@ -6,27 +6,7 @@ import { useTagMutations } from './useTagMutations';
 import { Tag } from '@/types/tag';
 import { handleError, ErrorLevel } from '@/utils/errors';
 import { isValidContentId } from '@/utils/validation/contentIdValidation';
-
-/**
- * Result type for useTagOperations
- */
-export interface UseTagOperationsResult {
-  tags: Tag[];
-  isLoading: boolean;
-  error: Error | null;
-  newTag: string;
-  setNewTag: (tag: string) => void;
-  handleAddTag: (typeId?: string | null) => Promise<void>;
-  handleDeleteTag: (tagId: string) => Promise<void>;
-  handleReorderTags: (tags: Tag[]) => Promise<void>;
-  handleRefresh: () => Promise<void>;
-  isAddingTag: boolean;
-  isDeletingTag: boolean;
-  isReordering: boolean;
-  // Backward compatibility properties
-  isTagsLoading?: boolean;
-  tagsError?: Error | null;
-}
+import { UseTagOperationsResult } from './types';
 
 /**
  * Main hook for tag operations that combines state, fetching, and mutations
