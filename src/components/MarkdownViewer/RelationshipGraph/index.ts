@@ -1,32 +1,37 @@
 
 /**
- * RelationshipGraph Component
+ * Relationship Graph - Central Export Point
  * 
- * This component visualizes relationships between content items.
+ * This file exports all components related to the relationship graph visualization.
  */
 
-// Main components
-export { RelationshipGraphPanel } from './components/RelationshipGraphPanel';
-export { RelationshipGraphControls } from './components/RelationshipGraphControls';
+// Export main components
+export { RelationshipGraph } from './RelationshipGraph';
+export { RelationshipGraphPanel } from './RelationshipGraphPanel';
 export { RelationshipGraphAdapter } from './RelationshipGraphAdapter';
+
+// Export from components directory
 export { GraphRenderer } from './components/graph-renderer/GraphRenderer';
+export { GraphSearch } from './components/GraphSearch';
+export { GraphControls } from './components/GraphControls';
+export { GraphContent } from './components/GraphContent';
+export { RelationshipGraphControls } from './components/RelationshipGraphControls';
 
-// Type definitions
-export type { 
-  GraphNode, 
-  GraphLink, 
-  GraphData,
-  GraphRendererRef 
-} from './types';
+// Export from hooks directory
+export { useRelationshipGraph } from './hooks/useRelationshipGraph';
+export { useGraphData } from './hooks/graph-data/useGraphData';
+export { useGraphState } from './hooks/graph-data/useGraphState';
 
-// Utility functions for graph components
+// Export types
+export * from './types';
+
+// Export compatibility utilities to ensure proper type handling
 export { 
-  ensureNumber,
-  ensureString,
+  ensureString, 
+  ensureNumber, 
   ensureBoolean,
   ensureValidZoom,
   ensureValidGraphData,
   sanitizeGraphData,
-  // Helper functions
-  createSafeGraphProps,
+  createSafeGraphProps
 } from '@/utils/compatibility';

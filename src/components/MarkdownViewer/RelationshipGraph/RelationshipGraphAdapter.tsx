@@ -2,7 +2,7 @@
 import React from 'react';
 import { GraphRenderer } from './components/graph-renderer/GraphRenderer';
 import { GraphData, GraphNode, GraphLink, GraphRendererRef } from './types';
-import { ensureString, ensureNumber, ensureBoolean } from '@/utils/compatibility';
+import { ensureString, ensureNumber, ensureBoolean, createSafeGraphProps } from '@/utils/compatibility';
 
 interface RelationshipGraphAdapterProps {
   graphData: GraphData;
@@ -24,16 +24,7 @@ export const RelationshipGraphAdapter = React.forwardRef<GraphRendererRef, Relat
     onNodeClick,
     onLinkClick
   }, ref) => {
-    // Create safe handler functions
-    const handleNodeClick = onNodeClick 
-      ? (nodeId: string) => onNodeClick(nodeId)
-      : undefined;
-      
-    const handleLinkClick = onLinkClick 
-      ? (source: string, target: string) => onLinkClick(source, target)
-      : undefined;
-    
-    // Ensure data is in the correct format
+    // Sanitize graph data to ensure it's in the correct format
     const sanitizedData: GraphData = {
       nodes: graphData.nodes.map((node: GraphNode) => ({
         ...node,
@@ -47,6 +38,15 @@ export const RelationshipGraphAdapter = React.forwardRef<GraphRendererRef, Relat
         target: ensureString(typeof link.target === 'object' ? link.target.id : link.target),
       }))
     };
+    
+    // Safe handler functions that won't break if the callbacks are undefined
+    const handleNodeClick = onNodeClick 
+      ? (nodeId: string) => onNodeClick(nodeId)
+      : undefined;
+      
+    const handleLinkClick = onLinkClick 
+      ? (source: string, target: string) => onLinkClick(source, target)
+      : undefined;
     
     return (
       <GraphRenderer

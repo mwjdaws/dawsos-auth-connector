@@ -31,22 +31,22 @@ export interface ErrorHandlingOptions {
   /**
    * The severity level of the error
    */
-  level: ErrorLevel;
+  level?: ErrorLevel;
 
   /**
    * Whether to show a toast notification for this error
    */
-  showToast: boolean;
+  showToast?: boolean;
 
   /**
    * Whether to report this error to analytics
    */
-  reportToAnalytics: boolean;
+  reportToAnalytics?: boolean;
 
   /**
    * Whether to handle this error silently (no user-facing notifications)
    */
-  silent: boolean;
+  silent?: boolean;
 
   /**
    * Additional context information for debugging
@@ -79,6 +79,16 @@ export interface ErrorHandlingOptions {
    * Error category for grouping similar errors
    */
   category?: string;
+  
+  /**
+   * Technical details about the error (for developer-facing messages)
+   */
+  technical?: string;
+  
+  /**
+   * Source of the error
+   */
+  source?: ErrorSource;
 }
 
 /**
@@ -104,6 +114,21 @@ export interface EnhancedError extends Error {
    * Error timestamp
    */
   timestamp?: string;
+  
+  /**
+   * Error level
+   */
+  level?: ErrorLevel;
+  
+  /**
+   * Error source
+   */
+  source?: ErrorSource;
+  
+  /**
+   * Additional context
+   */
+  context?: Record<string, any>;
 }
 
 /**
@@ -159,4 +184,26 @@ export interface ErrorHandlingResult {
    * Original error that was handled
    */
   error: Error;
+}
+
+/**
+ * Create a new enhanced error
+ */
+export function createEnhancedError(
+  message: string,
+  options?: {
+    code?: string;
+    level?: ErrorLevel;
+    source?: ErrorSource;
+    context?: Record<string, any>;
+  }
+): EnhancedError {
+  const error = new Error(message) as EnhancedError;
+  if (options) {
+    error.code = options.code;
+    error.level = options.level;
+    error.source = options.source;
+    error.context = options.context;
+  }
+  return error;
 }

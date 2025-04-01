@@ -1,101 +1,61 @@
 
-/**
- * Validation and compatibility utility functions
- * These functions help ensure consistent type handling across the application
- */
-
-import { ValidationResult, VALIDATION_RESULTS } from './types';
+import { ValidationResult, ContentIdValidationResult, createValidResult, createInvalidResult, createContentIdValidationResult } from './types';
 
 /**
- * Create a validation result with the given validity and message
+ * Legacy validation result structure
  */
-export const createValidationResult = (isValid: boolean, errorMessage: string | null): ValidationResult => ({
-  isValid,
-  errorMessage
-});
+export interface LegacyValidationResult {
+  isValid: boolean;
+  errorMessage: string | null;
+}
 
 /**
- * Create a simple boolean validation result with an error message
+ * Legacy content validation result structure
  */
-export const createBooleanValidationResult = (isValid: boolean, errorMessage?: string): boolean => {
-  return isValid;
-};
+export interface LegacyContentValidationResult extends LegacyValidationResult {
+  contentExists: boolean | null;
+}
 
 /**
- * Ensures a value is a valid number, with a default fallback
- * @param value The value to check
- * @param defaultValue The default value to use if the input is invalid
- * @returns A valid number
+ * Convert between validation result formats
  */
-export function ensureNumber(value: number | undefined | null, defaultValue: number = 0): number {
-  if (typeof value !== 'number' || isNaN(value)) {
-    return defaultValue;
+export function convertValidationResult(result: ValidationResult | LegacyValidationResult): ValidationResult {
+  if ('message' in result) {
+    return result as ValidationResult;
   }
-  return value;
+  
+  return {
+    isValid: result.isValid,
+    errorMessage: result.errorMessage,
+    message: null
+  };
 }
 
 /**
- * Ensures a value is a valid string, with a default fallback
- * @param value The value to check
- * @param defaultValue The default value to use if the input is invalid
- * @returns A valid string
+ * Convert content validation result formats
  */
-export function ensureString(value: string | undefined | null, defaultValue: string = ''): string {
-  if (typeof value !== 'string') {
-    return defaultValue;
+export function convertContentValidationResult(
+  result: ContentIdValidationResult | LegacyContentValidationResult
+): ContentIdValidationResult {
+  if ('resultType' in result) {
+    return result as ContentIdValidationResult;
   }
-  return value;
+  
+  return {
+    isValid: result.isValid,
+    errorMessage: result.errorMessage,
+    message: null,
+    contentExists: result.contentExists,
+    resultType: 'content-id'
+  };
 }
 
 /**
- * Converts null to undefined for APIs that expect undefined
- * @param value The value to convert
- * @returns The value with null converted to undefined
+ * Create a validation result from legacy format
  */
-export function nullToUndefined<T>(value: T | null): T | undefined {
-  return value === null ? undefined : value;
-}
-
-/**
- * Converts undefined to null for APIs that expect null
- * @param value The value to convert
- * @returns The value with undefined converted to null
- */
-export function undefinedToNull<T>(value: T | undefined): T | null {
-  return value === undefined ? null : value;
-}
-
-/**
- * Ensures that an optional boolean property is handled consistently
- * @param value The boolean value to check
- * @param defaultValue The default value to use if undefined
- * @returns A boolean value
- */
-export function ensureBoolean(value: boolean | undefined | null, defaultValue: boolean = false): boolean {
-  if (typeof value !== 'boolean') {
-    return defaultValue;
-  }
-  return value;
-}
-
-/**
- * Ensures a value is an object with a default fallback
- */
-export function ensureObject<T extends object>(value: T | undefined | null, defaultValue: T): T {
-  if (!value || typeof value !== 'object') {
-    return defaultValue;
-  }
-  return value;
-}
-
-/**
- * Create a safe callback function
- */
-export function createSafeCallback<T extends (...args: any[]) => any>(fn: T | undefined | null): T {
-  return ((...args: any[]) => {
-    if (typeof fn === 'function') {
-      return fn(...args);
-    }
-    return undefined;
-  }) as T;
+export function createValidationResultFromLegacy(
+  isValid: boolean,
+  errorMessage: string | null
+): ValidationResult {
+  return isValid ? createValidResult() : createInvalidResult(errorMessage || 'Validation failed');
 }

@@ -1,38 +1,26 @@
 
 /**
- * Central error handling module
+ * Error handling utilities
  * 
- * This module exports all error handling functionality from a single entry point.
- * It provides a consistent interface for error handling across the application.
+ * Central export point for all error-related functionality.
  */
 
-// Export core error handling functionality
-export { handleError, handleErrorSafe, createErrorHandler, createComponentErrorHandler } from './handle';
-export { ErrorLevel, ErrorSource, type ErrorHandlingOptions, type EnhancedError } from './types';
+// Export types
+export * from './types';
 
-// Export helper utilities
-export { generateErrorId } from './generateId';
-export { categorizeError } from './categorize';
-export { formatErrorForDisplay } from './format';
-export { deduplicateError } from './deduplication';
-
-// Export wrapper functions
+// Export main utilities
 export { 
-  createComponentErrorHandler as createComponentHandler,
-  createHookErrorHandler, 
-  createServiceErrorHandler,
-  withErrorHandling,
-  tryAction
-} from './wrappers';
+  handleError,
+  createErrorHandler,
+  createComponentErrorHandler,
+  createHookErrorHandler,
+  createServiceErrorHandler
+} from '@/utils/error-handling';
 
-// Export error types
-export { ValidationError, ApiError } from './types';
+// Export compatibility utils
+export { convertErrorOptions } from '@/utils/compatibility';
 
-// Legacy helper functions for backward compatibility
-export { 
-  isNetworkError, 
-  isUnauthorizedError, 
-  isSuceededError,
-  stringToErrorLevel,
-  convertLegacyOptions
-} from './helper';
+// For backward compatibility 
+export * from './categorize';
+export * from './handle';
+export * from './wrappers';

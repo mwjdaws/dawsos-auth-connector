@@ -2,11 +2,12 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface RelationshipGraphControlsProps {
-  onZoomIn?: () => void;
-  onZoomOut?: () => void;
-  onResetZoom?: () => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onResetZoom: () => void;
   isDisabled?: boolean;
 }
 
@@ -17,39 +18,66 @@ export function RelationshipGraphControls({
   isDisabled = false
 }: RelationshipGraphControlsProps) {
   return (
-    <div className="flex items-center space-x-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onZoomIn}
-        disabled={isDisabled}
-        aria-label="Zoom in"
-        className="h-8 w-8 p-0"
-      >
-        <ZoomIn className="h-4 w-4" />
-      </Button>
+    <div className="flex items-center space-x-1">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onZoomOut}
+              disabled={isDisabled}
+              className="h-7 w-7"
+            >
+              <ZoomOut className="h-4 w-4" />
+              <span className="sr-only">Zoom Out</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Zoom Out</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onZoomOut}
-        disabled={isDisabled}
-        aria-label="Zoom out"
-        className="h-8 w-8 p-0"
-      >
-        <ZoomOut className="h-4 w-4" />
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onZoomIn}
+              disabled={isDisabled}
+              className="h-7 w-7"
+            >
+              <ZoomIn className="h-4 w-4" />
+              <span className="sr-only">Zoom In</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Zoom In</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onResetZoom}
-        disabled={isDisabled}
-        aria-label="Reset zoom"
-        className="h-8 w-8 p-0"
-      >
-        <RefreshCw className="h-4 w-4" />
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onResetZoom}
+              disabled={isDisabled}
+              className="h-7 w-7"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span className="sr-only">Reset Zoom</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Reset Zoom</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
   );
 }

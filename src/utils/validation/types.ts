@@ -1,71 +1,83 @@
 
 /**
- * Validation result types
+ * Validation result interfaces
  */
 
-/**
- * Standard validation result
- */
+// Basic validation result
 export interface ValidationResult {
   isValid: boolean;
-  message: string | null;
   errorMessage: string | null;
-  contentExists?: boolean; // Added for compatibility with existing code
+  message: string | null;
 }
 
-/**
- * Content ID validation result type
- */
+// Content ID specific validation result 
 export interface ContentIdValidationResult extends ValidationResult {
+  contentExists: boolean | null;
   resultType: string;
-  contentExists: boolean;
 }
 
-/**
- * Tag validation result
- */
+// Tag validation result
 export interface TagValidationResult extends ValidationResult {
-  tag?: string;
+  tagExists?: boolean | null;
+}
+
+// Document validation result
+export interface DocumentValidationResult extends ValidationResult {
+  field?: string;
 }
 
 /**
- * Helper function to create a valid result
+ * Creates a valid validation result
  */
-export function createValidResult(message: string | null = null): ValidationResult {
+export function createValidResult(message?: string): ValidationResult {
   return {
     isValid: true,
-    message,
-    errorMessage: null
+    errorMessage: null,
+    message: message || null
   };
 }
 
 /**
- * Helper function to create an invalid result
+ * Creates an invalid validation result
  */
-export function createInvalidResult(errorMessage: string | null = null): ValidationResult {
+export function createInvalidResult(errorMessage: string): ValidationResult {
   return {
     isValid: false,
-    message: null,
-    errorMessage
+    errorMessage,
+    message: null
   };
 }
 
 /**
- * Helper function to create a content ID validation result
+ * Creates a content ID validation result
  */
 export function createContentIdValidationResult(
   isValid: boolean,
-  resultType: string,
-  message: string | null = null,
-  errorMessage: string | null = null,
-  contentExists: boolean = false
+  errorMessage: string | null,
+  contentExists: boolean | null = null
 ): ContentIdValidationResult {
   return {
     isValid,
-    resultType,
-    message,
     errorMessage,
-    contentExists
+    message: null,
+    contentExists,
+    resultType: 'content-id'
+  };
+}
+
+/**
+ * Creates a tag validation result
+ */
+export function createTagValidationResult(
+  isValid: boolean,
+  errorMessage: string | null,
+  tagExists: boolean | null = null
+): TagValidationResult {
+  return {
+    isValid,
+    errorMessage,
+    message: null,
+    tagExists
   };
 }
 
@@ -78,12 +90,14 @@ export function isValidResult(result: ValidationResult): boolean {
 
 /**
  * Combine multiple validation results
- * Returns first invalid result or valid result if all are valid
  */
 export function combineValidationResults(results: ValidationResult[]): ValidationResult {
-  const invalidResult = results.find(result => !result.isValid);
-  if (invalidResult) {
-    return invalidResult;
+  const isValid = results.every(r => r.isValid);
+  
+  if (isValid) {
+    return createValidResult();
   }
-  return createValidResult();
+  
+  const firstError = results.find(r => !r.isValid);
+  return createInvalidResult(firstError?.errorMessage || 'Validation failed');
 }

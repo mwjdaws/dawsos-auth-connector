@@ -1,8 +1,10 @@
 
-import React from 'react';
-import { RelationshipGraphPanel as GraphPanel } from './components/RelationshipGraphPanel';
-import { GraphData } from './types';
-import { ensureString } from '@/utils/compatibility';
+import React, { useRef, useState } from 'react';
+import { Card } from '@/components/ui/card';
+import { GraphRenderer } from './components/graph-renderer/GraphRenderer';
+import { GraphData, GraphRendererRef } from '../types';
+import { ensureString, ensureNumber } from '@/utils/compatibility';
+import { RelationshipGraphControls } from './components/RelationshipGraphControls';
 
 interface RelationshipGraphPanelProps {
   graphData: GraphData;
@@ -10,23 +12,11 @@ interface RelationshipGraphPanelProps {
   contentId?: string;
   className?: string;
   height?: number;
-  width?: number;
-  onNodeClick?: (nodeId: string) => void;
+  width?: number | undefined;
+  onNodeClick?: ((nodeId: string) => void) | undefined;
+  hasAttemptedRetry?: boolean;
 }
 
-/**
- * RelationshipGraphPanel Component
- * 
- * This component displays a graph visualization of relationships between content items.
- * 
- * @param graphData The graph data to visualize
- * @param title Optional title for the graph panel
- * @param contentId Optional ID of the current content
- * @param className Optional additional CSS classes
- * @param height Optional height of the graph (default 600px)
- * @param width Optional width of the graph (default 100%)
- * @param onNodeClick Optional callback for node click events
- */
 export function RelationshipGraphPanel({
   graphData,
   title = 'Knowledge Graph',
@@ -34,22 +24,66 @@ export function RelationshipGraphPanel({
   className = '',
   height = 600,
   width,
-  onNodeClick
+  onNodeClick,
+  hasAttemptedRetry = false
 }: RelationshipGraphPanelProps) {
-  const handleNodeClick = onNodeClick ? (nodeId: string) => {
-    onNodeClick(ensureString(nodeId));
-  } : undefined;
+  const graphRef = useRef<GraphRendererRef>(null);
+  const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  
+  // Create safe handler functions that handle optional callbacks
+  const handleNodeSelect = (nodeId: string) => {
+    setHighlightedNodeId(nodeId);
+    if (onNodeClick) {
+      onNodeClick(nodeId);
+    }
+  };
+  
+  const handleZoomIn = () => {
+    if (graphRef.current) {
+      graphRef.current.zoomIn();
+    }
+  };
+  
+  const handleZoomOut = () => {
+    if (graphRef.current) {
+      graphRef.current.zoomOut();
+    }
+  };
+  
+  const handleResetZoom = () => {
+    if (graphRef.current) {
+      graphRef.current.resetZoom();
+    }
+  };
+  
+  const handleLinkClick = (source: string, target: string) => {
+    console.log(`Link clicked: ${source} -> ${target}`);
+  };
   
   return (
-    <GraphPanel
-      graphData={graphData}
-      title={title}
-      contentId={contentId}
-      className={className}
-      height={height}
-      width={width}
-      onNodeClick={handleNodeClick}
-      hasAttemptedRetry={false}
-    />
+    <Card className={`flex flex-col overflow-hidden ${className}`}>
+      <div className="p-4 flex justify-between items-center border-b">
+        <h3 className="text-lg font-semibold">{title}</h3>
+        <RelationshipGraphControls
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onResetZoom={handleResetZoom}
+        />
+      </div>
+      
+      <div className="flex-1 relative" style={{ height: `${ensureNumber(height)}px` }}>
+        <GraphRenderer
+          ref={graphRef}
+          graphData={graphData}
+          width={width !== undefined ? ensureNumber(width) : (typeof window !== 'undefined' ? window.innerWidth : 800)}
+          height={ensureNumber(height)}
+          highlightedNodeId={highlightedNodeId}
+          zoom={zoomLevel}
+          onNodeClick={handleNodeSelect}
+          onLinkClick={handleLinkClick}
+        />
+      </div>
+    </Card>
   );
 }
