@@ -18,7 +18,8 @@ const mockTags: Tag[] = [{
 const mockValidationResult: ValidationResult = { 
   isValid: true, 
   errorMessage: null, 
-  message: 'Valid content' 
+  message: 'Valid content',
+  resultType: 'generic'
 };
 
 describe('useMetadataContext', () => {

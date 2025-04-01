@@ -1,71 +1,55 @@
 
-import { useState, useCallback } from 'react';
+import { useMemo } from 'react';
+import { Tag } from '@/types/tag';
 
 export interface TagGroup {
+  content_id: string;
+  id: string;
   name: string;
-  tags: string[];
+  tags: Tag[];
 }
 
 /**
- * Hook for managing tag groups
+ * Hook for grouping tags
  */
-export function useTagGroups() {
-  const [tagGroups, setTagGroups] = useState<TagGroup[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  /**
-   * Refresh tag groups
-   */
-  const handleRefresh = useCallback(() => {
-    // Mock implementation
-    setIsLoading(true);
+export function useTagGroups(tags: Tag[]) {
+  const groupedTags = useMemo(() => {
+    // Group tags by type_id
+    const groups: Record<string, Tag[]> = {};
     
-    setTimeout(() => {
-      setTagGroups([
-        { name: 'Concepts', tags: ['React', 'TypeScript', 'JavaScript'] },
-        { name: 'Tools', tags: ['VSCode', 'Git', 'Node.js'] }
-      ]);
-      setIsLoading(false);
-    }, 500);
-  }, []);
-
-  /**
-   * Save tag groups to database
-   */
-  const saveTagGroupsToDatabase = useCallback(async (
-    tags: string[],
-    contentId: string,
-    options?: {
-      maxRetries?: number;
-      skipGenerateFunction?: boolean;
+    // First, handle tags with no type (default group)
+    const defaultGroup = tags.filter(tag => !tag.type_id);
+    if (defaultGroup.length > 0) {
+      groups['default'] = defaultGroup;
     }
-  ) => {
-    try {
-      // Mock implementation
-      await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Then group the rest by type_id
+    tags.forEach(tag => {
+      if (tag.type_id) {
+        if (!groups[tag.type_id]) {
+          groups[tag.type_id] = [];
+        }
+        groups[tag.type_id].push(tag);
+      }
+    });
+    
+    // Convert to array of groups
+    const result: TagGroup[] = Object.entries(groups).map(([id, tags]) => {
+      // Determine content_id from the first tag in the group
+      const content_id = tags[0]?.content_id || '';
       
       return {
-        success: true,
-        contentId,
-        message: 'Tags saved successfully'
+        id: id === 'default' ? 'default' : id,
+        name: id === 'default' ? 'General' : id,
+        tags: tags,
+        content_id
       };
-    } catch (error) {
-      console.error('Error saving tag groups:', error);
-      
-      return {
-        success: false,
-        contentId,
-        message: error instanceof Error ? error.message : 'Unknown error'
-      };
-    }
-  }, []);
-
-  return {
-    tagGroups,
-    isLoading,
-    error,
-    handleRefresh,
-    saveTagGroupsToDatabase
-  };
+    });
+    
+    return result;
+  }, [tags]);
+  
+  return groupedTags;
 }
+
+export default useTagGroups;

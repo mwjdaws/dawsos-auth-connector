@@ -24,21 +24,21 @@ export interface TagValidationResult extends ValidationResult {
 }
 
 // Helper functions to create validation results
-export function createValidResult(message?: string | null): ValidationResult {
+export function createValidResult(message?: string | null, resultType: ValidationResult['resultType'] = 'generic'): ValidationResult {
   return {
     isValid: true,
     message: message || null,
     errorMessage: null,
-    resultType: 'generic'
+    resultType
   };
 }
 
-export function createInvalidResult(errorMessage: string, message?: string | null): ValidationResult {
+export function createInvalidResult(errorMessage: string, message?: string | null, resultType: ValidationResult['resultType'] = 'generic'): ValidationResult {
   return {
     isValid: false,
     message: message || null,
     errorMessage,
-    resultType: 'generic'
+    resultType
   };
 }
 

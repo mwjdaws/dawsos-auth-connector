@@ -1,7 +1,7 @@
 
 import { toast } from '@/hooks/use-toast';
 import { validateDocument } from '@/utils/validation/documentValidation';
-import { ValidationResult } from '@/utils/validation/types';
+import { ValidationResult, createValidResult, createInvalidResult } from '@/utils/validation/types';
 
 /**
  * Hook for document validation operations
@@ -43,28 +43,16 @@ export function useValidation() {
    */
   const isValidTag = (tag: string): ValidationResult => {
     if (!tag || tag.trim() === '') {
-      return {
-        isValid: false,
-        message: null,
-        errorMessage: 'Tag cannot be empty'
-      };
+      return createInvalidResult('Tag cannot be empty', null, 'tag');
     }
     
     if (tag.length < 2) {
-      return {
-        isValid: false,
-        message: null,
-        errorMessage: 'Tag must be at least 2 characters long'
-      };
+      return createInvalidResult('Tag must be at least 2 characters long', null, 'tag');
     }
     
     // Add more tag validation rules as needed
     
-    return {
-      isValid: true,
-      message: null,
-      errorMessage: ''
-    };
+    return createValidResult(null, 'tag');
   };
 
   return {

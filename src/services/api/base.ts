@@ -1,48 +1,68 @@
 
+import { supabase } from '@/integrations/supabase/client';
+import { handleError } from '@/utils/error-handling';
+import { ErrorLevel, ErrorSource } from '@/utils/errors/types';
+import { createApiError } from '@/utils/errors/types/api-errors';
+
+export { supabase };
+export { handleError };
+
 /**
- * Base API utilities and types
+ * Parse Supabase error code into a more user-friendly error message
  */
-import { handleApiError } from '@/utils/error-handling';
-
-// Export ApiError as a type
-export type { ApiError } from '@/utils/errors/types';
-
-// Base API response interface
-export interface ApiResponse<T> {
-  data: T | null;
-  error: string | null;
-}
-
-// API request options interface
-export interface ApiRequestOptions {
-  headers?: Record<string, string>;
-  timeout?: number;
-  cache?: RequestCache;
-  signal?: AbortSignal;
-}
-
-// Create a base fetch function
-export async function fetchApi<T>(url: string, options?: RequestInit): Promise<T> {
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw new Error(errorData?.message || `API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    handleApiError(error instanceof Error ? error : new Error(String(error)), {
-      source: 'api',
-      level: 'error',
-    });
-    throw error;
+export function parseSupabaseErrorCode(code: string): string {
+  switch (code) {
+    case '22P02':
+      return 'Invalid input syntax';
+    case '23505':
+      return 'Duplicate entry exists';
+    case '23503':
+      return 'Referenced record does not exist';
+    case '42P01':
+      return 'Table does not exist';
+    case '42703':
+      return 'Column does not exist';
+    case '42883':
+      return 'Function does not exist';
+    case '22003':
+      return 'Numeric value out of range';
+    case '22007':
+      return 'Invalid date/time format';
+    case '22008':
+      return 'Date/time field overflow';
+    case '22P05':
+      return 'Invalid binary string format';
+    default:
+      return `Database error (${code})`;
   }
+}
+
+/**
+ * Handle API errors in a consistent way
+ */
+export function handleApiError(
+  error: any,
+  message: string,
+  context: Record<string, any> = {}
+): never {
+  // Create a structured API error
+  const apiError = createApiError(
+    message,
+    error?.status || 500,
+    error?.statusText || 'Internal Error',
+    context?.url || '',
+    context?.method || 'GET',
+    error?.data,
+    context
+  );
+  
+  // Handle the error using the central error handler
+  handleError(apiError, message, {
+    source: ErrorSource.Api,
+    level: ErrorLevel.Error,
+    context
+  });
+  
+  // Re-throw to allow caller to handle if necessary
+  throw apiError;
 }

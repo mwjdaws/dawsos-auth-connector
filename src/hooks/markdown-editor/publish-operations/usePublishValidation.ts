@@ -1,93 +1,105 @@
 
 import { useState, useCallback } from 'react';
-import { validateDocument } from '@/utils/validation/documentValidation';
 import { toast } from '@/hooks/use-toast';
-import { ValidationResult } from '@/utils/validation/types';
+import { ValidationResult, createValidResult, createInvalidResult } from '@/utils/validation/types';
 
 /**
- * Hook for validating document content before publishing
+ * Hook for validation during the publishing process
  */
 export function usePublishValidation() {
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
 
   /**
-   * Validates a document title
-   * 
-   * @param title Document title to validate
-   * @returns Validation result
-   */
-  const validateTitle = useCallback((title: string): ValidationResult => {
-    if (!title || title.trim() === '') {
-      return {
-        isValid: false,
-        message: null,
-        errorMessage: 'Title is required before publishing'
-      };
-    }
-
-    if (title.length < 3) {
-      return {
-        isValid: false,
-        message: null,
-        errorMessage: 'Title is too short. Please use at least 3 characters.'
-      };
-    }
-
-    return {
-      isValid: true,
-      message: 'Title validation passed',
-      errorMessage: null
-    };
-  }, []);
-
-  /**
-   * Validates a document content
-   * 
-   * @param content Document content to validate
-   * @returns Validation result
-   */
-  const validateContent = useCallback((content: string): ValidationResult => {
-    // Use the existing validation function
-    return validateDocument({ title: '', content });
-  }, []);
-
-  /**
-   * Validates a document before publishing
-   * 
-   * @param title Document title
-   * @param content Document content
-   * @returns Validation result
+   * Validate if a document is ready for publishing
    */
   const validateForPublish = useCallback((title: string, content: string): ValidationResult => {
-    // First check title
-    const titleValidation = validateTitle(title);
-    if (!titleValidation.isValid) {
-      setValidationResult(titleValidation);
-      return titleValidation;
+    // Check for title
+    if (!title || title.trim() === '') {
+      const result = createInvalidResult('Title is required for publishing', null, 'content');
+      setValidationResult(result);
+      
+      toast({
+        title: "Validation Error",
+        description: "A title is required before publishing",
+        variant: "destructive"
+      });
+      
+      return result;
     }
     
-    // Then check content
-    const contentValidation = validateContent(content);
-    if (!contentValidation.isValid) {
-      setValidationResult(contentValidation);
-      return contentValidation;
+    // Check for minimum content length
+    if (!content || content.trim().length < 10) {
+      const result = createInvalidResult('Content is too short for publishing', null, 'content');
+      setValidationResult(result);
+      
+      toast({
+        title: "Validation Error",
+        description: "Content is too short to publish",
+        variant: "destructive"
+      });
+      
+      return result;
     }
     
-    // All checks passed
-    const result = {
-      isValid: true,
-      message: 'Document is valid for publishing',
-      errorMessage: null
-    };
-    
+    // All validations passed
+    const result = createValidResult('Document is ready for publishing', 'content');
     setValidationResult(result);
     return result;
-  }, [validateTitle, validateContent]);
+  }, []);
+
+  /**
+   * Validate an external source URL
+   */
+  const validateExternalSource = useCallback((url: string | null): ValidationResult => {
+    if (!url) {
+      return createValidResult('No external source provided', 'content');
+    }
+    
+    try {
+      // Basic URL validation
+      new URL(url);
+      
+      // More advanced checks could be added here for specific domains, etc.
+      
+      // URL is valid
+      return createValidResult('Valid external source URL', 'content');
+    } catch (e) {
+      const result = createInvalidResult('Invalid external source URL', null, 'content');
+      
+      toast({
+        title: "Invalid URL",
+        description: "The external source URL is invalid",
+        variant: "destructive"
+      });
+      
+      return result;
+    }
+  }, []);
+  
+  /**
+   * Clear validation state
+   */
+  const resetValidation = useCallback(() => {
+    setValidationResult(null);
+  }, []);
+  
+  /**
+   * Set a validation message directly
+   */
+  const setValidationMessage = useCallback((isValid: boolean, message: string) => {
+    const result = isValid 
+      ? createValidResult(message, 'content')
+      : createInvalidResult(message, null, 'content');
+      
+    setValidationResult(result);
+    return result;
+  }, []);
 
   return {
-    validateTitle,
-    validateContent,
+    validationResult,
     validateForPublish,
-    validationResult
+    validateExternalSource,
+    resetValidation,
+    setValidationMessage
   };
 }

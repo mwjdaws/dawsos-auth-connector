@@ -14,9 +14,15 @@ export interface TagValidationResult {
   errorMessage: string | null;
 }
 
+/**
+ * Hook for validating tags
+ */
 export function useTagValidator() {
   const [lastValidatedTag, setLastValidatedTag] = useState<string>('');
 
+  /**
+   * Validate a tag against provided options
+   */
   const validateTag = useCallback((tag: string, options: TagValidationOptions = {}): TagValidationResult => {
     setLastValidatedTag(tag);
     

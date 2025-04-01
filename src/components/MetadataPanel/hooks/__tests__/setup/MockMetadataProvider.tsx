@@ -23,7 +23,7 @@ export const MockMetadataProvider: React.FC<MockMetadataProviderProps> = ({
   children,
   contentId = 'test-content-123',
   tags = [],
-  validationResult = { isValid: true, errorMessage: null, message: 'Valid content' },
+  validationResult = { isValid: true, errorMessage: null, message: 'Valid content', resultType: 'contentId', contentExists: true },
   isEditable = true,
   isLoading = false,
   error = null,

@@ -1,3 +1,4 @@
+
 /**
  * Types for markdown editor components
  */
@@ -34,4 +35,11 @@ export interface PublishOperationsContext {
   error: Error | null;
   publish: (title: string, content: string) => Promise<string | null>;
   reset: () => void;
+}
+
+// Document operations props
+export interface DocumentOperationsProps {
+  documentId: string | null;
+  onSaveDraft?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
+  onPublish?: (id: string, title: string, content: string, templateId: string | null, externalSourceUrl: string) => void;
 }

@@ -24,18 +24,22 @@ export enum ErrorSource {
 }
 
 export enum ErrorLevel {
-  // Error severity levels (both camelCase and uppercase for compatibility)
+  // Error severity levels (lowercase values)
   Debug = 'debug',
   Info = 'info',
   Warning = 'warning',
   Error = 'error',
-  Critical = 'critical',
-  
-  // Legacy uppercase aliases
-  WARNING = 'warning',
-  ERROR = 'error',
-  CRITICAL = 'critical'
+  Critical = 'critical'
 }
+
+// For backward compatibility
+export const ERROR_LEVELS = {
+  DEBUG: ErrorLevel.Debug,
+  INFO: ErrorLevel.Info,
+  WARNING: ErrorLevel.Warning,
+  ERROR: ErrorLevel.Error,
+  CRITICAL: ErrorLevel.Critical
+};
 
 export interface ErrorHandlingOptions {
   // Source of the error
