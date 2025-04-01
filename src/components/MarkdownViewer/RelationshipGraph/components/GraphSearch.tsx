@@ -1,101 +1,112 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { GraphData, GraphNode } from '../types';
+import { Button } from '@/components/ui/button';
+import { GraphData } from '../types';
 
-interface GraphSearchProps {
+/**
+ * Props for the GraphSearch component
+ */
+export interface GraphSearchProps {
   graphData: GraphData;
   onNodeFound: (nodeId: string) => void;
+  disabled?: boolean;
 }
 
 /**
  * GraphSearch Component
  * 
- * Provides a search interface to find nodes in the graph by name or title.
+ * Provides search functionality for finding nodes in the graph.
  */
-export function GraphSearch({ graphData, onNodeFound }: GraphSearchProps) {
+export function GraphSearch({ 
+  graphData, 
+  onNodeFound,
+  disabled = false
+}: GraphSearchProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<GraphNode[]>([]);
+  const [searchResults, setSearchResults] = useState<Array<{ id: string; name: string }>>([]);
   const [showResults, setShowResults] = useState(false);
 
-  // Search the graph data for nodes matching the search term
-  const searchNodes = useCallback((term: string) => {
-    if (!term.trim() || !graphData?.nodes?.length) {
+  // Update search results when search term changes
+  useEffect(() => {
+    if (!searchTerm.trim() || !graphData.nodes.length) {
       setSearchResults([]);
       return;
     }
 
-    const normalizedTerm = term.toLowerCase().trim();
-    
-    const results = graphData.nodes.filter(node => {
-      const nodeName = (node.name || '').toLowerCase();
-      const nodeTitle = (node.title || '').toLowerCase();
-      const nodeId = node.id.toLowerCase();
-      
-      return (
-        nodeName.includes(normalizedTerm) || 
-        nodeTitle.includes(normalizedTerm) ||
-        nodeId.includes(normalizedTerm)
-      );
-    }).slice(0, 5); // Limit to 5 results
-    
-    setSearchResults(results);
-  }, [graphData]);
+    const term = searchTerm.toLowerCase();
+    const results = graphData.nodes
+      .filter(node => 
+        (node.name || node.title || '').toLowerCase().includes(term) || 
+        (node.id || '').toLowerCase().includes(term)
+      )
+      .map(node => ({
+        id: node.id,
+        name: node.name || node.title || node.id
+      }))
+      .slice(0, 5); // Limit to 5 results
 
-  // Handle search input changes
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    searchNodes(value);
-    setShowResults(!!value.trim());
+    setSearchResults(results);
+  }, [searchTerm, graphData]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchResults.length > 0) {
+      onNodeFound(searchResults[0].id);
+    }
   };
 
-  // Handle clicking on a search result
   const handleResultClick = (nodeId: string) => {
     onNodeFound(nodeId);
     setShowResults(false);
-    setSearchTerm('');
-    setSearchResults([]);
   };
 
   return (
-    <div className="relative w-full max-w-sm">
-      <div className="relative">
-        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search nodes..."
-          value={searchTerm}
-          onChange={handleSearchChange}
-          className="pl-8"
-          onFocus={() => setShowResults(!!searchTerm.trim())}
-          onBlur={() => {
-            // Delay hiding to allow for clicks on results
-            setTimeout(() => setShowResults(false), 200);
-          }}
-        />
-      </div>
+    <div className="relative">
+      <form onSubmit={handleSearch} className="flex">
+        <div className="relative flex-1">
+          <Input
+            type="text"
+            placeholder="Search nodes..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setShowResults(true);
+            }}
+            onFocus={() => setShowResults(true)}
+            onBlur={() => {
+              // Delay hiding results to allow for clicks
+              setTimeout(() => setShowResults(false), 200);
+            }}
+            className="pr-10"
+            disabled={disabled}
+          />
+          <Button
+            type="submit"
+            variant="ghost"
+            size="sm"
+            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+            disabled={disabled || searchResults.length === 0}
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+        </div>
+      </form>
 
       {showResults && searchResults.length > 0 && (
-        <div className="absolute mt-1 w-full bg-background border rounded-md shadow-md z-10">
-          <ul>
-            {searchResults.map(node => (
-              <li 
-                key={node.id}
-                className="px-4 py-2 hover:bg-accent cursor-pointer"
-                onMouseDown={() => handleResultClick(node.id)}
+        <div className="absolute z-10 mt-1 w-full bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+          <ul className="py-1">
+            {searchResults.map((result) => (
+              <li
+                key={result.id}
+                className="px-3 py-2 cursor-pointer hover:bg-muted"
+                onClick={() => handleResultClick(result.id)}
               >
-                <div className="font-medium">{node.name || node.title || 'Unnamed Node'}</div>
-                <div className="text-xs text-muted-foreground truncate">ID: {node.id}</div>
+                {result.name}
               </li>
             ))}
           </ul>
-        </div>
-      )}
-      
-      {showResults && searchTerm.trim() && searchResults.length === 0 && (
-        <div className="absolute mt-1 w-full bg-background border rounded-md shadow-md z-10 p-4 text-center">
-          <p className="text-muted-foreground">No matching nodes found</p>
         </div>
       )}
     </div>

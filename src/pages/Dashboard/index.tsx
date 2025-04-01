@@ -1,11 +1,11 @@
 
 import { useState } from "react";
-import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardAuth } from "@/components/Dashboard/DashboardAuth";
 import { DashboardLoading } from "@/components/Dashboard/DashboardLoading";
 import { ContentManagement } from "@/components/Dashboard/ContentManagement";
 import { DashboardContainer } from "@/components/Dashboard/DashboardContainer";
+import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { useDashboardEffects } from "@/hooks/dashboard/useDashboardEffects";
 import { useUserPreferences } from "@/utils/user-onboarding";
 
@@ -57,7 +57,6 @@ const DashboardPage = () => {
   return (
     <DashboardContainer user={user} showDebug={showDebug} setShowDebug={setShowDebug}>
       <DashboardHeader 
-        contentId={contentId}
         isRefreshingStats={isRefreshingStats}
         setIsRefreshingStats={setIsRefreshingStats}
       />

@@ -1,116 +1,55 @@
 
-/**
- * Document validation utilities
- * 
- * Functions for validating document content and metadata
- */
-import { DocumentValidationOptions, ValidationResult } from './types';
-import { createValidResult, createInvalidResult } from './types';
-
-interface DocumentContent {
-  title: string;
-  content: string;
-}
-
-/**
- * Validates a document's title and content
- * 
- * @param document The document to validate
- * @param options Validation options
- * @returns Validation result object
- */
-export function validateDocument(
-  document: DocumentContent,
-  options: DocumentValidationOptions = {}
-): ValidationResult {
-  const {
-    requireTitle = true,
-    minTitleLength = 3,
-    maxTitleLength = 255,
-    requireContent = true,
-    minContentLength = 10
-  } = options;
-  
-  // Validate title
-  if (requireTitle && (!document.title || document.title.trim().length === 0)) {
-    return createInvalidResult('Title is required');
-  }
-  
-  if (document.title && document.title.length < minTitleLength) {
-    return createInvalidResult(`Title must be at least ${minTitleLength} characters`);
-  }
-  
-  if (document.title && document.title.length > maxTitleLength) {
-    return createInvalidResult(`Title must be at most ${maxTitleLength} characters`);
-  }
-  
-  // Validate content
-  if (requireContent && (!document.content || document.content.trim().length === 0)) {
-    return createInvalidResult('Content is required');
-  }
-  
-  if (document.content && document.content.length < minContentLength) {
-    return createInvalidResult(`Content must be at least ${minContentLength} characters`);
-  }
-  
-  return createValidResult();
-}
+import { ValidationResult } from './types';
+import { createValidResult, createInvalidResult } from './utils';
 
 /**
  * Validates a document title
- * 
- * @param title The title to validate
- * @param options Validation options
- * @returns Validation result object
  */
-export function validateTitle(
-  title: string,
-  options: DocumentValidationOptions = {}
-): ValidationResult {
-  const {
-    requireTitle = true,
-    minTitleLength = 3,
-    maxTitleLength = 255
-  } = options;
-  
-  if (requireTitle && (!title || title.trim().length === 0)) {
-    return createInvalidResult('Title is required');
+export function validateDocumentTitle(title: string | null | undefined): ValidationResult {
+  if (!title || title.trim().length === 0) {
+    return createInvalidResult('Document title is required');
   }
   
-  if (title && title.length < minTitleLength) {
-    return createInvalidResult(`Title must be at least ${minTitleLength} characters`);
+  if (title.trim().length < 3) {
+    return createInvalidResult('Document title must be at least 3 characters');
   }
   
-  if (title && title.length > maxTitleLength) {
-    return createInvalidResult(`Title must be at most ${maxTitleLength} characters`);
+  if (title.trim().length > 100) {
+    return createInvalidResult('Document title must be at most 100 characters');
   }
   
-  return createValidResult();
+  return createValidResult('Valid document title');
 }
 
 /**
  * Validates document content
- * 
- * @param content The content to validate
- * @param options Validation options
- * @returns Validation result object
  */
-export function validateContent(
-  content: string,
-  options: DocumentValidationOptions = {}
-): ValidationResult {
-  const {
-    requireContent = true,
-    minContentLength = 10
-  } = options;
-  
-  if (requireContent && (!content || content.trim().length === 0)) {
-    return createInvalidResult('Content is required');
+export function validateDocumentContent(content: string | null | undefined): ValidationResult {
+  if (!content) {
+    return createInvalidResult('Document content is required');
   }
   
-  if (content && content.length < minContentLength) {
-    return createInvalidResult(`Content must be at least ${minContentLength} characters`);
+  if (content.trim().length === 0) {
+    return createInvalidResult('Document content cannot be empty');
   }
   
-  return createValidResult();
+  // Additional content validations could be added here
+  
+  return createValidResult('Valid document content');
+}
+
+/**
+ * Validates a URL string
+ */
+export function validateUrl(url: string | null | undefined): ValidationResult {
+  if (!url || url.trim().length === 0) {
+    return createValidResult('No URL provided');
+  }
+  
+  try {
+    new URL(url);
+    return createValidResult('Valid URL format');
+  } catch (e) {
+    return createInvalidResult('Invalid URL format');
+  }
 }

@@ -11,20 +11,29 @@ import { GraphControls } from "./components/GraphControls";
 import { GraphContent } from "./components/GraphContent";
 import { ErrorFallback } from "./components/ErrorFallback";
 
-interface RelationshipGraphProps {
+/**
+ * Props for the RelationshipGraph component
+ */
+export interface RelationshipGraphProps {
   startingNodeId: string;
+  hasAttemptedRetry?: boolean;
   width?: number;
   height?: number;
   className?: string;
 }
 
+/**
+ * RelationshipGraph Component
+ * 
+ * A graph visualization for showing relationships between knowledge sources
+ */
 export function RelationshipGraph({
   startingNodeId,
+  hasAttemptedRetry = false,
   width: externalWidth,
   height: externalHeight,
   className
 }: RelationshipGraphProps) {
-  const [hasAttemptedRetry, setHasAttemptedRetry] = useState(false);
   const [containerRef, { width, height }] = useResizeObserver<HTMLDivElement>();
   
   const {
@@ -43,13 +52,6 @@ export function RelationshipGraph({
     startingNodeId,
     hasAttemptedRetry
   });
-  
-  // If loading takes too long, set the retry flag
-  useEffect(() => {
-    if (loading && loadingTime > 10 && !hasAttemptedRetry) {
-      setHasAttemptedRetry(true);
-    }
-  }, [loading, loadingTime, hasAttemptedRetry]);
   
   // Calculate dimensions
   const graphWidth = externalWidth || width || 800;

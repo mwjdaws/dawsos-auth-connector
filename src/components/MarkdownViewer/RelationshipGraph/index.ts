@@ -8,12 +8,13 @@
 
 // Main Components
 export { RelationshipGraph } from './RelationshipGraph';
-export { RelationshipGraphPanel } from './components/RelationshipGraphPanel';
+export { RelationshipGraphPanel } from './RelationshipGraphPanel';
+export { RelationshipGraphAdapter } from './RelationshipGraphAdapter';
 
 // Sub-components
 export { ErrorFallback } from './components/ErrorFallback';
 export { GraphControls } from './components/GraphControls';
-export { GraphRenderer } from './components/graph-renderer/GraphRenderer';
+export { GraphRenderer } from './components/GraphRenderer';
 export { GraphSearch } from './components/GraphSearch';
 export { GraphZoomControl } from './components/GraphZoomControl';
 export { GraphContent } from './components/GraphContent';
@@ -37,4 +38,4 @@ export {
   sanitizeGraphData,
   createCompatibleGraphRef,
   createSafeGraphProps
-} from './compatibility';
+} from '@/utils/compatibility';

@@ -1,12 +1,11 @@
 
 /**
- * Base validation result interface
+ * Basic validation result interface
  */
 export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
-  contentExists?: boolean; // Added to support backward compatibility
-  message?: string | null; // Added to support backward compatibility
+  message: string | null;
 }
 
 /**
@@ -14,106 +13,38 @@ export interface ValidationResult {
  */
 export enum ContentIdValidationResultType {
   VALID = 'valid',
-  UUID = 'uuid',
+  VALID_FORMAT = 'valid_format',
   TEMP = 'temp',
-  INVALID = 'invalid'
+  MISSING = 'missing',
+  INVALID_FORMAT = 'invalid_format',
+  NOT_FOUND = 'not_found'
 }
 
 /**
- * Content ID validation result
+ * Extended validation result for content IDs
  */
 export interface ContentIdValidationResult extends ValidationResult {
   resultType: ContentIdValidationResultType;
-  message: string | null;
   contentExists: boolean;
 }
 
 /**
- * Content validation result
+ * Validation result for ontology terms
  */
-export interface ContentValidationResult extends ValidationResult {
-  contentId: string;
-  contentExists: boolean;
+export interface OntologyTermValidationResult extends ValidationResult {
+  isDuplicate: boolean;
 }
 
 /**
- * Tag validation result for backward compatibility
+ * Tag validation result
  */
 export interface TagValidationResult extends ValidationResult {
-  message?: string | null;
-  tagExists?: boolean; // Added to support older code
+  // Tag-specific validation properties could be added here
 }
 
 /**
- * Simple wrapper for standard validation result
+ * Document title validation result
  */
-export interface SimpleValidationResult {
-  isValid: boolean;
-  message: string | null;
-}
-
-/**
- * Document validation result
- */
-export interface DocumentValidationResult extends ValidationResult {
-  documentId: string;
-  exists: boolean;
-}
-
-/**
- * Document validation options
- */
-export interface DocumentValidationOptions {
-  requireTitle?: boolean;
-  minTitleLength?: number;
-  maxTitleLength?: number;
-  requireContent?: boolean;
-  minContentLength?: number;
-}
-
-/**
- * Error handling compatibility options
- */
-export interface ErrorHandlingCompatOptions {
-  level?: string;
-  context?: Record<string, any>;
-  technical?: boolean;
-  category?: string;
-}
-
-// Add ErrorHandlingOptions for backwards compatibility
-export interface ErrorHandlingOptions {
-  level?: string;
-  source?: string;
-  severity?: string;
-  technical?: boolean;
-  context?: Record<string, any>;
-  fingerprint?: string;
-  deduplicate?: boolean;
-  silent?: boolean;
-  notifyUser?: boolean;
-  category?: string;
-}
-
-// Add constants for validation results
-export const VALIDATION_RESULTS = {
-  VALID: 'valid',
-  INVALID: 'invalid'
-};
-
-// Helper functions for creating validation results
-export function createValidResult(message: string | null = null): ValidationResult {
-  return {
-    isValid: true,
-    errorMessage: null,
-    message
-  };
-}
-
-export function createInvalidResult(errorMessage: string): ValidationResult {
-  return {
-    isValid: false,
-    errorMessage,
-    message: errorMessage
-  };
+export interface DocumentTitleValidationResult extends ValidationResult {
+  // Title-specific validation properties could be added here
 }

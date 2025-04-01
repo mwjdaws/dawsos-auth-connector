@@ -67,7 +67,7 @@ export function DashboardTabs({
 
         <TabsContent value="markdown-viewer">
           <div className="bg-card border rounded-lg p-6 shadow-sm">
-            <MarkdownViewerTab />
+            <MarkdownViewerTab contentId={contentId} />
           </div>
         </TabsContent>
 

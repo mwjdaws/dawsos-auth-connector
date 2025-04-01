@@ -1,13 +1,20 @@
 
-import { ValidationResult, ContentValidationResult, ContentIdValidationResult, TagValidationResult } from './types';
+import { 
+  ValidationResult, 
+  ContentIdValidationResult, 
+  ContentIdValidationResultType,
+  OntologyTermValidationResult,
+  TagValidationResult
+} from './types';
 
 /**
- * Create a valid validation result
+ * Create a general validation result
  */
-export function createValidResult(): ValidationResult {
+export function createValidResult(message: string | null = null): ValidationResult {
   return {
     isValid: true,
-    errorMessage: null
+    errorMessage: null,
+    message: message || 'Valid input'
   };
 }
 
@@ -17,18 +24,58 @@ export function createValidResult(): ValidationResult {
 export function createInvalidResult(errorMessage: string): ValidationResult {
   return {
     isValid: false,
-    errorMessage
+    errorMessage,
+    message: null
   };
 }
 
 /**
- * Create a tag validation result for backward compatibility
+ * Create a content ID validation result with extended properties
  */
-export function createTagValidationResult(isValid: boolean, message: string | null): TagValidationResult {
+export function createContentValidationResult(
+  isValid: boolean,
+  message: string,
+  resultType: ContentIdValidationResultType,
+  contentExists: boolean
+): ContentIdValidationResult {
   return {
     isValid,
-    errorMessage: message,
-    message
+    errorMessage: isValid ? null : message,
+    message: isValid ? message : null,
+    resultType,
+    contentExists
+  };
+}
+
+/**
+ * Create an ontology term validation result
+ */
+export function createOntologyTermValidationResult(
+  isValid: boolean,
+  message: string | null,
+  errorMessage: string | null,
+  isDuplicate: boolean = false
+): OntologyTermValidationResult {
+  return {
+    isValid,
+    message,
+    errorMessage,
+    isDuplicate
+  };
+}
+
+/**
+ * Create a tag validation result
+ */
+export function createTagValidationResult(
+  isValid: boolean,
+  message: string | null,
+  errorMessage: string | null
+): TagValidationResult {
+  return {
+    isValid,
+    message,
+    errorMessage
   };
 }
 
@@ -40,47 +87,37 @@ export function isValidResult(result: ValidationResult): boolean {
 }
 
 /**
- * Create a content validation result
- */
-export function createContentValidationResult(
-  contentId: string,
-  isValid: boolean,
-  contentExists: boolean,
-  errorMessage: string | null
-): ContentValidationResult {
-  return {
-    contentId,
-    isValid,
-    contentExists,
-    errorMessage
-  };
-}
-
-/**
  * Combine multiple validation results into one
+ * Returns an invalid result if any of the results are invalid
  */
 export function combineValidationResults(results: ValidationResult[]): ValidationResult {
   const invalidResult = results.find(result => !result.isValid);
   
   if (invalidResult) {
-    return invalidResult;
+    return createInvalidResult(invalidResult.errorMessage || 'Validation failed');
   }
   
   return createValidResult();
 }
 
 /**
- * Create a content ID validation result with message
- * Ensure compatibility with various validation result structures
+ * Get a user-friendly content validation message based on the validation result type
  */
-export function createContentIdValidationResult(
-  result: Partial<ContentIdValidationResult>
-): ContentIdValidationResult {
-  return {
-    isValid: result.isValid || false,
-    errorMessage: result.errorMessage || null,
-    resultType: result.resultType || 'invalid',
-    message: result.message || null,
-    contentExists: result.contentExists || false
-  };
+export function getContentValidationMessage(resultType: ContentIdValidationResultType): string {
+  switch (resultType) {
+    case ContentIdValidationResultType.VALID:
+      return 'Valid content ID';
+    case ContentIdValidationResultType.VALID_FORMAT:
+      return 'Content ID has valid format but existence not confirmed';
+    case ContentIdValidationResultType.TEMP:
+      return 'Temporary content ID';
+    case ContentIdValidationResultType.MISSING:
+      return 'Content ID is missing';
+    case ContentIdValidationResultType.INVALID_FORMAT:
+      return 'Content ID has invalid format';
+    case ContentIdValidationResultType.NOT_FOUND:
+      return 'Content ID not found in database';
+    default:
+      return 'Unknown validation result';
+  }
 }

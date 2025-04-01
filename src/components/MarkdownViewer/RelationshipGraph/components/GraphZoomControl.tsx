@@ -4,7 +4,10 @@ import { Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 
-interface GraphZoomControlProps {
+/**
+ * Props for the GraphZoomControl component
+ */
+export interface GraphZoomControlProps {
   zoom: number;
   onZoomChange: (newZoom: number) => void;
   onReset: () => void;
@@ -33,7 +36,9 @@ export function GraphZoomControl({
   };
 
   const handleSliderChange = (value: number[]) => {
-    onZoomChange(value[0]);
+    if (value && value.length > 0) {
+      onZoomChange(value[0]);
+    }
   };
 
   return (

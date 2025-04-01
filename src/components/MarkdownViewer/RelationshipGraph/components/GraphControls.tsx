@@ -3,7 +3,16 @@ import React from 'react';
 import { RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GraphZoomControl } from './GraphZoomControl';
-import { GraphControlsProps } from '../types';
+
+/**
+ * Props for GraphControls component
+ */
+export interface GraphControlsProps {
+  zoomLevel: number;
+  onZoomChange: (newZoom: number) => void;
+  onResetZoom: () => void;
+  isDisabled?: boolean;
+}
 
 /**
  * GraphControls Component
@@ -14,7 +23,7 @@ export function GraphControls({
   zoomLevel,
   onZoomChange,
   onResetZoom,
-  isDisabled
+  isDisabled = false
 }: GraphControlsProps) {
   return (
     <div className="flex items-center gap-2">

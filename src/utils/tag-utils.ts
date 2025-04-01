@@ -1,83 +1,58 @@
 
-/**
- * Tag utility functions for working with tags
- */
-import { Tag, TagGroup } from '@/types/tag';
+import { Tag } from '@/types/tag';
 
 /**
- * Group tags by their type_name
+ * Sort tags by display order
  */
-export const groupTagsByType = (tags: Tag[]): TagGroup[] => {
-  const groupMap = new Map<string, TagGroup>();
-  
-  // First, handle tags with type_name
-  tags.forEach(tag => {
-    const typeName = tag.type_name || 'Uncategorized';
-    const typeId = tag.type_id;
-    
-    if (!groupMap.has(typeName)) {
-      groupMap.set(typeName, {
-        name: typeName,
-        type_id: typeId,
-        tags: []
-      });
+export const sortTagsByDisplayOrder = (tags: Tag[]): Tag[] => {
+  return [...tags].sort((a, b) => {
+    // Sort by display_order if available, otherwise alphabetically by name
+    if (a.display_order !== b.display_order) {
+      return a.display_order - b.display_order;
     }
-    
-    groupMap.get(typeName)?.tags.push(tag);
+    return a.name.localeCompare(b.name);
   });
-  
-  // Sort groups by name
-  return Array.from(groupMap.values()).sort((a, b) => 
-    a.name.localeCompare(b.name)
-  );
 };
 
 /**
- * Group tags by their category
+ * Group tags by their type
  */
-export const groupTagsByCategory = (tags: Tag[]): TagGroup[] => {
-  const groupMap = new Map<string, TagGroup>();
+export const groupTagsByType = (tags: Tag[]): Record<string, Tag[]> => {
+  const groupedTags: Record<string, Tag[]> = {};
   
   tags.forEach(tag => {
-    const category = tag.category || 'Uncategorized';
-    
-    if (!groupMap.has(category)) {
-      groupMap.set(category, {
-        name: category,
-        type_id: null,
-        tags: []
-      });
+    const typeName = tag.type_name || 'Unclassified';
+    if (!groupedTags[typeName]) {
+      groupedTags[typeName] = [];
     }
-    
-    groupMap.get(category)?.tags.push(tag);
+    groupedTags[typeName].push(tag);
   });
   
-  // Sort groups by name
-  return Array.from(groupMap.values()).sort((a, b) => 
-    a.name.localeCompare(b.name)
-  );
+  // Sort each group by display order
+  Object.keys(groupedTags).forEach(typeName => {
+    groupedTags[typeName] = sortTagsByDisplayOrder(groupedTags[typeName]);
+  });
+  
+  return groupedTags;
 };
 
 /**
- * Find a tag by ID in a list of tags
+ * Return a filtered list of tags by type name
  */
-export const findTagById = (tagId: string, tags: Tag[]): Tag | undefined => {
-  return tags.find(tag => tag.id === tagId);
+export const filterTagsByType = (tags: Tag[], typeName: string): Tag[] => {
+  return tags.filter(tag => tag.type_name === typeName || 
+    (!tag.type_name && typeName === 'Unclassified'));
 };
 
 /**
- * Check if a tag with the same name already exists
+ * Returns a list of unique tag types from a tag array
  */
-export const isDuplicateTag = (name: string, existingTags: Tag[]): boolean => {
-  const normalizedName = name.trim().toLowerCase();
-  return existingTags.some(tag => tag.name.trim().toLowerCase() === normalizedName);
-};
-
-/**
- * Get a suggested display order for a new tag
- */
-export const getNextDisplayOrder = (tags: Tag[]): number => {
-  if (tags.length === 0) return 0;
-  const maxOrder = Math.max(...tags.map(tag => tag.display_order));
-  return maxOrder + 1;
+export const getUniqueTagTypes = (tags: Tag[]): string[] => {
+  const types = new Set<string>();
+  
+  tags.forEach(tag => {
+    types.add(tag.type_name || 'Unclassified');
+  });
+  
+  return Array.from(types).sort();
 };

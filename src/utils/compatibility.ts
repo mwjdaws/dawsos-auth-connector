@@ -1,88 +1,108 @@
 
 /**
- * Utility functions for type compatibility and conversions
+ * Compatibility utilities for working with different data types
+ * These ensure type safety by handling null and undefined values appropriately
  */
 
 /**
- * Ensures a value is a string
- * 
- * @param value The value to check/convert
- * @param defaultValue Optional default value if conversion fails
- * @returns The value as a string, or the default value
+ * Ensures that a value is a string, providing a default if undefined or null
  */
-export function ensureString(value: unknown, defaultValue: string = ''): string {
+export function ensureString(value: string | null | undefined, defaultValue: string = ''): string {
   if (value === null || value === undefined) {
     return defaultValue;
   }
-  
-  return String(value);
+  return value;
 }
 
 /**
- * Ensures a value is a number
- * 
- * @param value The value to check/convert
- * @param defaultValue Optional default value if conversion fails
- * @returns The value as a number, or the default value
+ * Ensures that a value is a number, providing a default if undefined, null or NaN
  */
-export function ensureNumber(value: unknown, defaultValue: number = 0): number {
+export function ensureNumber(value: number | null | undefined, defaultValue: number = 0): number {
+  if (value === null || value === undefined || isNaN(value)) {
+    return defaultValue;
+  }
+  return value;
+}
+
+/**
+ * Ensures that a value is a boolean, providing a default if undefined or null
+ */
+export function ensureBoolean(value: boolean | null | undefined, defaultValue: boolean = false): boolean {
   if (value === null || value === undefined) {
     return defaultValue;
   }
-  
-  const num = Number(value);
-  return isNaN(num) ? defaultValue : num;
+  return value;
 }
 
 /**
- * Ensures a value is a boolean
- * 
- * @param value The value to check/convert
- * @param defaultValue Optional default value if conversion fails
- * @returns The value as a boolean, or the default value
+ * Ensures that a zoom level is within valid bounds (typically 0.1 to 2.0)
  */
-export function ensureBoolean(value: unknown, defaultValue: boolean = false): boolean {
-  if (value === null || value === undefined) {
-    return defaultValue;
-  }
-  
-  if (typeof value === 'boolean') {
-    return value;
-  }
-  
-  if (typeof value === 'string') {
-    return value.toLowerCase() === 'true';
-  }
-  
-  if (typeof value === 'number') {
-    return value !== 0;
-  }
-  
-  return defaultValue;
+export function ensureValidZoom(zoom: number | null | undefined, defaultZoom: number = 1): number {
+  const value = ensureNumber(zoom, defaultZoom);
+  return Math.max(0.1, Math.min(2.0, value));
 }
 
 /**
- * Safely calls a callback function
- * 
- * @param callback The callback function to call
- * @param args Arguments to pass to the callback
- * @returns The result of the callback, or undefined if the callback is not a function
+ * Ensures that graph data contains valid nodes and links arrays
  */
-export function safeCallback<T extends (...args: any[]) => any>(
-  callback: T | null | undefined,
-  ...args: Parameters<T>
-): ReturnType<T> | undefined {
-  if (typeof callback === 'function') {
-    return callback(...args);
+export function ensureValidGraphData(data: any): { nodes: any[]; links: any[] } {
+  if (!data) {
+    return { nodes: [], links: [] };
   }
-  return undefined;
+
+  return {
+    nodes: Array.isArray(data.nodes) ? data.nodes : [],
+    links: Array.isArray(data.links) ? data.links : []
+  };
 }
 
 /**
- * Creates a no-op function that can be used as a safe default
- * 
- * @returns A function that does nothing
+ * Sanitizes graph data to ensure all required properties exist
  */
-export function noOp(): () => void {
-  return () => {};
+export function sanitizeGraphData(data: any): { nodes: any[]; links: any[] } {
+  const validData = ensureValidGraphData(data);
+  
+  // Ensure all nodes have required properties
+  const nodes = validData.nodes.map(node => ({
+    id: ensureString(node.id),
+    name: ensureString(node.name || node.title),
+    type: ensureString(node.type, 'default'),
+    ...node
+  }));
+  
+  // Ensure all links have required properties
+  const links = validData.links.map(link => ({
+    source: link.source,
+    target: link.target,
+    type: ensureString(link.type, 'default'),
+    ...link
+  }));
+  
+  return { nodes, links };
+}
+
+/**
+ * Creates a compatible graph ref object with all necessary methods
+ */
+export function createCompatibleGraphRef() {
+  return {
+    centerOn: (nodeId: string) => console.log(`Center on node ${nodeId}`),
+    setZoom: (zoom: number) => console.log(`Set zoom to ${zoom}`),
+    getNodeAt: (x: number, y: number) => null,
+    zoomToFit: (duration: number = 1000) => console.log(`Zoom to fit with duration ${duration}`)
+  };
+}
+
+/**
+ * Creates safe props for graph components with appropriate defaults
+ */
+export function createSafeGraphProps(props: any = {}) {
+  return {
+    width: ensureNumber(props.width, 800),
+    height: ensureNumber(props.height, 600),
+    graphData: sanitizeGraphData(props.graphData),
+    nodeSize: ensureNumber(props.nodeSize, 5),
+    linkWidth: ensureNumber(props.linkWidth, 1),
+    ...props
+  };
 }

@@ -1,14 +1,35 @@
 
+import { ForceGraphMethods } from 'react-force-graph-2d';
+
 /**
- * Type definitions for the Relationship Graph component
+ * Basic node structure for the graph visualization
  */
-import { OntologyTerm, RelatedTerm } from '@/types/ontology';
-
-// Re-export types properly for TS with isolatedModules
-export type { OntologyTerm, RelatedTerm };
+export interface GraphNode {
+  id: string;
+  name?: string;
+  title?: string;
+  type?: string;
+  color?: string;
+  weight?: number;
+  [key: string]: any;
+}
 
 /**
- * Main graph data structure
+ * Basic link structure for the graph visualization
+ */
+export interface GraphLink {
+  source: string | GraphNode;
+  target: string | GraphNode;
+  type?: string;
+  color?: string;
+  width?: number;
+  weight?: number;
+  label?: string;
+  [key: string]: any;
+}
+
+/**
+ * Complete graph data structure
  */
 export interface GraphData {
   nodes: GraphNode[];
@@ -16,71 +37,17 @@ export interface GraphData {
 }
 
 /**
- * Graph node interface
+ * Extended ForceGraphMethods interface for the graph renderer
  */
-export interface GraphNode {
-  id: string;
-  name?: string;
-  title?: string;
-  type?: string;
-  x?: number;
-  y?: number;
-  color?: string;
-  size?: number;
-  highlighted?: boolean;
-  metadata?: Record<string, any>;
-  weight?: number;
+export interface GraphRendererRef extends Partial<ForceGraphMethods> {
+  centerOn: (nodeId: string) => void;
+  setZoom: (zoom: number) => void;
+  zoomToFit: (duration?: number) => void;
+  getNodeAt?: (x: number, y: number) => GraphNode | null;
 }
 
 /**
- * Graph link interface
- */
-export interface GraphLink {
-  source: string | GraphNode;
-  target: string | GraphNode;
-  type?: string;
-  strength?: number;
-  color?: string;
-  width?: number;
-  highlighted?: boolean;
-  weight?: number;
-}
-
-/**
- * Props for GraphRenderer component
- */
-export interface GraphRendererProps {
-  graphData: GraphData;
-  width: number;
-  height: number;
-  highlightedNodeId?: string | null;
-  zoom?: number;
-  onNodeClick?: (nodeId: string) => void;
-  onLinkClick?: (source: string, target: string) => void;
-}
-
-/**
- * Props for the main RelationshipGraph component
- */
-export interface GraphProps {
-  startingNodeId: string;
-  width?: number;
-  height?: number;
-  hasAttemptedRetry?: boolean;
-}
-
-/**
- * Props for GraphControls component
- */
-export interface GraphControlsProps {
-  zoomLevel: number;
-  onZoomChange: (newZoom: number) => void;
-  onResetZoom: () => void;
-  isDisabled: boolean;
-}
-
-/**
- * Props for UseRelationshipGraphProps hook
+ * Props for the useRelationshipGraph hook
  */
 export interface UseRelationshipGraphProps {
   startingNodeId: string;
@@ -88,12 +55,23 @@ export interface UseRelationshipGraphProps {
 }
 
 /**
- * Ref interface for GraphRenderer to expose methods
+ * Return type for the useGraphState hook
  */
-export interface GraphRendererRef {
-  centerOn: (nodeId: string) => void;
-  zoomToFit: (duration?: number) => void;
-  resetZoom: () => void;
-  setZoom: (zoomLevel: number) => void;
-  getGraphData: () => GraphData;
+export interface UseGraphStateReturn {
+  graphData: GraphData;
+  loading: boolean;
+  error: string | null;
+  setGraphData: (data: GraphData) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+}
+
+/**
+ * Props for the GraphControls component
+ */
+export interface GraphControlsProps {
+  zoomLevel: number;
+  onZoomChange: (newZoom: number) => void;
+  onResetZoom: () => void;
+  isDisabled: boolean;
 }

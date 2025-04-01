@@ -1,17 +1,40 @@
 
 import React from 'react';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
-export function ErrorFallback() {
+/**
+ * Props for the ErrorFallback component
+ */
+export interface ErrorFallbackProps {
+  error: string | Error;
+  onRetry?: () => void;
+}
+
+/**
+ * ErrorFallback Component
+ * 
+ * Displays an error message when the graph fails to load.
+ */
+export function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
+  const errorMessage = typeof error === 'string' ? error : error.message || 'An error occurred';
+
   return (
-    <div className="p-4 flex flex-col items-center justify-center h-full">
-      <AlertCircle className="h-8 w-8 text-destructive mb-2" />
-      <h3 className="font-medium">Graph Visualization Error</h3>
-      <p className="text-muted-foreground text-sm text-center mt-1">
-        An error occurred while rendering the knowledge graph.
-        <br />
-        Please try refreshing the page.
-      </p>
-    </div>
+    <Card className="min-h-[400px] flex items-center justify-center p-6">
+      <div className="text-center">
+        <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+        <h3 className="font-medium text-lg mb-2">Error Loading Graph</h3>
+        <p className="text-muted-foreground mb-4">
+          {errorMessage}
+        </p>
+        {onRetry && (
+          <Button onClick={onRetry} className="flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Try Again
+          </Button>
+        )}
+      </div>
+    </Card>
   );
 }
