@@ -18,9 +18,11 @@ export {
 } from '@/utils/error-handling';
 
 // Export compatibility utils
-export { convertErrorOptions, compatibleErrorOptions, LegacyErrorHandlingOptions } from './compatibility';
+export { convertErrorOptions, compatibleErrorOptions } from './compatibility';
+export type { LegacyErrorHandlingOptions } from './compatibility';
 
 // For backward compatibility 
 export * from './categorize';
 export * from './handle';
 export * from './wrappers';
+export * from './generateId';

@@ -8,7 +8,7 @@ import { convertErrorOptions, LegacyErrorHandlingOptions } from './compatibility
  * Default error handling options
  */
 const defaultOptions: ErrorHandlingOptions = {
-  level: ErrorLevel.ERROR,
+  level: ErrorLevel.Error,
   silent: false,
   reportToAnalytics: true,
   showToast: true
@@ -34,16 +34,16 @@ export function handleError(
   
   // Always log to console with appropriate level
   switch (opts.level) {
-    case ErrorLevel.DEBUG:
+    case ErrorLevel.Debug:
       console.debug(`[DEBUG] ${userMessage || errorObj.message}`, errorObj, opts.context);
       break;
-    case ErrorLevel.INFO:
+    case ErrorLevel.Info:
       console.info(`[INFO] ${userMessage || errorObj.message}`, errorObj, opts.context);
       break;
-    case ErrorLevel.WARNING:
+    case ErrorLevel.Warning:
       console.warn(`[WARNING] ${userMessage || errorObj.message}`, errorObj, opts.context);
       break;
-    case ErrorLevel.ERROR:
+    case ErrorLevel.Error:
     default:
       console.error(`[ERROR] ${userMessage || errorObj.message}`, errorObj, opts.context);
   }
@@ -54,9 +54,9 @@ export function handleError(
     
     toast({
       id: toastId,
-      title: opts.toastTitle || (opts.level === ErrorLevel.ERROR ? 'Error' : opts.level === ErrorLevel.WARNING ? 'Warning' : 'Notice'),
+      title: opts.toastTitle || (opts.level === ErrorLevel.Error ? 'Error' : opts.level === ErrorLevel.Warning ? 'Warning' : 'Notice'),
       description: userMessage || errorObj.message,
-      variant: opts.level === ErrorLevel.ERROR ? 'destructive' : 'default',
+      variant: opts.level === ErrorLevel.Error ? 'destructive' : 'default',
     });
   }
 }
@@ -106,7 +106,7 @@ export function createErrorHandler(
  */
 export function createComponentErrorHandler(componentName: string) {
   return createErrorHandler(componentName, { 
-    level: ErrorLevel.ERROR,
+    level: ErrorLevel.Error,
     context: { source: 'component', component: componentName }
   });
 }
@@ -116,7 +116,7 @@ export function createComponentErrorHandler(componentName: string) {
  */
 export function createHookErrorHandler(hookName: string) {
   return createErrorHandler(hookName, {
-    level: ErrorLevel.ERROR,
+    level: ErrorLevel.Error,
     context: { source: 'hook', hook: hookName }
   });
 }
@@ -126,7 +126,7 @@ export function createHookErrorHandler(hookName: string) {
  */
 export function createServiceErrorHandler(serviceName: string) {
   return createErrorHandler(serviceName, {
-    level: ErrorLevel.ERROR,
+    level: ErrorLevel.Error,
     context: { source: 'service', service: serviceName }
   });
 }

@@ -46,19 +46,19 @@ export function isSuceededError(error: Error & { succeeded?: boolean }): boolean
  * @returns The corresponding ErrorLevel enum value
  */
 export function stringToErrorLevel(level?: string): ErrorLevel {
-  if (!level) return ErrorLevel.ERROR;
+  if (!level) return ErrorLevel.Error;
   
   switch (level.toLowerCase()) {
     case 'debug':
-      return ErrorLevel.DEBUG;
+      return ErrorLevel.Debug;
     case 'info':
-      return ErrorLevel.INFO;
+      return ErrorLevel.Info;
     case 'warning':
-      return ErrorLevel.WARNING;
+      return ErrorLevel.Warning;
     case 'error':
-      return ErrorLevel.ERROR;
+      return ErrorLevel.Error;
     default:
-      return ErrorLevel.ERROR;
+      return ErrorLevel.Error;
   }
 }
 

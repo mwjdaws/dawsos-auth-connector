@@ -5,25 +5,25 @@
 
 // Error severity levels
 export enum ErrorLevel {
-  Debug = "debug",
-  Info = "info",
-  Warning = "warning",
-  Error = "error",
-  Critical = "critical"
+  Debug = "Debug",
+  Info = "Info",
+  Warning = "Warning",
+  Error = "Error",
+  Critical = "Critical"
 }
 
 // Error sources
 export enum ErrorSource {
-  Unknown = 'unknown',
-  User = 'user',
-  System = 'system',
-  Network = 'network',
-  Database = 'database',
-  Server = 'server',
-  Auth = 'auth',
-  Validation = 'validation',
-  UI = 'ui',
-  API = 'api'
+  Unknown = 'Unknown',
+  User = 'User',
+  System = 'System',
+  Network = 'Network',
+  Database = 'Database',
+  Server = 'Server',
+  Auth = 'Auth',
+  Validation = 'Validation',
+  UI = 'UI',
+  API = 'API'
 }
 
 // For backward compatibility with older code

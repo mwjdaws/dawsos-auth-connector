@@ -1,3 +1,4 @@
+
 import { ErrorHandlingOptions, ErrorLevel, ErrorSource } from './types';
 
 /**
@@ -48,7 +49,7 @@ export function convertErrorOptions(
   }
 
   // Map the rest of the options
-  return {
+  const result: Partial<ErrorHandlingOptions> = {
     level,
     source,
     message: legacyOptions.message,
@@ -62,6 +63,8 @@ export function convertErrorOptions(
     reportToAnalytics: legacyOptions.reportToAnalytics,
     showToast: !legacyOptions.technical // Map technical flag to showToast
   };
+  
+  return result;
 }
 
 /**

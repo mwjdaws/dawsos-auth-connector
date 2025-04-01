@@ -57,23 +57,23 @@ export function categorizeError(
   
   // Try to match error patterns
   if (errorPatterns.network.some(pattern => pattern.test(errorString))) {
-    return ErrorSource.NETWORK;
+    return ErrorSource.Network;
   }
   
   if (errorPatterns.database.some(pattern => pattern.test(errorString))) {
-    return ErrorSource.DATABASE;
+    return ErrorSource.Database;
   }
   
   if (errorPatterns.authentication.some(pattern => pattern.test(errorString))) {
-    return ErrorSource.AUTHENTICATION;
+    return ErrorSource.Auth;
   }
   
   if (errorPatterns.validation.some(pattern => pattern.test(errorString))) {
-    return ErrorSource.VALIDATION;
+    return ErrorSource.Validation;
   }
   
   // Default to unknown source
-  return ErrorSource.UNKNOWN;
+  return ErrorSource.Unknown;
 }
 
 /**
@@ -84,13 +84,13 @@ export function categorizeError(
  */
 export function getUserMessageForErrorSource(source: ErrorSource): string {
   switch (source) {
-    case ErrorSource.NETWORK:
+    case ErrorSource.Network:
       return 'A network error occurred. Please check your connection and try again.';
-    case ErrorSource.DATABASE:
+    case ErrorSource.Database:
       return 'A database error occurred. Please try again later.';
-    case ErrorSource.AUTHENTICATION:
+    case ErrorSource.Auth:
       return 'An authentication error occurred. Please log in again.';
-    case ErrorSource.VALIDATION:
+    case ErrorSource.Validation:
       return 'The provided data is invalid. Please check your inputs and try again.';
     case ErrorSource.UI:
       return 'An error occurred in the user interface. Please try again.';

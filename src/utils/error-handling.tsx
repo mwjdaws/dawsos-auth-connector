@@ -9,7 +9,7 @@ import { ErrorLevel, ErrorSource, ErrorHandlingOptions } from '@/utils/errors/ty
  * Default error handling options
  */
 const defaultOptions: ErrorHandlingOptions = {
-  level: ErrorLevel.ERROR,
+  level: ErrorLevel.Error,
   silent: false,
   reportToAnalytics: true,
   showToast: true
@@ -33,16 +33,16 @@ export function handleError(
   
   // Always log to console with appropriate level
   switch (opts.level) {
-    case ErrorLevel.DEBUG:
+    case ErrorLevel.Debug:
       console.debug(`[DEBUG] ${userMessage}`, errorObj, opts.context);
       break;
-    case ErrorLevel.INFO:
+    case ErrorLevel.Info:
       console.info(`[INFO] ${userMessage}`, errorObj, opts.context);
       break;
-    case ErrorLevel.WARNING:
+    case ErrorLevel.Warning:
       console.warn(`[WARNING] ${userMessage}`, errorObj, opts.context);
       break;
-    case ErrorLevel.ERROR:
+    case ErrorLevel.Error:
     default:
       console.error(`[ERROR] ${userMessage}`, errorObj, opts.context);
   }
@@ -50,13 +50,13 @@ export function handleError(
   // Show toast notification if enabled
   if (opts.showToast && !opts.silent) {
     toast({
-      title: opts.toastTitle || (opts.level === ErrorLevel.ERROR 
+      title: opts.toastTitle || (opts.level === ErrorLevel.Error 
         ? 'Error' 
-        : opts.level === ErrorLevel.WARNING 
+        : opts.level === ErrorLevel.Warning 
           ? 'Warning' 
           : 'Notice'),
       description: opts.message || errorObj.message,
-      variant: opts.level === ErrorLevel.ERROR ? 'destructive' : 'default',
+      variant: opts.level === ErrorLevel.Error ? 'destructive' : 'default',
     });
   }
 }

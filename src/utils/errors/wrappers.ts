@@ -1,7 +1,7 @@
 
 import { handleError } from './handle';
-import { ErrorHandlingOptions, ErrorLevel } from './types';
-import { compatibleErrorOptions } from '../compatibility';
+import { ErrorHandlingOptions, ErrorLevel, ErrorSource } from './types';
+import { compatibleErrorOptions } from './compatibility';
 
 /**
  * Creates an error handler specifically for component usage
@@ -19,7 +19,7 @@ export function createComponentErrorHandler(componentName: string) {
         component: componentName,
         ...compatOptions?.context
       },
-      level: compatOptions?.level || ErrorLevel.ERROR,
+      level: compatOptions?.level || ErrorLevel.Error,
       ...compatOptions
     });
   };
@@ -41,7 +41,7 @@ export function createHookErrorHandler(hookName: string) {
         hook: hookName,
         ...compatOptions?.context
       },
-      level: compatOptions?.level || ErrorLevel.ERROR,
+      level: compatOptions?.level || ErrorLevel.Error,
       ...compatOptions
     });
   };
@@ -63,8 +63,7 @@ export function createServiceErrorHandler(serviceName: string) {
         service: serviceName,
         ...compatOptions?.context
       },
-      level: compatOptions?.level || ErrorLevel.ERROR,
-      reportToService: true,
+      level: compatOptions?.level || ErrorLevel.Error,
       ...compatOptions
     });
   };

@@ -5,24 +5,24 @@ import React from 'react';
  * Error severity levels
  */
 export enum ErrorLevel {
-  DEBUG = 'DEBUG',
-  INFO = 'INFO',
-  WARNING = 'WARNING',
-  ERROR = 'ERROR',
-  CRITICAL = 'CRITICAL'
+  Debug = 'Debug',
+  Info = 'Info',
+  Warning = 'Warning',
+  Error = 'Error',
+  Critical = 'Critical'
 }
 
 /**
  * Types of error sources
  */
 export enum ErrorSource {
-  API = 'API',
-  DATABASE = 'DATABASE',
-  VALIDATION = 'VALIDATION',
-  UI = 'UI',
-  NETWORK = 'NETWORK',
-  AUTHENTICATION = 'AUTHENTICATION',
-  UNKNOWN = 'UNKNOWN'
+  Api = 'API',
+  Database = 'DATABASE',
+  Validation = 'VALIDATION',
+  Ui = 'UI',
+  Network = 'NETWORK',
+  Authentication = 'AUTHENTICATION',
+  Unknown = 'UNKNOWN'
 }
 
 /**

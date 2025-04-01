@@ -1,32 +1,22 @@
 
 /**
- * Generate a unique ID for errors
- * 
- * This is useful for tracking errors in logs and relating them to UI notifications
+ * Utility to generate unique error IDs
+ */
+
+/**
+ * Generate a unique error ID
  */
 export function generateErrorId(): string {
-  return `error-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  return `err_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
 /**
- * Generate a unique ID for deduplicated errors
- * 
- * This creates a consistent ID based on the error type and message,
- * which allows for deduplication of similar errors
+ * Generate a fingerprint for error deduplication
  */
-export function generateDeduplicatedErrorId(type: string, message: string): string {
-  // Create a simple hash of the message
-  let hash = 0;
-  for (let i = 0; i < message.length; i++) {
-    hash = ((hash << 5) - hash) + message.charCodeAt(i);
-    hash |= 0; // Convert to 32bit integer
-  }
-  return `${type}-${Math.abs(hash).toString(16)}`;
-}
-
-/**
- * Generate a unique ID for validation errors
- */
-export function generateValidationErrorId(fieldName: string): string {
-  return `validation-${fieldName}-${Date.now()}`;
+export function generateErrorFingerprint(error: Error, context?: Record<string, any>): string {
+  const errorName = error.name || 'UnknownError';
+  const errorMessage = error.message || '';
+  const contextStr = context ? JSON.stringify(context) : '';
+  
+  return `${errorName}_${errorMessage.substring(0, 50)}_${contextStr.substring(0, 50)}`;
 }
