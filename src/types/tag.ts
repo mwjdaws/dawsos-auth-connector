@@ -93,8 +93,8 @@ export function ensureNonNullableTag(tag: Partial<Tag>): Tag {
     type_id: tag.type_id || null,
     display_order: tag.display_order || 0,
     type_name: tag.type_name || '',
-    color: tag.color || undefined,
-    icon: tag.icon || undefined
+    color: tag.color,
+    icon: tag.icon
   };
 }
 
@@ -109,8 +109,8 @@ export function mapApiTagToTag(apiTag: any): Tag {
     type_id: apiTag.type_id || null,
     display_order: apiTag.display_order || 0,
     type_name: apiTag.type_name || '',
-    color: apiTag.color || undefined,
-    icon: apiTag.icon || undefined
+    color: apiTag.color,
+    icon: apiTag.icon
   };
 }
 

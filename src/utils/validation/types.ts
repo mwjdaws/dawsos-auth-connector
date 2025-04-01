@@ -72,6 +72,31 @@ export function createTagValidationResult(
   };
 }
 
+// Legacy functions for backward compatibility
+export function createValidResult(message?: string | null): ValidationResult {
+  return {
+    isValid: true,
+    errorMessage: null,
+    resultType: 'generic'
+  };
+}
+
+export function createInvalidResult(errorMessage: string): ValidationResult {
+  return {
+    isValid: false,
+    errorMessage,
+    resultType: 'generic'
+  };
+}
+
+export function createContentValidationResult(
+  isValid: boolean,
+  errorMessage: string | null,
+  contentExists?: boolean | null
+): ContentIdValidationResult {
+  return createContentIdValidationResult(isValid, errorMessage, contentExists ?? null);
+}
+
 /**
  * Check if a validation result is valid
  */

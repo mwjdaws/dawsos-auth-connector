@@ -1,10 +1,9 @@
 
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useRef, useCallback, useState } from 'react';
 import * as d3 from 'd3';
-import { GraphData } from '../../types';
+import { GraphNode } from './GraphRendererTypes';
 
 interface UseZoomPanProps {
-  svgRef: React.RefObject<SVGSVGElement>;
   width: number;
   height: number;
   padding?: number;
@@ -21,10 +20,9 @@ interface ZoomState {
 }
 
 /**
- * Custom hook for zoom and pan functionality in the graph
+ * Custom hook for zoom and pan functionality in the graph visualization
  */
 export function useZoomPan({
-  svgRef,
   width,
   height,
   padding = 50,
@@ -33,7 +31,9 @@ export function useZoomPan({
   maxZoom = 4,
   onZoomChange
 }: UseZoomPanProps) {
-  const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown>>();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const zoomBehaviorRef = useRef<d3.ZoomBehavior<HTMLCanvasElement, unknown>>();
+  const [transform, setTransform] = useState<d3.ZoomTransform>(d3.zoomIdentity.scale(initialZoom));
   const [zoomState, setZoomState] = useState<ZoomState>({
     zoom: initialZoom,
     translateX: 0,
@@ -42,141 +42,198 @@ export function useZoomPan({
 
   // Initialize zoom behavior
   const initZoom = useCallback(() => {
-    if (!svgRef.current) return;
+    if (!canvasRef.current) return;
 
     // Clear any existing zoom behavior
-    d3.select(svgRef.current).on('.zoom', null);
+    d3.select(canvasRef.current).on('.zoom', null);
 
     // Create new zoom behavior
-    const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
+    const zoomBehavior = d3.zoom<HTMLCanvasElement, unknown>()
       .scaleExtent([minZoom, maxZoom])
-      .on('zoom', (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
-        const { k, x, y } = event.transform;
-        setZoomState({ zoom: k, translateX: x, translateY: y });
-        onZoomChange?.(k);
+      .on('zoom', (event: d3.D3ZoomEvent<HTMLCanvasElement, unknown>) => {
+        setTransform(event.transform);
+        setZoomState({
+          zoom: event.transform.k,
+          translateX: event.transform.x,
+          translateY: event.transform.y
+        });
+        if (onZoomChange) {
+          onZoomChange(event.transform.k);
+        }
       });
+
+    // Disable double-click zoom
+    zoomBehavior.filter(event => !(event.type === 'dblclick'));
 
     // Store zoom behavior reference
     zoomBehaviorRef.current = zoomBehavior;
 
-    // Apply zoom behavior to SVG
-    d3.select(svgRef.current)
+    // Apply zoom behavior to canvas
+    d3.select(canvasRef.current)
       .call(zoomBehavior)
-      .on('dblclick.zoom', null); // Disable double-click zoom
-  }, [svgRef, minZoom, maxZoom, onZoomChange]);
+      .call(zoomBehavior.transform, d3.zoomIdentity.scale(initialZoom));
+  }, [initialZoom, maxZoom, minZoom, onZoomChange]);
 
-  // Set zoom to a specific level
-  const setZoom = useCallback((zoomLevel: number) => {
-    if (!svgRef.current || !zoomBehaviorRef.current) return;
-
-    const svg = d3.select(svgRef.current);
-    const zoomLevel2 = Math.max(minZoom, Math.min(maxZoom, zoomLevel));
-
-    svg.transition()
-      .duration(300)
-      .call(
-        zoomBehaviorRef.current.transform,
-        d3.zoomIdentity
-          .translate(zoomState.translateX, zoomState.translateY)
-          .scale(zoomLevel2)
+  // Helper functions for external zoom control
+  const zoomMethods = (nodes: GraphNode[]) => ({
+    // Set zoom to a specific level
+    setZoom: (zoomLevel: number) => {
+      if (!canvasRef.current || !zoomBehaviorRef.current) return;
+      
+      const clampedZoom = Math.max(minZoom, Math.min(maxZoom, zoomLevel));
+      
+      d3.select(canvasRef.current)
+        .transition()
+        .duration(300)
+        .call(
+          zoomBehaviorRef.current.transform,
+          d3.zoomIdentity
+            .translate(zoomState.translateX, zoomState.translateY)
+            .scale(clampedZoom)
+        );
+    },
+    
+    // Zoom in by a factor
+    zoomIn: () => {
+      if (!canvasRef.current || !zoomBehaviorRef.current) return;
+      
+      const newZoom = Math.min(zoomState.zoom * 1.2, maxZoom);
+      
+      d3.select(canvasRef.current)
+        .transition()
+        .duration(300)
+        .call(
+          zoomBehaviorRef.current.transform,
+          d3.zoomIdentity
+            .translate(zoomState.translateX, zoomState.translateY)
+            .scale(newZoom)
+        );
+    },
+    
+    // Zoom out by a factor
+    zoomOut: () => {
+      if (!canvasRef.current || !zoomBehaviorRef.current) return;
+      
+      const newZoom = Math.max(zoomState.zoom / 1.2, minZoom);
+      
+      d3.select(canvasRef.current)
+        .transition()
+        .duration(300)
+        .call(
+          zoomBehaviorRef.current.transform,
+          d3.zoomIdentity
+            .translate(zoomState.translateX, zoomState.translateY)
+            .scale(newZoom)
+        );
+    },
+    
+    // Reset zoom to initial level
+    resetZoom: () => {
+      if (!canvasRef.current || !zoomBehaviorRef.current) return;
+      
+      d3.select(canvasRef.current)
+        .transition()
+        .duration(300)
+        .call(
+          zoomBehaviorRef.current.transform,
+          d3.zoomIdentity.scale(initialZoom)
+        );
+    },
+    
+    // Center the view on a specific node
+    centerOnNode: (nodeId: string) => {
+      if (!canvasRef.current || !zoomBehaviorRef.current) return;
+      
+      const node = nodes.find(n => n.id === nodeId);
+      if (!node || node.x === undefined || node.y === undefined) return;
+      
+      const scale = zoomState.zoom;
+      const tx = width / 2 - (node.x * scale);
+      const ty = height / 2 - (node.y * scale);
+      
+      d3.select(canvasRef.current)
+        .transition()
+        .duration(300)
+        .call(
+          zoomBehaviorRef.current.transform,
+          d3.zoomIdentity
+            .translate(tx, ty)
+            .scale(scale)
+        );
+    },
+    
+    // Fit all content in view
+    fitToContent: () => {
+      if (!canvasRef.current || !zoomBehaviorRef.current || nodes.length === 0) return;
+      
+      // Filter out nodes with undefined positions
+      const validNodes = nodes.filter(node => 
+        node.x !== undefined && node.y !== undefined
       );
-  }, [svgRef, minZoom, maxZoom, zoomState.translateX, zoomState.translateY]);
-
-  // Center the view on the entire graph
-  const zoomToFit = useCallback((graphData: GraphData, duration = 300) => {
-    if (!svgRef.current || !zoomBehaviorRef.current || !graphData.nodes.length) return;
-
-    const svg = d3.select(svgRef.current);
-
-    try {
+      
+      if (validNodes.length === 0) return;
+      
       // Find bounds of all nodes
-      const bounds = {
-        minX: Math.min(...graphData.nodes.map(node => node.x || 0)) - padding,
-        maxX: Math.max(...graphData.nodes.map(node => node.x || width)) + padding,
-        minY: Math.min(...graphData.nodes.map(node => node.y || 0)) - padding,
-        maxY: Math.max(...graphData.nodes.map(node => node.y || height)) + padding
-      };
-
-      const graphWidth = bounds.maxX - bounds.minX;
-      const graphHeight = bounds.maxY - bounds.minY;
-
+      const xValues = validNodes.map(node => node.x as number);
+      const yValues = validNodes.map(node => node.y as number);
+      
+      const minX = Math.min(...xValues) - padding;
+      const maxX = Math.max(...xValues) + padding;
+      const minY = Math.min(...yValues) - padding;
+      const maxY = Math.max(...yValues) + padding;
+      
+      const graphWidth = maxX - minX;
+      const graphHeight = maxY - minY;
+      
       if (graphWidth <= 0 || graphHeight <= 0) return;
-
+      
       // Calculate scale to fit entire graph
       const scale = Math.min(
         width / graphWidth,
         height / graphHeight,
         maxZoom
       );
-
+      
       // Calculate translation to center the graph
-      const translateX = width / 2 - scale * (bounds.minX + bounds.maxX) / 2;
-      const translateY = height / 2 - scale * (bounds.minY + bounds.maxY) / 2;
-
-      // Apply transform
-      svg.transition()
-        .duration(duration)
+      const tx = width / 2 - ((minX + maxX) / 2) * scale;
+      const ty = height / 2 - ((minY + maxY) / 2) * scale;
+      
+      d3.select(canvasRef.current)
+        .transition()
+        .duration(300)
         .call(
           zoomBehaviorRef.current.transform,
           d3.zoomIdentity
-            .translate(translateX, translateY)
+            .translate(tx, ty)
             .scale(scale)
         );
-    } catch (error) {
-      console.error('Error in zoomToFit:', error);
     }
-  }, [svgRef, width, height, padding, maxZoom]);
+  });
 
-  // Center the view on a specific node
-  const centerOnNode = useCallback((nodeId: string, graphData: GraphData, duration = 300) => {
-    if (!svgRef.current || !zoomBehaviorRef.current) return;
+  // Disable double-clicks to prevent default browser zoom
+  const handleDoubleClick = useCallback((e: MouseEvent) => {
+    e.preventDefault();
+  }, []);
 
-    const node = graphData.nodes.find(n => n.id === nodeId);
-    if (!node) return;
-
-    const svg = d3.select(svgRef.current);
-    const k = zoomState.zoom;  // Preserve current zoom level
-
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const nodeX = node.x || 0;
-    const nodeY = node.y || 0;
-
-    svg.transition()
-      .duration(duration)
-      .call(
-        zoomBehaviorRef.current.transform,
-        d3.zoomIdentity
-          .translate(centerX - nodeX * k, centerY - nodeY * k)
-          .scale(k)
-      );
-  }, [svgRef, width, height, zoomState.zoom]);
-
-  // Initialize zoom behavior when component mounts
-  useEffect(() => {
-    initZoom();
+  // Add double-click handler to canvas
+  const setupEventHandlers = useCallback(() => {
+    if (!canvasRef.current) return;
+    
+    canvasRef.current.addEventListener('dblclick', handleDoubleClick);
+    
     return () => {
-      // Cleanup zoom behavior
-      if (svgRef.current) {
-        d3.select(svgRef.current).on('.zoom', null);
+      if (canvasRef.current) {
+        canvasRef.current.removeEventListener('dblclick', handleDoubleClick);
       }
     };
-  }, [initZoom]);
-
-  // Reset zoom when dimensions change
-  useEffect(() => {
-    if (zoomBehaviorRef.current && svgRef.current) {
-      const svg = d3.select(svgRef.current);
-      svg.call(zoomBehaviorRef.current.transform, d3.zoomIdentity.scale(initialZoom));
-    }
-  }, [width, height, initialZoom]);
+  }, [handleDoubleClick]);
 
   return {
-    zoom: zoomState.zoom,
-    translateX: zoomState.translateX,
-    translateY: zoomState.translateY,
-    setZoom,
-    zoomToFit,
-    centerOnNode
+    canvasRef,
+    transform,
+    zoomState,
+    initZoom,
+    setupEventHandlers,
+    zoomMethods
   };
 }

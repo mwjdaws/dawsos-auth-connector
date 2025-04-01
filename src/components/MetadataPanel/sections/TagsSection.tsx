@@ -2,8 +2,8 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { X, Tag as TagIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Loader2, Plus, X } from 'lucide-react';
 import { Tag } from '@/types/tag';
 
 export interface TagsSectionProps {
@@ -12,8 +12,8 @@ export interface TagsSectionProps {
   editable: boolean;
   newTag: string;
   setNewTag: (value: string) => void;
-  onAddTag: (typeId?: string | null) => Promise<boolean>;
-  onDeleteTag: (tagId: string) => Promise<boolean>;
+  onAddTag: (typeId?: string | null) => Promise<void>;
+  onDeleteTag: (tagId: string) => Promise<void>;
   onMetadataChange?: () => void;
   className?: string;
 }
@@ -32,73 +32,111 @@ export function TagsSection({
   onAddTag,
   onDeleteTag,
   onMetadataChange,
-  className = ''
+  className
 }: TagsSectionProps) {
+  // State for tracking loading operations
+  const [addingTag, setAddingTag] = React.useState(false);
+  const [deletingTagId, setDeletingTagId] = React.useState<string | null>(null);
+  
+  // Handler for adding a new tag
+  const handleAddTag = async () => {
+    if (!newTag || addingTag) return;
+    
+    setAddingTag(true);
+    try {
+      await onAddTag();
+      if (onMetadataChange) onMetadataChange();
+    } finally {
+      setAddingTag(false);
+    }
+  };
+  
+  // Handler for deleting a tag
+  const handleDeleteTag = async (tagId: string) => {
+    setDeletingTagId(tagId);
+    try {
+      await onDeleteTag(tagId);
+      if (onMetadataChange) onMetadataChange();
+    } finally {
+      setDeletingTagId(null);
+    }
+  };
+  
+  // Handle Enter key in the input field
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && newTag.trim()) {
-      onAddTag();
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag();
     }
   };
   
   return (
-    <div className={`space-y-3 ${className}`}>
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">Tags</h3>
-        {editable && (
-          <span className="text-xs text-muted-foreground">
-            {tags.length} tags
-          </span>
-        )}
-      </div>
+    <div className={className}>
+      <h3 className="text-sm font-medium mb-2">Tags</h3>
       
+      {/* Tag input field */}
       {editable && (
-        <div className="flex gap-2">
+        <div className="flex space-x-2 mb-3">
           <Input
             value={newTag}
             onChange={(e) => setNewTag(e.target.value)}
-            placeholder="Add a tag..."
-            className="h-8 text-sm"
             onKeyPress={handleKeyPress}
+            placeholder="Add a tag..."
+            disabled={addingTag}
+            className="h-8 text-sm"
           />
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onAddTag()}
-            disabled={!newTag.trim()}
+            onClick={handleAddTag}
+            disabled={!newTag || addingTag}
+            className="h-8 px-2"
           >
-            Add
+            {addingTag ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
           </Button>
         </div>
       )}
       
-      <div className="flex flex-wrap gap-1.5">
-        {tags.length > 0 ? (
+      {/* Tag display */}
+      <div className="flex flex-wrap gap-2">
+        {tags.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            No tags added yet.
+          </p>
+        ) : (
           tags.map((tag) => (
             <Badge
               key={tag.id}
               variant="secondary"
-              className="inline-flex items-center gap-1 px-2 py-0.5"
+              className="flex items-center gap-1 px-2 py-1"
             >
-              {tag.name}
+              <span>{tag.name}</span>
               {editable && (
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-4 w-4 p-0 hover:bg-transparent"
-                  onClick={() => onDeleteTag(tag.id)}
+                  onClick={() => handleDeleteTag(tag.id)}
+                  disabled={deletingTagId === tag.id}
+                  className="h-4 w-4 p-0 ml-1"
                 >
-                  <X className="h-3 w-3" />
+                  {deletingTagId === tag.id ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <X className="h-3 w-3" />
+                  )}
                 </Button>
               )}
             </Badge>
           ))
-        ) : (
-          <div className="text-sm text-muted-foreground flex items-center gap-1.5">
-            <TagIcon className="h-3.5 w-3.5" />
-            <span>No tags</span>
-          </div>
         )}
       </div>
     </div>
   );
 }
+
+export default TagsSection;

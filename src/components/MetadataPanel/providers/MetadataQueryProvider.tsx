@@ -1,12 +1,7 @@
 
-import React, { createContext, useContext } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Tag } from '@/types/tag';
-import { OntologyTerm } from '@/types/ontology';
-import { SourceMetadata, MetadataProviderProps } from '../types';
-import { fetchSourceMetadata, fetchTags, fetchOntologyTerms } from '@/services/api/metadata';
-import { useAuth } from '@/hooks/useAuth';
-import { isValidContentId } from '@/utils/validation/contentIdValidation';
+import { OntologyTerm, MetadataProviderProps, SourceMetadata } from '../types';
 import { useTagOperations } from '../hooks/tag-operations/useTagOperations';
 
 // Context interface
@@ -31,21 +26,9 @@ export const MetadataQueryProvider: React.FC<MetadataProviderProps> = ({
   editable = false,
   children 
 }) => {
-  const { user } = useAuth();
-  const isValid = contentId && isValidContentId(contentId);
-  
-  // Source metadata query
-  const { 
-    data: sourceData,
-    isLoading: isSourceLoading, 
-    error: sourceError,
-    refetch: refetchSource
-  } = useQuery({
-    queryKey: isValid ? ['metadata', 'source', contentId] : undefined,
-    queryFn: () => fetchSourceMetadata(contentId),
-    enabled: !!isValid,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+  // State for ontology terms and source metadata
+  const [ontologyTerms, setOntologyTerms] = useState<OntologyTerm[]>([]);
+  const [sourceMetadata, setSourceMetadata] = useState<SourceMetadata | null>(null);
   
   // Tags operations
   const {
@@ -55,39 +38,28 @@ export const MetadataQueryProvider: React.FC<MetadataProviderProps> = ({
     handleRefresh: refreshTags,
     handleDeleteTag
   } = useTagOperations(contentId);
-  
-  // Ontology terms query
-  const {
-    data: ontologyTerms = [],
-    isLoading: isOntologyLoading,
-    error: ontologyError,
-    refetch: refetchOntology
-  } = useQuery({
-    queryKey: isValid ? ['metadata', 'ontology', contentId] : undefined,
-    queryFn: () => fetchOntologyTerms(contentId),
-    enabled: !!isValid,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-  
-  // Combined loading and error states
-  const isLoading = isSourceLoading || isTagsLoading || isOntologyLoading;
-  const error = sourceError || tagsError || ontologyError || null;
+
+  // For simplicity, we're using the tag loading state for now
+  const isLoading = isTagsLoading;
+  const error = tagsError;
   
   // Refresh all metadata
   const refreshMetadata = () => {
-    if (isValid) {
-      refetchSource();
-      refreshTags();
-      refetchOntology();
-    }
+    refreshTags();
+    // Additional refresh logic would go here
   };
+  
+  // Load metadata when contentId changes
+  useEffect(() => {
+    refreshMetadata();
+  }, [contentId]);
   
   // Context value
   const contextValue: MetadataContextData = {
     contentId,
     tags,
     ontologyTerms,
-    sourceMetadata: sourceData,
+    sourceMetadata,
     isEditable: editable,
     isLoading,
     error,

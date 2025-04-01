@@ -2,7 +2,7 @@
 /**
  * Content ID validation utility functions
  */
-import { ContentIdValidationResult } from './types';
+import { ContentIdValidationResult, createContentIdValidationResult } from './types';
 
 /**
  * Regular expression to validate UUIDs
@@ -18,6 +18,9 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-
 export function isUuid(str: string): boolean {
   return UUID_REGEX.test(str);
 }
+
+// Alias for backward compatibility
+export const isUUID = isUuid;
 
 /**
  * Checks if a string is a temporary ID (starting with "temp-")
@@ -48,29 +51,30 @@ export function isValidContentId(contentId: string): boolean {
  */
 export function validateContentId(contentId: string): ContentIdValidationResult {
   if (!contentId) {
-    return {
-      isValid: false,
-      contentExists: false,
-      errorMessage: "Content ID is required",
-      resultType: "contentId"
-    };
+    return createContentIdValidationResult(false, "Content ID is required", null);
   }
   
   if (!isValidContentId(contentId)) {
-    return {
-      isValid: false,
-      contentExists: false,
-      errorMessage: "Invalid content ID format",
-      resultType: "contentId"
-    };
+    return createContentIdValidationResult(false, "Invalid content ID format", null);
   }
   
-  return {
-    isValid: true,
-    contentExists: null,
-    errorMessage: null,
-    resultType: "contentId"
-  };
+  return createContentIdValidationResult(true, null, null);
+}
+
+/**
+ * Get content ID validation result in a consistent format
+ * Helper function for backward compatibility
+ */
+export function getContentIdValidationResult(contentId?: string | null): ContentIdValidationResult {
+  if (!contentId) {
+    return createContentIdValidationResult(false, 'Content ID is required', null);
+  }
+  
+  if (!isValidContentId(contentId)) {
+    return createContentIdValidationResult(false, 'Invalid content ID format', null);
+  }
+  
+  return createContentIdValidationResult(true, null, null);
 }
 
 /**
@@ -102,3 +106,6 @@ export function tryConvertToUUID(value: string): string | null {
   
   return null;
 }
+
+// Alias for backward compatibility
+export const convertToUuid = tryConvertToUUID;

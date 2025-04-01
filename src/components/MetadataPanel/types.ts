@@ -1,10 +1,9 @@
 
-/**
- * Types for MetadataPanel components
- */
-
 import { Tag } from '@/types/tag';
 
+/**
+ * MetadataPanel Props
+ */
 export interface MetadataPanelProps {
   contentId: string;
   editable?: boolean;
@@ -17,43 +16,55 @@ export interface MetadataPanelProps {
   className?: string;
 }
 
+/**
+ * Provider Props
+ */
+export interface MetadataProviderProps {
+  contentId: string;
+  editable?: boolean;
+  children: React.ReactNode;
+}
+
+/**
+ * Ontology Term Structure
+ */
 export interface OntologyTerm {
   id: string;
   term: string;
   description: string;
   domain?: string;
+  review_required?: boolean;
 }
 
+/**
+ * External Source Metadata
+ */
+export interface ExternalSourceMetadata {
+  url: string | null;
+  lastCheckedAt: string | null;
+  needsExternalReview: boolean;
+}
+
+/**
+ * Source Metadata
+ */
+export interface SourceMetadata {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  externalSource: ExternalSourceMetadata | null;
+  userId: string | null;
+  isPublished: boolean;
+}
+
+/**
+ * Metadata State
+ */
 export interface MetadataState {
   tags: Tag[];
   ontologyTerms: OntologyTerm[];
   externalSource: ExternalSourceMetadata | null;
   isLoading: boolean;
   error: Error | null;
-}
-
-export interface ExternalSourceMetadata {
-  external_source_url: string | null;
-  external_source_checked_at: string | null;
-  needs_external_review: boolean;
-}
-
-export interface DomainInfo {
-  id: string;
-  name: string;
-  description: string;
-}
-
-// Source metadata for compatibility
-export interface SourceMetadata {
-  id?: string;
-  title?: string;
-  content?: string;
-  created_at?: string;
-  updated_at?: string;
-  external_source_url: string | null;
-  external_source_checked_at: string | null;
-  needs_external_review: boolean;
-  external_content_hash?: string | null;
-  user_id?: string | null;
 }

@@ -9,9 +9,10 @@ import { useMemo } from 'react';
 import { 
   isValidContentId, 
   isTempId, 
-  isUUID, 
+  isUuid, 
   getContentIdValidationResult 
 } from '@/utils/validation/contentIdValidation';
+import { ContentIdValidationResult } from '@/utils/validation/types';
 
 /**
  * Validates a content ID and provides validation information
@@ -21,23 +22,29 @@ import {
  */
 export function useValidateContentId(contentId?: string | null) {
   // Memorize the validation result 
-  const result = useMemo(() => {
+  const result = useMemo<ContentIdValidationResult>(() => {
+    if (!contentId) {
+      return getContentIdValidationResult('');
+    }
     return getContentIdValidationResult(contentId);
   }, [contentId]);
 
   // Determine if the content ID is valid
   const isValid = useMemo(() => {
+    if (!contentId) return false;
     return isValidContentId(contentId);
   }, [contentId]);
 
   // Determine if the content ID is a temporary ID
   const isTemporary = useMemo(() => {
-    return isValidContentId(contentId) && isTempId(contentId || '');
+    if (!contentId) return false;
+    return isTempId(contentId);
   }, [contentId]);
 
   // Determine if the content ID is a UUID
   const isUuid = useMemo(() => {
-    return isValidContentId(contentId) && isUUID(contentId || '');
+    if (!contentId) return false;
+    return isUuid(contentId);
   }, [contentId]);
 
   return {

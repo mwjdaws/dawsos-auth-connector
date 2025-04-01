@@ -72,7 +72,7 @@ const MetadataPanel = ({
             
             <Button
               variant="ghost"
-              size="icon"
+              size="sm"
               className="h-8 w-8"
               onClick={handleRefreshClick}
               disabled={isLoading}

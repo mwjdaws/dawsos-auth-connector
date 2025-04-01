@@ -51,7 +51,13 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(({
   });
   
   // Zoom and pan functionality
-  const { canvasRef, transform, initZoom, zoomMethods } = useZoomPan({
+  const { 
+    canvasRef, 
+    transform, 
+    initZoom, 
+    setupEventHandlers, 
+    zoomMethods 
+  } = useZoomPan({
     width,
     height,
     initialZoom: zoom
@@ -84,7 +90,9 @@ export const GraphRenderer = forwardRef<GraphRendererRef, GraphRendererProps>(({
   // Initialize zoom behavior
   useEffect(() => {
     initZoom();
-  }, [initZoom]);
+    const cleanup = setupEventHandlers();
+    return cleanup;
+  }, [initZoom, setupEventHandlers]);
   
   // Canvas rendering
   useEffect(() => {

@@ -71,7 +71,7 @@ export const useTagMutations = ({
       handleError(
         err,
         `Failed to add tag "${name}"`,
-        { level: ErrorLevel.WARNING }
+        { level: ErrorLevel.Warning }
       );
       return false;
     } finally {
@@ -104,7 +104,7 @@ export const useTagMutations = ({
       handleError(
         err,
         `Failed to delete tag`,
-        { level: ErrorLevel.WARNING }
+        { level: ErrorLevel.Warning }
       );
       return false;
     } finally {
@@ -155,7 +155,7 @@ export const useTagMutations = ({
       handleError(
         err,
         `Failed to reorder tags`,
-        { level: ErrorLevel.WARNING }
+        { level: ErrorLevel.Warning }
       );
       return false;
     } finally {
