@@ -1,92 +1,93 @@
 
 import React, { useState } from 'react';
-import { Tag } from '@/types/tag';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 import { TagList } from '../components/TagList';
+import { Tag } from '@/types/tag';
 
 export interface TagsSectionProps {
   tags: Tag[];
+  contentId: string;
+  editable: boolean;
   newTag: string;
   setNewTag: (value: string) => void;
   onAddTag: (typeId?: string | null) => Promise<void>;
   onDeleteTag: (tagId: string) => Promise<void>;
-  onReorderTags?: (reorderedTags: Tag[]) => Promise<void>;
-  editable?: boolean;
-  isAddingTag?: boolean;
-  isDeletingTag?: boolean;
-  isReordering?: boolean;
+  onReorderTags?: (tags: Tag[]) => Promise<void>;
   onMetadataChange?: () => void;
   className?: string;
 }
 
-export function TagsSection({
+export const TagsSection: React.FC<TagsSectionProps> = ({
   tags,
+  contentId,
+  editable,
   newTag,
   setNewTag,
   onAddTag,
   onDeleteTag,
   onReorderTags,
-  editable = false,
-  isAddingTag = false,
-  isDeletingTag = false,
-  isReordering = false,
-  className = ''
-}: TagsSectionProps) {
-  const [selectedTagType, setSelectedTagType] = useState<string | null>(null);
-  
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !isAddingTag && newTag.trim()) {
-      e.preventDefault();
-      onAddTag(selectedTagType);
+  className = "",
+}) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTag.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      await onAddTag(null);
+    } finally {
+      setIsSubmitting(false);
     }
   };
-  
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewTag(e.target.value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
   return (
     <div className={`space-y-4 ${className}`}>
-      <h3 className="text-sm font-medium">Tags</h3>
-      
+      <h3 className="text-lg font-medium">Tags</h3>
+
       {editable && (
-        <div className="flex items-center space-x-2">
-          <div className="flex-1">
-            <Input
-              placeholder="Add a tag"
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isAddingTag}
-              className="text-sm"
-            />
-          </div>
-          
+        <form onSubmit={handleSubmit} className="flex space-x-2">
+          <Input
+            value={newTag}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Add a tag..."
+            className="flex-1"
+            disabled={isSubmitting}
+          />
           <Button
-            onClick={() => onAddTag(selectedTagType)}
-            disabled={!newTag.trim() || isAddingTag}
+            type="submit"
             size="sm"
+            disabled={!newTag.trim() || isSubmitting}
           >
-            {isAddingTag ? 'Adding...' : 'Add'}
+            <Plus className="h-4 w-4 mr-1" />
+            Add
           </Button>
-        </div>
+        </form>
       )}
-      
+
       <TagList 
         tags={tags} 
         editable={editable} 
-        onDeleteTag={onDeleteTag}
-        onReorderTags={onReorderTags ? tags => onReorderTags(tags) : undefined}
+        onDeleteTag={onDeleteTag} 
+        onReorderTags={onReorderTags}
       />
-      
-      {isDeletingTag && (
-        <div className="text-xs text-muted-foreground">
-          Removing tag...
-        </div>
-      )}
-      
-      {isReordering && (
-        <div className="text-xs text-muted-foreground">
-          Saving new tag order...
-        </div>
-      )}
     </div>
   );
-}
+};
+
+export default TagsSection;

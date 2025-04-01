@@ -1,6 +1,6 @@
 
 /**
- * Generic validation result interface
+ * Base validation result interface
  */
 export interface ValidationResult {
   isValid: boolean;
@@ -8,23 +8,22 @@ export interface ValidationResult {
 }
 
 /**
- * Create a valid validation result
+ * Content ID validation result types
  */
-export function createValidResult(): ValidationResult {
-  return {
-    isValid: true,
-    errorMessage: null
-  };
+export enum ContentIdValidationResultType {
+  VALID = 'valid',
+  UUID = 'uuid',
+  TEMP = 'temp',
+  INVALID = 'invalid'
 }
 
 /**
- * Create an invalid validation result
+ * Content ID validation result
  */
-export function createInvalidResult(errorMessage: string): ValidationResult {
-  return {
-    isValid: false,
-    errorMessage
-  };
+export interface ContentIdValidationResult extends ValidationResult {
+  resultType: ContentIdValidationResultType;
+  message: string | null;
+  contentExists: boolean;
 }
 
 /**
@@ -36,74 +35,45 @@ export interface ContentValidationResult extends ValidationResult {
 }
 
 /**
- * Content ID validation result types
+ * Tag validation result for backward compatibility
  */
-export enum ContentIdValidationResultType {
-  VALID = 'valid',
-  INVALID = 'invalid',
-  UUID = 'uuid',
-  TEMP = 'temp'
-}
-
-/**
- * Content ID validation result
- */
-export interface ContentIdValidationResult extends ValidationResult {
+export interface TagValidationResult extends ValidationResult {
   message?: string | null;
-  resultType: ContentIdValidationResultType;
-  contentExists?: boolean;
 }
 
 /**
- * Error handling options
+ * Simple wrapper for standard validation result
  */
-export interface ErrorHandlingOptions {
-  level?: 'debug' | 'info' | 'warning' | 'error';
-  context?: Record<string, any>;
-  silent?: boolean;
-  reportToAnalytics?: boolean;
-  showToast?: boolean;
-  toastTitle?: string;
-  technical?: boolean;
+export interface SimpleValidationResult {
+  isValid: boolean;
+  message: string | null;
 }
 
 /**
- * Legacy error handling options for compatibility
+ * Document validation result
+ */
+export interface DocumentValidationResult extends ValidationResult {
+  documentId: string;
+  exists: boolean;
+}
+
+/**
+ * Document validation options
+ */
+export interface DocumentValidationOptions {
+  requireTitle?: boolean;
+  minTitleLength?: number;
+  maxTitleLength?: number;
+  requireContent?: boolean;
+  minContentLength?: number;
+}
+
+/**
+ * Error handling compatibility options
  */
 export interface ErrorHandlingCompatOptions {
-  level?: 'debug' | 'info' | 'warning' | 'error';
+  level?: string;
   context?: Record<string, any>;
-  silent?: boolean;
-  reportToAnalytics?: boolean;
-  showToast?: boolean;
-  toastTitle?: string;
   technical?: boolean;
   category?: string;
 }
-
-/**
- * Error severity enum
- */
-export enum ErrorLevel {
-  DEBUG = 'debug',
-  INFO = 'info',
-  WARNING = 'warning',
-  ERROR = 'error'
-}
-
-/**
- * Error options
- */
-export interface ErrorOptions {
-  message: string;
-  level: ErrorLevel;
-  code?: number;
-  context: Record<string, any>;
-}
-
-/**
- * Partial error options
- */
-export type Partial<T> = {
-  [P in keyof T]?: T[P];
-};

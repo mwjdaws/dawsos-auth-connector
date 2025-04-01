@@ -41,6 +41,14 @@ export interface TagCount {
 }
 
 /**
+ * Tag position interface for reordering operations
+ */
+export interface TagPosition {
+  id: string;
+  position: number;
+}
+
+/**
  * Sort tags by display order
  */
 export function sortTagsByDisplayOrder(tags: Tag[]): Tag[] {
@@ -61,7 +69,7 @@ export function mapRawTagData(rawTags: any[]): Tag[] {
       name: item.name,
       content_id: item.content_id,
       type_id: item.type_id,
-      display_order: item.display_order,
+      display_order: item.display_order || 0,
       type_name: item.type_name
     }));
 }
@@ -86,4 +94,90 @@ export function isTag(obj: any): obj is Tag {
  */
 export function ensureTag(value: any): Tag | null {
   return isTag(value) ? value : null;
+}
+
+/**
+ * API-specific tag format conversion
+ */
+export function mapApiTagToTag(apiTag: any): Tag | null {
+  if (!apiTag) return null;
+  
+  return {
+    id: apiTag.id || '',
+    name: apiTag.name || '',
+    content_id: apiTag.content_id || '',
+    type_id: apiTag.type_id,
+    display_order: apiTag.display_order || 0,
+    type_name: apiTag.type_name
+  };
+}
+
+/**
+ * Convert API tags to internal Tag format
+ */
+export function mapApiTagsToTags(apiTags: any[]): Tag[] {
+  if (!apiTags) return [];
+  
+  return apiTags
+    .filter(tag => tag !== null)
+    .map(tag => mapApiTagToTag(tag))
+    .filter((tag): tag is Tag => tag !== null);
+}
+
+/**
+ * Safely convert nullable values to non-nullable
+ */
+export function ensureNonNullableTag(tag: Tag | null): Tag | null {
+  if (!tag) return null;
+  
+  return {
+    id: tag.id || '',
+    name: tag.name || '',
+    content_id: tag.content_id || '',
+    type_id: tag.type_id,
+    display_order: tag.display_order || 0,
+    type_name: tag.type_name
+  };
+}
+
+/**
+ * Filter duplicate tags by name
+ */
+export function filterDuplicateTags(tags: Tag[]): Tag[] {
+  if (!tags) return [];
+  
+  const uniqueMap = new Map<string, Tag>();
+  
+  tags.forEach(tag => {
+    if (tag && tag.name) {
+      const normalizedName = tag.name.toLowerCase().trim();
+      if (!uniqueMap.has(normalizedName)) {
+        uniqueMap.set(normalizedName, tag);
+      }
+    }
+  });
+  
+  return Array.from(uniqueMap.values());
+}
+
+/**
+ * Convert tag positions to tag array
+ */
+export function convertTagPositionsToTags(positions: TagPosition[], tags: Tag[]): Tag[] {
+  if (!positions || !tags) return tags;
+  
+  const tagMap = new Map(tags.map(tag => [tag.id, tag]));
+  const updatedTags = [...tags];
+  
+  positions.forEach(pos => {
+    const tag = tagMap.get(pos.id);
+    if (tag) {
+      const index = updatedTags.findIndex(t => t.id === pos.id);
+      if (index !== -1) {
+        updatedTags[index] = { ...tag, display_order: pos.position };
+      }
+    }
+  });
+  
+  return updatedTags;
 }

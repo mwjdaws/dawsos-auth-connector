@@ -1,15 +1,6 @@
 
 import { Tag } from '@/types/tag';
-
-/**
- * OntologyTerm type from main application
- */
-export interface OntologyTerm {
-  id: string;
-  term: string;
-  description: string;
-  review_required?: boolean;
-}
+import { OntologyTerm } from '@/types/ontology';
 
 /**
  * Creates a mock tag for testing purposes

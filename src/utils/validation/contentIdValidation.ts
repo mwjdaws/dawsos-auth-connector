@@ -95,3 +95,10 @@ export function getContentIdValidationResult(contentId?: string | null): Content
     contentExists: false
   };
 }
+
+/**
+ * Legacy function for backward compatibility
+ */
+export function validateContentId(contentId?: string | null): boolean {
+  return isValidContentId(contentId);
+}

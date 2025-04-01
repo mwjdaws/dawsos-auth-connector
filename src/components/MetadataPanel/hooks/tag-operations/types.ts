@@ -1,5 +1,18 @@
 
-import { Tag } from '@/types/tag';
+import { Tag as CoreTag } from '@/types/tag';
+
+/**
+ * Tag representation that's compatible with the core Tag type
+ */
+export type Tag = CoreTag;
+
+/**
+ * Position information for tag reordering
+ */
+export interface TagPosition {
+  id: string;
+  position: number;
+}
 
 /**
  * Result of the useTagState hook
@@ -52,23 +65,4 @@ export interface UseTagOperationsResult {
   isAddingTag: boolean;
   isDeletingTag: boolean;
   isReordering: boolean;
-}
-
-/**
- * Position information for tag reordering
- */
-export interface TagPosition {
-  id: string;
-  position: number;
-}
-
-/**
- * Tag representation
- */
-export interface Tag {
-  id: string;
-  name: string;
-  content_id: string;
-  type_id?: string | null;
-  display_order?: number;
 }

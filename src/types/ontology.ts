@@ -28,7 +28,7 @@ export function isOntologyTerm(obj: any): obj is OntologyTerm {
     typeof obj === 'object' &&
     typeof obj.id === 'string' &&
     typeof obj.term === 'string' &&
-    (obj.description === null || typeof obj.description === 'string')
+    typeof obj.description === 'string'
   );
 }
 
@@ -42,3 +42,8 @@ export enum OntologyRelationType {
   SYNONYM = 'synonym',
   ANTONYM = 'antonym'
 }
+
+/**
+ * Export the OntologyTerm to make it available in other files
+ */
+export default OntologyTerm;

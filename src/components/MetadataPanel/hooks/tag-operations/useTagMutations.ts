@@ -7,7 +7,8 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Tag, TagPosition } from '@/types/tag';
+import { Tag } from '@/types/tag';
+import { TagPosition } from '@/types/tag';
 import { handleError } from '@/utils/errors/handle';
 
 interface UseTagMutationsProps {
@@ -52,7 +53,7 @@ export const useTagMutations = ({ contentId, setTags, tags }: UseTagMutationsPro
         .insert({
           name: params.name,
           content_id: params.contentId,
-          type_id: params.typeId ?? null, // Use null if typeId is undefined
+          type_id: params.typeId === undefined ? null : params.typeId,
           display_order: displayOrder
         })
         .select()

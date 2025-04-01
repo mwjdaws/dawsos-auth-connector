@@ -9,7 +9,7 @@ import { useCallback } from 'react';
 import { useTagOperations } from '@/components/MetadataPanel/hooks/tag-operations/useTagOperations';
 import { useTagValidation } from './useTagValidation';
 import { useContentValidator } from './useContentValidator';
-import { Tag } from '@/components/MetadataPanel/hooks/tag-operations/types';
+import { Tag } from '@/types/tag';
 import { handleError } from '@/utils/errors/handle';
 
 interface UseValidatedTagOperationsProps {

@@ -1,110 +1,86 @@
 
-import { ValidationResult, ContentValidationResult, TagValidationResult } from './types';
+import { ValidationResult, ContentValidationResult, ContentIdValidationResult, TagValidationResult } from './types';
 
 /**
- * Create a successful validation result
- * 
- * @param message Optional success message
- * @returns A validation result indicating success
+ * Create a valid validation result
  */
-export function createValidResult(message: string = 'Validation passed'): ValidationResult {
+export function createValidResult(): ValidationResult {
   return {
     isValid: true,
-    errorMessage: null,
+    errorMessage: null
+  };
+}
+
+/**
+ * Create an invalid validation result
+ */
+export function createInvalidResult(errorMessage: string): ValidationResult {
+  return {
+    isValid: false,
+    errorMessage
+  };
+}
+
+/**
+ * Create a tag validation result for backward compatibility
+ */
+export function createTagValidationResult(isValid: boolean, message: string | null): TagValidationResult {
+  return {
+    isValid,
+    errorMessage: message,
     message
   };
 }
 
 /**
- * Create a failed validation result
- * 
- * @param errorMessage The error message explaining why validation failed
- * @returns A validation result indicating failure
+ * Check if a validation result is valid
  */
-export function createInvalidResult(errorMessage: string): ValidationResult {
-  return {
-    isValid: false,
-    errorMessage,
-    message: null
-  };
+export function isValidResult(result: ValidationResult): boolean {
+  return result.isValid;
 }
 
 /**
  * Create a content validation result
- * 
- * @param contentId The ID of the content
- * @param isValid Whether the content is valid
- * @param contentExists Whether the content exists
- * @param errorMessage Error message if invalid
- * @param message Success message if valid
- * @returns A content validation result
  */
 export function createContentValidationResult(
-  contentId: string, 
-  isValid: boolean, 
-  contentExists: boolean, 
-  errorMessage: string | null = null,
-  message: string | null = null
+  contentId: string,
+  isValid: boolean,
+  contentExists: boolean,
+  errorMessage: string | null
 ): ContentValidationResult {
   return {
     contentId,
     isValid,
     contentExists,
-    errorMessage,
-    message
+    errorMessage
   };
 }
 
 /**
- * Helper to check if a validation result is valid
- */
-export function isValidResult(result: ValidationResult): boolean {
-  return result.isValid === true;
-}
-
-/**
- * Combines multiple validation results into one
- * 
- * @param results Array of validation results to combine
- * @returns A single validation result
+ * Combine multiple validation results into one
  */
 export function combineValidationResults(results: ValidationResult[]): ValidationResult {
-  // If any result is invalid, the combined result is invalid
   const invalidResult = results.find(result => !result.isValid);
   
   if (invalidResult) {
     return invalidResult;
   }
   
-  // All results are valid
-  return createValidResult('All validations passed');
+  return createValidResult();
 }
 
 /**
- * Create a tag validation result
- * 
- * @param isValid Whether the tag is valid
- * @param tagExists Whether the tag exists
- * @param isDuplicate Whether the tag is a duplicate
- * @param isReserved Whether the tag is reserved
- * @param errorMessage Error message if invalid
- * @param message Success message if valid
- * @returns A tag validation result
+ * Create a content ID validation result with message
+ * Ensure compatibility with various validation result structures
  */
-export function createTagValidationResult(
-  isValid: boolean,
-  tagExists: boolean = false,
-  isDuplicate: boolean = false,
-  isReserved: boolean = false,
-  errorMessage: string | null = null,
-  message: string | null = null
-): TagValidationResult {
+export function createContentIdValidationResult(
+  result: Partial<ContentIdValidationResult>
+): ContentIdValidationResult {
   return {
-    isValid,
-    tagExists,
-    isDuplicate,
-    isReserved,
-    errorMessage,
-    message
+    isValid: result.isValid || false,
+    errorMessage: result.errorMessage || null,
+    resultType: result.resultType || 'invalid',
+    message: result.message || null,
+    contentExists: result.contentExists || false
   };
 }
