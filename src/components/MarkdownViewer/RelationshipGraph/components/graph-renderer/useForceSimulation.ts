@@ -54,7 +54,8 @@ export function useForceSimulation({
 
       // Initialize with nodes
       simulation.nodes(nodes as any);
-      (simulation.force('link') as any).links(graphData.links);
+      const linkForce = simulation.force('link') as ReturnType<typeof forceLink>;
+      linkForce.links(graphData.links);
       
       simulationRef.current = simulation;
       
@@ -73,7 +74,8 @@ export function useForceSimulation({
       }));
       
       simulation.nodes(nodes as any);
-      (simulation.force('link') as any).links(graphData.links);
+      const linkForce = simulation.force('link') as ReturnType<typeof forceLink>;
+      linkForce.links(graphData.links);
       simulation.alpha(1).restart();
       
       setSimulationNodes(nodes);

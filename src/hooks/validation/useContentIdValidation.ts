@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { isValidContentId, isUUID, isTempId, getContentIdValidationResult } from '@/utils/validation/contentIdValidation';
+import { isValidContentId, isUUID, isTempId } from '@/utils/validation/contentIdValidation';
 import { ContentIdValidationResult, createContentIdValidationResult } from '@/utils/validation/types';
 import { handleError, ErrorLevel } from '@/utils/errors';
 

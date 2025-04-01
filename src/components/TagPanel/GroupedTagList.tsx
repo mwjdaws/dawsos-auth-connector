@@ -1,96 +1,114 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TagGroup, useTagGroups } from './hooks/useTagGroups';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { XCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Tag, TagGroup } from '@/types/tag';
+import { GroupedTagListProps } from './types';
 
-interface GroupedTagListProps {
-  onTagClick?: (tag: string) => void;
-  maxTagsPerGroup?: number;
-  showCount?: boolean;
-  className?: string;
-}
-
-export function GroupedTagList({
+/**
+ * Component for displaying tags grouped by tag type
+ */
+const GroupedTagList: React.FC<GroupedTagListProps> = ({
+  tags,
+  groups,
+  editable = false,
   onTagClick,
-  maxTagsPerGroup = 15,
-  showCount = true,
-  className,
-}: GroupedTagListProps) {
-  const { 
-    groups, 
-    isLoading, 
-    error, 
-    refreshGroups 
-  } = useTagGroups();
+  onTagDelete,
+  isLoading = false,
+  emptyMessage = 'No tags found'
+}) => {
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
-  // Render loading state
+  // Toggle a group's expanded state
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupId]: !prev[groupId]
+    }));
+  };
+
+  // Check if a group is expanded
+  const isExpanded = (groupId: string) => {
+    return expandedGroups[groupId] !== false; // Default to expanded
+  };
+
+  // If loading, show skeleton UI
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-[150px] w-full" />
-        <Skeleton className="h-[150px] w-full" />
+      <div className="space-y-2">
+        <Skeleton className="h-6 w-24" />
+        <div className="flex flex-wrap gap-1">
+          <Skeleton className="h-6 w-16" />
+          <Skeleton className="h-6 w-20" />
+          <Skeleton className="h-6 w-14" />
+        </div>
       </div>
     );
   }
 
-  // Handle error state
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>Failed to load tag groups: {error.message}</AlertDescription>
-      </Alert>
-    );
-  }
-
-  // Handle empty state
-  if (!groups || groups.length === 0) {
-    return (
-      <Alert>
-        <AlertDescription>No tag groups found.</AlertDescription>
-      </Alert>
-    );
+  // If no tags, show empty message
+  if (!tags || tags.length === 0) {
+    return <p className="text-sm text-muted-foreground">{emptyMessage}</p>;
   }
 
   return (
-    <div className={className}>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {groups.map((group: TagGroup) => (
-          <Card key={group.id} className="overflow-hidden">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex justify-between">
+    <div className="space-y-3">
+      {groups.map(group => {
+        const groupTags = tags.filter(tag => 
+          tag.type_id === group.id
+        );
+
+        if (groupTags.length === 0) return null;
+
+        return (
+          <div key={group.id} className="space-y-1">
+            <div 
+              className="flex items-center space-x-1 cursor-pointer" 
+              onClick={() => toggleGroup(group.id)}
+            >
+              <h4 className="text-xs font-medium uppercase text-muted-foreground">
                 {group.name}
-                {showCount && (
-                  <span className="text-muted-foreground text-xs">
-                    {group.tags.length} {group.tags.length === 1 ? 'tag' : 'tags'}
-                  </span>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pb-3">
+              </h4>
+              <span className="text-xs text-muted-foreground">({groupTags.length})</span>
+            </div>
+
+            {isExpanded(group.id) && (
               <div className="flex flex-wrap gap-1">
-                {group.tags.slice(0, maxTagsPerGroup).map((tag) => (
+                {groupTags.map(tag => (
                   <Badge
                     key={tag.id}
-                    variant="secondary"
-                    className="cursor-pointer hover:bg-secondary/80"
-                    onClick={() => onTagClick && onTagClick(tag.name)}
+                    variant="outline"
+                    className={cn(
+                      "flex items-center gap-1 py-1 px-2 cursor-pointer",
+                      onTagClick && "hover:bg-primary/10"
+                    )}
+                    style={{
+                      backgroundColor: tag.color ? `${tag.color}20` : undefined,
+                      borderColor: tag.color || undefined
+                    }}
+                    onClick={() => onTagClick && onTagClick(tag)}
                   >
-                    {tag.name}
+                    <span>{tag.name}</span>
+                    {editable && onTagDelete && (
+                      <XCircle
+                        className="h-3 w-3 text-muted-foreground hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onTagDelete(tag.id);
+                        }}
+                      />
+                    )}
                   </Badge>
                 ))}
-                {group.tags.length > maxTagsPerGroup && (
-                  <Badge variant="outline">+{group.tags.length - maxTagsPerGroup} more</Badge>
-                )}
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
-}
+};
+
+export default GroupedTagList;

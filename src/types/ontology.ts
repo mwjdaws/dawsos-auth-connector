@@ -38,6 +38,10 @@ export interface OntologySuggestion {
   confidence: number;
   source_id: string;
   status: 'pending' | 'approved' | 'rejected';
+  domain?: string | null;
+  score?: number;
+  applied?: boolean;
+  rejected?: boolean;
 }
 
 // Related term for graph visualization

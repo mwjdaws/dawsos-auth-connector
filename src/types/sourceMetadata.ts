@@ -51,4 +51,5 @@ export interface ExternalSourceMetadata {
   external_source_url: string | null;
   needs_external_review: boolean;
   external_source_checked_at: string | null;
+  external_content_hash?: string | null;
 }

@@ -7,6 +7,7 @@ export interface ValidationResult {
   errorMessage: string | null;
   message: string | null;
   resultType: string;
+  contentExists?: boolean;
 }
 
 /**

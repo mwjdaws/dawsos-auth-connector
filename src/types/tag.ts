@@ -29,6 +29,46 @@ export interface Tag {
 }
 
 /**
+ * Tag data interface for internal use
+ */
+export interface TagData {
+  id: string;
+  name: string;
+  type?: string | null;
+  typeId?: string | null;
+}
+
+/**
+ * Tag display properties interface
+ */
+export interface TagDisplay extends TagData {
+  color?: string;
+  icon?: string;
+  count?: number;
+}
+
+/**
+ * Tag group interface for grouped tags display
+ */
+export interface TagGroup {
+  id: string;
+  name: string;
+  tags: Tag[];
+  color?: string;
+  icon?: string;
+}
+
+/**
+ * Tag position interface for drag and drop
+ */
+export interface TagPosition {
+  id: string;
+  name: string;
+  typeId: string | null;
+  displayOrder: number;
+}
+
+/**
  * Converts a Supabase row to a Tag object
  * @param row The Supabase row to convert
  * @returns Tag
@@ -98,3 +138,56 @@ export function filterDuplicateTags(tags: Tag[]): Tag[] {
     return true;
   });
 }
+
+/**
+ * Converts API tag data to Tag objects
+ * @param apiTag API tag data
+ * @returns Tag
+ */
+export const mapApiTagToTag = (apiTag: any): Tag => {
+  return {
+    id: apiTag.id,
+    name: apiTag.name,
+    content_id: apiTag.content_id,
+    type_id: apiTag.type_id,
+    display_order: apiTag.display_order || 0,
+    type_name: apiTag.type_name || 'default',
+    color: apiTag.color,
+    icon: apiTag.icon
+  };
+};
+
+/**
+ * Converts API tag data array to Tag objects array
+ * @param apiTags API tag data array
+ * @returns Array of Tag objects
+ */
+export const mapApiTagsToTags = (apiTags: any[]): Tag[] => {
+  return apiTags.map(mapApiTagToTag);
+};
+
+/**
+ * Ensures tag is not null or undefined
+ * @param tag Tag or undefined
+ * @returns Tag or null
+ */
+export const ensureNonNullableTag = (tag: Tag | undefined): Tag | null => {
+  return tag || null;
+};
+
+/**
+ * Converts TagPosition array to Tag array
+ * @param positions TagPosition array
+ * @param contentId Content ID to assign
+ * @returns Array of Tag objects
+ */
+export const convertTagPositionsToTags = (positions: TagPosition[], contentId: string): Tag[] => {
+  return positions.map(position => ({
+    id: position.id,
+    name: position.name,
+    content_id: contentId,
+    type_id: position.typeId,
+    display_order: position.displayOrder,
+    type_name: 'default'
+  }));
+};

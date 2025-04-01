@@ -48,7 +48,7 @@ const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'edi
   
   // Content validation check
   const isValidContent = validationResult?.isValid || false;
-  const contentExists = validationResult ? validationResult.contentExists || false : false;
+  const contentExists = validationResult ? (validationResult as any).contentExists || false : false;
   
   if (!isValidContent) {
     return (
@@ -151,7 +151,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   return (
     <MetadataProvider 
       contentId={contentId}
-      isEditable={editable}
+      editable={editable}
     >
       <MetadataPanelContent
         {...props}

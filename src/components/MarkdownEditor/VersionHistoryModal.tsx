@@ -168,7 +168,7 @@ const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
                         {getVersionLabel(version.version_number, version.metadata)}
                       </h3>
                       <p className="text-sm text-gray-500">
-                        {version.created_at ? formatDate(version.created_at) : 'No date'}
+                        {version.created_at ? formatDate(new Date(version.created_at)) : 'No date'}
                       </p>
                     </div>
                     <div>

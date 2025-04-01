@@ -1,6 +1,5 @@
-
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { zoom, zoomIdentity } from 'd3-zoom';
+import { zoom, zoomIdentity, D3ZoomEvent } from 'd3-zoom';
 import { select } from 'd3-selection';
 import { GraphNode, GraphRendererRef } from './GraphRendererTypes';
 
@@ -26,17 +25,17 @@ export function useZoomPan({ width, height, initialZoom = 1 }: UseZoomPanProps) 
     
     const canvas = select(canvasRef.current);
     
-    const zoomBehavior = zoom()
+    const zoomBehavior = zoom<HTMLCanvasElement, unknown>()
       .scaleExtent([0.1, 8])
-      .on('zoom', (event) => {
+      .on('zoom', (event: D3ZoomEvent<HTMLCanvasElement, unknown>) => {
         setTransform(event.transform);
       });
     
-    canvas.call(zoomBehavior as any);
+    canvas.call(zoomBehavior);
     
     // Set initial transform
     canvas.call(
-      zoomBehavior.transform as any,
+      zoomBehavior.transform,
       zoomIdentity.translate(width / 2, height / 2).scale(initialZoom)
     );
   }, [width, height, initialZoom]);
@@ -45,20 +44,20 @@ export function useZoomPan({ width, height, initialZoom = 1 }: UseZoomPanProps) 
   const zoomMethods = useCallback((nodes: GraphNode[]): GraphRendererRef => {
     return {
       centerOnNode: (nodeId: string) => {
-        if (!canvasRef.current) return;
+        if (!canvasRef.current || !nodes.length) return;
         
         const node = nodes.find(n => n.id === nodeId);
-        if (!node || !node.x || !node.y) return;
+        if (!node || typeof node.x !== 'number' || typeof node.y !== 'number') return;
         
-        const canvas = select(canvasRef.current);
-        const zoomBehavior = zoom();
+        const canvas = select<HTMLCanvasElement, unknown>(canvasRef.current);
+        const zoomBehavior = zoom<HTMLCanvasElement, unknown>();
         
         const currentTransform = transformRef.current;
         const targetX = width / 2 - node.x * currentTransform.k;
         const targetY = height / 2 - node.y * currentTransform.k;
         
         canvas.transition().duration(750).call(
-          zoomBehavior.transform as any,
+          zoomBehavior.transform,
           zoomIdentity.translate(targetX, targetY).scale(currentTransform.k)
         );
       },
@@ -66,15 +65,15 @@ export function useZoomPan({ width, height, initialZoom = 1 }: UseZoomPanProps) 
       centerAt: (x: number, y: number, duration = 750) => {
         if (!canvasRef.current) return;
         
-        const canvas = select(canvasRef.current);
-        const zoomBehavior = zoom();
+        const canvas = select<HTMLCanvasElement, unknown>(canvasRef.current);
+        const zoomBehavior = zoom<HTMLCanvasElement, unknown>();
         
         const currentTransform = transformRef.current;
         const targetX = width / 2 - x * currentTransform.k;
         const targetY = height / 2 - y * currentTransform.k;
         
         canvas.transition().duration(duration).call(
-          zoomBehavior.transform as any,
+          zoomBehavior.transform,
           zoomIdentity.translate(targetX, targetY).scale(currentTransform.k)
         );
       },
@@ -82,14 +81,14 @@ export function useZoomPan({ width, height, initialZoom = 1 }: UseZoomPanProps) 
       zoomToFit: (duration = 750) => {
         if (!canvasRef.current || !nodes.length) return;
         
-        const canvas = select(canvasRef.current);
-        const zoomBehavior = zoom();
+        const canvas = select<HTMLCanvasElement, unknown>(canvasRef.current);
+        const zoomBehavior = zoom<HTMLCanvasElement, unknown>();
         
         // Calculate bounds
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         
         nodes.forEach(node => {
-          if (!node.x || !node.y) return;
+          if (typeof node.x !== 'number' || typeof node.y !== 'number') return;
           minX = Math.min(minX, node.x);
           minY = Math.min(minY, node.y);
           maxX = Math.max(maxX, node.x);
@@ -108,7 +107,7 @@ export function useZoomPan({ width, height, initialZoom = 1 }: UseZoomPanProps) 
         const translateY = height / 2 - y * scale;
         
         canvas.transition().duration(duration).call(
-          zoomBehavior.transform as any,
+          zoomBehavior.transform,
           zoomIdentity.translate(translateX, translateY).scale(scale)
         );
       },
@@ -116,11 +115,11 @@ export function useZoomPan({ width, height, initialZoom = 1 }: UseZoomPanProps) 
       resetZoom: () => {
         if (!canvasRef.current) return;
         
-        const canvas = select(canvasRef.current);
-        const zoomBehavior = zoom();
+        const canvas = select<HTMLCanvasElement, unknown>(canvasRef.current);
+        const zoomBehavior = zoom<HTMLCanvasElement, unknown>();
         
         canvas.transition().duration(750).call(
-          zoomBehavior.transform as any,
+          zoomBehavior.transform,
           zoomIdentity.translate(width / 2, height / 2).scale(1)
         );
       },
@@ -128,8 +127,8 @@ export function useZoomPan({ width, height, initialZoom = 1 }: UseZoomPanProps) 
       zoom: (zoomLevel: number, duration = 750) => {
         if (!canvasRef.current) return;
         
-        const canvas = select(canvasRef.current);
-        const zoomBehavior = zoom();
+        const canvas = select<HTMLCanvasElement, unknown>(canvasRef.current);
+        const zoomBehavior = zoom<HTMLCanvasElement, unknown>();
         
         const currentTransform = transformRef.current;
         // Maintain the center point
@@ -145,7 +144,7 @@ export function useZoomPan({ width, height, initialZoom = 1 }: UseZoomPanProps) 
         const newY = centerY - graphY * zoomLevel;
         
         canvas.transition().duration(duration).call(
-          zoomBehavior.transform as any,
+          zoomBehavior.transform,
           zoomIdentity.translate(newX, newY).scale(zoomLevel)
         );
       },
@@ -153,8 +152,8 @@ export function useZoomPan({ width, height, initialZoom = 1 }: UseZoomPanProps) 
       setZoom: (zoomLevel: number) => {
         if (!canvasRef.current) return;
         
-        const canvas = select(canvasRef.current);
-        const zoomBehavior = zoom();
+        const canvas = select<HTMLCanvasElement, unknown>(canvasRef.current);
+        const zoomBehavior = zoom<HTMLCanvasElement, unknown>();
         
         const currentTransform = transformRef.current;
         // Maintain the center point
@@ -170,7 +169,7 @@ export function useZoomPan({ width, height, initialZoom = 1 }: UseZoomPanProps) 
         const newY = centerY - graphY * zoomLevel;
         
         canvas.call(
-          zoomBehavior.transform as any,
+          zoomBehavior.transform,
           zoomIdentity.translate(newX, newY).scale(zoomLevel)
         );
       },
@@ -181,8 +180,8 @@ export function useZoomPan({ width, height, initialZoom = 1 }: UseZoomPanProps) 
         const currentTransform = transformRef.current;
         const newZoom = Math.min(currentTransform.k * 1.3, 8);
         
-        const canvas = select(canvasRef.current);
-        const zoomBehavior = zoom();
+        const canvas = select<HTMLCanvasElement, unknown>(canvasRef.current);
+        const zoomBehavior = zoom<HTMLCanvasElement, unknown>();
         
         // Maintain the center point
         const centerX = width / 2;
@@ -197,7 +196,7 @@ export function useZoomPan({ width, height, initialZoom = 1 }: UseZoomPanProps) 
         const newY = centerY - graphY * newZoom;
         
         canvas.transition().duration(300).call(
-          zoomBehavior.transform as any,
+          zoomBehavior.transform,
           zoomIdentity.translate(newX, newY).scale(newZoom)
         );
       },
@@ -208,8 +207,8 @@ export function useZoomPan({ width, height, initialZoom = 1 }: UseZoomPanProps) 
         const currentTransform = transformRef.current;
         const newZoom = Math.max(currentTransform.k / 1.3, 0.1);
         
-        const canvas = select(canvasRef.current);
-        const zoomBehavior = zoom();
+        const canvas = select<HTMLCanvasElement, unknown>(canvasRef.current);
+        const zoomBehavior = zoom<HTMLCanvasElement, unknown>();
         
         // Maintain the center point
         const centerX = width / 2;
@@ -224,7 +223,7 @@ export function useZoomPan({ width, height, initialZoom = 1 }: UseZoomPanProps) 
         const newY = centerY - graphY * newZoom;
         
         canvas.transition().duration(300).call(
-          zoomBehavior.transform as any,
+          zoomBehavior.transform,
           zoomIdentity.translate(newX, newY).scale(newZoom)
         );
       },
