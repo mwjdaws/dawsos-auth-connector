@@ -1,120 +1,113 @@
 
-/**
- * Compatibility utilities for the Relationship Graph
- */
-import { GraphData, GraphNode, GraphLink } from './types';
+import { 
+  GraphNodeData, 
+  GraphLinkData, 
+  GraphDataFormat, 
+  GraphNode,
+  GraphLink 
+} from './types';
 
 /**
- * Ensures non-null graph data
+ * Convert older graph data formats to current format
  */
-export function ensureGraphData(data: GraphData | null | undefined): GraphData {
-  if (!data) return { nodes: [], links: [] };
-  return {
-    nodes: Array.isArray(data.nodes) ? data.nodes : [],
-    links: Array.isArray(data.links) ? data.links : []
-  };
-}
-
-/**
- * Ensures a node has all required properties
- */
-export function ensureValidNode(node: any): GraphNode {
-  if (!node) return { id: generateTempId() };
+export function convertLegacyGraphData(data: any): GraphDataFormat {
+  // If it's already in the correct format
+  if (data && Array.isArray(data.nodes) && Array.isArray(data.links)) {
+    return data;
+  }
   
-  return {
-    id: node.id || generateTempId(),
-    title: node.title || node.name || '',
-    name: node.name || node.title || '',
-    type: node.type || 'unknown',
-    ...node
-  };
-}
-
-/**
- * Ensures a link has all required properties
- */
-export function ensureValidLink(link: any, nodes: GraphNode[]): GraphLink | null {
-  if (!link) return null;
+  // Default empty graph
+  const result: GraphDataFormat = { nodes: [], links: [] };
   
-  // Validate source and target
-  const source = typeof link.source === 'string' ? link.source : link.source?.id;
-  const target = typeof link.target === 'string' ? link.target : link.target?.id;
-  
-  if (!source || !target) return null;
-  
-  // Ensure source and target nodes exist
-  const sourceExists = nodes.some(n => n.id === source);
-  const targetExists = nodes.some(n => n.id === target);
-  
-  if (!sourceExists || !targetExists) return null;
-  
-  return {
-    source,
-    target,
-    type: link.type || 'default',
-    ...link
-  };
-}
-
-/**
- * Generates a temporary ID for graph nodes
- */
-export function generateTempId(): string {
-  return `node-${Math.random().toString(36).substr(2, 9)}`;
-}
-
-/**
- * Adapts graph data to ensure types are correct
- */
-export function adaptGraphData(data: any): GraphData {
-  if (!data) return { nodes: [], links: [] };
-  
-  const adaptedNodes = Array.isArray(data.nodes) 
-    ? data.nodes.map(ensureValidNode).filter(Boolean)
-    : [];
-  
-  const adaptedLinks = Array.isArray(data.links)
-    ? data.links.map(link => ensureValidLink(link, adaptedNodes)).filter(Boolean)
-    : [];
-  
-  return {
-    nodes: adaptedNodes,
-    links: adaptedLinks as GraphLink[]
-  };
-}
-
-/**
- * Type-safe wrapper for graph renderer ref methods
- */
-export function wrapGraphRendererRef(ref: any) {
-  if (!ref) return null;
-  
-  return {
-    centerOnNode: (nodeId: string) => {
-      if (ref.current && typeof ref.current.centerOnNode === 'function') {
-        ref.current.centerOnNode(nodeId);
-      }
-    },
-    centerAt: (x: number, y: number, duration = 1000) => {
-      if (ref.current && typeof ref.current.centerAt === 'function') {
-        ref.current.centerAt(x, y, duration);
-      }
-    },
-    zoomToFit: (duration = 1000) => {
-      if (ref.current && typeof ref.current.zoomToFit === 'function') {
-        ref.current.zoomToFit(duration);
-      }
-    },
-    setZoom: (zoomLevel: number) => {
-      if (ref.current && typeof ref.current.setZoom === 'function') {
-        ref.current.setZoom(zoomLevel);
-      }
-    },
-    getGraphData: () => {
-      if (ref.current && typeof ref.current.getGraphData === 'function') {
-        return ref.current.getGraphData();
-      }
-      return { nodes: [], links: [] };
+  try {
+    // Handle nodes
+    if (data && Array.isArray(data.nodes)) {
+      result.nodes = data.nodes.map((node: any) => convertLegacyNode(node));
     }
+    
+    // Handle links
+    if (data && Array.isArray(data.links)) {
+      result.links = data.links.map((link: any) => convertLegacyLink(link));
+    } else if (data && Array.isArray(data.edges)) {
+      // Support for older "edges" naming
+      result.links = data.edges.map((edge: any) => convertLegacyLink(edge));
+    }
+  } catch (error) {
+    console.error('Error converting legacy graph data:', error);
+  }
+  
+  return result;
+}
+
+/**
+ * Convert older node formats to current format
+ */
+export function convertLegacyNode(node: any): GraphNode {
+  // If no data, create minimal valid node
+  if (!node) {
+    return { id: 'unknown', label: 'Unknown' };
+  }
+  
+  // Start with required properties
+  const result: GraphNode = {
+    id: String(node.id || ''),
+    label: node.label || node.name || String(node.id || '')
   };
+  
+  // Add optional properties if they exist
+  if (node.group) result.type = String(node.group);
+  if (node.type) result.type = String(node.type);
+  if (node.color) result.color = String(node.color);
+  if (node.size !== undefined) result.size = Number(node.size);
+  if (node.weight !== undefined) result.weight = Number(node.weight);
+  if (node.x !== undefined) result.x = Number(node.x);
+  if (node.y !== undefined) result.y = Number(node.y);
+  
+  // Copy any custom properties
+  Object.keys(node).forEach(key => {
+    if (!['id', 'label', 'name', 'group', 'type', 'color', 'size', 'weight', 'x', 'y'].includes(key)) {
+      (result as any)[key] = node[key];
+    }
+  });
+  
+  return result;
+}
+
+/**
+ * Convert older link formats to current format
+ */
+export function convertLegacyLink(link: any): GraphLink {
+  // If no data, create minimal valid link
+  if (!link) {
+    return { source: 'unknown', target: 'unknown' };
+  }
+  
+  // Start with required properties
+  const result: GraphLink = {
+    source: String(link.source || ''),
+    target: String(link.target || '')
+  };
+  
+  // Add optional properties if they exist
+  if (link.type) result.type = String(link.type);
+  if (link.label) result.label = String(link.label);
+  if (link.color) result.color = String(link.color);
+  if (link.width !== undefined) result.width = Number(link.width);
+  if (link.weight !== undefined) result.weight = Number(link.weight);
+  
+  // Copy any custom properties
+  Object.keys(link).forEach(key => {
+    if (!['source', 'target', 'type', 'label', 'color', 'width', 'weight'].includes(key)) {
+      (result as any)[key] = link[key];
+    }
+  });
+  
+  return result;
+}
+
+/**
+ * Create a compatible ref object for the graph
+ */
+export function createCompatibleGraphRef(initialValue: any = null) {
+  return { current: initialValue };
 }

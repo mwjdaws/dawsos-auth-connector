@@ -47,8 +47,8 @@ const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'edi
   const lastCheckedAt = sourceMetadata?.external_source_checked_at || null;
   
   // Content validation check
-  const isValidContent = validationResult.isValid;
-  const contentExists = validationResult.contentExists || false;
+  const isValidContent = validationResult?.isValid || false;
+  const contentExists = validationResult?.contentExists || false;
   
   if (!isValidContent) {
     return (

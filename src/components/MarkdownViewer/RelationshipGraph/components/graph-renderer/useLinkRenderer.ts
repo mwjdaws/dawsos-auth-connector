@@ -16,14 +16,14 @@ interface UseLinkRendererProps {
 
 export function useLinkRenderer({
   linkColorMap = {},
-  defaultLinkColor = '#999999',
-  linkWidthRange = [1, 3],
+  defaultLinkColor = '#cccccc',
+  linkWidthRange = [1, 4],
   defaultLinkWidth = 1.5
 }: UseLinkRendererProps = {}) {
   
   // Get link color based on type
   const getLinkColor = useCallback((link: GraphLink): string => {
-    if (link.color) return link.color;
+    if (link.color !== undefined) return link.color;
     
     if (link.type && linkColorMap[link.type]) {
       return linkColorMap[link.type];
@@ -34,7 +34,7 @@ export function useLinkRenderer({
   
   // Get link width based on weight
   const getLinkWidth = useCallback((link: GraphLink): number => {
-    if (link.width) return link.width;
+    if (link.width !== undefined) return link.width;
     
     const weight = link.weight || 1;
     const [min, max] = linkWidthRange;
@@ -43,14 +43,8 @@ export function useLinkRenderer({
     return Math.max(min, Math.min(max, defaultLinkWidth * weight));
   }, [linkWidthRange, defaultLinkWidth]);
   
-  // Get link label
-  const getLinkLabel = useCallback((link: GraphLink): string => {
-    return link.label || link.type || '';
-  }, []);
-  
   return {
     getLinkColor,
-    getLinkWidth,
-    getLinkLabel
+    getLinkWidth
   };
 }

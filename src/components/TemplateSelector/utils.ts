@@ -1,38 +1,42 @@
 
-export const generateStructureFromContent = (content: string) => {
-  try {
-    const lines = content.split('\n');
-    const sections = [];
-    
-    let currentSection = null;
-    
-    for (const line of lines) {
-      const h2Match = line.match(/^## (.+)$/);
-      
-      if (h2Match) {
-        if (currentSection) {
-          sections.push(currentSection);
-        }
-        currentSection = {
-          title: h2Match[1].trim(),
-          content: ""
-        };
-      } else if (currentSection) {
-        if (currentSection.content) {
-          currentSection.content += "\n" + line;
-        } else {
-          currentSection.content = line;
-        }
-      }
-    }
-    
-    if (currentSection) {
-      sections.push(currentSection);
-    }
-    
-    return { sections };
-  } catch (error) {
-    console.error("Error generating structure from content:", error);
-    return null;
+import { KnowledgeTemplate } from '@/types/knowledge';
+
+/**
+ * Format template into a readable option for selectors
+ */
+export function formatTemplateOption(template: KnowledgeTemplate | null) {
+  if (!template) {
+    return { label: 'No template', value: '' };
   }
-};
+  
+  return {
+    label: template.name || 'Unnamed Template',
+    value: template.id,
+    description: formatTemplateDescription(template)
+  };
+}
+
+/**
+ * Format template description for display
+ */
+function formatTemplateDescription(template: KnowledgeTemplate | null) {
+  if (!template) return '';
+  
+  // Get first 50 characters of content
+  const contentPreview = template.content && template.content.length > 50
+    ? `${template.content.substring(0, 50)}...`
+    : template.content || '';
+  
+  return contentPreview;
+}
+
+/**
+ * Format multiple templates into options
+ */
+export function formatTemplateOptions(templates: KnowledgeTemplate[] | null | undefined) {
+  if (!templates || !templates.length) {
+    return [{ label: 'No templates available', value: '' }];
+  }
+  
+  return templates.map(formatTemplateOption);
+}

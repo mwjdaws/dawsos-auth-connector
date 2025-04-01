@@ -1,101 +1,101 @@
 
 /**
- * Types for validation results and utilities
+ * Types for validation utilities
+ * 
+ * These types provide consistent interfaces for validation operations
+ * across the application.
  */
 
 /**
- * Basic validation result interface
+ * Standard validation result
  */
 export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
-  message: string;
-  resultType?: string;
+  message: string | null;  // Alias for errorMessage for backward compatibility
 }
 
 /**
- * Factory for creating a valid validation result
+ * Content ID validation result types
  */
-export function createValidResult(message: string = 'Valid'): ValidationResult {
-  return {
-    isValid: true,
-    errorMessage: null,
-    message
-  };
-}
-
-/**
- * Factory for creating an invalid validation result
- */
-export function createInvalidResult(errorMessage: string): ValidationResult {
-  return {
-    isValid: false,
-    errorMessage,
-    message: errorMessage
-  };
+export enum ContentIdValidationResultType {
+  VALID = 'valid',
+  INVALID_FORMAT = 'invalid_format',
+  NOT_FOUND = 'not_found',
+  TEMP = 'temporary'
 }
 
 /**
  * Content ID validation result
  */
 export interface ContentIdValidationResult extends ValidationResult {
-  contentExists: boolean;
   resultType: ContentIdValidationResultType;
+  contentExists: boolean;
 }
 
 /**
- * Validation result types specifically for content IDs
- */
-export enum ContentIdValidationResultType {
-  VALID = 'VALID',
-  MISSING = 'MISSING',
-  INVALID_FORMAT = 'INVALID_FORMAT',
-  TEMPORARY = 'TEMPORARY',
-  NOT_FOUND = 'NOT_FOUND'
-}
-
-/**
- * Factory for creating a content ID validation result
+ * Create a content ID validation result
  */
 export function createContentIdValidationResult(
   isValid: boolean,
+  errorMessage: string | null,
   resultType: ContentIdValidationResultType,
-  contentExists: boolean = false,
-  errorMessage: string | null = null
+  contentExists: boolean = false
 ): ContentIdValidationResult {
   return {
     isValid,
-    resultType,
-    contentExists,
     errorMessage,
-    message: errorMessage || resultType
+    message: errorMessage, // Alias for backward compatibility
+    resultType,
+    contentExists
   };
 }
 
 /**
- * Tag validation result
+ * Document validation result
  */
-export interface TagValidationResult extends ValidationResult {
-  resultType: 'valid' | 'invalid' | 'duplicate';
+export interface DocumentValidationResult extends ValidationResult {
+  documentId: string | null;
 }
 
 /**
- * Factory for creating a tag validation result
+ * Create a document validation result
  */
-export function createTagValidationResult(
+export function createDocumentValidationResult(
   isValid: boolean,
-  resultType: 'valid' | 'invalid' | 'duplicate',
-  errorMessage: string | null = null
-): TagValidationResult {
+  errorMessage: string | null,
+  documentId: string | null = null
+): DocumentValidationResult {
   return {
     isValid,
-    resultType,
     errorMessage,
-    message: errorMessage || resultType
+    message: errorMessage, // Alias for backward compatibility
+    documentId
   };
 }
 
 /**
- * For backward compatibility with previous validation systems
+ * Check if a validation result indicates success
  */
-export type ValidationResultType = 'valid' | 'invalid' | 'missing' | 'temporary' | 'not_found';
+export function isValidResult(result: ValidationResult): boolean {
+  return result.isValid === true;
+}
+
+/**
+ * Combine multiple validation results into one
+ */
+export function combineValidationResults(results: ValidationResult[]): ValidationResult {
+  if (!results.length) {
+    return { isValid: true, errorMessage: null, message: null };
+  }
+  
+  // Check if any validations failed
+  const firstFailure = results.find(r => !r.isValid);
+  
+  if (firstFailure) {
+    return firstFailure;
+  }
+  
+  // All passed
+  return { isValid: true, errorMessage: null, message: null };
+}

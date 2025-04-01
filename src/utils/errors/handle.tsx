@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { toast } from '@/hooks/use-toast';
-import { ErrorHandlingOptions, ErrorLevel, ErrorHandlingCompatOptions } from './types';
+import { ErrorHandlingOptions, ErrorLevel } from './types';
+import { convertErrorOptions, LegacyErrorHandlingOptions } from './compatibility';
 
 /**
  * Default error handling options
@@ -23,9 +24,12 @@ const defaultOptions: ErrorHandlingOptions = {
 export function handleError(
   error: unknown,
   userMessage?: string,
-  options?: Partial<ErrorHandlingOptions>
+  options?: Partial<ErrorHandlingOptions> | LegacyErrorHandlingOptions
 ): void {
-  const opts = { ...defaultOptions, ...options };
+  // Convert legacy options if needed
+  const convertedOptions = convertErrorOptions(options as LegacyErrorHandlingOptions);
+  const opts: ErrorHandlingOptions = { ...defaultOptions, ...convertedOptions };
+  
   const errorObj = error instanceof Error ? error : new Error(String(error));
   
   // Always log to console with appropriate level
@@ -46,7 +50,10 @@ export function handleError(
   
   // Show toast notification if enabled
   if (opts.showToast && !opts.silent) {
+    const toastId = opts.fingerprint ? `error-${opts.fingerprint}` : undefined;
+    
     toast({
+      id: toastId,
       title: opts.toastTitle || (opts.level === ErrorLevel.ERROR ? 'Error' : opts.level === ErrorLevel.WARNING ? 'Warning' : 'Notice'),
       description: userMessage || errorObj.message,
       variant: opts.level === ErrorLevel.ERROR ? 'destructive' : 'default',
@@ -81,7 +88,7 @@ export function createErrorHandler(
   componentName: string,
   defaultOptions?: Partial<ErrorHandlingOptions>
 ) {
-  return (error: unknown, userMessage?: string, options?: Partial<ErrorHandlingOptions>): void => {
+  return (error: unknown, userMessage?: string | undefined, options?: Partial<ErrorHandlingOptions> | undefined): void => {
     handleError(error, userMessage, {
       ...defaultOptions,
       ...options,
@@ -101,6 +108,26 @@ export function createComponentErrorHandler(componentName: string) {
   return createErrorHandler(componentName, { 
     level: ErrorLevel.ERROR,
     context: { source: 'component', component: componentName }
+  });
+}
+
+/**
+ * Creates a hook-specific error handler
+ */
+export function createHookErrorHandler(hookName: string) {
+  return createErrorHandler(hookName, {
+    level: ErrorLevel.ERROR,
+    context: { source: 'hook', hook: hookName }
+  });
+}
+
+/**
+ * Creates a service-specific error handler
+ */
+export function createServiceErrorHandler(serviceName: string) {
+  return createErrorHandler(serviceName, {
+    level: ErrorLevel.ERROR,
+    context: { source: 'service', service: serviceName }
   });
 }
 

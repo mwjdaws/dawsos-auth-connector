@@ -1,6 +1,6 @@
 
 import { toast } from '@/hooks/use-toast';
-import { Tag } from '@/hooks/metadata/useTagsQuery';
+import { Tag } from '@/types/tag';
 
 export interface TagValidationOptions {
   allowEmpty?: boolean;
@@ -95,7 +95,7 @@ export function useTagValidator() {
     if (!formatResult.isValid) {
       toast({
         title: "Invalid Tag",
-        description: formatResult.message,
+        description: formatResult.message || "Tag is invalid",
         variant: "destructive"
       });
       return false;
@@ -106,7 +106,7 @@ export function useTagValidator() {
     if (!uniquenessResult.isValid) {
       toast({
         title: "Duplicate Tag",
-        description: uniquenessResult.message,
+        description: uniquenessResult.message || "Tag already exists",
         variant: "destructive"
       });
       return false;

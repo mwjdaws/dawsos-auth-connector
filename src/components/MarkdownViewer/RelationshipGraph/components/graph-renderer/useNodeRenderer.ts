@@ -34,7 +34,7 @@ export function useNodeRenderer({
   
   // Get node size based on weight
   const getNodeSize = useCallback((node: GraphNode): number => {
-    if (node.size) return node.size;
+    if (node.size !== undefined) return node.size;
     
     const weight = node.weight || 1;
     const [min, max] = nodeSizeRange;

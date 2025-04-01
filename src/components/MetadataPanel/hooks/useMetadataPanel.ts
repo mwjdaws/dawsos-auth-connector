@@ -7,7 +7,6 @@ import { MetadataPanelProps } from '../types';
 import { safeCallback } from '@/utils/compatibility';
 import { useContentValidator } from '@/hooks/validation/useContentValidator';
 import { createComponentErrorHandler } from '@/utils/errors/wrappers';
-import { ContentValidationResult } from '@/utils/validation/types';
 import { handleError, ErrorLevel } from '@/utils/errors';
 
 // Component-specific error handler
@@ -25,7 +24,7 @@ export const useMetadataPanel = ({
   // Validate the content ID
   const contentValidationResult = useContentValidator(contentId);
   const isValidContent = contentValidationResult.isValid;
-  const contentExists = contentValidationResult.contentExists;
+  const contentExists = contentValidationResult.contentExists || false;
   
   // Panel state management
   const { 

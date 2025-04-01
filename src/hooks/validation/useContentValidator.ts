@@ -1,71 +1,33 @@
 
-/**
- * Hook for validating content IDs
- * 
- * Provides validation for content IDs, checking format and existence
- */
-import { useMemo } from 'react';
-import { ContentValidationResult } from '@/utils/validation/types';
-import { isValidContentId, isTempId, isUUID } from '@/utils/validation/contentIdValidation';
+import { useCallback, useEffect, useState } from 'react';
+import { ContentIdValidationResult, validateContentId } from '@/utils/validation';
 
 /**
- * Hook for content validation
+ * Hook for validating content IDs and checking existence
  * 
  * @param contentId The content ID to validate
- * @returns Content validation result
+ * @returns Validation result object
  */
-export function useContentValidator(contentId?: string): ContentValidationResult {
-  return useMemo(() => {
-    // Check if content ID is provided
-    if (!contentId) {
-      return {
-        contentId: '',
-        isValid: false,
-        contentExists: false,
-        errorMessage: 'Content ID is required'
-      };
-    }
-    
-    // Check if content ID is valid
-    if (!isValidContentId(contentId)) {
-      return {
-        contentId,
-        isValid: false,
-        contentExists: false,
-        errorMessage: 'Invalid content ID format'
-      };
-    }
-    
-    // If it's a temporary ID
-    if (isTempId(contentId)) {
-      return {
-        contentId,
-        isValid: true,
-        contentExists: false, // Temporary IDs don't exist in the database yet
-        errorMessage: null
-      };
-    }
-    
-    // If it's a UUID, we assume it exists
-    // In a real implementation, you'd check the database
-    if (isUUID(contentId)) {
-      return {
-        contentId,
-        isValid: true,
-        contentExists: true,
-        errorMessage: null
-      };
-    }
-    
-    // Default case
-    return {
-      contentId,
-      isValid: false,
-      contentExists: false,
-      errorMessage: 'Unknown content ID format'
-    };
+export function useContentValidator(contentId: string | null | undefined) {
+  const [validationResult, setValidationResult] = useState<ContentIdValidationResult>(() => 
+    validateContentId(contentId)
+  );
+  
+  // Update validation when contentId changes
+  useEffect(() => {
+    setValidationResult(validateContentId(contentId));
   }, [contentId]);
+  
+  // Function to manually validate
+  const validate = useCallback(() => {
+    setValidationResult(validateContentId(contentId));
+    return validationResult;
+  }, [contentId, validationResult]);
+  
+  return {
+    ...validationResult,
+    validate
+  };
 }
 
-// Default export for compatibility
 export default useContentValidator;
