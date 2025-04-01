@@ -1,10 +1,16 @@
 
-import { GraphData, GraphNode, GraphLink, GraphRendererRef } from './types';
+/**
+ * Compatibility utilities for the RelationshipGraph component
+ * 
+ * These functions ensure the graph data is valid and handles inconsistencies
+ * that might occur when working with different data sources or legacy formats.
+ */
+import { GraphData, GraphNode, GraphLink, GraphProps } from './types';
 
 /**
- * Ensure a value is a valid number
+ * Ensure a value is a number
  */
-export const ensureNumber = (value: any, defaultValue: number = 0): number => {
+export const ensureNumber = (value: any, defaultValue = 0): number => {
   if (typeof value === 'number' && !isNaN(value)) {
     return value;
   }
@@ -12,9 +18,9 @@ export const ensureNumber = (value: any, defaultValue: number = 0): number => {
 };
 
 /**
- * Ensure a value is a valid string
+ * Ensure a value is a string
  */
-export const ensureString = (value: any, defaultValue: string = ''): string => {
+export const ensureString = (value: any, defaultValue = ''): string => {
   if (typeof value === 'string') {
     return value;
   }
@@ -22,9 +28,9 @@ export const ensureString = (value: any, defaultValue: string = ''): string => {
 };
 
 /**
- * Ensure a value is a valid boolean
+ * Ensure a value is a boolean
  */
-export const ensureBoolean = (value: any, defaultValue: boolean = false): boolean => {
+export const ensureBoolean = (value: any, defaultValue = false): boolean => {
   if (typeof value === 'boolean') {
     return value;
   }
@@ -32,98 +38,104 @@ export const ensureBoolean = (value: any, defaultValue: boolean = false): boolea
 };
 
 /**
- * Ensure zoom level is within valid range
+ * Ensure a zoom value is valid (between 0.1 and 5)
  */
-export const ensureValidZoom = (zoom: number | undefined, min: number = 0.1, max: number = 5): number => {
+export const ensureValidZoom = (zoom: number | undefined): number => {
   const validZoom = ensureNumber(zoom, 1);
-  return Math.min(Math.max(validZoom, min), max);
+  return Math.max(0.1, Math.min(validZoom, 5));
 };
 
 /**
- * Ensure graph data is valid
+ * Ensure graph data is valid, filtering out invalid nodes and links
  */
-export const ensureValidGraphData = (data: GraphData | null | undefined): GraphData => {
+export const ensureValidGraphData = (data: any): GraphData => {
   if (!data) {
     return { nodes: [], links: [] };
   }
-  
+
+  // Ensure nodes array exists and all nodes have an id
+  const validNodes = Array.isArray(data.nodes) 
+    ? data.nodes.filter(node => node && node.id).map(sanitizeGraphNode)
+    : [];
+
+  // Ensure links array exists and all links have source and target
+  const validLinks = Array.isArray(data.links)
+    ? data.links.filter(link => 
+        link && 
+        (typeof link.source === 'string' || (link.source && typeof link.source.id === 'string')) &&
+        (typeof link.target === 'string' || (link.target && typeof link.target.id === 'string'))
+      ).map(sanitizeGraphLink)
+    : [];
+
   return {
-    nodes: Array.isArray(data.nodes) ? data.nodes : [],
-    links: Array.isArray(data.links) ? data.links : []
+    nodes: validNodes,
+    links: validLinks
   };
 };
 
 /**
- * Sanitize graph data to ensure all required properties exist
+ * Sanitize a graph node to ensure all properties are valid
  */
-export const sanitizeGraphData = (data: GraphData): GraphData => {
-  const sanitizedNodes = data.nodes.map(node => ({
+const sanitizeGraphNode = (node: any): GraphNode => {
+  return {
     id: ensureString(node.id),
-    name: ensureString(node.name, node.title || `Node ${node.id}`),
-    title: ensureString(node.title, node.name || `Node ${node.id}`),
-    ...node
-  }));
-
-  const sanitizedLinks = data.links.map(link => {
-    // Handle the case where link.source or link.target are objects
-    const sourceId = typeof link.source === 'object' ? ensureString((link.source as GraphNode)?.id) : ensureString(link.source);
-    const targetId = typeof link.target === 'object' ? ensureString((link.target as GraphNode)?.id) : ensureString(link.target);
-    
-    return {
-      source: sourceId,
-      target: targetId,
-      type: ensureString(link.type, 'default'),
-      ...link
-    };
-  });
-
-  return {
-    nodes: sanitizedNodes,
-    links: sanitizedLinks
+    name: ensureString(node.name),
+    title: ensureString(node.title),
+    type: ensureString(node.type),
+    x: ensureNumber(node.x),
+    y: ensureNumber(node.y),
+    color: ensureString(node.color),
+    size: ensureNumber(node.size),
+    highlighted: ensureBoolean(node.highlighted),
+    metadata: node.metadata || {}
   };
 };
 
 /**
- * Creates a compatible ref object for the graph renderer
+ * Sanitize a graph link to ensure all properties are valid
  */
-export const createCompatibleGraphRef = (ref: React.RefObject<GraphRendererRef>): any => {
-  // Return a proxy that safely handles method calls
+const sanitizeGraphLink = (link: any): GraphLink => {
   return {
-    centerOnNode: (nodeId: string) => {
-      try {
-        if (ref.current && ref.current.centerOnNode) {
-          ref.current.centerOnNode(nodeId);
-        }
-      } catch (error) {
-        console.error('Error calling centerOnNode:', error);
-      }
-    },
-    zoomToFit: (duration?: number) => {
-      try {
-        if (ref.current && ref.current.zoomToFit) {
-          ref.current.zoomToFit(duration);
-        }
-      } catch (error) {
-        console.error('Error calling zoomToFit:', error);
-      }
-    },
-    resetZoom: () => {
-      try {
-        if (ref.current && ref.current.resetZoom) {
-          ref.current.resetZoom();
-        }
-      } catch (error) {
-        console.error('Error calling resetZoom:', error);
-      }
-    },
-    setZoom: (zoomLevel: number) => {
-      try {
-        if (ref.current && ref.current.setZoom) {
-          ref.current.setZoom(zoomLevel);
-        }
-      } catch (error) {
-        console.error('Error calling setZoom:', error);
-      }
+    source: typeof link.source === 'object' ? ensureString(link.source.id) : ensureString(link.source),
+    target: typeof link.target === 'object' ? ensureString(link.target.id) : ensureString(link.target),
+    type: ensureString(link.type),
+    strength: ensureNumber(link.strength, 1),
+    color: ensureString(link.color),
+    width: ensureNumber(link.width, 1),
+    highlighted: ensureBoolean(link.highlighted)
+  };
+};
+
+/**
+ * Create a safe GraphData object from potentially invalid data
+ */
+export const sanitizeGraphData = (data: any): GraphData => {
+  return ensureValidGraphData(data);
+};
+
+/**
+ * Create a compatible ref object for the graph renderer
+ */
+export const createCompatibleGraphRef = (): { current: any } => {
+  return {
+    current: {
+      centerOn: (nodeId: string) => console.warn('Graph ref not initialized', nodeId),
+      zoomToFit: (duration = 1000) => console.warn('Graph ref not initialized', duration),
+      resetZoom: () => console.warn('Graph ref not initialized'),
+      setZoom: (zoomLevel: number) => console.warn('Graph ref not initialized', zoomLevel),
+      getGraphData: () => ({ nodes: [], links: [] })
     }
+  };
+};
+
+/**
+ * Create safe props for the RelationshipGraph component
+ */
+export const createSafeGraphProps = (props: Partial<GraphProps>): GraphProps => {
+  return {
+    startingNodeId: ensureString(props.startingNodeId, ''),
+    width: ensureNumber(props.width, 800),
+    height: ensureNumber(props.height, 600),
+    hasAttemptedRetry: ensureBoolean(props.hasAttemptedRetry)
   };
 };

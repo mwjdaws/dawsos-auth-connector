@@ -1,10 +1,10 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { GraphData } from '../types';
+import { GraphData, GraphNode } from '../types';
 
-export interface GraphSearchProps {
+interface GraphSearchProps {
   graphData: GraphData;
   onNodeFound: (nodeId: string) => void;
 }
@@ -12,86 +12,90 @@ export interface GraphSearchProps {
 /**
  * GraphSearch Component
  * 
- * This component provides search functionality for the graph,
- * allowing users to find nodes by typing in a search term.
+ * Provides a search interface to find nodes in the graph by name or title.
  */
 export function GraphSearch({ graphData, onNodeFound }: GraphSearchProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<Array<{ id: string; title: string }>>([]);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [searchResults, setSearchResults] = useState<GraphNode[]>([]);
+  const [showResults, setShowResults] = useState(false);
 
-  // Handle search input change
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const term = e.target.value;
-    setSearchTerm(term);
-    
-    if (term.trim().length === 0) {
+  // Search the graph data for nodes matching the search term
+  const searchNodes = useCallback((term: string) => {
+    if (!term.trim() || !graphData?.nodes?.length) {
       setSearchResults([]);
-      setIsDropdownOpen(false);
       return;
     }
+
+    const normalizedTerm = term.toLowerCase().trim();
     
-    // Filter nodes based on search term
-    const results = graphData.nodes
-      .filter(node => 
-        (node.name?.toLowerCase().includes(term.toLowerCase()) || 
-         node.title?.toLowerCase().includes(term.toLowerCase())))
-      .map(node => ({ id: node.id, title: node.title || node.name || node.id }))
-      .slice(0, 10); // Limit to 10 results
+    const results = graphData.nodes.filter(node => {
+      const nodeName = (node.name || '').toLowerCase();
+      const nodeTitle = (node.title || '').toLowerCase();
+      const nodeId = node.id.toLowerCase();
+      
+      return (
+        nodeName.includes(normalizedTerm) || 
+        nodeTitle.includes(normalizedTerm) ||
+        nodeId.includes(normalizedTerm)
+      );
+    }).slice(0, 5); // Limit to 5 results
     
     setSearchResults(results);
-    setIsDropdownOpen(results.length > 0);
+  }, [graphData]);
+
+  // Handle search input changes
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    searchNodes(value);
+    setShowResults(!!value.trim());
   };
-  
-  // Handle selecting a search result
+
+  // Handle clicking on a search result
   const handleResultClick = (nodeId: string) => {
     onNodeFound(nodeId);
-    setIsDropdownOpen(false);
-    setSearchResults([]);
+    setShowResults(false);
     setSearchTerm('');
+    setSearchResults([]);
   };
-  
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative w-full max-w-sm">
       <div className="relative">
-        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
-          type="text"
           placeholder="Search nodes..."
           value={searchTerm}
           onChange={handleSearchChange}
-          className="pl-8 pr-4 py-2 w-full rounded-md"
+          className="pl-8"
+          onFocus={() => setShowResults(!!searchTerm.trim())}
+          onBlur={() => {
+            // Delay hiding to allow for clicks on results
+            setTimeout(() => setShowResults(false), 200);
+          }}
         />
       </div>
-      
-      {isDropdownOpen && searchResults.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-white shadow-lg rounded-md max-h-60 overflow-y-auto">
-          <ul className="py-1">
-            {searchResults.map(result => (
+
+      {showResults && searchResults.length > 0 && (
+        <div className="absolute mt-1 w-full bg-background border rounded-md shadow-md z-10">
+          <ul>
+            {searchResults.map(node => (
               <li 
-                key={result.id}
-                className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm truncate"
-                onClick={() => handleResultClick(result.id)}
+                key={node.id}
+                className="px-4 py-2 hover:bg-accent cursor-pointer"
+                onMouseDown={() => handleResultClick(node.id)}
               >
-                {result.title}
+                <div className="font-medium">{node.name || node.title || 'Unnamed Node'}</div>
+                <div className="text-xs text-muted-foreground truncate">ID: {node.id}</div>
               </li>
             ))}
           </ul>
+        </div>
+      )}
+      
+      {showResults && searchTerm.trim() && searchResults.length === 0 && (
+        <div className="absolute mt-1 w-full bg-background border rounded-md shadow-md z-10 p-4 text-center">
+          <p className="text-muted-foreground">No matching nodes found</p>
         </div>
       )}
     </div>

@@ -1,34 +1,30 @@
 
+import React, { useState, useEffect, useRef } from 'react';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { Loader2, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { GraphData, GraphProps, GraphRendererRef } from './types';
+import { useRelationshipGraph } from './hooks/useRelationshipGraph';
+import { GraphRenderer } from './components/graph-renderer/GraphRenderer';
+import { GraphControls } from './components/GraphControls';
+import { GraphSearch } from './components/GraphSearch';
+import { ensureValidZoom, createSafeGraphProps } from './compatibility';
+
 /**
  * RelationshipGraph Component
  * 
- * The main component that renders the knowledge graph visualization.
- * This component manages data loading states and renders the appropriate
- * subcomponents based on the current state.
+ * Displays a knowledge graph visualization showing connections between content items.
  */
-import React, { useMemo, useRef } from 'react';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { GraphData, GraphRendererRef, GraphProps } from './types';
-import { GraphHeader } from './components/GraphHeader';
-import { GraphLoading } from './components/GraphLoading';
-import { GraphError } from './components/GraphError';
-import { EmptyGraphState } from './components/EmptyGraphState';
-import { GraphControls } from './components/GraphControls';
-import { GraphContent } from './components/GraphContent';
-import { ErrorFallback } from './components/ErrorFallback';
-import { useRelationshipGraph } from './hooks/useRelationshipGraph';
-import { createSafeGraphProps } from './compatibility';
-
-// Export the main component
-export function RelationshipGraph(props: GraphProps) { 
-  // Convert props to safe values using our compatibility layer
-  const safeProps = createSafeGraphProps(props);
-  const { startingNodeId = '', width = 800, height = 600, hasAttemptedRetry = false } = safeProps;
+export function RelationshipGraph({ 
+  startingNodeId = '',
+  width = 800,
+  height = 600,
+  hasAttemptedRetry = false
+}: GraphProps) {
+  // Create safe props
+  const safeProps = createSafeGraphProps({ startingNodeId, width, height, hasAttemptedRetry });
   
-  // Create a ref for the graph renderer
-  const graphRendererRef = useRef<GraphRendererRef>(null);
-  
-  // Use the custom hook to manage graph state and behavior
+  // Use the relationship graph hook
   const {
     graphData,
     loading,
@@ -37,65 +33,102 @@ export function RelationshipGraph(props: GraphProps) {
     highlightedNodeId,
     zoomLevel,
     isPending,
-    graphStats,
+    graphRendererRef,
     handleNodeFound,
     handleZoomChange,
     handleResetZoom,
     handleRetry
-  } = useRelationshipGraph({ 
-    startingNodeId, 
-    hasAttemptedRetry 
+  } = useRelationshipGraph({
+    startingNodeId: safeProps.startingNodeId,
+    hasAttemptedRetry: safeProps.hasAttemptedRetry
   });
+
+  // Safe zoom level
+  const safeZoomLevel = ensureValidZoom(zoomLevel);
   
-  // Determine the content to display based on loading/error state
-  const content = useMemo(() => {
-    if (loading) {
-      return <GraphLoading loadingTime={loadingTime} />;
-    }
-    
-    if (error) {
-      return <GraphError error={error} onRetry={handleRetry} />;
-    }
-    
-    if (!graphData || !graphData.nodes || graphData.nodes.length === 0) {
-      return <EmptyGraphState startingNodeId={startingNodeId} onRetry={handleRetry} />;
-    }
-    
+  // Render loading state
+  if (loading) {
     return (
-      <GraphContent
-        graphRef={graphRendererRef}
-        graphData={graphData}
-        width={width}
-        height={height}
-        highlightedNodeId={highlightedNodeId}
-        zoomLevel={zoomLevel}
-        onNodeSelect={handleNodeFound}
-      />
+      <div className="flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">
+          {loadingTime > 5 
+            ? "Loading knowledge graph... (this may take a minute for large graphs)" 
+            : "Loading knowledge graph..."}
+        </p>
+        {loadingTime > 15 && (
+          <Button 
+            variant="outline" 
+            className="mt-4" 
+            onClick={handleRetry}
+          >
+            Refresh Graph
+          </Button>
+        )}
+      </div>
     );
-  }, [graphData, loading, error, loadingTime, startingNodeId, width, height, highlightedNodeId, zoomLevel, handleNodeFound, handleRetry]);
+  }
+  
+  // Render error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full min-h-[300px] p-8 text-center">
+        <AlertTriangle className="h-8 w-8 text-destructive mb-4" />
+        <h3 className="text-lg font-medium mb-2">Error Loading Graph</h3>
+        <p className="text-muted-foreground mb-4">{error}</p>
+        <Button onClick={handleRetry}>Try Again</Button>
+      </div>
+    );
+  }
+  
+  // Render empty state
+  if (!graphData?.nodes?.length) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full min-h-[300px] p-8 text-center">
+        <AlertTriangle className="h-8 w-8 text-amber-500 mb-4" />
+        <h3 className="text-lg font-medium mb-2">No Connections Found</h3>
+        <p className="text-muted-foreground mb-4">
+          {startingNodeId 
+            ? "This content doesn't have any knowledge connections yet." 
+            : "No knowledge connections found in the system."}
+        </p>
+      </div>
+    );
+  }
   
   return (
-    <ErrorBoundary fallback={<ErrorFallback />}>
-      <div className="flex flex-col h-full">
-        <GraphHeader 
-          loading={loading}
-          nodeCount={graphStats.nodeCount}
-          linkCount={graphStats.linkCount}
-          onRetry={handleRetry}
+    <div className="flex flex-col gap-4 w-full" data-testid="relationship-graph">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-2">
+        <GraphSearch 
+          graphData={graphData} 
+          onNodeFound={handleNodeFound}
         />
         
-        <div className="relative flex-1">
-          {content}
-          
-          <GraphControls
-            zoomLevel={zoomLevel}
-            onZoomChange={handleZoomChange}
-            onResetZoom={handleResetZoom}
-            isDisabled={loading || !!error || graphStats.isEmpty}
+        <GraphControls
+          zoomLevel={safeZoomLevel}
+          onZoomChange={handleZoomChange}
+          onResetZoom={handleResetZoom}
+          isDisabled={isPending}
+        />
+      </div>
+
+      <ErrorBoundary fallback={
+        <div className="bg-destructive/10 text-destructive p-4 rounded-md">
+          The graph could not be rendered. Please try refreshing the page.
+        </div>
+      }>
+        <div className="relative overflow-hidden rounded-lg bg-card" style={{ width, height }}>
+          <GraphRenderer
+            ref={graphRendererRef}
+            graphData={graphData}
+            width={width}
+            height={height}
+            highlightedNodeId={highlightedNodeId}
+            zoom={safeZoomLevel}
           />
         </div>
-      </div>
-    </ErrorBoundary>
+      </ErrorBoundary>
+    </div>
   );
 }
 

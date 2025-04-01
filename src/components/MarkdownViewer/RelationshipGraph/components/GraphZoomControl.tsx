@@ -1,57 +1,90 @@
 
 import React from 'react';
 import { Slider } from '@/components/ui/slider';
-import { formatPercentage } from '@/utils/formatting';
-
-// Ensure zoom value is a valid number and within range
-const ensureNumber = (value: any, defaultValue: number = 0): number => {
-  if (typeof value === 'number' && !isNaN(value)) {
-    return value;
-  }
-  return defaultValue;
-};
-
-const ensureValidZoom = (zoom: number | undefined, min: number = 0.1, max: number = 5): number => {
-  const validZoom = ensureNumber(zoom, 1);
-  return Math.min(Math.max(validZoom, min), max);
-};
+import { MinusIcon, PlusIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface GraphZoomControlProps {
-  value: number;
-  onChange: (value: number) => void;
+  zoom: number;
+  onZoomChange: (zoom: number) => void;
+  onReset: () => void;
   min?: number;
   max?: number;
   step?: number;
+  disabled?: boolean;
 }
 
+/**
+ * GraphZoomControl Component
+ * 
+ * Provides zoom controls for the graph visualization with a slider and buttons.
+ */
 export function GraphZoomControl({
-  value = 1,
-  onChange,
+  zoom,
+  onZoomChange,
+  onReset,
   min = 0.1,
   max = 5,
-  step = 0.1
+  step = 0.1,
+  disabled = false
 }: GraphZoomControlProps) {
-  // Ensure value is within valid range
-  const currentValue = ensureValidZoom(value, min, max);
-  
-  const handleChange = (newValue: number[]) => {
-    onChange(newValue[0]);
+  const handleSliderChange = (values: number[]) => {
+    // Ensure values[0] is a number - if it's undefined, use current zoom
+    const newZoom = typeof values[0] === 'number' ? values[0] : zoom;
+    onZoomChange(newZoom);
   };
-  
+
+  const decreaseZoom = () => {
+    const newZoom = Math.max(min, zoom - step);
+    onZoomChange(newZoom);
+  };
+
+  const increaseZoom = () => {
+    const newZoom = Math.min(max, zoom + step);
+    onZoomChange(newZoom);
+  };
+
   return (
-    <div className="flex flex-col items-center bg-background/80 backdrop-blur-sm rounded-lg p-2 text-xs">
-      <span className="mb-1 text-muted-foreground">
-        {formatPercentage(currentValue)}
-      </span>
+    <div className="flex items-center gap-2 w-full max-w-xs">
+      <Button
+        variant="outline"
+        size="icon"
+        className="h-8 w-8"
+        onClick={decreaseZoom}
+        disabled={disabled || zoom <= min}
+      >
+        <MinusIcon className="h-4 w-4" />
+      </Button>
+      
       <Slider
-        value={[currentValue]}
+        value={[zoom]}
         min={min}
         max={max}
         step={step}
-        onValueChange={handleChange}
-        orientation="vertical"
-        className="h-24"
+        onValueChange={handleSliderChange}
+        disabled={disabled}
+        className="flex-1"
       />
+      
+      <Button
+        variant="outline"
+        size="icon"
+        className="h-8 w-8"
+        onClick={increaseZoom}
+        disabled={disabled || zoom >= max}
+      >
+        <PlusIcon className="h-4 w-4" />
+      </Button>
+      
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onReset}
+        disabled={disabled}
+        className="text-xs ml-2"
+      >
+        Reset
+      </Button>
     </div>
   );
 }

@@ -1,79 +1,38 @@
 
 import React from 'react';
+import { RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, RefreshCw, PanelTop } from 'lucide-react';
 import { GraphZoomControl } from './GraphZoomControl';
-import { ensureNumber, ensureValidZoom } from '../compatibility';
+import { GraphControlsProps } from '../types';
 
-interface GraphControlsProps {
-  zoomLevel: number;
-  onZoomChange: (zoom: number) => void;
-  onZoomReset: () => void;
-  onRefresh: () => void;
-  isLoading?: boolean;
-}
-
+/**
+ * GraphControls Component
+ * 
+ * A set of controls for the relationship graph including zoom controls.
+ */
 export function GraphControls({
-  zoomLevel = 1,
+  zoomLevel,
   onZoomChange,
-  onZoomReset,
-  onRefresh,
-  isLoading = false
+  onResetZoom,
+  isDisabled
 }: GraphControlsProps) {
-  // Ensure zoom level is a number and within valid range
-  const currentZoom = ensureValidZoom(ensureNumber(zoomLevel, 1));
-  
-  const handleZoomIn = () => {
-    onZoomChange(Math.min(currentZoom + 0.25, 5));
-  };
-  
-  const handleZoomOut = () => {
-    onZoomChange(Math.max(currentZoom - 0.25, 0.1));
-  };
-  
   return (
-    <div className="absolute top-4 right-4 flex flex-col space-y-2 z-10">
-      <Button
-        onClick={onRefresh}
-        variant="outline"
-        size="sm"
-        className="rounded-full w-8 h-8 p-0"
-        disabled={isLoading}
-      >
-        <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-      </Button>
-      
-      <Button
-        onClick={handleZoomIn}
-        variant="outline"
-        size="sm"
-        className="rounded-full w-8 h-8 p-0"
-      >
-        <ZoomIn className="h-4 w-4" />
-      </Button>
-      
-      <GraphZoomControl 
-        value={currentZoom} 
-        onChange={onZoomChange} 
+    <div className="flex items-center gap-2">
+      <GraphZoomControl
+        zoom={zoomLevel}
+        onZoomChange={onZoomChange}
+        onReset={onResetZoom}
+        disabled={isDisabled}
       />
       
       <Button
-        onClick={handleZoomOut}
-        variant="outline"
-        size="sm"
-        className="rounded-full w-8 h-8 p-0"
+        variant="ghost"
+        size="icon"
+        onClick={onResetZoom}
+        disabled={isDisabled}
+        title="Reset graph view"
       >
-        <ZoomOut className="h-4 w-4" />
-      </Button>
-      
-      <Button
-        onClick={onZoomReset}
-        variant="outline"
-        size="sm"
-        className="rounded-full w-8 h-8 p-0"
-        disabled={currentZoom === 1}
-      >
-        <PanelTop className="h-4 w-4" />
+        <RefreshCcw className="h-4 w-4" />
       </Button>
     </div>
   );

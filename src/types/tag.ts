@@ -27,7 +27,7 @@ export interface TagRelation {
 
 export interface TagGroup {
   name: string;
-  category: string;
+  category?: string | null;
   type_id: string | null;
   tags: Tag[];
 }

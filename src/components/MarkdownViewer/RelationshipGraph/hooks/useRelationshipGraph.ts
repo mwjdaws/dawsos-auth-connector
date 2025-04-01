@@ -131,6 +131,7 @@ export function useRelationshipGraph({
       try {
         const node = graphData?.nodes.find(n => n.id === nodeId);
         if (node) {
+          // Use the correct method from GraphRendererRef
           graphRendererRef.current.centerOn(nodeId);
           console.log(`Centering on node: ${node.name || node.title} (${nodeId})`);
         }
