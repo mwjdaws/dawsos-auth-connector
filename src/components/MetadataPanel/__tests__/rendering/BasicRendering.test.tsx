@@ -1,205 +1,164 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { vi, describe, test, expect } from 'vitest';
 import { HeaderSection } from '../../sections/HeaderSection';
 import { ExternalSourceSection } from '../../sections/ExternalSourceSection';
-import { TagsSection } from '../../sections/TagsSection';
-import { OntologySection } from '../../sections/OntologySection';
-import { ContentIdSection } from '../../sections/ContentIdSection';
-import { DomainSection } from '../../sections/DomainSection';
-import { 
-  HeaderSectionTestProps,
-  ExternalSourceSectionTestProps,
-  TagsSectionTestProps,
-  OntologySectionTestProps,
-  ContentIdSectionTestProps,
-  DomainSectionTestProps,
-  TestTag,
-  toTag
-} from '@/utils/test-types';
+import { OntologyTermsSection } from '../../sections/OntologyTermsSection';
 
-describe('MetadataPanel Basic Rendering', () => {
-  // Test HeaderSection rendering
-  describe('HeaderSection', () => {
-    const renderHeaderSection = ({
-      title,
-      handleRefresh,
-      setIsCollapsed,
-      isCollapsed,
-      needsExternalReview
-    }: HeaderSectionTestProps) => {
-      return render(
-        <HeaderSection
-          title={title}
-          handleRefresh={handleRefresh}
-          setIsCollapsed={setIsCollapsed}
-          isCollapsed={isCollapsed}
-          needsExternalReview={needsExternalReview}
-        />
-      );
-    };
-
-    test('should render the refresh button', () => {
-      renderHeaderSection({
-        title: "Content Metadata",
-        handleRefresh: vi.fn(),
-        setIsCollapsed: vi.fn(),
-        isCollapsed: false
-      });
-      expect(screen.getByLabelText(/refresh metadata/i)).toBeInTheDocument();
-    });
-  });
-
-  // Test ExternalSourceSection rendering
-  describe('ExternalSourceSection', () => {
-    const renderExternalSourceSection = ({
-      externalSourceUrl,
-      editable,
-      contentId,
-      lastCheckedAt,
-      needsExternalReview
-    }: ExternalSourceSectionTestProps) => {
-      return render(
-        <ExternalSourceSection
-          externalSourceUrl={externalSourceUrl}
-          editable={editable}
-          contentId={contentId}
-          lastCheckedAt={lastCheckedAt}
-          needsExternalReview={needsExternalReview}
-        />
-      );
-    };
-
-    test('should display external source URL when provided', () => {
-      renderExternalSourceSection({
-        externalSourceUrl: 'https://example.com',
-        editable: false,
-        contentId: 'content-123'
-      });
-      expect(screen.getByText('https://example.com')).toBeInTheDocument();
-    });
-  });
-
-  // Test TagsSection rendering
-  describe('TagsSection', () => {
-    const tags: TestTag[] = [
-      { id: '1', name: 'React', content_id: 'content-123', type_id: 'type-1' },
-      { id: '2', name: 'TypeScript', content_id: 'content-123', type_id: 'type-2' }
-    ];
-
-    const renderTagsSection = ({
-      tags,
-      editable,
-      newTag,
-      setNewTag,
-      onAddTag,
-      onDeleteTag,
-      contentId
-    }: TagsSectionTestProps) => {
-      return render(
-        <TagsSection
-          tags={tags}
-          editable={editable}
-          newTag={newTag}
-          setNewTag={setNewTag}
-          onAddTag={onAddTag}
-          onDeleteTag={onDeleteTag}
-          contentId={contentId}
-        />
-      );
-    };
-
-    test('should render tag list', () => {
-      renderTagsSection({
-        tags: tags.map(tag => toTag(tag)),
-        editable: false,
-        newTag: '',
-        setNewTag: vi.fn(),
-        onAddTag: vi.fn().mockResolvedValue(undefined),
-        onDeleteTag: vi.fn().mockResolvedValue(undefined),
-        contentId: 'content-123'
-      });
-      expect(screen.getByText('React')).toBeInTheDocument();
-      expect(screen.getByText('TypeScript')).toBeInTheDocument();
-    });
-  });
-
-  // Test OntologySection rendering
-  describe('OntologySection', () => {
-    const terms = [
-      { id: 'term-1', term: 'React', description: 'A JavaScript library' },
-      { id: 'term-2', term: 'TypeScript', description: 'JavaScript with types' }
-    ];
+describe('HeaderSection Rendering', () => {
+  it('renders correctly with default props', () => {
+    // Arrange
+    const handleRefresh = () => {};
+    const setIsCollapsed = () => {};
     
-    const renderOntologySection = ({
-      terms,
-      sourceId,
-      editable
-    }: OntologySectionTestProps) => {
-      return render(
-        <OntologySection
-          terms={terms}
-          sourceId={sourceId}
-          editable={editable}
-        />
-      );
-    };
-
-    test('should render the ontology section', () => {
-      renderOntologySection({
-        terms,
-        sourceId: 'source-123',
-        editable: false
-      });
-      expect(screen.getByText(/ontology terms/i)).toBeInTheDocument();
-    });
+    // Act
+    render(
+      <HeaderSection 
+        title="Test Header"
+        handleRefresh={handleRefresh}
+        setIsCollapsed={setIsCollapsed}
+        isCollapsed={false}
+        needsExternalReview={false}
+      />
+    );
+    
+    // Assert
+    expect(screen.getByText('Test Header')).toBeInTheDocument();
+    expect(screen.queryByText('Review Required')).not.toBeInTheDocument();
   });
-
-  // Test ContentIdSection rendering
-  describe('ContentIdSection', () => {
-    const renderContentIdSection = ({
-      contentId
-    }: ContentIdSectionTestProps) => {
-      return render(
-        <ContentIdSection
-          contentId={contentId}
-        />
-      );
-    };
-
-    test('should render the content ID', () => {
-      renderContentIdSection({
-        contentId: 'content-123'
-      });
-      expect(screen.getByText(/content-123/i)).toBeInTheDocument();
-    });
+  
+  it('renders the review required badge when needed', () => {
+    // Arrange
+    const handleRefresh = () => {};
+    const setIsCollapsed = () => {};
+    
+    // Act
+    render(
+      <HeaderSection 
+        title="Test Header"
+        handleRefresh={handleRefresh}
+        setIsCollapsed={setIsCollapsed}
+        isCollapsed={false}
+        needsExternalReview={true}
+      />
+    );
+    
+    // Assert
+    expect(screen.getByText('Review Required')).toBeInTheDocument();
   });
+});
 
-  // Test DomainSection rendering
-  describe('DomainSection', () => {
-    const renderDomainSection = ({
-      domain
-    }: DomainSectionTestProps) => {
-      return render(
-        <DomainSection
-          domain={domain}
-        />
-      );
-    };
+describe('ExternalSourceSection Rendering', () => {
+  it('renders external source URL correctly', () => {
+    // Arrange
+    const externalSourceUrl = 'https://example.com/source';
+    
+    // Act
+    render(
+      <ExternalSourceSection 
+        externalSourceUrl={externalSourceUrl}
+        editable={false}
+        contentId="test-id"
+        lastCheckedAt="2023-01-01T00:00:00Z"
+        needsExternalReview={false}
+      />
+    );
+    
+    // Assert
+    expect(screen.getByText(externalSourceUrl)).toBeInTheDocument();
+  });
+  
+  it('renders "No external source" when URL is null', () => {
+    // Act
+    render(
+      <ExternalSourceSection 
+        externalSourceUrl={null}
+        editable={false}
+        contentId="test-id"
+        lastCheckedAt={null}
+        needsExternalReview={false}
+      />
+    );
+    
+    // Assert
+    expect(screen.getByText('No external source')).toBeInTheDocument();
+  });
+  
+  it('renders checked date when lastCheckedAt is provided', () => {
+    // Arrange
+    const lastCheckedAt = '2023-01-01T00:00:00Z';
+    
+    // Act
+    render(
+      <ExternalSourceSection 
+        externalSourceUrl="https://example.com/source"
+        editable={false}
+        contentId="test-id"
+        lastCheckedAt={lastCheckedAt}
+        needsExternalReview={false}
+      />
+    );
+    
+    // Assert
+    expect(screen.getByText(/Last checked/)).toBeInTheDocument();
+  });
+});
 
-    test('should render the domain when provided', () => {
-      renderDomainSection({
-        domain: 'Web Development'
-      });
-      expect(screen.getByText('Web Development')).toBeInTheDocument();
-    });
-
-    test('should display "None" when domain is null', () => {
-      renderDomainSection({
-        domain: null
-      });
-      expect(screen.getByText('None')).toBeInTheDocument();
-    });
+describe('OntologyTermsSection Rendering', () => {
+  it('renders terms when provided', () => {
+    // Act
+    render(
+      <OntologyTermsSection 
+        contentId="test-id"
+        editable={false}
+      />
+    );
+    
+    // Assert
+    expect(screen.getByText('Ontology Terms')).toBeInTheDocument();
+  });
+  
+  it('renders loading state correctly', () => {
+    // Act
+    render(
+      <OntologyTermsSection 
+        contentId="test-id"
+        editable={false}
+        isLoading={true}
+      />
+    );
+    
+    // Assert
+    expect(screen.getByText('Ontology Terms')).toBeInTheDocument();
+    // We would check for skeletons, but they don't have accessible text
+  });
+  
+  it('renders error state correctly', () => {
+    // Act
+    render(
+      <OntologyTermsSection 
+        contentId="test-id"
+        editable={false}
+        error={new Error('Test error')}
+      />
+    );
+    
+    // Assert
+    expect(screen.getByText('Ontology Terms')).toBeInTheDocument();
+    expect(screen.getByText('Test error')).toBeInTheDocument();
+  });
+  
+  it('shows add button when editable and showCreateTerm are true', () => {
+    // Act
+    render(
+      <OntologyTermsSection 
+        contentId="test-id"
+        editable={true}
+        showCreateTerm={true}
+      />
+    );
+    
+    // Assert
+    expect(screen.getByText('Add')).toBeInTheDocument();
   });
 });

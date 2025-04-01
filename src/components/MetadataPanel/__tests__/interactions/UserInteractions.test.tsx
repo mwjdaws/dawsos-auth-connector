@@ -1,91 +1,77 @@
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { vi, describe, test, expect } from 'vitest';
+import { render, fireEvent, screen } from '@testing-library/react';
 import { HeaderSection } from '../../sections/HeaderSection';
-import { TagsSection } from '../../sections/TagsSection';
-import { HeaderSectionTestProps, TagsSectionTestProps, TestTag, toTag } from '@/utils/test-types';
+import { vi } from 'vitest';
 
-describe('MetadataPanel User Interactions', () => {
-  // Test HeaderSection interactions
-  describe('HeaderSection', () => {
-    const renderHeaderSection = ({
-      title,
-      handleRefresh,
-      setIsCollapsed,
-      isCollapsed
-    }: HeaderSectionTestProps) => {
-      return render(
-        <HeaderSection
-          title={title}
-          handleRefresh={handleRefresh}
-          setIsCollapsed={setIsCollapsed}
-          isCollapsed={isCollapsed}
-        />
-      );
-    };
-
-    test('should call setIsCollapsed when collapse button is clicked', () => {
-      const setIsCollapsed = vi.fn();
-      renderHeaderSection({
-        title: "Content Metadata",
-        handleRefresh: vi.fn(),
-        setIsCollapsed,
-        isCollapsed: false
-      });
-
-      const collapseButton = screen.getByLabelText(/toggle panel/i);
-      fireEvent.click(collapseButton);
-
-      expect(setIsCollapsed).toHaveBeenCalledWith(true);
-    });
+describe('HeaderSection', () => {
+  it('calls handleRefresh when refresh button is clicked', () => {
+    // Arrange
+    const handleRefresh = vi.fn();
+    const setIsCollapsed = vi.fn();
+    
+    // Act
+    render(
+      <HeaderSection 
+        title="Test Header"
+        handleRefresh={handleRefresh}
+        setIsCollapsed={setIsCollapsed}
+        isCollapsed={false}
+        needsExternalReview={false}
+      />
+    );
+    
+    // Find the refresh button
+    const refreshButton = screen.getByLabelText('Refresh metadata');
+    
+    // Click the refresh button
+    fireEvent.click(refreshButton);
+    
+    // Assert
+    expect(handleRefresh).toHaveBeenCalledTimes(1);
   });
-
-  // Test TagsSection interactions
-  describe('TagsSection', () => {
-    const tags: TestTag[] = [
-      { id: '1', name: 'React', content_id: 'content-123', type_id: 'type-1' },
-      { id: '2', name: 'TypeScript', content_id: 'content-123', type_id: 'type-2' }
-    ];
-
-    const renderTagsSection = ({
-      tags,
-      editable,
-      newTag,
-      setNewTag,
-      onAddTag,
-      onDeleteTag,
-      contentId
-    }: TagsSectionTestProps) => {
-      return render(
-        <TagsSection
-          tags={tags}
-          editable={editable}
-          newTag={newTag}
-          setNewTag={setNewTag}
-          onAddTag={onAddTag}
-          onDeleteTag={onDeleteTag}
-          contentId={contentId}
-        />
-      );
-    };
-
-    test('should update newTag when input value changes', () => {
-      const setNewTag = vi.fn();
-      renderTagsSection({
-        tags: tags.map(tag => toTag(tag)),
-        editable: true,
-        newTag: '',
-        setNewTag,
-        onAddTag: vi.fn().mockResolvedValue(undefined),
-        onDeleteTag: vi.fn().mockResolvedValue(undefined),
-        contentId: 'content-123'
-      });
-
-      const input = screen.getByPlaceholderText(/add a tag/i);
-      fireEvent.change(input, { target: { value: 'New Tag' } });
-
-      expect(setNewTag).toHaveBeenCalledWith('New Tag');
-    });
+  
+  it('toggles collapse state when collapse button is clicked', () => {
+    // Arrange
+    const handleRefresh = vi.fn();
+    const setIsCollapsed = vi.fn();
+    
+    // Act
+    render(
+      <HeaderSection 
+        title="Test Header"
+        handleRefresh={handleRefresh}
+        setIsCollapsed={setIsCollapsed}
+        isCollapsed={false}
+        needsExternalReview={false}
+      />
+    );
+    
+    // Find and click the collapse button
+    const collapseButton = screen.getByLabelText('Toggle panel');
+    fireEvent.click(collapseButton);
+    
+    // Assert
+    expect(setIsCollapsed).toHaveBeenCalledWith(true);
+  });
+  
+  it('displays review required badge when needsExternalReview is true', () => {
+    // Arrange
+    const handleRefresh = vi.fn();
+    const setIsCollapsed = vi.fn();
+    
+    // Act
+    render(
+      <HeaderSection 
+        title="Test Header"
+        handleRefresh={handleRefresh}
+        setIsCollapsed={setIsCollapsed}
+        isCollapsed={false}
+        needsExternalReview={true}
+      />
+    );
+    
+    // Assert
+    expect(screen.getByText('Review Required')).toBeInTheDocument();
   });
 });

@@ -46,7 +46,10 @@ export function useTagReordering({
       // Update the database
       const updates = tagPositions.map(position => ({
         id: position.id,
-        display_order: position.position
+        display_order: position.position,
+        content_id: contentId,
+        name: reorderedTags.find(tag => tag.id === position.id)?.name || '',
+        type_id: reorderedTags.find(tag => tag.id === position.id)?.type_id || null
       }));
       
       const { error } = await supabase
@@ -60,7 +63,7 @@ export function useTagReordering({
       handleError(
         err,
         "Failed to update tag order",
-        { level: "warning", context: { contentId } }
+        { level: "error", context: { contentId } }
       );
       
       return false;
@@ -70,19 +73,12 @@ export function useTagReordering({
   }, [contentId, setTags]);
   
   /**
-   * Type guard to ensure the tag has a display_order property
-   */
-  const hasDisplayOrder = (tag: Tag): tag is Tag & { display_order: number } => {
-    return typeof tag.display_order === 'number';
-  };
-  
-  /**
    * Handle reordering of tags
    */
   const handleReorderTags = useCallback(async (reorderedTags: Tag[]): Promise<void> => {
     // Create a copy of the tags and ensure each has a display_order
     const tagsWithOrder = reorderedTags.map((tag, index) => {
-      if (hasDisplayOrder(tag)) {
+      if (tag.display_order !== undefined) {
         return tag;
       }
       return {

@@ -1,51 +1,53 @@
 
-import { Tag } from "@/types/tag";
-import { OntologyTerm } from "../../types";
+import { Tag } from '@/types/tag';
+import { OntologyTerm } from '@/types/ontology';
 
-// Basic tag object for testing
-export const basicTag: Tag = {
-  id: "test-tag-123",
-  name: "test tag",
-  content_id: "test-content-123",
-  type_id: null,
-  display_order: 0
-};
+/**
+ * Creates a mock tag for testing purposes
+ */
+export function createMockTag(id: string, name: string, contentId: string): Tag {
+  return {
+    id,
+    name,
+    content_id: contentId,
+    type_id: null,
+    display_order: 0
+  };
+}
 
-// Tag with type for testing
-export const typedTag: Tag = {
-  id: "test-tag-456",
-  name: "test category tag",
-  content_id: "test-content-123",
-  type_id: "category",
-  type_name: "Category",
-  display_order: 1
-};
+/**
+ * Creates a mock OntologyTerm for testing
+ */
+export function createMockOntologyTerm(id: string, term: string): OntologyTerm {
+  return {
+    id,
+    term,
+    description: 'Test description',
+    review_required: false
+  };
+}
 
-// Basic ontology term for testing
-export const basicTerm: OntologyTerm = {
-  id: "test-term-123",
-  term: "Example Term",
-  description: "This is a description of the example term",
-  review_required: false
-};
+/**
+ * Creates an array of mock tags for testing
+ */
+export function createMockTags(contentId: string, count = 3): Tag[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `tag-${i + 1}`,
+    name: `Mock Tag ${i + 1}`,
+    content_id: contentId,
+    type_id: null,
+    display_order: i
+  }));
+}
 
-// Mock metadata context values for testing
-export const mockMetadataContext = {
-  contentId: "test-content-123",
-  validationResult: { isValid: true, message: null },
-  isEditable: true,
-  isLoading: false,
-  error: null,
-  tags: [basicTag, typedTag],
-  ontologyTerms: [basicTerm],
-  refreshMetadata: jest.fn(),
-  handleRefresh: jest.fn().mockResolvedValue(undefined),
-  fetchSourceMetadata: jest.fn().mockResolvedValue(undefined),
-  fetchTags: jest.fn().mockResolvedValue([basicTag, typedTag]),
-  addTag: jest.fn(),
-  removeTag: jest.fn(),
-  refreshTags: jest.fn().mockResolvedValue(undefined),
-  handleAddTag: jest.fn().mockResolvedValue(undefined),
-  handleDeleteTag: jest.fn().mockResolvedValue(undefined),
-  deleteTag: jest.fn().mockResolvedValue(true)
-};
+/**
+ * Creates an array of mock ontology terms for testing
+ */
+export function createMockOntologyTerms(count = 3): OntologyTerm[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `term-${i + 1}`,
+    term: `Mock Term ${i + 1}`,
+    description: `Description for term ${i + 1}`,
+    review_required: false
+  }));
+}

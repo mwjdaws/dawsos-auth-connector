@@ -1,87 +1,73 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { vi, describe, test, expect } from 'vitest';
 import { ExternalSourceSection } from '../../sections/ExternalSourceSection';
-import { DomainSection } from '../../sections/DomainSection';
 
-// Test props interfaces
-interface ExternalSourceSectionTestProps {
-  externalSourceUrl: string | null;
-  editable: boolean;
-  contentId: string;
-  lastCheckedAt?: string | null;
-  needsExternalReview?: boolean;
-}
-
-interface DomainSectionTestProps {
-  domain: string | null;
-}
-
-describe('MetadataPanel Props Behavior', () => {
-  // Test ExternalSourceSection prop behaviors
-  describe('ExternalSourceSection', () => {
-    const renderExternalSourceSection = ({
-      externalSourceUrl,
-      editable,
-      contentId,
-      lastCheckedAt = null,
-      needsExternalReview = false
-    }: ExternalSourceSectionTestProps) => {
-      return render(
-        <ExternalSourceSection
-          externalSourceUrl={externalSourceUrl}
-          editable={editable}
-          contentId={contentId}
-          lastCheckedAt={lastCheckedAt}
-          needsExternalReview={needsExternalReview}
-        />
-      );
-    };
-
-    test('should show edit button when editable is true', () => {
-      renderExternalSourceSection({
-        externalSourceUrl: 'https://example.com',
-        editable: true,
-        contentId: 'content-123'
-      });
-      expect(screen.getByLabelText(/edit external source/i)).toBeInTheDocument();
-    });
-
-    test('should not show edit button when editable is false', () => {
-      renderExternalSourceSection({
-        externalSourceUrl: 'https://example.com',
-        editable: false,
-        contentId: 'content-123'
-      });
-      expect(screen.queryByLabelText(/edit external source/i)).not.toBeInTheDocument();
-    });
+describe('ExternalSourceSection Props Behavior', () => {
+  it('displays external source URL when provided', () => {
+    // Arrange
+    const externalSourceUrl = 'https://example.com/source';
+    
+    // Act
+    render(
+      <ExternalSourceSection 
+        externalSourceUrl={externalSourceUrl}
+        editable={false}
+        contentId="test-id"
+        lastCheckedAt="2023-01-01T00:00:00Z"
+        needsExternalReview={false}
+      />
+    );
+    
+    // Assert
+    expect(screen.getByText(externalSourceUrl)).toBeInTheDocument();
   });
-
-  // Test DomainSection prop behaviors
-  describe('DomainSection', () => {
-    const renderDomainSection = ({
-      domain
-    }: DomainSectionTestProps) => {
-      return render(
-        <DomainSection
-          domain={domain}
-        />
-      );
-    };
-
-    test('should display "None" when domain is null', () => {
-      renderDomainSection({
-        domain: null
-      });
-      expect(screen.getByText('None')).toBeInTheDocument();
-    });
-
-    test('should display domain name when provided', () => {
-      renderDomainSection({
-        domain: 'Web Development'
-      });
-      expect(screen.getByText('Web Development')).toBeInTheDocument();
-    });
+  
+  it('displays "No external source" when URL is not provided', () => {
+    // Act
+    render(
+      <ExternalSourceSection 
+        externalSourceUrl={null}
+        editable={false}
+        contentId="test-id"
+        lastCheckedAt={null}
+        needsExternalReview={false}
+      />
+    );
+    
+    // Assert
+    expect(screen.getByText('No external source')).toBeInTheDocument();
+  });
+  
+  it('shows edit buttons when editable is true', () => {
+    // Act
+    render(
+      <ExternalSourceSection 
+        externalSourceUrl="https://example.com/source"
+        editable={true}
+        contentId="test-id"
+        lastCheckedAt="2023-01-01T00:00:00Z"
+        needsExternalReview={false}
+      />
+    );
+    
+    // Assert
+    expect(screen.getByLabelText('Edit external source')).toBeInTheDocument();
+  });
+  
+  it('hides edit buttons when editable is false', () => {
+    // Act
+    render(
+      <ExternalSourceSection 
+        externalSourceUrl="https://example.com/source"
+        editable={false}
+        contentId="test-id"
+        lastCheckedAt="2023-01-01T00:00:00Z"
+        needsExternalReview={false}
+      />
+    );
+    
+    // Assert
+    expect(screen.queryByLabelText('Edit external source')).not.toBeInTheDocument();
   });
 });

@@ -8,6 +8,7 @@ export interface Tag {
   content_id: string;
   type_id?: string | null;
   display_order?: number;
+  type_name?: string; // Optional field for augmented tags
 }
 
 /**
@@ -80,7 +81,8 @@ export function mapApiTagToTag(apiTag: any): Tag {
     name: apiTag.name || '',
     content_id: apiTag.content_id || '',
     type_id: apiTag.type_id || null,
-    display_order: typeof apiTag.display_order === 'number' ? apiTag.display_order : 0
+    display_order: typeof apiTag.display_order === 'number' ? apiTag.display_order : 0,
+    type_name: apiTag.type_name || null
   };
 }
 
@@ -99,6 +101,13 @@ export function isValidTag(tag: any): tag is Tag {
     typeof tag.id === 'string' && 
     typeof tag.name === 'string' && 
     typeof tag.content_id === 'string';
+}
+
+/**
+ * Type guard to check if an object has the display_order property
+ */
+export function hasDisplayOrder(obj: any): obj is { display_order: number } {
+  return obj && typeof obj.display_order === 'number';
 }
 
 /**

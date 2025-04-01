@@ -1,120 +1,166 @@
 
 import React from 'react';
+import { cn } from '@/lib/utils';
 import { Tag } from '@/types/tag';
+import { 
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+export interface TagItemProps {
+  tag: Tag;
+  editable: boolean;
+  onDelete: (tagId: string) => void;
+}
+
+export function TagItem({ tag, editable, onDelete }: TagItemProps) {
+  const { id, name } = tag;
+  
+  return (
+    <Badge className="mr-2 mb-2" variant="secondary">
+      {name}
+      {editable && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onDelete(id)}
+          className="h-4 w-4 ml-1 p-0 hover:bg-transparent"
+        >
+          <X className="h-3 w-3" />
+        </Button>
+      )}
+    </Badge>
+  );
+}
+
+export interface SortableTagItemProps extends TagItemProps {
+  id: string;
+}
+
+export function SortableTagItem({ tag, editable, onDelete }: SortableTagItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: tag.id });
+  
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+  
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style}
+      {...attributes} 
+      {...listeners}
+      className="inline-block"
+    >
+      <TagItem tag={tag} editable={editable} onDelete={onDelete} />
+    </div>
+  );
+}
+
 export interface TagListProps {
   tags: Tag[];
   editable: boolean;
-  onDeleteTag?: (tagId: string) => Promise<void>;
+  onDeleteTag: (tagId: string) => void;
   onReorderTags?: (tags: Tag[]) => Promise<void>;
+  className?: string;
 }
 
-export const TagList: React.FC<TagListProps> = ({
-  tags,
-  editable,
+export function TagList({ 
+  tags, 
+  editable, 
   onDeleteTag,
-  onReorderTags
-}) => {
-  // Sort tags by display order
-  const sortedTags = React.useMemo(() => {
-    return [...tags].sort((a, b) => {
-      const orderA = a.display_order ?? 0;
-      const orderB = b.display_order ?? 0;
-      return orderA - orderB;
-    });
-  }, [tags]);
-
-  // For drag and drop reordering
-  const [draggedTag, setDraggedTag] = React.useState<Tag | null>(null);
-
-  // Handle drag start
-  const handleDragStart = (tag: Tag) => {
-    if (!editable || !onReorderTags) return;
-    setDraggedTag(tag);
-  };
-
-  // Handle drag over
-  const handleDragOver = (e: React.DragEvent, tag: Tag) => {
-    if (!editable || !draggedTag || !onReorderTags) return;
-    e.preventDefault();
-  };
-
-  // Handle drop to reorder
-  const handleDrop = (e: React.DragEvent, targetTag: Tag) => {
-    if (!editable || !draggedTag || !onReorderTags) return;
-    e.preventDefault();
-
-    // Skip if dropping on itself
-    if (draggedTag.id === targetTag.id) {
-      setDraggedTag(null);
-      return;
+  onReorderTags,
+  className 
+}: TagListProps) {
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+  
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id && onReorderTags) {
+      const activeIndex = tags.findIndex(tag => tag.id === active.id);
+      const overIndex = tags.findIndex(tag => tag.id === over.id);
+      
+      if (activeIndex !== -1 && overIndex !== -1) {
+        const newTags = arrayMove(tags, activeIndex, overIndex);
+        onReorderTags(newTags);
+      }
     }
-
-    // Create new array with updated order
-    const updatedTags = [...sortedTags];
-    const fromIndex = updatedTags.findIndex(t => t.id === draggedTag.id);
-    const toIndex = updatedTags.findIndex(t => t.id === targetTag.id);
-
-    // Remove from original position
-    const [removedTag] = updatedTags.splice(fromIndex, 1);
-    // Insert at new position
-    updatedTags.splice(toIndex, 0, removedTag);
-
-    // Update display_order for all tags
-    const reorderedTags = updatedTags.map((tag, index) => ({
-      ...tag,
-      display_order: index
-    }));
-
-    // Save the new order
-    onReorderTags(reorderedTags);
-    setDraggedTag(null);
   };
-
-  // Handle drag end
-  const handleDragEnd = () => {
-    setDraggedTag(null);
-  };
-
-  // Empty state
-  if (sortedTags.length === 0) {
-    return <div className="text-sm text-muted-foreground">No tags yet</div>;
+  
+  if (!tags || tags.length === 0) {
+    return (
+      <div className={cn("text-sm text-muted-foreground mt-1", className)}>
+        No tags added yet
+      </div>
+    );
   }
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      {sortedTags.map(tag => (
-        <Badge
-          key={tag.id}
-          variant="outline"
-          className={`
-            flex items-center gap-1 cursor-default
-            ${editable && onReorderTags ? 'cursor-move' : ''}
-            ${draggedTag?.id === tag.id ? 'opacity-50' : ''}
-          `}
-          draggable={editable && !!onReorderTags}
-          onDragStart={() => handleDragStart(tag)}
-          onDragOver={(e) => handleDragOver(e, tag)}
-          onDrop={(e) => handleDrop(e, tag)}
+  
+  if (editable && onReorderTags) {
+    return (
+      <div className={cn("flex flex-wrap", className)}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          {tag.name}
-          {editable && onDeleteTag && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-4 w-4 p-0 ml-1 hover:bg-muted"
-              onClick={() => onDeleteTag(tag.id)}
-              aria-label={`Remove tag ${tag.name}`}
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          )}
-        </Badge>
+          <SortableContext
+            items={tags.map(tag => tag.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {tags.map(tag => (
+              <SortableTagItem
+                key={tag.id}
+                id={tag.id}
+                tag={tag}
+                editable={editable}
+                onDelete={onDeleteTag}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
+      </div>
+    );
+  }
+  
+  return (
+    <div className={cn("flex flex-wrap", className)}>
+      {tags.map(tag => (
+        <TagItem 
+          key={tag.id} 
+          tag={tag} 
+          editable={editable}
+          onDelete={onDeleteTag}
+        />
       ))}
     </div>
   );
-};
+}
