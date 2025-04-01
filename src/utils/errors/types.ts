@@ -1,93 +1,62 @@
 
 /**
- * Error handling system types
+ * Error options for error handling
  */
-
-// Error levels for categorization and filtering
-export type ErrorLevel = 'debug' | 'info' | 'warning' | 'error';
-
-// Severity for error impact assessment
-export type ErrorSeverity = 'low' | 'medium' | 'high' | 'critical';
-
-// Source of the error for better debugging
-export type ErrorSource = 'application' | 'server' | 'network' | 'user' | 'database' | 'unknown';
-
-// Standard error record format
-export interface ErrorRecord {
-  message: string;
-  timestamp: Date;
-  level: ErrorLevel;
-  source: ErrorSource;
-  code?: string;
-  context?: Record<string, any>;
-  originalError?: Error;
-  fingerprint?: string;
-  count?: number;
-}
-
-// Custom error class for validation errors
-export class ValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ValidationError';
-  }
-}
-
-// Custom error class for API errors
-export class ApiError extends Error {
-  statusCode?: number;
-  
-  constructor(message: string, statusCode?: number) {
-    super(message);
-    this.name = 'ApiError';
-    this.statusCode = statusCode;
-  }
-}
-
-// Error options for customizing error handling
 export interface ErrorOptions {
-  level?: ErrorLevel;
-  source?: ErrorSource;
-  severity?: ErrorSeverity;
-  technical?: boolean;
+  // The error message to display
+  errorMessage: string;
+  // Additional context data for debugging
   context?: Record<string, any>;
-  fingerprint?: string;
-  deduplicationId?: string;
-  deduplicate?: boolean;
+  // Whether to show a toast notification
   silent?: boolean;
-  notifyUser?: boolean;
-  category?: string;
+  // Error level for logging and UI presentation
+  level?: 'error' | 'warning' | 'debug' | 'info';
+  // For backward compatibility
+  technical?: boolean;
 }
 
-// Simplified error options for better developer experience
-export type ErrorHandlingOptions = Partial<ErrorOptions>;
+/**
+ * Partial error options for when only some properties are needed
+ */
+export type PartialErrorOptions = Partial<ErrorOptions>;
 
-// Error handling compatibility options (for backward compatibility)
-export type ErrorHandlingCompatOptions = ErrorHandlingOptions;
-
-// Toast variant mapper based on error level
-export const errorLevelToToastVariant = {
-  debug: 'default',
-  info: 'default',
-  warning: 'warning',
-  error: 'destructive'
-} as const;
-
-// Error category for organizing errors
-export interface ErrorCategory {
-  id: string;
-  name: string;
-  description: string;
-  severity: ErrorSeverity;
-  notifyUser: boolean;
+/**
+ * Result of a wrapped function that can throw
+ */
+export interface ErrorHandlingResult<T> {
+  success: boolean;
+  result?: T;
+  error?: Error;
 }
 
-// Error action for recording user actions
-export interface ErrorAction {
-  id: string;
-  timestamp: Date;
-  errorId: string;
-  action: 'dismissed' | 'retried' | 'reported';
-  userId?: string;
-  context?: Record<string, any>;
+/**
+ * Type of functions that can be wrapped with error handling
+ */
+export type WrappableFunction<T = any> = (...args: any[]) => Promise<T> | T;
+
+/**
+ * Error impact levels for the system
+ */
+export enum ErrorImpactLevel {
+  CRITICAL = 5, // System cannot function
+  HIGH = 4,     // Major feature is broken
+  MEDIUM = 3,   // Feature partially broken
+  LOW = 2,      // Minor issue
+  INFO = 1      // Informational
+}
+
+/**
+ * Error tracking options
+ */
+export interface ErrorTrackingOptions {
+  // Impact level of the error
+  impactLevel?: ErrorImpactLevel;
+  // Whether this error is user-facing
+  userFacing?: boolean;
+  // Whether to log to console
+  console?: boolean;
+  // Whether to send to telemetry service
+  telemetry?: boolean;
+  // Whether to show notification to user
+  notify?: boolean;
 }

@@ -67,8 +67,9 @@ const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'edi
     return (
       <Card className={className}>
         <HeaderSection 
+          title="Content Metadata"
           needsExternalReview={false}
-          handleRefresh={refreshMetadata ? () => refreshMetadata() : () => {}}
+          handleRefresh={() => refreshMetadata ? refreshMetadata() : {}}
           isLoading={true}
           isCollapsible={isCollapsible}
           isCollapsed={isCollapsed}
@@ -93,9 +94,10 @@ const MetadataPanelContent: React.FC<Omit<MetadataPanelProps, 'contentId' | 'edi
   return (
     <Card className={`${needsExternalReview ? 'border border-yellow-400' : ''} ${className}`}>
       <HeaderSection 
+        title="Content Metadata"
         needsExternalReview={needsExternalReview}
-        handleRefresh={refreshMetadata ? () => refreshMetadata() : () => {}}
-        isLoading={isLoading}
+        handleRefresh={() => refreshMetadata ? refreshMetadata() : {}}
+        isLoading={false}
         isCollapsible={isCollapsible}
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}

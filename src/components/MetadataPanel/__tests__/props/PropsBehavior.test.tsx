@@ -4,10 +4,19 @@ import { render, screen } from '@testing-library/react';
 import { vi, describe, test, expect } from 'vitest';
 import { ExternalSourceSection } from '../../sections/ExternalSourceSection';
 import { DomainSection } from '../../sections/DomainSection';
-import { 
-  ExternalSourceSectionTestProps,
-  DomainSectionTestProps
-} from '@/utils/test-types';
+
+// Test props interfaces
+interface ExternalSourceSectionTestProps {
+  externalSourceUrl: string | null;
+  editable: boolean;
+  contentId: string;
+  lastCheckedAt?: string | null;
+  needsExternalReview?: boolean;
+}
+
+interface DomainSectionTestProps {
+  domain: string | null;
+}
 
 describe('MetadataPanel Props Behavior', () => {
   // Test ExternalSourceSection prop behaviors
@@ -16,8 +25,8 @@ describe('MetadataPanel Props Behavior', () => {
       externalSourceUrl,
       editable,
       contentId,
-      lastCheckedAt,
-      needsExternalReview
+      lastCheckedAt = null,
+      needsExternalReview = false
     }: ExternalSourceSectionTestProps) => {
       return render(
         <ExternalSourceSection

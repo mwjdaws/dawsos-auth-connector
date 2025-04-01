@@ -1,133 +1,78 @@
 
 /**
- * Error handling utilities
- * 
- * Centralizes error handling in the application
+ * Central error handling utility
  */
 import { toast } from '@/hooks/use-toast';
-import { ErrorLevel, ErrorOptions, errorLevelToToastVariant } from './types';
-import { categorizeError } from './categorize';
+import { ErrorOptions } from './types';
+import { captureException } from '@/utils/telemetry';
 
-// In-memory store for deduplication
-const recentErrors = new Map<string, { timestamp: number, count: number }>();
-
-// Default timeout for error deduplication (10 seconds)
-const DEDUPLICATION_TIMEOUT = 10 * 1000;
-
-// Create a hash for error deduplication
-function getErrorHash(error: unknown, context?: Record<string, any>): string {
-  const message = error instanceof Error ? error.message : String(error);
-  const errorName = error instanceof Error ? error.name : 'UnknownError';
-  return `${errorName}:${message}:${JSON.stringify(context || {})}`;
-}
+// Default options for error handling
+const DEFAULT_ERROR_OPTIONS: Partial<ErrorOptions> = {
+  silent: false
+};
 
 /**
- * Central error handler function
+ * Handle an error in a consistent way across the application
+ * 
+ * This is the primary error handling utility that should be used app-wide.
+ * It centralizes error handling logic for consistent behavior.
  * 
  * @param error The error that occurred
- * @param userMessage User-friendly message to display
+ * @param message Optional custom message to display instead of the error message
  * @param options Additional options for error handling
  */
 export function handleError(
   error: unknown,
-  userMessage: string,
-  options: Partial<ErrorOptions> = {}
+  message?: string,
+  options?: Partial<ErrorOptions>
 ): void {
-  const {
-    level = 'warning',
-    technical = false,
-    context = {},
-    deduplicate = true,
-    silent = false
-  } = options;
-
-  // Log the error to console based on level
-  const consoleMethod = level === 'debug' ? console.debug :
-                       level === 'info' ? console.info :
-                       level === 'warning' ? console.warn :
-                       console.error;
-
-  consoleMethod('[ERROR]', {
-    message: userMessage,
-    technical,
-    error,
-    context,
-    level
-  });
-
-  // Skip notification if silent mode is enabled
-  if (silent) {
-    return;
-  }
-
-  // Deduplicate errors if enabled
-  if (deduplicate) {
-    const errorHash = options.deduplicationId || getErrorHash(error, context);
-    const now = Date.now();
-    const existingError = recentErrors.get(errorHash);
-
-    if (existingError) {
-      // Check if the error is still within the deduplication window
-      if (now - existingError.timestamp < DEDUPLICATION_TIMEOUT) {
-        // Increment error count but don't show notification
-        recentErrors.set(errorHash, {
-          timestamp: now,
-          count: existingError.count + 1
-        });
-        return;
-      }
-    }
-
-    // Store the new error for deduplication
-    recentErrors.set(errorHash, {
-      timestamp: now,
-      count: 1
+  // Merge with default options
+  const opts = { ...DEFAULT_ERROR_OPTIONS, ...options };
+  
+  // Convert to Error if it's not one already
+  const errorObj = error instanceof Error ? error : new Error(String(error));
+  
+  // Get the error message to display
+  const displayMessage = opts.errorMessage || message || errorObj.message || 'An error occurred';
+  
+  // Get the context data
+  const context = {
+    ...opts.context,
+    originalError: errorObj,
+    stack: errorObj.stack
+  };
+  
+  // Log the error to console
+  console.error('[Error]', displayMessage, context);
+  
+  // Track the error in analytics
+  if (!opts.silent) {
+    captureException(errorObj, {
+      context,
+      extra: { displayMessage }
     });
-
-    // Clean up old errors (older than deduplication timeout)
-    for (const [hash, entry] of recentErrors.entries()) {
-      if (now - entry.timestamp > DEDUPLICATION_TIMEOUT) {
-        recentErrors.delete(hash);
-      }
-    }
   }
-
-  // Determine appropriate variant for toast based on error level
-  const variant = errorLevelToToastVariant[level] || 'destructive';
-
-  // Show toast notification
-  toast({
-    title: userMessage,
-    description: technical && error instanceof Error ? error.message : undefined,
-    variant
-  });
-}
-
-/**
- * Wrapper for handleError that won't throw any exceptions
- * (for use in error boundaries and other sensitive areas)
- */
-export function handleErrorSafe(
-  error: unknown,
-  userMessage: string,
-  options: Partial<ErrorOptions> = {}
-): void {
-  try {
-    handleError(error, userMessage, options);
-  } catch (handlerError) {
-    console.error('[META ERROR] Error in error handler:', handlerError);
-    console.error('Original error:', error);
+  
+  // Show a toast notification if not silent
+  if (!opts.silent) {
+    // Determine the toast variant based on the error level
+    let variant: "default" | "destructive" | null | undefined;
     
-    // Attempt to show a toast if possible
-    try {
-      toast({
-        title: 'An unexpected error occurred',
-        description: 'The application encountered an error that could not be processed correctly.',
-        variant: 'destructive'
-      });
-    } catch (toastError) {
-      // At this point we give up
-      console.error('[CRITICAL] Failed to show error toast:', toastError);
+    if (opts.level === 'error') {
+      variant = "destructive";
+    } else if (opts.level === 'warning') {
+      variant = "default"; // Use default for warnings
+    } else {
+      variant = "default";
     }
+    
+    toast({
+      title: opts.level === 'error' ? 'Error' : 'Warning',
+      description: displayMessage,
+      variant: variant
+    });
   }
 }
+
+// Export for backward compatibility
+export default handleError;

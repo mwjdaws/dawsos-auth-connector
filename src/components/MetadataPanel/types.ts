@@ -60,4 +60,51 @@ export interface OntologyTerm {
   term: string;
   domain?: string;
   description?: string;
+  review_required?: boolean;
+}
+
+/**
+ * Props for OntologyTermsSection component
+ */
+export interface OntologyTermsSectionProps {
+  sourceId: string;
+  editable: boolean;
+  terms?: OntologyTerm[];
+  onTermAdd?: (termId: string) => Promise<void>;
+  onTermRemove?: (termId: string) => Promise<void>;
+  onRefresh?: () => Promise<void>;
+  className?: string;
+}
+
+/**
+ * Props for OntologySuggestionsPanel component
+ */
+export interface OntologySuggestionsPanelProps {
+  sourceId: string;
+  content?: string;
+  onSuggestionApply?: (termId: string) => Promise<void>;
+  onSuggestionReject?: (termId: string) => Promise<void>;
+}
+
+/**
+ * Props for DomainSection component
+ */
+export interface DomainSectionProps {
+  domain: string | null;
+  className?: string;
+}
+
+/**
+ * Props for ExternalSourceSection component
+ */
+export interface ExternalSourceSectionProps {
+  externalSourceUrl: string | null;
+  lastCheckedAt?: string | null;
+  needsExternalReview?: boolean;
+  editable: boolean;
+  isLoading?: boolean;
+  contentId: string;
+  onValidateSource?: () => void;
+  onToggleReviewFlag?: () => void;
+  onMetadataChange?: () => void;
 }

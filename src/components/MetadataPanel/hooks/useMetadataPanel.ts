@@ -6,11 +6,12 @@ import { usePanelState } from './usePanelState';
 import { MetadataPanelProps } from '../types';
 import { safeCallback } from '@/utils/compatibility';
 import { useContentValidator } from '@/hooks/validation/useContentValidator';
-import { createComponentErrorHandler, tryAction } from '@/utils/errors/wrappers';
+import { createComponentErrorHandler } from '@/utils/errors/wrappers';
 import { ContentValidationResult } from '@/utils/validation/types';
+import { handleError } from '@/utils/errors/handle';
 
 // Component-specific error handler
-const handleError = createComponentErrorHandler('MetadataPanel');
+const handleComponentError = createComponentErrorHandler('MetadataPanel');
 
 /**
  * Custom hook for managing the metadata panel state and operations
@@ -101,29 +102,42 @@ export const useMetadataPanel = ({
       
       handleMetadataChange();
     } catch (err) {
-      handleError(err, 'Error refreshing metadata', {
-        context: { contentId },
-        level: 'warning'
-      });
+      handleError(
+        err, 
+        "Error refreshing metadata", 
+        { level: "warning", context: { contentId } }
+      );
     }
   }, [contentId, isValidContent, fetchSourceMetadata, refreshTags, handleMetadataChange]);
 
   // Safe add tag with error handling
   const safeAddTag = useCallback(async (tagName: string, typeId?: string | null) => {
-    return tryAction(
-      () => handleAddTag(tagName, typeId),
-      `Failed to add tag "${tagName}"`,
-      { context: { contentId, tagName, typeId } }
-    );
+    try {
+      await handleAddTag(typeId);
+      return true;
+    } catch (err) {
+      handleError(
+        err,
+        `Failed to add tag "${tagName}"`,
+        { context: { contentId, tagName, typeId } }
+      );
+      return false;
+    }
   }, [contentId, handleAddTag]);
 
   // Safe delete tag with error handling
   const safeDeleteTag = useCallback(async (tagId: string) => {
-    return tryAction(
-      () => handleDeleteTag(tagId),
-      `Failed to delete tag`,
-      { context: { contentId, tagId } }
-    );
+    try {
+      await handleDeleteTag(tagId);
+      return true;
+    } catch (err) {
+      handleError(
+        err,
+        `Failed to delete tag`,
+        { context: { contentId, tagId } }
+      );
+      return false;
+    }
   }, [contentId, handleDeleteTag]);
 
   // Initialize data on mount and when contentId changes

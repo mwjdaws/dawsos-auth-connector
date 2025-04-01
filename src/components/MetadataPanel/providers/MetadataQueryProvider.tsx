@@ -84,7 +84,7 @@ export const MetadataQueryProvider: React.FC<MetadataQueryProviderProps> = ({
     isEditable,
     isLoading,
     error: error instanceof Error ? error : null,
-    sourceMetadata,
+    sourceMetadata: sourceMetadata || null, // Ensure it's never undefined
     refreshMetadata,
     handleAddTag,
     handleDeleteTag

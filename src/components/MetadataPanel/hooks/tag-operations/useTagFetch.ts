@@ -38,9 +38,9 @@ export const useTagFetch = ({
       
       // Mock response data
       const mockTags: Tag[] = [
-        { id: '1', name: 'React', content_id: contentId, display_order: 0 },
-        { id: '2', name: 'TypeScript', content_id: contentId, display_order: 1 },
-        { id: '3', name: 'Tailwind', content_id: contentId, display_order: 2 }
+        { id: '1', name: 'React', content_id: contentId, display_order: 0, type_id: null },
+        { id: '2', name: 'TypeScript', content_id: contentId, display_order: 1, type_id: null },
+        { id: '3', name: 'Tailwind', content_id: contentId, display_order: 2, type_id: null }
       ];
       
       setTags(mockTags);
