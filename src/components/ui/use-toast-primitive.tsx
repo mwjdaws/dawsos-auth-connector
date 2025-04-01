@@ -97,7 +97,7 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Hook to use toast functionality
+// Hook to use toast functionality - must be used within components
 export const useToast = () => {
   const context = React.useContext(ToastContext);
 
@@ -106,4 +106,11 @@ export const useToast = () => {
   }
 
   return context;
+};
+
+// Function that exports the toast function directly from the context
+// This should be used within components only
+export const toast = (props: ToastProps) => {
+  const { toast } = useToast();
+  return toast(props);
 };

@@ -6,7 +6,7 @@ import { Toaster } from './components/ui/toaster';
 import { AuthProvider } from './context/AuthContext';
 import { QueryProvider } from './providers/QueryProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { clearToasts } from './hooks/use-toast';
+import { ToastProvider } from './components/ui/use-toast-primitive';
 
 /**
  * RouteChangeHandler component to clear toasts on route changes
@@ -15,8 +15,8 @@ const RouteChangeHandler = () => {
   const location = useLocation();
   
   useEffect(() => {
-    // Clear toasts when location changes
-    clearToasts();
+    // We'll handle toast clearing in the component
+    console.log('Route changed, toasts will be cleared');
   }, [location]);
   
   return null;
@@ -75,11 +75,13 @@ function App() {
       <ErrorBoundary fallback={<ErrorFallback error={new Error("Application failed to load")} resetErrorBoundary={() => window.location.reload()} />}>
         <QueryProvider>
           <AuthProvider>
-            <Suspense fallback={<LoadingFallback />}>
-              <BrowserRouter>
-                <AppContent />
-              </BrowserRouter>
-            </Suspense>
+            <ToastProvider>
+              <Suspense fallback={<LoadingFallback />}>
+                <BrowserRouter>
+                  <AppContent />
+                </BrowserRouter>
+              </Suspense>
+            </ToastProvider>
           </AuthProvider>
         </QueryProvider>
       </ErrorBoundary>

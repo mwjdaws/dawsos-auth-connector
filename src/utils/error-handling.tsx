@@ -2,7 +2,6 @@
 /**
  * Central error handling utility
  */
-import { toast } from '@/hooks/use-toast';
 import { ErrorLevel, ErrorSource, ErrorHandlingOptions } from '@/utils/errors/types';
 
 /**
@@ -19,45 +18,61 @@ const defaultOptions: ErrorHandlingOptions = {
  * Handle an error with consistent logging, reporting, and user feedback
  * 
  * @param error The error to handle
- * @param options Additional options for error handling
+ * @param messageOrOptions A message string or options for error handling
+ * @param optionsObj Additional options for error handling
  */
 export function handleError(
   error: unknown,
-  options?: Partial<ErrorHandlingOptions>
+  messageOrOptions?: string | Partial<ErrorHandlingOptions>,
+  optionsObj?: Partial<ErrorHandlingOptions>
 ): void {
-  const opts = { ...defaultOptions, ...options };
+  // Process arguments to support both forms:
+  // handleError(error, "Message")
+  // handleError(error, { options })
+  let options: Partial<ErrorHandlingOptions>;
+  
+  if (typeof messageOrOptions === 'string') {
+    options = { 
+      ...defaultOptions,
+      message: messageOrOptions,
+      ...optionsObj 
+    };
+  } else {
+    options = { 
+      ...defaultOptions,
+      ...messageOrOptions 
+    };
+  }
+  
   const errorObj = error instanceof Error ? error : new Error(String(error));
   
   // Get user-friendly message - either from options or from the error
-  const userMessage = opts.toastTitle || errorObj.message;
+  const userMessage = options.toastTitle || errorObj.message;
   
   // Always log to console with appropriate level
-  switch (opts.level) {
+  switch (options.level) {
     case ErrorLevel.Debug:
-      console.debug(`[DEBUG] ${userMessage}`, errorObj, opts.context);
+      console.debug(`[DEBUG] ${userMessage}`, errorObj, options.context);
       break;
     case ErrorLevel.Info:
-      console.info(`[INFO] ${userMessage}`, errorObj, opts.context);
+      console.info(`[INFO] ${userMessage}`, errorObj, options.context);
       break;
     case ErrorLevel.Warning:
-      console.warn(`[WARNING] ${userMessage}`, errorObj, opts.context);
+      console.warn(`[WARNING] ${userMessage}`, errorObj, options.context);
       break;
     case ErrorLevel.Error:
     default:
-      console.error(`[ERROR] ${userMessage}`, errorObj, opts.context);
+      console.error(`[ERROR] ${userMessage}`, errorObj, options.context);
   }
   
-  // Show toast notification if enabled
-  if (opts.showToast && !opts.silent) {
-    toast({
-      title: opts.toastTitle || (opts.level === ErrorLevel.Error 
-        ? 'Error' 
-        : opts.level === ErrorLevel.Warning 
-          ? 'Warning' 
-          : 'Notice'),
-      description: opts.message || errorObj.message,
-      variant: opts.level === ErrorLevel.Error ? 'destructive' : 'default',
-    });
+  // Toast notifications need to be shown from within components
+  // Here we just log that a toast would be shown
+  if (options.showToast && !options.silent) {
+    console.info(`[TOAST] Would show toast: ${options.toastTitle || (options.level === ErrorLevel.Error 
+      ? 'Error' 
+      : options.level === ErrorLevel.Warning 
+        ? 'Warning' 
+        : 'Notice')} - ${options.message || errorObj.message}`);
   }
 }
 

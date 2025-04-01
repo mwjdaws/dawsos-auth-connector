@@ -30,7 +30,7 @@ export function Toaster() {
     <ToastProvider>
       {toasts.slice(0, MAX_VISIBLE_TOASTS).map(function ({ id, title, description, action, ...props }) {
         return (
-          <Toast key={id || `toast-${Math.random()}`} {...props}>
+          <Toast key={id} {...props}>
             <div className="grid gap-1">
               {title && <ToastTitle>{title}</ToastTitle>}
               {description && (

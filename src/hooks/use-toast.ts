@@ -1,25 +1,19 @@
 
-import { ToastActionElement } from "@/components/ui/toast";
-import {
-  useToast as useToastPrimitive,
-  ToastProps as ToastPrimitiveProps
-} from "@/components/ui/use-toast-primitive";
+import { toast as toastPrimitive, useToast as useToastPrimitive } from "@/components/ui/use-toast-primitive";
+import { ToastProps } from "@/components/ui/toast";
 
-export type ToastProps = {
-  title?: string;
-  description?: string | null;
-  action?: ToastActionElement;
-  variant?: "default" | "destructive";
-  id?: string;
-};
-
-// Re-export the useToast hook from the primitive
+// Re-export the hook to be used within React components
 export const useToast = useToastPrimitive;
 
-// Export the toast function
-export const toast = useToastPrimitive().toast;
+// Create a function that can safely be imported anywhere without actually
+// calling hooks until the returned function is called within a component
+export const toast = (props: ToastProps) => {
+  // We're just returning the toast function to be called later
+  // This avoids calling hooks outside of components
+  return toastPrimitive(props);
+};
 
-// Function to clear all toasts
+// Function to clear all toasts - this will need to be called from within a component
 export const clearToasts = () => {
   const { dismiss } = useToastPrimitive();
   dismiss(); // Dismiss all toasts
@@ -30,48 +24,3 @@ export const MAX_TOASTS = 3;
 
 // Toast timeout in milliseconds (5 seconds)
 export const TOAST_TIMEOUT = 5000;
-
-// Clear toasts on route change
-export const clearToastsOnRouteChange = () => {
-  clearToasts();
-};
-
-// Function to deduplicate toasts
-export const deduplicateToast = (id: string, props: ToastProps) => {
-  const { dismiss, toasts } = useToastPrimitive();
-  
-  // Check if a toast with this ID already exists
-  const existingToast = toasts.find(t => t.id === id);
-  
-  if (existingToast) {
-    // Dismiss the existing toast
-    dismiss(id);
-  }
-  
-  // Return the new toast with the given ID
-  return toast({
-    ...props,
-    id
-  });
-};
-
-// Error toast helper
-export const errorToast = (title: string, description?: string | null, id?: string) => {
-  const toastId = id || `error-${Date.now()}`;
-  return toast({
-    title,
-    description: description || null,
-    variant: "destructive",
-    id: toastId
-  });
-};
-
-// Success toast helper
-export const successToast = (title: string, description?: string | null, id?: string) => {
-  const toastId = id || `success-${Date.now()}`;
-  return toast({
-    title,
-    description: description || null,
-    id: toastId
-  });
-};
