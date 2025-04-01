@@ -1,71 +1,48 @@
 
-import { validate as validateUUID } from 'uuid';
 import { ContentIdValidationResult, createContentIdValidationResult } from './types';
 
 /**
- * Check if a string is a valid UUID
+ * Checks if a string is a valid UUID
  */
-export function isUUID(value: string): boolean {
-  return validateUUID(value);
+export function isValidUuid(id: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
 }
 
 /**
- * Check if a string is a temporary ID
- * Temporary IDs start with 'temp-'
+ * Checks if a string is a temporary ID (starts with 'temp-')
  */
-export function isTempId(value: string): boolean {
-  return value.startsWith('temp-');
+export function isTempId(id: string): boolean {
+  return id.startsWith('temp-');
 }
 
 /**
- * Check if a content ID is valid
- * Valid content IDs are either UUIDs or temporary IDs
+ * Checks if a content ID is valid (either UUID or temp ID)
  */
 export function isValidContentId(contentId?: string | null): boolean {
   if (!contentId) return false;
-  return isUUID(contentId) || isTempId(contentId);
+  return isValidUuid(contentId) || isTempId(contentId);
 }
 
 /**
- * Check if a content ID can be stored in the database
- * Storable content IDs are UUIDs (no temporary IDs)
- */
-export function isStorableContentId(contentId?: string | null): boolean {
-  if (!contentId) return false;
-  return isUUID(contentId);
-}
-
-/**
- * Try to convert a content ID to a UUID
- * Returns the original value if it's already a UUID or cannot be converted
- */
-export function tryConvertToUUID(contentId?: string | null): string | null {
-  if (!contentId) return null;
-  if (isUUID(contentId)) return contentId;
-  // Add additional conversion logic here if needed
-  return contentId;
-}
-
-/**
- * Get a validation result for a content ID
+ * Get content ID validation result with detailed information
  */
 export function getContentIdValidationResult(contentId?: string | null): ContentIdValidationResult {
   if (!contentId) {
     return createContentIdValidationResult(false, 'Content ID is required');
   }
   
-  if (!isValidContentId(contentId)) {
+  const validFormat = isValidContentId(contentId);
+  
+  if (!validFormat) {
     return createContentIdValidationResult(false, 'Invalid content ID format');
   }
   
-  // For now, we set contentExists to true based on the valid format
-  // In a real application, this would check against the database
   return createContentIdValidationResult(true, null, true);
 }
 
 /**
- * Validate a content ID with more context
- * @deprecated Use getContentIdValidationResult instead
+ * Legacy function for backward compatibility
  */
 export function validateContentId(contentId?: string | null): ContentIdValidationResult {
   return getContentIdValidationResult(contentId);

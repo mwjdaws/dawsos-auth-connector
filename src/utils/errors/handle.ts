@@ -1,104 +1,139 @@
 
-import { toast } from '@/hooks/use-toast';
-import { ErrorHandlingOptions, ErrorLevel, ErrorSource } from './types';
+import { toast } from "@/hooks/use-toast";
+import { ErrorLevel, ErrorSource, ErrorHandlingOptions } from './types';
 import { convertErrorOptions } from './compatibility';
+import { generateErrorId } from './generateId';
+
+// Default error handling options
+const DEFAULT_ERROR_OPTIONS: ErrorHandlingOptions = {
+  message: "An unexpected error occurred",
+  level: ErrorLevel.Error,
+  source: ErrorSource.Unknown,
+  toastTitle: "Error",
+  toastDescription: "An unexpected error occurred",
+  suppressToast: false,
+  context: {}
+};
 
 /**
- * Default error handler with toast notifications
+ * Central error handling function
+ * 
+ * This function processes all errors in the application in a consistent way
+ * by providing informative toasts, logging, and context preservation.
+ * 
+ * @param error The error object that was caught
+ * @param message Custom error message (optional)
+ * @param options Additional options for error handling
  */
-export function handleError(error: Error | unknown, options?: Partial<ErrorHandlingOptions> | string) {
-  const errorOptions = convertErrorOptions(options);
-  const level = errorOptions.level ?? ErrorLevel.Error;
-  const source = errorOptions.source ?? ErrorSource.Unknown;
+export function handleError(
+  error: unknown,
+  message?: string | Partial<ErrorHandlingOptions>,
+  options?: Partial<ErrorHandlingOptions>
+) {
+  // Parse options based on different argument patterns
+  let errorOptions: ErrorHandlingOptions;
   
-  // Convert error to an Error object if it's not already
-  const err = error instanceof Error ? error : new Error(String(error));
-  
-  // Log the error to console with appropriate level
-  if (level >= ErrorLevel.Error) {
-    console.error(`[${source}] ${errorOptions.message || err.message}`, err, errorOptions.context || {});
-  } else if (level === ErrorLevel.Warning) {
-    console.warn(`[${source}] ${errorOptions.message || err.message}`, err, errorOptions.context || {});
+  if (typeof message === 'string' && options) {
+    // Handle case: handleError(error, "message", { level: ErrorLevel.Error })
+    errorOptions = {
+      ...DEFAULT_ERROR_OPTIONS,
+      ...convertErrorOptions(options),
+      message,
+      toastTitle: message
+    };
+  } else if (typeof message === 'object') {
+    // Handle case: handleError(error, { message: "message", level: ErrorLevel.Error })
+    errorOptions = {
+      ...DEFAULT_ERROR_OPTIONS,
+      ...convertErrorOptions(message)
+    };
+  } else if (typeof message === 'string') {
+    // Handle case: handleError(error, "message")
+    errorOptions = {
+      ...DEFAULT_ERROR_OPTIONS,
+      message,
+      toastTitle: message
+    };
   } else {
-    console.log(`[${source}] ${errorOptions.message || err.message}`, err, errorOptions.context || {});
+    // Handle case: handleError(error)
+    errorOptions = { ...DEFAULT_ERROR_OPTIONS };
   }
-  
-  // Display toast notification if not suppressed
-  if (!errorOptions.suppressToast && level >= ErrorLevel.Warning) {
-    // Generate a unique ID for deduplication
-    const id = `${source}-${(errorOptions.message || err.message).slice(0, 20)}-${Date.now()}`;
-    
+
+  // Generate a unique ID for this error
+  const errorId = generateErrorId();
+
+  // Extract information from the error
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorStack = error instanceof Error ? error.stack : undefined;
+
+  // Log the error with context
+  console.error(
+    `[${errorOptions.source}] ${errorOptions.message}`,
+    {
+      errorId,
+      originalError: error,
+      level: errorOptions.level,
+      context: errorOptions.context,
+      stack: errorStack
+    }
+  );
+
+  // Show toast notification unless suppressed
+  if (!errorOptions.suppressToast) {
     toast({
-      id,
-      title: errorOptions.toastTitle || 'Error',
-      description: errorOptions.toastDescription || errorOptions.message || err.message,
-      variant: level >= ErrorLevel.Error ? 'destructive' : 'default'
+      id: errorId,
+      title: errorOptions.toastTitle || errorOptions.message,
+      description: errorOptions.toastDescription || errorMessage,
+      variant: "destructive"
     });
   }
-  
-  // Return the error to allow for chaining
-  return err;
+
+  // Return enhanced error information for further processing if needed
+  return {
+    id: errorId,
+    message: errorOptions.message,
+    originalError: error,
+    level: errorOptions.level,
+    source: errorOptions.source,
+    context: errorOptions.context
+  };
 }
 
 /**
- * Factory for creating component-specific error handlers
+ * Create an error handler for components
  */
 export function createComponentErrorHandler(componentName: string) {
-  return (error: Error | unknown, options?: Partial<ErrorHandlingOptions> | string) => {
-    const errorOptions = convertErrorOptions(options);
-    
-    return handleError(error, {
-      ...errorOptions,
-      source: errorOptions.source ?? ErrorSource.UI,
-      context: {
-        ...errorOptions.context,
-        component: componentName
-      }
+  return (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => {
+    return handleError(error, message, {
+      source: ErrorSource.UI,
+      context: { component: componentName },
+      ...options
     });
   };
 }
 
 /**
- * Factory for creating hook-specific error handlers
+ * Create an error handler for hooks
  */
 export function createHookErrorHandler(hookName: string) {
-  return (error: Error | unknown, options?: Partial<ErrorHandlingOptions> | string) => {
-    const errorOptions = convertErrorOptions(options);
-    
-    return handleError(error, {
-      ...errorOptions,
-      source: errorOptions.source ?? ErrorSource.UI,
-      context: {
-        ...errorOptions.context,
-        hook: hookName
-      }
+  return (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => {
+    return handleError(error, message, {
+      source: ErrorSource.Unknown,
+      context: { hook: hookName },
+      ...options
     });
   };
 }
 
 /**
- * Factory for creating service-specific error handlers
+ * Create an error handler for services
  */
 export function createServiceErrorHandler(serviceName: string) {
-  return (error: Error | unknown, options?: Partial<ErrorHandlingOptions> | string) => {
-    const errorOptions = convertErrorOptions(options);
-    
-    return handleError(error, {
-      ...errorOptions,
-      source: errorOptions.source ?? ErrorSource.System,
-      context: {
-        ...errorOptions.context,
-        service: serviceName
-      }
+  return (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => {
+    return handleError(error, message, {
+      source: ErrorSource.Server,
+      context: { service: serviceName },
+      ...options
     });
   };
 }
-
-// Export an ErrorBoundary compatible error handler
-export const reportError = (error: Error | unknown, info?: React.ErrorInfo) => {
-  return handleError(error, {
-    source: ErrorSource.UI,
-    level: ErrorLevel.Error,
-    context: { errorInfo: info }
-  });
-};

@@ -1,3 +1,4 @@
+
 {
   "name": "dawsos-web-app",
   "version": "1.0.0",
@@ -5,10 +6,14 @@
   "main": "src/main.tsx",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc && vite build",
     "serve": "vite preview",
     "lint": "eslint . --ext .ts,.tsx",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "react": "^18.0.0",

@@ -1,42 +1,32 @@
 
 /**
- * Utility for generating unique error IDs
- */
-
-/**
- * Generate a unique ID for an error
- * This helps with deduplication and tracking
+ * Generate a unique ID for errors
  * 
- * @returns A unique error ID
+ * This is useful for tracking errors in logs and relating them to UI notifications
  */
 export function generateErrorId(): string {
-  return `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `error-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 }
 
 /**
- * Generate a deterministic ID for an error based on its content
- * Useful for deduplicating similar errors
+ * Generate a unique ID for deduplicated errors
  * 
- * @param error The error object
- * @param context Additional context to include in the fingerprint
- * @returns A deterministic error fingerprint
+ * This creates a consistent ID based on the error type and message,
+ * which allows for deduplication of similar errors
  */
-export function generateErrorFingerprint(error: Error, context?: Record<string, any>): string {
-  const components = [
-    error.name,
-    error.message,
-    // Take first line of stack trace if available
-    error.stack?.split('\n')[1]?.trim() || ''
-  ];
-  
-  // Add context values if provided
-  if (context) {
-    Object.entries(context).forEach(([key, value]) => {
-      if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-        components.push(`${key}:${value}`);
-      }
-    });
+export function generateDeduplicatedErrorId(type: string, message: string): string {
+  // Create a simple hash of the message
+  let hash = 0;
+  for (let i = 0; i < message.length; i++) {
+    hash = ((hash << 5) - hash) + message.charCodeAt(i);
+    hash |= 0; // Convert to 32bit integer
   }
-  
-  return components.join('|');
+  return `${type}-${Math.abs(hash).toString(16)}`;
+}
+
+/**
+ * Generate a unique ID for validation errors
+ */
+export function generateValidationErrorId(fieldName: string): string {
+  return `validation-${fieldName}-${Date.now()}`;
 }

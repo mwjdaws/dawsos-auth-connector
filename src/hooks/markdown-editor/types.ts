@@ -1,4 +1,3 @@
-
 /**
  * Types for markdown editor
  */
@@ -6,14 +5,24 @@
 // Type for save draft handler options
 export interface SaveHandlerOptions {
   /**
-   * Whether this is a manual save initiated by the user
+   * Flag indicating this is a manual save (triggered by user)
    */
   isManualSave?: boolean;
   
   /**
-   * Whether this is an autosave
+   * Flag indicating this is an auto save
    */
   isAutoSave?: boolean;
+  
+  /**
+   * User ID for the save operation
+   */
+  userId?: string;
+  
+  /**
+   * Additional metadata to store with the save
+   */
+  metadata?: Record<string, any>;
 }
 
 // Type for draft operation results
