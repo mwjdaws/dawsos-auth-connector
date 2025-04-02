@@ -1,8 +1,8 @@
 
 /**
- * Graph Data Types
+ * Graph Visualization Types
  * 
- * Common type definitions for graph data structures
+ * Types for graph visualization components
  */
 
 export interface GraphNode {
@@ -36,6 +36,17 @@ export interface GraphData {
   links: GraphLink[];
 }
 
+// Renderer specific types with optional callback functions
+export interface GraphRendererProps {
+  graphData: GraphData;
+  width: number;
+  height: number;
+  highlightedNodeId?: string | null;
+  zoom?: number;
+  onNodeClick?: ((nodeId: string) => void) | undefined;
+  onLinkClick?: ((source: string, target: string) => void) | undefined;
+}
+
 export interface GraphRendererRef {
   centerOnNode: (nodeId: string) => void;
   centerAt: (x: number, y: number, duration?: number) => void;
@@ -46,4 +57,12 @@ export interface GraphRendererRef {
   zoomIn: () => void;
   zoomOut: () => void;
   getGraphData: () => GraphData;
+}
+
+export interface NodeRendererOptions {
+  onNodeClick?: ((nodeId: string) => void) | undefined;
+}
+
+export interface LinkRendererOptions {
+  onLinkClick?: ((source: string, target: string) => void) | undefined;
 }

@@ -1,7 +1,7 @@
 
 import { useRef, useCallback, useState } from 'react';
 import * as d3 from 'd3';
-import { GraphNode } from './GraphRendererTypes';
+import { GraphNode } from '../../types';
 
 interface UseZoomPanProps {
   width: number;
@@ -32,7 +32,7 @@ export function useZoomPan({
   onZoomChange
 }: UseZoomPanProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const zoomBehaviorRef = useRef<d3.ZoomBehavior<HTMLCanvasElement, unknown>>();
+  const zoomBehaviorRef = useRef<d3.ZoomBehavior<HTMLCanvasElement, unknown> | undefined>();
   const [transform, setTransform] = useState<d3.ZoomTransform>(d3.zoomIdentity.scale(initialZoom));
   const [zoomState, setZoomState] = useState<ZoomState>({
     zoom: initialZoom,

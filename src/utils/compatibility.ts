@@ -1,91 +1,55 @@
+import { ensureString, ensureNumber } from './strings';
 
 /**
- * Type compatibility and conversion utilities
+ * Sanitizes graph data to ensure it meets expected type requirements
  * 
- * This module provides utilities for ensuring type safety when working with
- * potentially inconsistent or external data. It helps sanitize and normalize data
- * to prevent runtime errors.
+ * @param data Raw graph data that may be missing required properties
+ * @returns Sanitized graph data conforming to GraphData interface
  */
-
-// String conversions
-export function ensureString(value: any, defaultValue: string = ''): string {
-  if (value === null || value === undefined) return defaultValue;
-  return String(value);
-}
-
-// Number conversions
-export function ensureNumber(value: any, defaultValue: number = 0): number {
-  if (value === null || value === undefined) return defaultValue;
-  const num = Number(value);
-  return isNaN(num) ? defaultValue : num;
-}
-
-// Boolean conversions
-export function ensureBoolean(value: any, defaultValue: boolean = false): boolean {
-  if (value === null || value === undefined) return defaultValue;
-  return Boolean(value);
-}
-
-// Array conversions
-export function ensureArray<T>(value: any, defaultValue: T[] = []): T[] {
-  if (Array.isArray(value)) return value;
-  return defaultValue;
-}
-
-// Null/Undefined conversions
-export function nullToUndefined<T>(value: T | null): T | undefined {
-  return value === null ? undefined : value;
-}
-
-export function undefinedToNull<T>(value: T | undefined): T | null {
-  return value === undefined ? null : value;
-}
-
-// Graph data sanitization
 export function sanitizeGraphData(data: any): any {
-  if (!data || typeof data !== 'object') return { nodes: [], links: [] };
+  if (!data) {
+    return { nodes: [], links: [] };
+  }
+
+  // Ensure nodes array exists
+  const nodes = Array.isArray(data.nodes) ? data.nodes : [];
   
-  const sanitizedData = {
-    nodes: ensureArray(data.nodes).map((node: any) => ({
-      id: ensureString(node?.id),
-      name: ensureString(node?.name || node?.title),
-      title: ensureString(node?.title || node?.name),
-      ...node
-    })),
-    links: ensureArray(data.links).map((link: any) => ({
-      source: ensureString(typeof link?.source === 'object' ? link?.source?.id : link?.source),
-      target: ensureString(typeof link?.target === 'object' ? link?.target?.id : link?.target),
+  // Ensure links array exists
+  const links = Array.isArray(data.links) ? data.links : [];
+  
+  // Process nodes to ensure required properties
+  const processedNodes = nodes.map((node: any) => ({
+    id: ensureString(node.id || `node-${Math.random().toString(36).substr(2, 9)}`),
+    name: ensureString(node.name || node.title || node.id || 'Unnamed'),
+    title: ensureString(node.title || node.name || ''),
+    type: ensureString(node.type || 'default'),
+    color: ensureString(node.color || '#6e56cf'),
+    ...node
+  }));
+  
+  // Process links to ensure required properties
+  const processedLinks = links.map((link: any) => {
+    // Handle source and target as objects or strings
+    const source = typeof link.source === 'object' && link.source !== null
+      ? ensureString(link.source.id)
+      : ensureString(link.source);
+    
+    const target = typeof link.target === 'object' && link.target !== null
+      ? ensureString(link.target.id)
+      : ensureString(link.target);
+    
+    return {
+      source,
+      target,
+      type: ensureString(link.type || 'default'),
+      value: ensureNumber(link.value || 1),
+      color: ensureString(link.color || '#8b8b8b'),
       ...link
-    }))
-  };
+    };
+  });
   
-  return sanitizedData;
-}
-
-// Graph validation
-export function ensureValidZoom(zoom: any): number {
-  const validZoom = ensureNumber(zoom, 1);
-  return Math.max(0.1, Math.min(validZoom, 4));
-}
-
-export function ensureValidGraphData(data: any): any {
-  return data && typeof data === 'object' && (data.nodes || data.links)
-    ? sanitizeGraphData(data)
-    : { nodes: [], links: [] };
-}
-
-// Safe property access and callback handling
-export function createSafeGraphProps(props: any): any {
   return {
-    graphData: ensureValidGraphData(props?.graphData),
-    width: ensureNumber(props?.width, 800),
-    height: ensureNumber(props?.height, 600),
-    zoom: ensureValidZoom(props?.zoom),
-    highlightedNodeId: props?.highlightedNodeId || null
+    nodes: processedNodes,
+    links: processedLinks
   };
 }
-
-export function safeCallback<T extends Function>(callback: T | undefined): T | ((...args: any[]) => void) {
-  return typeof callback === 'function' ? callback : () => {};
-}
-

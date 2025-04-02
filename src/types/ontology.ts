@@ -1,8 +1,8 @@
 
 /**
- * Ontology System Types
+ * Ontology-related Types
  * 
- * Types for the ontology system that classifies and organizes knowledge
+ * Type definitions for ontology terms, domains, and relationships
  */
 
 export interface OntologyTerm {
@@ -10,6 +10,7 @@ export interface OntologyTerm {
   term: string;
   description: string;
   domain: string;
+  associationId?: string;
   review_required?: boolean;
 }
 
@@ -24,27 +25,33 @@ export interface RelatedTerm {
   term: string;
   description: string;
   domain: string;
-  relationship_type: string;
-  confidence?: number;
+  similarity: number;
+  applied: boolean;
+  rejected: boolean;
 }
 
-export interface OntologyTermLink {
-  source_id: string;
-  target_id: string;
-  link_type: string;
+export interface OntologyAssociation {
+  id: string;
+  knowledge_source_id: string;
+  ontology_term_id: string;
+  review_required: boolean;
   created_at?: string;
   created_by?: string | null;
 }
 
-export interface OntologyMap {
-  terms: OntologyTerm[];
-  links: OntologyTermLink[];
+export interface TermSuggestion {
+  id?: string;
+  term: string;
+  description?: string;
+  domain?: string;
+  confidence?: number;
+  applied: boolean;
+  rejected: boolean;
 }
 
-export interface OntologySuggestion {
-  id: string;
-  term: string;
-  description: string;
-  confidence: number;
-  domain?: string;
+export interface OntologyRelationship {
+  term1_id: string;
+  term2_id: string;
+  relationship_type: string;
+  strength: number;
 }
