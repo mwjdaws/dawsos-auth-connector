@@ -1,67 +1,170 @@
 
-import { ErrorLevel, ErrorSource } from '../types';
+import { ErrorSource } from '../types';
 
 /**
- * ValidationError class for structured validation errors
+ * Base validation error class
  */
 export class ValidationError extends Error {
-  public readonly field?: string;
-  public readonly level: ErrorLevel;
-  public readonly source: ErrorSource;
-  public readonly context?: Record<string, any>;
+  /**
+   * The field that failed validation
+   */
+  fieldName: string;
+  
+  /**
+   * The value that failed validation
+   */
+  value: any;
+  
+  /**
+   * Code for specific validation failure
+   */
+  code: string;
+  
+  /**
+   * Error source
+   */
+  source = ErrorSource.Validation;
+  
+  /**
+   * Additional context information
+   */
+  context?: Record<string, any>;
 
   constructor(
-    message: string, 
-    field?: string,
-    level: ErrorLevel = ErrorLevel.Warning,
-    source: ErrorSource = ErrorSource.User,
+    message: string,
+    fieldName: string,
+    value: any,
+    code = 'VALIDATION_ERROR',
     context?: Record<string, any>
   ) {
     super(message);
     this.name = 'ValidationError';
-    this.field = field;
-    this.level = level;
-    this.source = source;
+    this.fieldName = fieldName;
+    this.value = value;
+    this.code = code;
     this.context = context;
-    
-    // This is necessary for extending built-in classes in TypeScript
-    Object.setPrototypeOf(this, ValidationError.prototype);
-  }
-
-  /**
-   * Create a required field error
-   */
-  static required(field: string): ValidationError {
-    return new ValidationError(`${field} is required`, field);
-  }
-  
-  /**
-   * Create an invalid format error
-   */
-  static invalidFormat(field: string, format: string): ValidationError {
-    return new ValidationError(`${field} must be a valid ${format}`, field);
-  }
-  
-  /**
-   * Create a min length error
-   */
-  static minLength(field: string, length: number): ValidationError {
-    return new ValidationError(`${field} must be at least ${length} characters`, field);
-  }
-  
-  /**
-   * Create a max length error
-   */
-  static maxLength(field: string, length: number): ValidationError {
-    return new ValidationError(`${field} cannot exceed ${length} characters`, field);
-  }
-  
-  /**
-   * Create a numeric range error
-   */
-  static range(field: string, min: number, max: number): ValidationError {
-    return new ValidationError(`${field} must be between ${min} and ${max}`, field);
   }
 }
 
-export default ValidationError;
+/**
+ * Error for required field validation failures
+ */
+export class RequiredFieldError extends ValidationError {
+  constructor(fieldName: string, context?: Record<string, any>) {
+    super(
+      `${fieldName} is required`,
+      fieldName,
+      undefined,
+      'REQUIRED_FIELD',
+      context
+    );
+    this.name = 'RequiredFieldError';
+  }
+}
+
+/**
+ * Error for invalid type validation failures
+ */
+export class TypeValidationError extends ValidationError {
+  /**
+   * The expected type
+   */
+  expectedType: string;
+
+  constructor(
+    fieldName: string,
+    value: any,
+    expectedType: string,
+    context?: Record<string, any>
+  ) {
+    super(
+      `${fieldName} should be of type ${expectedType}`,
+      fieldName,
+      value,
+      'TYPE_VALIDATION',
+      context
+    );
+    this.name = 'TypeValidationError';
+    this.expectedType = expectedType;
+  }
+}
+
+/**
+ * Error for format validation failures
+ */
+export class FormatValidationError extends ValidationError {
+  /**
+   * The expected format
+   */
+  expectedFormat: string;
+
+  constructor(
+    fieldName: string,
+    value: any,
+    expectedFormat: string,
+    context?: Record<string, any>
+  ) {
+    super(
+      `${fieldName} must match format: ${expectedFormat}`,
+      fieldName,
+      value,
+      'FORMAT_VALIDATION',
+      context
+    );
+    this.name = 'FormatValidationError';
+    this.expectedFormat = expectedFormat;
+  }
+}
+
+/**
+ * Error for range validation failures
+ */
+export class RangeValidationError extends ValidationError {
+  /**
+   * Minimum value
+   */
+  min?: number;
+  
+  /**
+   * Maximum value
+   */
+  max?: number;
+
+  constructor(
+    fieldName: string,
+    value: any,
+    min?: number,
+    max?: number,
+    context?: Record<string, any>
+  ) {
+    const rangeText = min !== undefined && max !== undefined
+      ? `between ${min} and ${max}`
+      : min !== undefined
+        ? `at least ${min}`
+        : `at most ${max}`;
+        
+    super(
+      `${fieldName} must be ${rangeText}`,
+      fieldName,
+      value,
+      'RANGE_VALIDATION',
+      context
+    );
+    this.name = 'RangeValidationError';
+    this.min = min;
+    this.max = max;
+  }
+}
+
+/**
+ * Create a validation error
+ */
+export function createValidationError(
+  message: string,
+  fieldName: string,
+  value: any,
+  code = 'VALIDATION_ERROR',
+  context?: Record<string, any>
+): ValidationError {
+  return new ValidationError(message, fieldName, value, code, context);
+}

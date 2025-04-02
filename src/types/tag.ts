@@ -103,3 +103,25 @@ export interface DeleteTagData {
    */
   contentId: string;
 }
+
+/**
+ * Sort tags by display order
+ */
+export function sortTagsByDisplayOrder(tags: Tag[]): Tag[] {
+  return [...tags].sort((a, b) => a.display_order - b.display_order);
+}
+
+/**
+ * Filter duplicate tags based on name
+ */
+export function filterDuplicateTags(tags: Tag[]): Tag[] {
+  const seen = new Set<string>();
+  return tags.filter(tag => {
+    const normalized = tag.name.toLowerCase();
+    if (seen.has(normalized)) {
+      return false;
+    }
+    seen.add(normalized);
+    return true;
+  });
+}

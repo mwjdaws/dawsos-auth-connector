@@ -1,5 +1,12 @@
 
 /**
+ * Type compatibility utilities
+ * 
+ * These functions provide safe handling of various data types to ensure
+ * consistent behavior across the application.
+ */
+
+/**
  * Ensures a value is a string, or returns an empty string
  */
 export function ensureString(value: unknown): string {
@@ -83,4 +90,80 @@ export function ensureNonEmptyString(value: string | null | undefined): string |
     return null;
   }
   return value;
+}
+
+/**
+ * Graph data sanitization
+ */
+export function sanitizeGraphData(data: any): any {
+  if (!data) return { nodes: [], links: [] };
+  
+  return {
+    nodes: ensureArray(data.nodes).map(node => ({
+      id: ensureString(node?.id),
+      name: ensureString(node?.name),
+      group: ensureNumber(node?.group, 1),
+      size: ensureNumber(node?.size, 10),
+      color: ensureString(node?.color)
+    })),
+    links: ensureArray(data.links).map(link => ({
+      source: ensureString(link?.source),
+      target: ensureString(link?.target),
+      value: ensureNumber(link?.value, 1),
+      label: ensureString(link?.label)
+    }))
+  };
+}
+
+/**
+ * Ensures valid zoom level for graph
+ */
+export function ensureValidZoom(zoom: unknown): number {
+  const zoomValue = ensureNumber(zoom, 1);
+  return Math.min(Math.max(zoomValue, 0.1), 5); // limit between 0.1 and 5
+}
+
+/**
+ * Ensures valid graph data
+ */
+export function ensureValidGraphData(data: any): { nodes: any[], links: any[] } {
+  if (!data) return { nodes: [], links: [] };
+  
+  return {
+    nodes: ensureArray(data.nodes),
+    links: ensureArray(data.links)
+  };
+}
+
+/**
+ * Creates safe graph props
+ */
+export function createSafeGraphProps(props: any): any {
+  return {
+    width: ensureNumber(props?.width, 800),
+    height: ensureNumber(props?.height, 600),
+    graphData: ensureValidGraphData(props?.graphData),
+    nodeSize: ensureNumber(props?.nodeSize, 5),
+    linkWidth: ensureNumber(props?.linkWidth, 1),
+    nodeColor: ensureString(props?.nodeColor || '#1f77b4'),
+    linkColor: ensureString(props?.linkColor || '#999'),
+    backgroundColor: ensureString(props?.backgroundColor || 'transparent')
+  };
+}
+
+/**
+ * Safe callback execution
+ */
+export function safeCallback<T extends (...args: any[]) => any>(
+  callback: T | undefined | null,
+  ...args: Parameters<T>
+): ReturnType<T> | undefined {
+  if (typeof callback === 'function') {
+    try {
+      return callback(...args);
+    } catch (error) {
+      console.error('Error in callback execution:', error);
+    }
+  }
+  return undefined;
 }

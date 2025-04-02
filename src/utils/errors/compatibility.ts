@@ -1,6 +1,6 @@
 
-import { handleError } from './handle';
-import { ErrorLevel, ErrorSource, ErrorHandlingOptions, LegacyErrorHandlingOptions } from './types';
+import { handleError, createComponentErrorHandler, createHookErrorHandler, createServiceErrorHandler } from './handle';
+import { ErrorLevel, ErrorSource, ErrorHandlingOptions } from './types';
 
 /**
  * Legacy interface for handleError for backward compatibility.
@@ -11,7 +11,7 @@ import { ErrorLevel, ErrorSource, ErrorHandlingOptions, LegacyErrorHandlingOptio
 export function legacyHandleError(
   error: Error | unknown,
   message: string,
-  options?: LegacyErrorHandlingOptions
+  options?: Partial<ErrorHandlingOptions>
 ): void {
   // Convert legacy options to new format
   handleError(error, {
@@ -68,5 +68,12 @@ export function convertErrorOptions(legacyOptions: Record<string, any>): ErrorHa
   };
 }
 
-// Re-export enums for legacy code
-export { ErrorLevel, ErrorSource };
+// Re-export for convenience
+export { 
+  handleError, 
+  createComponentErrorHandler,
+  createHookErrorHandler,
+  createServiceErrorHandler,
+  ErrorLevel, 
+  ErrorSource 
+};

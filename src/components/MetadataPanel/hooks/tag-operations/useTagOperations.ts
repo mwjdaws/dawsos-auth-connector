@@ -4,7 +4,7 @@ import { useTagState } from './useTagState';
 import { useTagFetch } from './useTagFetch';
 import { useTagMutations } from './useTagMutations';
 import { Tag } from '@/types/tag';
-import { handleError, ErrorLevel } from '@/utils/errors';
+import { handleError, ErrorLevel, ErrorSource } from '@/utils/errors';
 import { isValidContentId } from '@/utils/validation/contentIdValidation';
 import { UseTagOperationsResult } from './types';
 
@@ -56,7 +56,8 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
     } catch (err) {
       handleError(err, {
         message: "Failed to refresh tags",
-        level: ErrorLevel.Warning
+        level: ErrorLevel.Warning,
+        source: ErrorSource.Hook
       });
     }
   }, [fetchTags]);
@@ -75,7 +76,8 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
         new Error('Tag must be at least 2 characters long'),
         {
           message: 'Tag must be at least 2 characters long',
-          level: ErrorLevel.Warning
+          level: ErrorLevel.Warning,
+          source: ErrorSource.Validation
         }
       );
       return;
@@ -94,7 +96,8 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
     } catch (err) {
       handleError(err, {
         message: "Failed to add tag",
-        level: ErrorLevel.Warning
+        level: ErrorLevel.Warning,
+        source: ErrorSource.Hook
       });
     }
   };
@@ -110,7 +113,8 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
     } catch (err) {
       handleError(err, {
         message: "Failed to delete tag",
-        level: ErrorLevel.Warning
+        level: ErrorLevel.Warning,
+        source: ErrorSource.Hook
       });
     }
   };
@@ -133,7 +137,8 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
     } catch (err) {
       handleError(err, {
         message: "Failed to reorder tags",
-        level: ErrorLevel.Warning
+        level: ErrorLevel.Warning,
+        source: ErrorSource.Hook
       });
     }
   };

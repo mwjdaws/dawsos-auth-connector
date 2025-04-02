@@ -1,165 +1,127 @@
+import { ErrorLevel, ErrorSource } from './types';
 
-import { ErrorHandlingOptions } from './types';
+// Store recent fingerprints for deduplication
+// Using a Map with value = timestamp for auto-cleanup
+const recentFingerprints = new Map<string, number>();
 
-// Error fingerprint cache
-const ERROR_FINGERPRINT_CACHE = new Map<string, string>();
+// Maximum number of fingerprints to cache (to prevent memory leaks)
+const MAX_FINGERPRINTS = 1000;
 
-// Maximum age of a fingerprint cache entry in milliseconds
-const FINGERPRINT_CACHE_MAX_AGE = 60 * 60 * 1000; // 1 hour
-
-// Maximum number of fingerprints to cache
-const FINGERPRINT_CACHE_MAX_SIZE = 1000;
+// How long to keep fingerprints for deduplication (in ms)
+const FINGERPRINT_TTL = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Generate a unique fingerprint for an error to facilitate deduplication
+ * Generate a unique fingerprint for an error to identify duplicates
  * 
- * @param error The error that occurred
- * @param options Error handling options
- * @returns A string fingerprint that identifies this type of error
+ * @param error The error object
+ * @param message Optional custom message
+ * @param source Optional error source
+ * @returns A string fingerprint
  */
 export function generateFingerprint(
-  error: Error | unknown,
-  options?: ErrorHandlingOptions
+  error: Error, 
+  message?: string,
+  source?: ErrorSource
 ): string {
-  // Create a cache key from the error and options
-  const cacheKey = getCacheKey(error, options);
+  // Components of the fingerprint
+  const components = [
+    // Error type and message
+    error.name,
+    error.message,
+    
+    // Custom message if provided
+    message,
+    
+    // Source category
+    source,
+    
+    // First line of stack trace (most specific part)
+    error.stack?.split('\n')[1]?.trim()
+  ];
   
-  // Check if we already computed a fingerprint for this error
-  const cachedFingerprint = ERROR_FINGERPRINT_CACHE.get(cacheKey);
-  if (cachedFingerprint) {
-    return cachedFingerprint;
-  }
-  
-  // If options include a fingerprint, use it
-  if (options?.fingerprint) {
-    cacheFingerprint(cacheKey, options.fingerprint);
-    return options.fingerprint;
-  }
-  
-  // Generate a fingerprint based on error properties
-  const fingerprint = computeFingerprint(error, options);
-  
-  // Cache the fingerprint
-  cacheFingerprint(cacheKey, fingerprint);
-  
-  return fingerprint;
+  // Join non-empty components into fingerprint
+  return components
+    .filter(Boolean)
+    .join('|')
+    .slice(0, 200); // Limit length
 }
 
 /**
- * Compute a cache key for the error and options
+ * Check if an error with this fingerprint has been seen recently
+ * 
+ * @param fingerprint The error fingerprint
+ * @returns True if a duplicate, false if new
  */
-function getCacheKey(error: Error | unknown, options?: ErrorHandlingOptions): string {
-  try {
-    let errorStr = '';
-    
-    if (error instanceof Error) {
-      errorStr = `${error.name}:${error.message}:${error.stack?.substring(0, 500)}`;
-    } else if (typeof error === 'string') {
-      errorStr = error;
-    } else {
-      errorStr = JSON.stringify(error);
-    }
-    
-    const optionsStr = options ? JSON.stringify({
-      message: options.message,
-      source: options.source,
-      level: options.level,
-    }) : '';
-    
-    return `${errorStr}::${optionsStr}`;
-  } catch (err) {
-    // Fallback in case of serialization errors
-    return `${Date.now()}-${Math.random()}`;
-  }
-}
-
-/**
- * Compute a fingerprint from error and options
- */
-function computeFingerprint(error: Error | unknown, options?: ErrorHandlingOptions): string {
-  try {
-    const components = [];
-    
-    // Add error-specific information
-    if (error instanceof Error) {
-      components.push(error.name || 'Error');
-      components.push(error.message);
-      
-      // Extract the most important part of the stack trace (first frame)
-      const stackLines = error.stack?.split('\n').slice(1, 2);
-      if (stackLines && stackLines.length > 0) {
-        components.push(stackLines[0].trim());
-      }
-      
-      // Add error code if available
-      if ('code' in error && error.code) {
-        components.push(String(error.code));
-      }
-    } else if (typeof error === 'string') {
-      components.push(error);
-    } else {
-      components.push(JSON.stringify(error).substring(0, 100));
-    }
-    
-    // Add options-specific information
-    if (options) {
-      if (options.source) components.push(options.source);
-      if (options.message) components.push(options.message);
-    }
-    
-    // Join all components and hash them
-    return hashString(components.filter(Boolean).join('::'));
-  } catch (err) {
-    // Fallback fingerprint in case of errors during fingerprint generation
-    console.error('Error generating fingerprint:', err);
-    return `fallback-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
-  }
-}
-
-/**
- * Simple hash function for strings
- */
-function hashString(str: string): string {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return hash.toString(36);
-}
-
-/**
- * Cache a fingerprint with proper cache management
- */
-function cacheFingerprint(cacheKey: string, fingerprint: string): void {
-  // Clean old entries if needed
-  cleanupCache();
+export function isDuplicateError(fingerprint: string): boolean {
+  // Auto-cleanup expired fingerprints before checking
+  cleanupExpiredFingerprints();
   
-  // Add to cache with timestamp
-  ERROR_FINGERPRINT_CACHE.set(cacheKey, fingerprint);
+  // Check if fingerprint exists
+  return recentFingerprints.has(fingerprint);
 }
 
 /**
- * Clean up old entries from the fingerprint cache
+ * Store an error fingerprint for deduplication
+ * 
+ * @param fingerprint The error fingerprint
  */
-function cleanupCache(): void {
-  // Check if cache is full
-  if (ERROR_FINGERPRINT_CACHE.size >= FINGERPRINT_CACHE_MAX_SIZE) {
-    // Remove the oldest entries
-    const entries = Array.from(ERROR_FINGERPRINT_CACHE.keys());
-    const removeCount = Math.floor(FINGERPRINT_CACHE_MAX_SIZE * 0.2); // Remove 20%
-    
-    for (let i = 0; i < removeCount; i++) {
-      ERROR_FINGERPRINT_CACHE.delete(entries[i]);
+export function storeFingerprint(fingerprint: string): void {
+  // Skip invalid fingerprints
+  if (!fingerprint || typeof fingerprint !== 'string') {
+    return;
+  }
+  
+  // Clean up if cache is full
+  if (recentFingerprints.size >= MAX_FINGERPRINTS) {
+    cleanupOldestFingerprints(MAX_FINGERPRINTS / 2);
+  }
+  
+  // Store fingerprint with current timestamp
+  recentFingerprints.set(fingerprint, Date.now());
+}
+
+/**
+ * Clean up expired fingerprints
+ */
+function cleanupExpiredFingerprints(): void {
+  const now = Date.now();
+  
+  // Remove expired fingerprints
+  for (const [fingerprint, timestamp] of recentFingerprints.entries()) {
+    if (now - timestamp > FINGERPRINT_TTL) {
+      recentFingerprints.delete(fingerprint);
     }
   }
 }
 
 /**
- * Clean function that should be called periodically
- * to remove expired fingerprints from the cache
+ * Clean up oldest fingerprints when cache gets too large
+ * 
+ * @param count Number of fingerprints to remove
+ */
+function cleanupOldestFingerprints(count: number): void {
+  // Convert to array of [fingerprint, timestamp] pairs
+  const entries = Array.from(recentFingerprints.entries());
+  
+  // Sort by timestamp (oldest first)
+  entries.sort((a, b) => a[1] - b[1]);
+  
+  // Delete oldest entries
+  entries.slice(0, count).forEach(([fingerprint]) => {
+    recentFingerprints.delete(fingerprint);
+  });
+}
+
+/**
+ * Clean up the fingerprint cache (for testing or memory management)
  */
 export function cleanupFingerprintCache(): void {
-  cleanupCache();
+  recentFingerprints.clear();
 }
+
+/**
+ * Alias for backward compatibility
+ */
+export const isErrorDuplicate = isDuplicateError;
+export const storeErrorFingerprint = storeFingerprint;
+export const generateErrorFingerprint = generateFingerprint;

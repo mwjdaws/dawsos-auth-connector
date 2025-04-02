@@ -14,8 +14,23 @@
  */
 
 // Core error handling function - export both as default and named
-export { default as handleError } from './handle';
-export { handleError } from './handle';
+import handleErrorDefault, { 
+  handleError, 
+  createComponentErrorHandler, 
+  createHookErrorHandler, 
+  createServiceErrorHandler 
+} from './handle';
+
+// Export default handler
+export default handleErrorDefault;
+
+// Named exports
+export { 
+  handleError,
+  createComponentErrorHandler,
+  createHookErrorHandler,
+  createServiceErrorHandler
+};
 
 // Error handling utilities
 export { generateFingerprint, cleanupFingerprintCache } from './deduplication';
@@ -31,5 +46,14 @@ export {
   convertErrorOptions
 } from './compatibility';
 
+// Wrapper functions for safer error handling
+export {
+  withErrorHandling,
+  withAsyncErrorHandling,
+  withComponentErrorHandling
+} from './wrappers';
+
 // Type definitions
 export * from './types';
+export * from './types/validation-errors';
+export * from './types/api-errors';

@@ -145,3 +145,23 @@ export interface ValidationResult {
    */
   errorMessage: string | null;
 }
+
+/**
+ * Related term representation
+ */
+export interface RelatedTerm {
+  /**
+   * Term ID
+   */
+  id: string;
+  
+  /**
+   * Term text
+   */
+  term: string;
+  
+  /**
+   * Relevance score
+   */
+  score?: number;
+}

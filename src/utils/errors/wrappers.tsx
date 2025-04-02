@@ -1,9 +1,4 @@
 
-/**
- * Error handler wrappers
- * 
- * These utilities provide convenient ways to wrap functions with error handling.
- */
 import React from 'react';
 import { handleError } from './handle';
 import { ErrorHandlingOptions, ErrorLevel, ErrorSource } from './types';
@@ -30,9 +25,11 @@ export function withErrorHandling<T extends (...args: any[]) => any>(
       return fn(...args);
     } catch (error) {
       handleError(error, {
+        source: ErrorSource.Unknown,
+        level: ErrorLevel.Error,
         ...errorOptions,
         context: {
-          ...(errorOptions.context || {}),
+          ...(errorOptions?.context || {}),
           functionName: fn.name,
           arguments: args
         }
@@ -64,9 +61,11 @@ export function withAsyncErrorHandling<T extends (...args: any[]) => Promise<any
       return await fn(...args);
     } catch (error) {
       handleError(error, {
+        source: ErrorSource.Unknown,
+        level: ErrorLevel.Error,
         ...errorOptions,
         context: {
-          ...(errorOptions.context || {}),
+          ...(errorOptions?.context || {}),
           functionName: fn.name,
           arguments: args
         }
@@ -92,8 +91,9 @@ export function withComponentErrorHandling<T extends React.ComponentType<any>>(
   
   // Apply context/source defaults if not provided
   const fullOptions = {
-    source: ErrorSource.Component,
     ...errorOptions,
+    source: errorOptions.source || ErrorSource.Component,
+    level: errorOptions.level || ErrorLevel.Error,
     context: {
       componentName: displayName,
       ...(errorOptions.context || {})

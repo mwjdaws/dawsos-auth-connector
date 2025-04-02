@@ -1,92 +1,82 @@
 
 import { ErrorLevel } from './types';
-import { hasSeenError } from './tracking';
 
-// Set of fingerprints for errors that should be ignored
-const ignoredErrors = new Set<string>();
+// Store for ignored error fingerprints
+const ignoredFingerprints = new Set<string>();
 
-// The minimum level of errors that should be processed
-let minimumErrorLevel: ErrorLevel = ErrorLevel.Debug;
+// Minimum error level to process
+let minimumErrorLevel = ErrorLevel.Debug;
 
 /**
- * Check if an error should be ignored based on its fingerprint
+ * Check if an error should be ignored
  * 
- * @param error The error to check
- * @param fingerprint The error's fingerprint
+ * @param fingerprint Error fingerprint
  * @returns True if the error should be ignored
  */
-export function isErrorIgnored(error: Error | unknown, fingerprint: string): boolean {
-  // Ignore errors that are explicitly set to be ignored
-  if (ignoredErrors.has(fingerprint)) {
-    return true;
-  }
-  
-  // Check error level if it's a ContextualError
-  if (error && typeof error === 'object' && 'level' in error) {
-    const errorLevel = (error as any).level;
-    if (errorLevel && errorLevelValue(errorLevel) < errorLevelValue(minimumErrorLevel)) {
-      return true;
-    }
-  }
-  
-  return false;
+export function isErrorIgnored(fingerprint: string): boolean {
+  return fingerprint ? ignoredFingerprints.has(fingerprint) : false;
 }
 
 /**
- * Add an error fingerprint to the ignore list
+ * Ignore specific error by fingerprint
  * 
- * @param fingerprint The fingerprint to ignore
+ * @param fingerprint Error fingerprint
  */
 export function ignoreError(fingerprint: string): void {
-  ignoredErrors.add(fingerprint);
+  if (fingerprint) {
+    ignoredFingerprints.add(fingerprint);
+  }
 }
 
 /**
- * Remove an error fingerprint from the ignore list
+ * Stop ignoring a specific error
  * 
- * @param fingerprint The fingerprint to stop ignoring
+ * @param fingerprint Error fingerprint
  */
 export function unignoreError(fingerprint: string): void {
-  ignoredErrors.delete(fingerprint);
+  if (fingerprint) {
+    ignoredFingerprints.delete(fingerprint);
+  }
 }
 
 /**
- * Set the minimum error level that should be processed
+ * Clear all ignored errors
+ */
+export function clearIgnoredErrors(): void {
+  ignoredFingerprints.clear();
+}
+
+/**
+ * Set minimum error level to process
+ * Errors below this level will be ignored
  * 
- * @param level The minimum error level
+ * @param level Minimum error level
  */
 export function setMinimumErrorLevel(level: ErrorLevel): void {
   minimumErrorLevel = level;
 }
 
 /**
- * Get a numeric value for an error level for comparison
- * 
- * @param level The error level
- * @returns A numeric value for comparison
+ * Get current minimum error level
  */
-function errorLevelValue(level: ErrorLevel): number {
-  switch (level) {
-    case ErrorLevel.Debug:
-      return 0;
-    case ErrorLevel.Info:
-      return 1;
-    case ErrorLevel.Warning:
-      return 2;
-    case ErrorLevel.Error:
-      return 3;
-    case ErrorLevel.Critical:
-      return 4;
-    default:
-      return 2; // Default to Warning
-  }
+export function getMinimumErrorLevel(): ErrorLevel {
+  return minimumErrorLevel;
 }
 
 /**
- * Reset error filtering configuration
- * Useful for testing
+ * Check if error level meets minimum threshold
+ * 
+ * @param level Error level to check
+ * @returns True if level meets or exceeds minimum
  */
-export function resetErrorFiltering(): void {
-  ignoredErrors.clear();
-  minimumErrorLevel = ErrorLevel.Debug;
+export function isErrorLevelMet(level: ErrorLevel): boolean {
+  const levels = {
+    [ErrorLevel.Debug]: 0,
+    [ErrorLevel.Info]: 1,
+    [ErrorLevel.Warning]: 2,
+    [ErrorLevel.Error]: 3,
+    [ErrorLevel.Critical]: 4
+  };
+  
+  return (levels[level] || 0) >= (levels[minimumErrorLevel] || 0);
 }

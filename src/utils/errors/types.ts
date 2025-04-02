@@ -33,7 +33,8 @@ export enum ErrorSource {
   Edge = 'edge',
   System = 'system',
   External = 'external',
-  Validation = 'validation'
+  Validation = 'validation',
+  App = 'app'
 }
 
 /**
@@ -42,18 +43,20 @@ export enum ErrorSource {
 export interface ErrorHandlingOptions {
   /**
    * The severity level of the error
+   * @default ErrorLevel.Error
    */
-  level: ErrorLevel;
+  level?: ErrorLevel;
 
   /**
    * The source category of the error
+   * @default ErrorSource.Unknown
    */
-  source: ErrorSource;
+  source?: ErrorSource;
 
   /**
    * A user-friendly message describing the error
    */
-  message: string;
+  message?: string;
 
   /**
    * Additional context about the error (for logging and debugging)
@@ -62,22 +65,26 @@ export interface ErrorHandlingOptions {
 
   /**
    * Whether to report the error to analytics services
+   * @default true
    */
   reportToAnalytics?: boolean;
 
   /**
    * Whether to show a toast notification for the error
+   * @default true for ErrorLevel.Error and above
    */
   showToast?: boolean;
 
   /**
    * Override to suppress toast even if showToast is true
    * Useful for preventing duplicate notifications
+   * @default false
    */
   suppressToast?: boolean;
 
   /**
    * Whether to suppress all notifications and logging
+   * @default false
    */
   silent?: boolean;
 
@@ -100,7 +107,33 @@ export interface ErrorHandlingOptions {
    * The original error object
    */
   originalError?: Error;
+
+  /**
+   * Technical details for developers
+   */
+  technical?: string;
 }
+
+/**
+ * Legacy interface for error handling options (backward compatibility)
+ */
+export interface LegacyErrorHandlingOptions {
+  level?: ErrorLevel;
+  source?: ErrorSource;
+  context?: Record<string, any>;
+  silent?: boolean;
+  showToast?: boolean;
+  toastId?: string;
+  reportToAnalytics?: boolean;
+}
+
+/**
+ * Type for error handler function
+ */
+export type ErrorHandler = (
+  error: Error | unknown,
+  options?: string | ErrorHandlingOptions
+) => void;
 
 /**
  * Contextual error with additional metadata
@@ -109,4 +142,11 @@ export interface ContextualError extends Error {
   context?: Record<string, any>;
   source?: ErrorSource;
   level?: ErrorLevel;
+}
+
+/**
+ * Error with a specific code
+ */
+export interface CodedError extends Error {
+  code: string | number;
 }
