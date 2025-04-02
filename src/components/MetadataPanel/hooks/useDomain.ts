@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { OntologyDomain } from '@/types/ontology';
-import { handleError } from '@/utils/errors';
+import { handleErrorWithOptions } from '@/utils/errors/handleErrorWithOptions';
 import { ErrorLevel, ErrorSource } from '@/utils/errors/types';
 
 /**
@@ -20,24 +20,39 @@ export const useDomain = () => {
       setError(null);
       
       try {
+        // NOTE: We're using "ontology_terms" as a workaround since "ontology_domains" table
+        // doesn't exist in the current schema. In a real implementation, we'd fetch domains
+        // from the proper table or view.
         const { data, error: fetchError } = await supabase
-          .from('ontology_domains')
-          .select('*')
-          .order('name');
+          .from('ontology_terms')
+          .select('id, term, description, domain')
+          .order('term')
+          .is('domain', null)
+          .not();
         
         if (fetchError) throw fetchError;
         
-        // Ensure all required properties are present
-        const formattedDomains: OntologyDomain[] = data.map(domain => ({
-          id: domain.id,
-          name: domain.name || '',
-          description: domain.description || ''
-        }));
+        // Transform the data into domains
+        const domainsMap = new Map<string, OntologyDomain>();
+        
+        data.forEach(item => {
+          if (item.domain) {
+            if (!domainsMap.has(item.domain)) {
+              domainsMap.set(item.domain, {
+                id: item.id,
+                name: item.domain,
+                description: `Domain for ${item.domain} terms`
+              });
+            }
+          }
+        });
+        
+        // Convert map to array
+        const formattedDomains: OntologyDomain[] = Array.from(domainsMap.values());
         
         setDomains(formattedDomains);
       } catch (err) {
-        handleError(err, {
-          message: "Failed to fetch ontology domains",
+        handleErrorWithOptions(err, "Failed to fetch ontology domains", {
           level: ErrorLevel.Warning,
           source: ErrorSource.Hook
         });

@@ -1,163 +1,114 @@
 
 /**
- * Compatibility layer for error handling between legacy and new systems
- */
-
-import { ErrorLevel, ErrorSource, ErrorHandlingOptions } from './types';
-import { handleError as newHandleError } from './handle';
-
-/**
- * Legacy error handling function that maps to the new system
+ * Compatibility layer for error handling
  * 
- * @deprecated Use handleError from @/utils/errors directly
+ * This module provides functions to bridge between different error handling approaches
+ * used in the codebase over time.
  */
-export function legacyHandleError(error: Error | unknown, message: string, options?: any) {
-  const newOptions: Partial<ErrorHandlingOptions> = {
-    message,
-    level: ErrorLevel.Error,
-    source: ErrorSource.Unknown,
-    context: {},
-    silent: false,
-    showToast: true,
-    toastId: undefined,
-    reportToAnalytics: true
+
+import { handleError } from './handle';
+import { ErrorHandlingOptions, ErrorLevel, ErrorSource } from './types';
+
+/**
+ * Convert legacy error handling options to the current format
+ */
+export function convertErrorOptions(options: any = {}): Partial<ErrorHandlingOptions> {
+  return {
+    message: options.message || '',
+    level: convertLegacyLevel(options.level),
+    source: convertLegacySource(options.source),
+    context: options.context || {},
+    silent: !!options.silent,
+    showToast: options.showToast !== false,
+    reportToAnalytics: options.reportToAnalytics !== false
   };
-  
-  if (options) {
-    // Map legacy options to new format
-    if (options.level) newOptions.level = convertLegacyLevel(options.level);
-    if (options.source) newOptions.source = convertLegacySource(options.source);
-    if (options.context) newOptions.context = options.context;
-    if (options.silent !== undefined) newOptions.silent = options.silent;
-    if (options.showToast !== undefined) newOptions.showToast = options.showToast;
-    if (options.toastId) newOptions.toastId = options.toastId;
-    if (options.reportToAnalytics !== undefined) newOptions.reportToAnalytics = options.reportToAnalytics;
-  }
-  
-  newHandleError(error, newOptions);
 }
 
 /**
- * Convert legacy error level strings to new ErrorLevel enum
+ * Legacy error handler (3-parameter version)
  */
-function convertLegacyLevel(level: string): ErrorLevel {
-  switch (level.toLowerCase()) {
-    case 'debug':
-      return ErrorLevel.Debug;
-    case 'info':
-      return ErrorLevel.Info;
-    case 'warning':
-      return ErrorLevel.Warning;
-    case 'error':
-      return ErrorLevel.Error;
-    case 'critical':
-      return ErrorLevel.Critical;
-    default:
-      return ErrorLevel.Error;
-  }
+export function legacyHandleError(
+  error: Error | unknown,
+  message: string,
+  level: string | ErrorLevel = ErrorLevel.Error
+) {
+  handleError(error, {
+    message,
+    level: convertLegacyLevel(level)
+  });
 }
 
 /**
- * Convert legacy error source strings to new ErrorSource enum
+ * Error handler with message as primary parameter
  */
-function convertLegacySource(source: string): ErrorSource {
-  switch (source.toLowerCase()) {
-    case 'api':
-      return ErrorSource.API;
-    case 'database':
-      return ErrorSource.Database;
-    case 'validation':
-      return ErrorSource.Validation;
-    case 'component':
-      return ErrorSource.Component;
-    case 'hook':
-      return ErrorSource.Hook;
-    default:
-      return ErrorSource.Unknown;
-  }
+export function handleErrorWithMessage(
+  message: string,
+  error: Error | unknown,
+  options: Partial<ErrorHandlingOptions> = {}
+) {
+  handleError(error, {
+    message,
+    ...options
+  });
 }
 
 /**
- * Convert legacy options format to new ErrorHandlingOptions
+ * Create a contextual error with additional information
  */
-export function convertErrorOptions(legacyOptions: any): Partial<ErrorHandlingOptions> {
-  const options: Partial<ErrorHandlingOptions> = {};
+export function createContextualError(
+  originalError: Error | unknown,
+  contextMessage: string,
+  context: Record<string, any> = {}
+): Error {
+  const errorMessage = originalError instanceof Error 
+    ? originalError.message 
+    : String(originalError);
   
-  if (!legacyOptions) return options;
-  
-  // Map level
-  if (legacyOptions.level) {
-    switch (legacyOptions.level.toLowerCase()) {
-      case 'debug':
-        options.level = ErrorLevel.Debug;
-        break;
-      case 'info':
-        options.level = ErrorLevel.Info;
-        break;
-      case 'warning':
-        options.level = ErrorLevel.Warning;
-        break;
-      case 'error':
-        options.level = ErrorLevel.Error;
-        break;
-      case 'critical':
-        options.level = ErrorLevel.Critical;
-        break;
-    }
-  }
-  
-  // Map source
-  if (legacyOptions.source) {
-    options.source = ErrorSource.Unknown;
-    
-    if (typeof legacyOptions.source === 'string') {
-      switch (legacyOptions.source.toLowerCase()) {
-        case 'api':
-          options.source = ErrorSource.API;
-          break;
-        case 'hook':
-          options.source = ErrorSource.Hook;
-          break;
-        case 'component':
-          options.source = ErrorSource.Component;
-          break;
-        case 'validation':
-          options.source = ErrorSource.Validation;
-          break;
-        case 'database':
-          options.source = ErrorSource.Database;
-          break;
-      }
-    }
-  }
-  
-  // Copy other properties
-  if (legacyOptions.technical !== undefined) {
-    options.showToast = !legacyOptions.technical;
-  }
-  
-  if (legacyOptions.context) {
-    options.context = legacyOptions.context;
-  }
-  
-  if (legacyOptions.silent !== undefined) {
-    options.silent = legacyOptions.silent;
-  }
-  
-  return options;
-}
-
-// Re-export the handle function as default for backward compatibility
-export { newHandleError as handleErrorWithMessage };
-
-/**
- * Creates an error with context attached
- */
-export function createContextualError(message: string, context: Record<string, any>): Error {
-  const error = new Error(message);
+  const error = new Error(`${contextMessage}: ${errorMessage}`);
+  (error as any).originalError = originalError;
   (error as any).context = context;
+  
   return error;
 }
 
-// Export as default for backward compatibility
-export default legacyHandleError;
+/**
+ * Convert legacy level strings to ErrorLevel enum
+ */
+function convertLegacyLevel(level: string | ErrorLevel | undefined): ErrorLevel {
+  if (level === undefined) return ErrorLevel.Error;
+  
+  if (typeof level === 'string') {
+    const upperLevel = level.toUpperCase();
+    if (upperLevel === 'DEBUG') return ErrorLevel.Debug;
+    if (upperLevel === 'INFO') return ErrorLevel.Info;
+    if (upperLevel === 'WARNING') return ErrorLevel.Warning;
+    if (upperLevel === 'ERROR') return ErrorLevel.Error;
+    if (upperLevel === 'CRITICAL') return ErrorLevel.Critical;
+    return ErrorLevel.Error;
+  }
+  
+  return level;
+}
+
+/**
+ * Convert legacy source strings to ErrorSource enum
+ */
+function convertLegacySource(source: string | ErrorSource | undefined): ErrorSource {
+  if (source === undefined) return ErrorSource.Unknown;
+  
+  if (typeof source === 'string') {
+    const upperSource = source.toUpperCase();
+    if (upperSource === 'USER') return ErrorSource.User;
+    if (upperSource === 'COMPONENT') return ErrorSource.Component;
+    if (upperSource === 'HOOK') return ErrorSource.Hook;
+    if (upperSource === 'SERVICE') return ErrorSource.Service;
+    if (upperSource === 'API') return ErrorSource.API;
+    if (upperSource === 'DATABASE') return ErrorSource.Database;
+    if (upperSource === 'NETWORK') return ErrorSource.Network;
+    if (upperSource === 'AUTH') return ErrorSource.Auth;
+    if (upperSource === 'EDGE') return ErrorSource.Edge;
+    return ErrorSource.Unknown;
+  }
+  
+  return source;
+}

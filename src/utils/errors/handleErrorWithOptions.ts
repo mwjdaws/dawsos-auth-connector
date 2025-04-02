@@ -29,7 +29,7 @@ export function handleErrorWithOptions(
   });
 }
 
-// Helper function to adapt calls from WARNING to Warning
+// Helper function to adapt calls from old format to new format
 export function handleErrorWithLevel(
   error: Error | unknown,
   message: string,

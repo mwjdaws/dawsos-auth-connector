@@ -57,38 +57,68 @@ export function sanitizeOntologyTerm(term: Partial<OntologyTerm> | null | undefi
 }
 
 /**
- * Safely converts a value that could be null/undefined to a string
+ * Type-safe string conversion
  */
-export function safeString(value: string | null | undefined): string {
-  return value || '';
+export function ensureString(value: any, defaultValue = ''): string {
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
+  return String(value);
 }
 
 /**
- * Safely converts a value that could be null/undefined to a number
+ * Type-safe number conversion
  */
-export function safeNumber(value: number | null | undefined, defaultValue = 0): number {
-  return typeof value === 'number' ? value : defaultValue;
+export function ensureNumber(value: any, defaultValue = 0): number {
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
+  const num = Number(value);
+  return isNaN(num) ? defaultValue : num;
 }
 
 /**
- * Safely converts a value that could be null/undefined to a boolean
+ * Type-safe boolean conversion
  */
-export function safeBoolean(value: boolean | null | undefined, defaultValue = false): boolean {
-  return typeof value === 'boolean' ? value : defaultValue;
+export function ensureBoolean(value: any, defaultValue = false): boolean {
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
+  return Boolean(value);
 }
 
 /**
- * Safely converts a value that could be null/undefined to an array
+ * Type-safe array conversion
  */
-export function safeArray<T>(value: T[] | null | undefined): T[] {
-  return Array.isArray(value) ? value : [];
+export function ensureArray<T>(value: T[] | null | undefined, defaultValue: T[] = []): T[] {
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
+  if (!Array.isArray(value)) {
+    return defaultValue;
+  }
+  return value;
 }
 
 /**
- * Safely handles functions that could be undefined
+ * Converts null to undefined
+ */
+export function nullToUndefined<T>(value: T | null): T | undefined {
+  return value === null ? undefined : value;
+}
+
+/**
+ * Converts undefined to null
+ */
+export function undefinedToNull<T>(value: T | undefined): T | null {
+  return value === undefined ? null : value;
+}
+
+/**
+ * Safe function execution
  */
 export function safeFunction<T extends (...args: any[]) => any>(
-  fn: T | undefined,
+  fn: T | undefined | null,
   defaultReturn?: ReturnType<T>
 ): (...args: Parameters<T>) => ReturnType<T> {
   return (...args: Parameters<T>): ReturnType<T> => {
