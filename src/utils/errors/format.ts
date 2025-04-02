@@ -1,23 +1,12 @@
 
 /**
- * Error message formatting utilities
+ * Error formatting utilities
  */
-import { ErrorLevel, ErrorSource, ErrorHandlingOptions } from './types';
 
 /**
- * Format an error message based on the error object and options
- * 
- * @param error The error to format
- * @param userMessage Optional user-friendly message to override
- * @returns Formatted error message
+ * Format an error message for display
  */
-export function formatErrorMessage(error: unknown, userMessage?: string): string {
-  // If a user message is provided, use it
-  if (userMessage) {
-    return userMessage;
-  }
-  
-  // Handle different error types
+export function formatErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
@@ -26,78 +15,48 @@ export function formatErrorMessage(error: unknown, userMessage?: string): string
     return error;
   }
   
-  // Try to stringify objects
-  if (error !== null && typeof error === 'object') {
-    try {
-      return JSON.stringify(error);
-    } catch {
-      // If stringification fails, fall back to generic message
-      return 'An error occurred';
-    }
-  }
-  
   return 'An unknown error occurred';
 }
 
 /**
- * Format a technical error message for logging
- * 
- * @param error The error object
- * @param level Error level
- * @param source Error source
- * @param context Additional context
- * @returns Formatted technical error message
+ * Format a technical error message for developers
  */
-export function formatTechnicalError(
-  error: Error,
-  level: ErrorLevel = ErrorLevel.Error,
-  source: ErrorSource = ErrorSource.Unknown,
-  context?: Record<string, any>
-): string {
-  const severity = level === ErrorLevel.Error || level === ErrorLevel.Critical 
-    ? 'ERROR' 
-    : level.toUpperCase();
+export function formatTechnicalError(error: unknown): string {
+  if (error instanceof Error) {
+    return `${error.name}: ${error.message}\nStack: ${error.stack || 'No stack trace available'}`;
+  }
   
-  const contextString = context 
-    ? `\nContext: ${JSON.stringify(context)}`
-    : '';
-  
-  const stack = error.stack 
-    ? `\nStack: ${error.stack.split('\n').slice(0, 5).join('\n')}` 
-    : '';
-  
-  return `[${severity}][${source}] ${error.message}${contextString}${stack}`;
+  return `Technical error: ${JSON.stringify(error)}`;
 }
 
 /**
- * Get a user-friendly error message from an error
- * 
- * @param error The error object
- * @param fallbackMessage Optional fallback message
- * @returns User-friendly error message
+ * Get a user-friendly error message
  */
-export function getUserFriendlyMessage(error: unknown, fallbackMessage?: string): string {
-  // For technical errors, provide a simplified message
+export function getUserFriendlyMessage(error: unknown): string {
+  // Map common error types to user-friendly messages
   if (error instanceof Error) {
-    // Some errors have useful messages
+    // Network errors
     if (error.message.includes('network') || error.message.includes('connection')) {
-      return 'Network connection issue. Please check your internet connection and try again.';
+      return 'There was a problem with your internet connection. Please check your connection and try again.';
     }
     
+    // Authentication errors
+    if (error.message.includes('authentication') || error.message.includes('auth') || 
+        error.message.includes('login') || error.message.includes('permission')) {
+      return 'You may need to sign in again to continue. Please refresh the page and try again.';
+    }
+    
+    // Timeout errors
     if (error.message.includes('timeout') || error.message.includes('timed out')) {
-      return 'The operation timed out. Please try again.';
+      return 'The operation took too long to complete. Please try again later.';
     }
     
-    if (error.message.includes('permission') || error.message.includes('access')) {
-      return 'You don\'t have permission to perform this action.';
-    }
-    
-    // Return the original message if it seems user-friendly
-    if (error.message.length < 100 && !error.message.includes('Error:')) {
-      return error.message;
+    // Server errors
+    if (error.message.includes('server') || error.message.includes('500')) {
+      return 'There was a problem on our end. We\'re working to fix it. Please try again later.';
     }
   }
   
-  // Return fallback or default message
-  return fallbackMessage || 'An unexpected error occurred. Please try again.';
+  // Default friendly message
+  return 'Something went wrong. Please try again or contact support if the problem persists.';
 }

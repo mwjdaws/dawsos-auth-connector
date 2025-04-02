@@ -2,101 +2,116 @@
 /**
  * Error categorization utilities
  */
-import { ErrorHandlingOptions, ErrorSource } from './types';
+import { ErrorSource } from './types';
 
-// Common error patterns for different sources
+// Error message patterns for categorization
 const errorPatterns = {
   network: [
-    /network/i,
-    /offline/i,
-    /failed to fetch/i,
-    /request timed out/i,
-    /cors/i
-  ],
-  database: [
-    /database/i,
-    /sql/i,
-    /query/i,
-    /constraint/i,
-    /supabase/i
+    'network error',
+    'failed to fetch',
+    'internet',
+    'connection',
+    'timeout',
+    'aborted',
+    'cors',
+    'offline'
   ],
   authentication: [
-    /auth/i,
-    /unauthorized/i,
-    /forbidden/i,
-    /permission/i,
-    /login/i,
-    /token/i
+    'unauthorized',
+    'unauthenticated',
+    'auth',
+    'authentication',
+    'permission',
+    'login',
+    'session expired',
+    'token',
+    'jwt'
   ],
   validation: [
-    /validation/i,
-    /invalid/i,
-    /required/i,
-    /must be/i,
-    /cannot be/i
+    'validation',
+    'invalid',
+    'required',
+    'must be',
+    'not allowed',
+    'constraint',
+    'format'
+  ],
+  database: [
+    'database',
+    'query',
+    'db',
+    'postgresql',
+    'postgres',
+    'sql',
+    'supabase',
+    'duplicate key'
+  ],
+  api: [
+    'api',
+    'endpoint',
+    'server',
+    'status code',
+    'response',
+    'request',
+    'http',
+    'rest'
+  ],
+  external: [
+    'external',
+    'third party',
+    'provider',
+    'service'
   ]
 };
 
 /**
- * Categorize an error based on its message and details
+ * Categorize an error based on its properties and message
  * 
  * @param error The error to categorize
- * @param options Additional categorization options
- * @returns The source category for the error
+ * @returns The categorized error source
  */
-export function categorizeError(
-  error: Error, 
-  options?: Partial<ErrorHandlingOptions>
-): ErrorSource {
-  // If source is explicitly provided in options, use it
-  if (options?.source) {
-    return options.source as ErrorSource;
+export function categorizeError(error: unknown): ErrorSource {
+  if (!error) {
+    return ErrorSource.Unknown;
   }
   
-  const errorString = `${error.message} ${error.stack || ''}`.toLowerCase();
+  // Cast error to string for pattern matching
+  const errorString = error instanceof Error 
+    ? `${error.name} ${error.message} ${error.stack || ''}`
+    : String(error);
   
-  // Try to match error patterns
-  if (errorPatterns.network.some(pattern => pattern.test(errorString))) {
+  const lowercaseError = errorString.toLowerCase();
+  
+  // Check for network errors
+  if (errorPatterns.network.some(pattern => lowercaseError.includes(pattern))) {
     return ErrorSource.Network;
   }
   
-  if (errorPatterns.database.some(pattern => pattern.test(errorString))) {
-    return ErrorSource.Database;
+  // Check for authentication errors
+  if (errorPatterns.authentication.some(pattern => lowercaseError.includes(pattern))) {
+    return ErrorSource.Authentication;
   }
   
-  if (errorPatterns.authentication.some(pattern => pattern.test(errorString))) {
-    return ErrorSource.Auth;
-  }
-  
-  if (errorPatterns.validation.some(pattern => pattern.test(errorString))) {
+  // Check for validation errors
+  if (errorPatterns.validation.some(pattern => lowercaseError.includes(pattern))) {
     return ErrorSource.Validation;
   }
   
-  // Default to unknown source
-  return ErrorSource.Unknown;
-}
-
-/**
- * Get a user-friendly message based on error category
- * 
- * @param source The error source category
- * @returns A user-friendly message
- */
-export function getUserMessageForErrorSource(source: ErrorSource): string {
-  switch (source) {
-    case ErrorSource.Network:
-      return 'A network error occurred. Please check your connection and try again.';
-    case ErrorSource.Database:
-      return 'A database error occurred. Please try again later.';
-    case ErrorSource.Auth:
-      return 'An authentication error occurred. Please log in again.';
-    case ErrorSource.Validation:
-      return 'The provided data is invalid. Please check your inputs and try again.';
-    case ErrorSource.UI:
-      return 'An error occurred in the user interface. Please try again.';
-    case ErrorSource.API:
-      return 'An API error occurred. Please try again later.';
-    default:
-      return 'An unknown error occurred. Please try again later.';
+  // Check for database errors
+  if (errorPatterns.database.some(pattern => lowercaseError.includes(pattern))) {
+    return ErrorSource.Database;
   }
+  
+  // Check for API errors
+  if (errorPatterns.api.some(pattern => lowercaseError.includes(pattern))) {
+    return ErrorSource.API;
+  }
+  
+  // Check for external service errors
+  if (errorPatterns.external.some(pattern => lowercaseError.includes(pattern))) {
+    return ErrorSource.External;
+  }
+  
+  // Default to unknown if no pattern matches
+  return ErrorSource.Unknown;
 }

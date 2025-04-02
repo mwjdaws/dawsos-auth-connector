@@ -11,6 +11,7 @@ export * from './types';
 // Export main utilities
 export { 
   handleError,
+  handleErrorSafe,
   createErrorHandler,
   createComponentErrorHandler,
   createHookErrorHandler,
