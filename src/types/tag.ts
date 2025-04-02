@@ -1,106 +1,105 @@
 
 /**
- * Type definitions for tag-related functionality
- */
-
-/**
- * Tag information
+ * Represents a tag associated with a content item
  */
 export interface Tag {
+  /**
+   * Unique identifier for the tag
+   */
   id: string;
+  
+  /**
+   * Display name of the tag
+   */
   name: string;
+  
+  /**
+   * ID of the content the tag is associated with
+   */
   content_id: string;
+  
+  /**
+   * ID of the tag type, if any
+   */
   type_id: string | null;
+  
+  /**
+   * Name of the tag type, if any (for display purposes)
+   */
+  type_name: string | null;
+  
+  /**
+   * The display order for this tag
+   */
   display_order: number;
-  type_name: string;
 }
 
 /**
- * Tag position for reordering
+ * Position information for tag reordering
  */
 export interface TagPosition {
+  /**
+   * ID of the tag
+   */
   id: string;
+  
+  /**
+   * New position of the tag
+   */
   position: number;
 }
 
 /**
- * Tag group for displaying tags grouped by type
+ * Tag grouped by type
  */
 export interface TagGroup {
-  id: string;
-  name: string;
+  /**
+   * ID of the type, if any
+   */
+  type_id: string | null;
+  
+  /**
+   * Name of the type, if any
+   */
+  type_name: string | null;
+  
+  /**
+   * Tags in this group
+   */
   tags: Tag[];
 }
 
 /**
- * Sort tags by display_order
+ * Data required for creating a new tag
  */
-export function sortTagsByDisplayOrder(tags: Tag[]): Tag[] {
-  return [...tags].sort((a, b) => a.display_order - b.display_order);
+export interface CreateTagData {
+  /**
+   * Name of the new tag
+   */
+  name: string;
+  
+  /**
+   * ID of the content to associate with
+   */
+  contentId: string;
+  
+  /**
+   * Optional tag type ID
+   */
+  typeId?: string | null;
 }
 
 /**
- * Filter out duplicate tags based on ID
+ * Data required for deleting a tag
  */
-export function filterDuplicateTags(tags: Tag[]): Tag[] {
-  const uniqueIds = new Set<string>();
-  return tags.filter(tag => {
-    if (uniqueIds.has(tag.id)) {
-      return false;
-    }
-    uniqueIds.add(tag.id);
-    return true;
-  });
-}
-
-/**
- * Map API tag to internal Tag format
- */
-export function mapApiTagToTag(apiTag: any): Tag {
-  return {
-    id: apiTag.id,
-    name: apiTag.name,
-    content_id: apiTag.content_id,
-    type_id: apiTag.type_id,
-    display_order: apiTag.display_order || 0,
-    type_name: apiTag.tag_types?.name || ''
-  };
-}
-
-/**
- * Map API tags to internal Tag format
- */
-export function mapApiTagsToTags(apiTags: any[]): Tag[] {
-  return apiTags.map(mapApiTagToTag);
-}
-
-/**
- * Ensure tag is not nullable
- */
-export function ensureNonNullableTag(tag: Tag | null | undefined): Tag | null {
-  if (!tag) return null;
-  return {
-    ...tag,
-    type_id: tag.type_id || null,
-    type_name: tag.type_name || ''
-  };
-}
-
-/**
- * Convert tag positions to tags
- */
-export function convertTagPositionsToTags(
-  positions: TagPosition[], 
-  existingTags: Tag[]
-): Tag[] {
-  return positions.map(position => {
-    const matchingTag = existingTags.find(tag => tag.id === position.id);
-    if (!matchingTag) {
-      throw new Error(`Tag with ID ${position.id} not found in existing tags`);
-    }
-    return {
-      ...matchingTag,
-      display_order: position.position
-    };
-  });
+export interface DeleteTagData {
+  /**
+   * ID of the tag to delete
+   */
+  tagId: string;
+  
+  /**
+   * ID of the associated content
+   */
+  contentId: string;
 }

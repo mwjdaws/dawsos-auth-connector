@@ -2,51 +2,112 @@
 import { Tag } from '@/types/tag';
 
 /**
- * External source metadata type
- */
-export interface ExternalSourceMetadata {
-  externalSource: string | null;
-  needsExternalReview: boolean;
-  lastCheckedAt: string | null;
-}
-
-/**
- * Source metadata from the database
- */
-export interface SourceMetadata {
-  id: string;
-  title: string;
-  content: string;
-  external_source_url: string | null;
-  needs_external_review: boolean;
-  external_source_checked_at: string | null;
-  created_at: string;
-  updated_at: string;
-  created_by: string | null;
-}
-
-/**
- * Ontology term type
+ * Ontology term representation
  */
 export interface OntologyTerm {
+  /**
+   * Unique identifier
+   */
   id: string;
+  
+  /**
+   * The term text
+   */
   term: string;
-  description: string | null;
-  review_required: boolean;
+  
+  /**
+   * Description of the term
+   */
+  description: string;
+  
+  /**
+   * Domain the term belongs to
+   */
+  domain: string;
+  
+  /**
+   * Whether this term requires review
+   */
+  review_required?: boolean;
 }
 
 /**
- * Props for the main MetadataPanel component
+ * Metadata for external sources
+ */
+export interface SourceMetadata {
+  /**
+   * The external URL source, if any
+   */
+  external_source_url: string | null;
+  
+  /**
+   * Hash of the external content for change detection
+   */
+  external_content_hash?: string | null;
+  
+  /**
+   * When the external source was last checked
+   */
+  external_source_checked_at?: string | null;
+  
+  /**
+   * Whether the external source needs review
+   */
+  needs_external_review: boolean;
+}
+
+/**
+ * Props for the metadata panel
  */
 export interface MetadataPanelProps {
+  /**
+   * ID of the content to show metadata for
+   */
   contentId: string;
+  
+  /**
+   * Whether the metadata is editable
+   * @default false
+   */
   editable?: boolean;
+  
+  /**
+   * Callback when metadata changes
+   */
   onMetadataChange?: (() => void) | null;
+  
+  /**
+   * Whether the panel can be collapsed
+   * @default false
+   */
   isCollapsible?: boolean;
+  
+  /**
+   * Whether the panel starts collapsed
+   * @default false
+   */
   initialCollapsed?: boolean;
+  
+  /**
+   * Whether to show ontology terms section
+   * @default true
+   */
   showOntologyTerms?: boolean;
+  
+  /**
+   * Whether to show domain information
+   * @default false
+   */
   showDomain?: boolean;
+  
+  /**
+   * Domain to filter by, if any
+   */
   domain?: string | null;
+  
+  /**
+   * Additional CSS class name
+   */
   className?: string;
 }
 
@@ -54,71 +115,33 @@ export interface MetadataPanelProps {
  * Props for the MetadataQuery provider
  */
 export interface MetadataQueryProviderProps {
+  /**
+   * ID of the content to provide metadata for
+   */
   contentId: string;
-  editable?: boolean;
+  
+  /**
+   * Whether the metadata is editable
+   */
+  editable: boolean;
+  
+  /**
+   * Children to render
+   */
   children: React.ReactNode;
 }
 
 /**
- * Context for metadata components
+ * Validation result type
  */
-export interface MetadataContextProps {
-  contentId: string;
-  editable: boolean;
-  isLoading: boolean;
-  error: Error | null;
-  tags: Tag[];
-  ontologyTerms: OntologyTerm[];
-  sourceMetadata: SourceMetadata | null;
-  refetchAll: () => Promise<void>;
-  refetchTags: () => Promise<void>;
-  refetchOntologyTerms: () => Promise<void>;
-  refetchSourceMetadata: () => Promise<void>;
-}
-
-/**
- * Props for the useMetadataPanel hook
- */
-export interface UseMetadataPanelProps {
-  contentId: string;
-  onMetadataChange: (() => void) | null;
-  isCollapsible?: boolean;
-  initialCollapsed?: boolean;
-}
-
-/**
- * Props for sections
- */
-export interface ContentIdDetailProps {
-  contentId: string;
-  className?: string;
-}
-
-export interface TagsSectionProps {
-  tags: Tag[];
-  contentId: string;
-  editable: boolean;
-  newTag: string;
-  setNewTag: (value: string) => void;
-  onAddTag: (typeId?: string | null) => Promise<void>;
-  onDeleteTag: (tagId: string) => Promise<void>;
-  onMetadataChange?: () => void;
-  className?: string;
-}
-
-export interface OntologyTermsSectionProps {
-  ontologyTerms: OntologyTerm[];
-  contentId: string;
-  editable: boolean;
-  onAssignTerm?: (termId: string) => Promise<void>;
-  onRemoveTerm?: (termId: string) => Promise<void>;
-  onCreateTerm?: (term: string, description?: string) => Promise<void>;
-  className?: string;
-}
-
-export interface DomainSectionProps {
-  domain: string | null;
-  editable: boolean;
-  onChangeDomain?: (domain: string) => Promise<void>;
-  className?: string;
+export interface ValidationResult {
+  /**
+   * Whether the validation passed
+   */
+  isValid: boolean;
+  
+  /**
+   * Error message if not valid
+   */
+  errorMessage: string | null;
 }

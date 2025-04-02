@@ -1,6 +1,6 @@
 
 import { handleError } from './handle';
-import { ErrorLevel, ErrorSource, LegacyErrorHandlingOptions } from './types';
+import { ErrorLevel, ErrorSource, ErrorHandlingOptions, LegacyErrorHandlingOptions } from './types';
 
 /**
  * Legacy interface for handleError for backward compatibility.
@@ -16,8 +16,8 @@ export function legacyHandleError(
   // Convert legacy options to new format
   handleError(error, {
     message,
-    level: options?.level,
-    source: options?.source,
+    level: options?.level || ErrorLevel.Error,
+    source: options?.source || ErrorSource.Unknown,
     context: options?.context,
     silent: options?.silent,
     showToast: options?.showToast,
@@ -47,6 +47,25 @@ export function createContextualError(
     (error as any).source = source;
   }
   return error;
+}
+
+/**
+ * Convert legacy error options to new format
+ * This is a helper for transitioning code from the old pattern to the new one
+ */
+export function convertErrorOptions(legacyOptions: Record<string, any>): ErrorHandlingOptions {
+  return {
+    level: legacyOptions.level || ErrorLevel.Error,
+    source: legacyOptions.source || ErrorSource.Unknown,
+    message: legacyOptions.message,
+    context: legacyOptions.context || {},
+    reportToAnalytics: legacyOptions.reportToAnalytics !== false,
+    showToast: legacyOptions.showToast !== false, 
+    suppressToast: legacyOptions.suppressToast === true,
+    silent: legacyOptions.silent === true,
+    toastId: legacyOptions.toastId,
+    toastTitle: legacyOptions.toastTitle
+  };
 }
 
 // Re-export enums for legacy code

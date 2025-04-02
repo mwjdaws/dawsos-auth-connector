@@ -1,85 +1,59 @@
 
-/**
- * API error related types
- */
-import { ErrorLevel, ErrorSource } from '../types';
+import { ErrorSource } from './index';
 
 /**
- * API Error interface
+ * Error thrown by API operations
  */
-export interface ApiError extends Error {
-  status: number;
-  statusText: string;
-  url: string;
-  method: string;
-  responseData: any;
-  context: Record<string, any>;
-  source: ErrorSource.Api;
-  level: ErrorLevel;
-}
-
-/**
- * Factory function to create API errors
- */
-export function createApiError(
-  message: string,
-  status: number,
-  statusText: string = '',
-  url: string = '',
-  method: string = 'GET',
-  responseData: any = null,
-  context: Record<string, any> = {}
-): ApiError {
-  const error = new Error(message) as ApiError;
+export class ApiError extends Error {
+  /**
+   * The source of the error
+   */
+  source = ErrorSource.API;
   
-  error.name = 'ApiError';
-  error.status = status;
-  error.statusText = statusText;
-  error.url = url;
-  error.method = method;
-  error.responseData = responseData;
-  error.context = context;
-  error.source = ErrorSource.Api;
-  error.level = status >= 500 ? ErrorLevel.Error : ErrorLevel.Warning;
+  /**
+   * Original error that was caught
+   */
+  originalError?: unknown;
   
-  return error;
+  /**
+   * Constructor
+   * 
+   * @param message Error message
+   * @param originalError Original error that was caught
+   */
+  constructor(message: string, originalError?: unknown) {
+    super(message);
+    this.name = 'ApiError';
+    this.originalError = originalError;
+  }
 }
 
 /**
- * Factory function for network connection errors
+ * Error thrown when an API request fails for authorization reasons
  */
-export function createNetworkError(
-  url: string = '',
-  method: string = 'GET',
-  context: Record<string, any> = {}
-): ApiError {
-  return createApiError(
-    'Network connection error',
-    0,
-    'Failed to connect',
-    url,
-    method,
-    null,
-    context
-  );
+export class ApiAuthorizationError extends ApiError {
+  constructor(message: string, originalError?: unknown) {
+    super(message, originalError);
+    this.name = 'ApiAuthorizationError';
+  }
 }
 
 /**
- * Factory function for request timeout errors
+ * Error thrown when an API request fails due to network issues
  */
-export function createTimeoutError(
-  url: string = '',
-  method: string = 'GET',
-  timeoutMs: number = 30000,
-  context: Record<string, any> = {}
-): ApiError {
-  return createApiError(
-    `Request timed out after ${timeoutMs}ms`,
-    0,
-    'Timeout',
-    url,
-    method,
-    null,
-    context
-  );
+export class ApiNetworkError extends ApiError {
+  constructor(message: string, originalError?: unknown) {
+    super(message, originalError);
+    this.name = 'ApiNetworkError';
+  }
+}
+
+/**
+ * Error thrown when an API request times out
+ */
+export class ApiTimeoutError extends ApiError {
+  constructor(message: string, originalError?: unknown) {
+    super(message, originalError);
+    this.name = 'ApiTimeoutError';
+  }
 }

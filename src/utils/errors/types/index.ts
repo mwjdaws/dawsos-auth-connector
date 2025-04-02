@@ -40,11 +40,13 @@ export enum ErrorSource {
 export interface ErrorHandlingOptions {
   /**
    * The severity level of the error
+   * @default ErrorLevel.Error
    */
   level?: ErrorLevel;
 
   /**
    * The source category of the error
+   * @default ErrorSource.Unknown
    */
   source?: ErrorSource;
 
@@ -60,22 +62,26 @@ export interface ErrorHandlingOptions {
 
   /**
    * Whether to report the error to analytics services
+   * @default true
    */
   reportToAnalytics?: boolean;
 
   /**
    * Whether to show a toast notification for the error
+   * @default true for ErrorLevel.Error and above
    */
   showToast?: boolean;
 
   /**
    * Override to suppress toast even if showToast is true
    * Useful for preventing duplicate notifications
+   * @default false
    */
   suppressToast?: boolean;
 
   /**
    * Whether to suppress all notifications and logging
+   * @default false
    */
   silent?: boolean;
 
@@ -101,12 +107,11 @@ export interface ErrorHandlingOptions {
 }
 
 /**
- * Interface for legacy error handling options (backward compatibility)
+ * Legacy interface for error handling options (backward compatibility)
  */
 export interface LegacyErrorHandlingOptions {
   level?: ErrorLevel;
   source?: ErrorSource;
-  message?: string;
   context?: Record<string, any>;
   silent?: boolean;
   showToast?: boolean;
@@ -119,7 +124,7 @@ export interface LegacyErrorHandlingOptions {
  */
 export type ErrorHandler = (
   error: Error | unknown,
-  options?: ErrorHandlingOptions
+  options?: string | ErrorHandlingOptions
 ) => void;
 
 /**

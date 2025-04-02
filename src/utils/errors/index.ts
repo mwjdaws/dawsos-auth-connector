@@ -13,9 +13,9 @@
  * - Error analytics and tracking
  */
 
-// Core error handling function
-export { handleError } from './handle';
+// Core error handling function - export both as default and named
 export { default as handleError } from './handle';
+export { handleError } from './handle';
 
 // Error handling utilities
 export { generateFingerprint, cleanupFingerprintCache } from './deduplication';
@@ -23,8 +23,13 @@ export { formatErrorForLogging, formatErrorForUser } from './formatter';
 export { isErrorIgnored, ignoreError, unignoreError, setMinimumErrorLevel } from './filtering';
 export { trackError, getDuplicateCount, hasSeenError, resetErrorTracking } from './tracking';
 
+// Error handling compatibility layer
+export {
+  legacyHandleError,
+  handleErrorWithMessage,
+  createContextualError,
+  convertErrorOptions
+} from './compatibility';
+
 // Type definitions
 export * from './types';
-
-// Error compatibility layer for legacy code
-export * from './compatibility';
