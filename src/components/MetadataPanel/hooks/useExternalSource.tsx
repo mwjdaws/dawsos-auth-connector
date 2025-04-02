@@ -1,6 +1,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { handleError } from '@/utils/errors';
+import { ErrorLevel, ErrorSource } from '@/utils/errors/types';
 
 interface ExternalSourceData {
   externalSourceUrl: string | null;
@@ -49,9 +51,15 @@ export const useExternalSource = ({ contentId, onMetadataChange }: UseExternalSo
       setData(sourceData);
       return sourceData;
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to fetch external source data');
-      setError(error);
-      console.error('Error fetching external source data:', error);
+      const errorObj = err instanceof Error ? err : new Error('Failed to fetch external source data');
+      setError(errorObj);
+      handleError(err, {
+        level: ErrorLevel.Warning,
+        source: ErrorSource.Database,
+        message: 'Failed to fetch external source data',
+        context: { contentId }
+      });
+      console.error('Error fetching external source data:', err);
       return null;
     } finally {
       setIsLoading(false);
@@ -92,9 +100,15 @@ export const useExternalSource = ({ contentId, onMetadataChange }: UseExternalSo
       
       return true;
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to update external source');
-      setError(error);
-      console.error('Error updating external source:', error);
+      const errorObj = err instanceof Error ? err : new Error('Failed to update external source');
+      setError(errorObj);
+      handleError(err, {
+        level: ErrorLevel.Error,
+        source: ErrorSource.Database,
+        message: 'Failed to update external source URL',
+        context: { contentId, url }
+      });
+      console.error('Error updating external source:', err);
       return false;
     } finally {
       setIsLoading(false);

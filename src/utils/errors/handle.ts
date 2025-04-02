@@ -2,8 +2,8 @@
 /**
  * Error handling utilities 
  */
-import { toast } from "@/hooks/use-toast";
-import { ErrorHandlingOptions, ErrorLevel } from './types';
+import { toast } from "@/components/ui/use-toast";
+import { ErrorHandlingOptions, ErrorLevel, ErrorSource } from './types';
 import { convertErrorOptions, LegacyErrorHandlingOptions } from './compatibility';
 
 /**
@@ -13,7 +13,8 @@ const defaultOptions: ErrorHandlingOptions = {
   level: ErrorLevel.Error,
   silent: false,
   reportToAnalytics: true,
-  showToast: true
+  showToast: true,
+  source: ErrorSource.Unknown
 };
 
 /**
@@ -25,44 +26,100 @@ const defaultOptions: ErrorHandlingOptions = {
  */
 export function handleError(
   error: unknown,
-  userMessage?: string,
-  options?: Partial<ErrorHandlingOptions> | LegacyErrorHandlingOptions
+  userMessage?: string | Partial<ErrorHandlingOptions>,
+  options?: Partial<ErrorHandlingOptions>
 ): void {
-  // Convert legacy options if needed
-  const convertedOptions = convertErrorOptions(options as LegacyErrorHandlingOptions);
-  const opts: ErrorHandlingOptions = { ...defaultOptions, ...convertedOptions };
-  
-  const errorObj = error instanceof Error ? error : new Error(String(error));
-  
-  // Always log to console with appropriate level
-  switch (opts.level) {
+  try {
+    // Process arguments to handle both forms:
+    // handleError(error, "Message", options)
+    // handleError(error, options)
+    let userMsg: string | undefined;
+    let optionsObj: Partial<ErrorHandlingOptions> = {};
+    
+    if (typeof userMessage === 'string') {
+      userMsg = userMessage;
+      optionsObj = options || {};
+    } else {
+      userMsg = undefined;
+      optionsObj = userMessage || {};
+    }
+    
+    // Convert legacy options if needed
+    const convertedOptions = convertErrorOptions(optionsObj as LegacyErrorHandlingOptions);
+    const opts: ErrorHandlingOptions = { ...defaultOptions, ...convertedOptions };
+    
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    const displayMessage = userMsg || errorObj.message;
+    
+    // Always log to console with appropriate level
+    switch (opts.level) {
+      case ErrorLevel.Debug:
+        console.debug(`[DEBUG] ${displayMessage}`, errorObj, opts.context);
+        break;
+      case ErrorLevel.Info:
+        console.info(`[INFO] ${displayMessage}`, errorObj, opts.context);
+        break;
+      case ErrorLevel.Warning:
+        console.warn(`[WARNING] ${displayMessage}`, errorObj, opts.context);
+        break;
+      case ErrorLevel.Critical:
+        console.error(`[CRITICAL] ${displayMessage}`, errorObj, opts.context);
+        break;
+      case ErrorLevel.Error:
+      default:
+        console.error(`[ERROR] ${displayMessage}`, errorObj, opts.context);
+        break;
+    }
+    
+    // Show toast notification if enabled
+    if (opts.showToast && !opts.silent && !opts.suppressToast) {
+      const toastId = opts.fingerprint ? `error-${opts.fingerprint}` : opts.toastId;
+      
+      toast({
+        id: toastId,
+        title: opts.toastTitle || getToastTitleForErrorLevel(opts.level || ErrorLevel.Error),
+        description: displayMessage,
+        variant: opts.level === ErrorLevel.Error || opts.level === ErrorLevel.Critical ? 'destructive' : 'default',
+      });
+    }
+    
+    // Reporting to analytics would go here if implemented
+    if (opts.reportToAnalytics && typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      window.gtag('event', 'error', {
+        event_category: opts.source || ErrorSource.Unknown,
+        event_label: displayMessage,
+        value: 1
+      });
+    }
+  } catch (handlingError) {
+    console.error('[CRITICAL] Error occurred during error handling:', handlingError);
+    console.error('Original error:', error);
+    
+    // Show a fallback toast
+    toast({
+      title: 'Error',
+      description: 'An unexpected error occurred.',
+      variant: 'destructive',
+    });
+  }
+}
+
+/**
+ * Get appropriate toast title based on error level
+ */
+function getToastTitleForErrorLevel(level: ErrorLevel): string {
+  switch (level) {
     case ErrorLevel.Debug:
-      console.debug(`[DEBUG] ${userMessage || errorObj.message}`, errorObj, opts.context);
-      break;
+      return 'Debug Information';
     case ErrorLevel.Info:
-      console.info(`[INFO] ${userMessage || errorObj.message}`, errorObj, opts.context);
-      break;
+      return 'Information';
     case ErrorLevel.Warning:
-      console.warn(`[WARNING] ${userMessage || errorObj.message}`, errorObj, opts.context);
-      break;
+      return 'Warning';
+    case ErrorLevel.Critical:
+      return 'Critical Error';
     case ErrorLevel.Error:
     default:
-      console.error(`[ERROR] ${userMessage || errorObj.message}`, errorObj, opts.context);
-  }
-  
-  // Show toast notification if enabled
-  // This doesn't call the hook directly - it calls a function that will
-  // use the global toast instance when available
-  if (opts.showToast && !opts.silent) {
-    const toastId = opts.fingerprint ? `error-${opts.fingerprint}` : undefined;
-    
-    // Call the safe toast function that doesn't use hooks directly
-    toast({
-      id: toastId,
-      title: opts.toastTitle || (opts.level === ErrorLevel.Error ? 'Error' : opts.level === ErrorLevel.Warning ? 'Warning' : 'Notice'),
-      description: userMessage || errorObj.message,
-      variant: opts.level === ErrorLevel.Error ? 'destructive' : 'default',
-    });
+      return 'Error';
   }
 }
 
@@ -112,7 +169,8 @@ export function createErrorHandler(
 export function createComponentErrorHandler(componentName: string) {
   return createErrorHandler(componentName, { 
     level: ErrorLevel.Error,
-    context: { source: 'component', component: componentName }
+    source: ErrorSource.Component,
+    context: { component: componentName }
   });
 }
 
@@ -122,7 +180,8 @@ export function createComponentErrorHandler(componentName: string) {
 export function createHookErrorHandler(hookName: string) {
   return createErrorHandler(hookName, {
     level: ErrorLevel.Error,
-    context: { source: 'hook', hook: hookName }
+    source: ErrorSource.Hook,
+    context: { hook: hookName }
   });
 }
 
@@ -132,6 +191,7 @@ export function createHookErrorHandler(hookName: string) {
 export function createServiceErrorHandler(serviceName: string) {
   return createErrorHandler(serviceName, {
     level: ErrorLevel.Error,
-    context: { source: 'service', service: serviceName }
+    source: ErrorSource.Service,
+    context: { service: serviceName }
   });
 }

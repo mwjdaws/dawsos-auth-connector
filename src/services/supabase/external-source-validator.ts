@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { handleError } from '@/utils/errors';
+import { ErrorLevel } from '@/utils/errors/types';
 import { createAuditLog } from './audit-logs';
 
 /**
@@ -53,10 +54,12 @@ export async function validateExternalSource(sourceId: string) {
     console.error('Failed to validate external source:', error);
     toast({
       title: 'Validation Error',
-      description: `Failed to validate external source: ${error.message}`,
+      description: `Failed to validate external source: ${error instanceof Error ? error.message : 'Unknown error'}`,
       variant: 'destructive'
     });
-    handleError(error, "Failed to validate external source.");
+    handleError(error, "Failed to validate external source.", {
+      level: ErrorLevel.Error
+    });
     throw error;
   }
 }
@@ -100,10 +103,12 @@ export async function markForExternalReview(sourceId: string) {
     console.error('Failed to mark for external review:', error);
     toast({
       title: 'Error',
-      description: `Failed to mark for external review: ${error.message}`,
+      description: `Failed to mark for external review: ${error instanceof Error ? error.message : 'Unknown error'}`,
       variant: 'destructive'
     });
-    handleError(error, "Failed to mark content for external review.");
+    handleError(error, "Failed to mark content for external review.", {
+      level: ErrorLevel.Error
+    });
     return false;
   }
 }
@@ -147,10 +152,12 @@ export async function clearExternalReviewFlag(sourceId: string) {
     console.error('Failed to clear review flag:', error);
     toast({
       title: 'Error',
-      description: `Failed to clear review flag: ${error.message}`,
+      description: `Failed to clear review flag: ${error instanceof Error ? error.message : 'Unknown error'}`,
       variant: 'destructive'
     });
-    handleError(error, "Failed to clear external review flag.");
+    handleError(error, "Failed to clear external review flag.", {
+      level: ErrorLevel.Error
+    });
     return false;
   }
 }

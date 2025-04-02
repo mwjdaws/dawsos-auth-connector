@@ -10,7 +10,8 @@ export enum ErrorLevel {
   Debug = "debug",
   Info = "info",
   Warning = "warning",
-  Error = "error"
+  Error = "error",
+  Critical = "critical"
 }
 
 // Source of errors for categorization
@@ -21,6 +22,7 @@ export enum ErrorSource {
   API = "api",
   User = "user",
   System = "system",
+  App = "app",
   
   // More specific sources
   Utils = "utils",
@@ -43,7 +45,7 @@ export enum ErrorSource {
 
 // Core error handling options
 export interface ErrorHandlingOptions {
-  level: ErrorLevel;
+  level?: ErrorLevel;
   source?: ErrorSource;
   message?: string;
   context?: Record<string, any>;
@@ -61,12 +63,12 @@ export interface ErrorHandlingOptions {
 
 // Legacy format error handling options for backward compatibility
 export interface LegacyErrorHandlingOptions {
-  level: string;
-  source: string;
-  message: string;
-  shouldReport: boolean;
-  showToast: boolean;
-  silent: boolean;
+  level?: string;
+  source?: string;
+  message?: string;
+  shouldReport?: boolean;
+  showToast?: boolean;
+  silent?: boolean;
   technical?: boolean;
   context?: Record<string, any>;
   fingerprint?: string;
