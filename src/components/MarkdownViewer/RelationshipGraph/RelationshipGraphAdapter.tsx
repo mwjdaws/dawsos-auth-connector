@@ -2,8 +2,7 @@
 import React from 'react';
 import { GraphRenderer } from './components/graph-renderer/GraphRenderer';
 import { GraphData, GraphRendererRef } from './types';
-import { ensureString, ensureNumber } from '@/utils/compatibility';
-import { sanitizeGraphData } from '@/utils/compatibility';
+import { ensureString, ensureNumber, sanitizeGraphData } from '@/utils/compatibility';
 
 interface RelationshipGraphAdapterProps {
   graphData: GraphData;

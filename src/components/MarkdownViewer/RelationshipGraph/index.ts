@@ -1,45 +1,46 @@
 
 /**
- * Relationship Graph - Central Export Point
- * 
- * This file exports all components related to the relationship graph visualization.
+ * Re-export graph-related components and utilities
  */
 
-// Export main components
+// Export components 
 export { RelationshipGraph } from './RelationshipGraph';
 export { RelationshipGraphPanel } from './RelationshipGraphPanel';
-export { RelationshipGraphAdapter } from './RelationshipGraphAdapter';
 
-// Export from components directory
-export { GraphRenderer } from './components/graph-renderer/GraphRenderer';
-export { GraphSearch } from './components/GraphSearch';
-export { GraphControls } from './components/GraphControls';
-export { GraphContent } from './components/GraphContent';
-export { RelationshipGraphControls } from './components/RelationshipGraphControls';
-
-// Export from hooks directory
+// Export hooks
 export { useRelationshipGraph } from './hooks/useRelationshipGraph';
 export { useGraphData } from './hooks/graph-data/useGraphData';
+export { useFetchGraphData } from './hooks/graph-data/useFetchGraphData'; 
 export { useGraphState } from './hooks/graph-data/useGraphState';
 
 // Export types
-export * from './types';
+export type { 
+  GraphData, 
+  GraphNode, 
+  GraphLink,
+  GraphRendererProps,
+  GraphRendererRef
+} from './types';
 
-// Export compatibility utilities to ensure proper type handling
-export { 
-  ensureString, 
-  ensureNumber, 
+// Export compatibility utilities to ensure consistent usage across the application
+export {
+  ensureString,
+  ensureNumber,
   ensureBoolean,
   ensureArray,
   nullToUndefined,
   undefinedToNull,
-  sanitizeGraphData
-} from '@/utils/compatibility';
-
-// Re-export additional compatibility utilities
-export {
+  sanitizeGraphData,
   ensureValidZoom,
   ensureValidGraphData,
   createSafeGraphProps,
   safeCallback
 } from '@/utils/compatibility';
+
+// Export compatibility functions for interoperability with different graph implementations
+export {
+  adaptGraphNode,
+  adaptGraphLink,
+  adaptGraphData,
+  ensureValidGraphData as ensureGraphDataValid
+} from './compatibility';

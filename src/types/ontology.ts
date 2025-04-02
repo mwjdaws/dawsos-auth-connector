@@ -18,6 +18,7 @@ export interface OntologyDomain {
   id: string;
   name: string;
   description: string;
+  parent_id?: string | null;
 }
 
 export interface RelatedTerm {
@@ -54,4 +55,22 @@ export interface OntologyRelationship {
   term2_id: string;
   relationship_type: string;
   strength: number;
+}
+
+export interface OntologySuggestion {
+  id: string;
+  term: string;
+  description?: string | null;
+  domain?: string | null;
+  score?: number;
+  applied?: boolean;
+  rejected?: boolean;
+}
+
+export interface RelatedNote {
+  id: string;
+  title: string;
+  score?: number;
+  applied: boolean;
+  rejected: boolean;
 }

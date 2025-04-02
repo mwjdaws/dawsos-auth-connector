@@ -32,7 +32,7 @@ export function useZoomPan({
   onZoomChange
 }: UseZoomPanProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const zoomBehaviorRef = useRef<d3.ZoomBehavior<HTMLCanvasElement, unknown> | undefined>();
+  const zoomBehaviorRef = useRef<d3.ZoomBehavior<HTMLCanvasElement, unknown>>();
   const [transform, setTransform] = useState<d3.ZoomTransform>(d3.zoomIdentity.scale(initialZoom));
   const [zoomState, setZoomState] = useState<ZoomState>({
     zoom: initialZoom,
@@ -53,12 +53,12 @@ export function useZoomPan({
       .on('zoom', (event: d3.D3ZoomEvent<HTMLCanvasElement, unknown>) => {
         setTransform(event.transform);
         setZoomState({
-          zoom: event.transform.k,
+          zoom: event.transform.k,  // Use k instead of scale
           translateX: event.transform.x,
           translateY: event.transform.y
         });
         if (onZoomChange) {
-          onZoomChange(event.transform.k);
+          onZoomChange(event.transform.k);  // Use k instead of scale
         }
       });
 
@@ -148,8 +148,8 @@ export function useZoomPan({
       if (!node || node.x === undefined || node.y === undefined) return;
       
       const scale = zoomState.zoom;
-      const tx = width / 2 - (node.x * scale);
-      const ty = height / 2 - (node.y * scale);
+      const tx = width / 2 - ((node.x || 0) * scale);
+      const ty = height / 2 - ((node.y || 0) * scale);
       
       d3.select(canvasRef.current)
         .transition()

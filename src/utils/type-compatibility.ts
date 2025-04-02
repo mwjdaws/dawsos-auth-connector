@@ -100,17 +100,17 @@ export function sanitizeGraphData(data: any): any {
   
   return {
     nodes: ensureArray(data.nodes).map(node => ({
-      id: ensureString(node?.id),
-      name: ensureString(node?.name),
+      id: ensureString(node?.id || ''),
+      name: ensureString(node?.name || ''),
       group: ensureNumber(node?.group, 1),
       size: ensureNumber(node?.size, 10),
-      color: ensureString(node?.color)
+      color: ensureString(node?.color || '')
     })),
     links: ensureArray(data.links).map(link => ({
-      source: ensureString(link?.source),
-      target: ensureString(link?.target),
+      source: ensureString(link?.source || ''),
+      target: ensureString(link?.target || ''),
       value: ensureNumber(link?.value, 1),
-      label: ensureString(link?.label)
+      label: ensureString(link?.label || '')
     }))
   };
 }

@@ -1,4 +1,5 @@
-import { ensureString, ensureNumber } from './strings';
+
+import { ensureString, ensureNumber } from './type-compatibility';
 
 /**
  * Sanitizes graph data to ensure it meets expected type requirements
@@ -19,31 +20,31 @@ export function sanitizeGraphData(data: any): any {
   
   // Process nodes to ensure required properties
   const processedNodes = nodes.map((node: any) => ({
-    id: ensureString(node.id || `node-${Math.random().toString(36).substr(2, 9)}`),
-    name: ensureString(node.name || node.title || node.id || 'Unnamed'),
-    title: ensureString(node.title || node.name || ''),
-    type: ensureString(node.type || 'default'),
-    color: ensureString(node.color || '#6e56cf'),
+    id: ensureString(node?.id || `node-${Math.random().toString(36).substr(2, 9)}`),
+    name: ensureString(node?.name || node?.title || node?.id || 'Unnamed'),
+    title: ensureString(node?.title || node?.name || ''),
+    type: ensureString(node?.type || 'default'),
+    color: ensureString(node?.color || '#6e56cf'),
     ...node
   }));
   
   // Process links to ensure required properties
   const processedLinks = links.map((link: any) => {
     // Handle source and target as objects or strings
-    const source = typeof link.source === 'object' && link.source !== null
+    const source = typeof link?.source === 'object' && link?.source !== null
       ? ensureString(link.source.id)
-      : ensureString(link.source);
+      : ensureString(link?.source);
     
-    const target = typeof link.target === 'object' && link.target !== null
+    const target = typeof link?.target === 'object' && link?.target !== null
       ? ensureString(link.target.id)
-      : ensureString(link.target);
+      : ensureString(link?.target);
     
     return {
       source,
       target,
-      type: ensureString(link.type || 'default'),
-      value: ensureNumber(link.value || 1),
-      color: ensureString(link.color || '#8b8b8b'),
+      type: ensureString(link?.type || 'default'),
+      value: ensureNumber(link?.value || 1),
+      color: ensureString(link?.color || '#8b8b8b'),
       ...link
     };
   });
@@ -53,3 +54,17 @@ export function sanitizeGraphData(data: any): any {
     links: processedLinks
   };
 }
+
+// Re-export utility functions from type-compatibility to prevent import errors
+export { 
+  ensureString,
+  ensureNumber,
+  ensureBoolean,
+  ensureArray,
+  nullToUndefined,
+  undefinedToNull,
+  ensureValidZoom,
+  ensureValidGraphData,
+  createSafeGraphProps,
+  safeCallback
+} from './type-compatibility';
