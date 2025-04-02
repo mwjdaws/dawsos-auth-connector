@@ -1,82 +1,53 @@
 
+import { handleError } from './handle';
+import { ErrorLevel, ErrorSource, LegacyErrorHandlingOptions } from './types';
+
 /**
- * Compatibility layer for error handling system
+ * Legacy interface for handleError for backward compatibility.
+ * This is for transitioning from the old error handling pattern to the new one.
  * 
- * This file provides utilities to maintain backward compatibility
- * with older error handling approaches as we evolve the system.
+ * @deprecated Use handleError(error, { options }) pattern instead
  */
-import { ErrorLevel, ErrorSource, ErrorHandlingOptions } from './types';
-
-/**
- * Legacy error handling options format
- */
-export interface LegacyErrorHandlingOptions {
-  level?: string;
-  source?: string;
-  message?: string;
-  context?: any;
-  silent?: boolean;
-  showToast?: boolean;
-  toastId?: string;
-  reportToAnalytics?: boolean;
+export function legacyHandleError(
+  error: Error | unknown,
+  message: string,
+  options?: LegacyErrorHandlingOptions
+): void {
+  // Convert legacy options to new format
+  handleError(error, {
+    message,
+    level: options?.level,
+    source: options?.source,
+    context: options?.context,
+    silent: options?.silent,
+    showToast: options?.showToast,
+    toastId: options?.toastId,
+    reportToAnalytics: options?.reportToAnalytics
+  });
 }
 
-/**
- * Convert legacy options format to new format
- */
-export function convertErrorOptions(options: string | LegacyErrorHandlingOptions | undefined): Partial<ErrorHandlingOptions> {
-  if (!options) return {};
-  
-  // If options is a string, treat it as the message
-  if (typeof options === 'string') {
-    return { message: options };
-  }
-  
-  // Convert legacy level strings to ErrorLevel enum
-  let level: ErrorLevel | undefined = undefined;
-  if (options.level) {
-    switch (options.level.toLowerCase()) {
-      case 'debug': level = ErrorLevel.Debug; break;
-      case 'info': level = ErrorLevel.Info; break;
-      case 'warning': level = ErrorLevel.Warning; break;
-      case 'error': level = ErrorLevel.Error; break;
-      case 'critical': level = ErrorLevel.Critical; break;
-    }
-  }
-  
-  // Convert legacy source strings to ErrorSource enum
-  let source: ErrorSource | undefined = undefined;
-  if (options.source) {
-    switch (options.source.toLowerCase()) {
-      case 'user': source = ErrorSource.User; break;
-      case 'app': source = ErrorSource.Application; break;
-      case 'api': source = ErrorSource.API; break;
-      case 'component': source = ErrorSource.Component; break;
-      case 'hook': source = ErrorSource.Hook; break;
-      case 'database': source = ErrorSource.Database; break;
-      case 'network': source = ErrorSource.Network; break;
-      case 'service': source = ErrorSource.Service; break;
-    }
-  }
-  
-  return {
-    level, 
-    source,
-    message: options.message,
-    context: options.context,
-    silent: options.silent,
-    showToast: options.showToast,
-    toastId: options.toastId,
-    reportToAnalytics: options.reportToAnalytics
-  };
-}
+// Legacy export for backward compatibility
+export const handleErrorWithMessage = legacyHandleError;
 
 /**
- * Make options compatible with both old and new systems
+ * Create an error with additional context for better debugging
+ * 
+ * @deprecated Use Error directly and pass context in handleError options
  */
-export function compatibleErrorOptions(options: ErrorHandlingOptions): ErrorHandlingOptions & LegacyErrorHandlingOptions {
-  return {
-    ...options,
-    // Add any legacy properties needed for backward compatibility
-  };
+export function createContextualError(
+  message: string,
+  context?: Record<string, any>,
+  source?: ErrorSource
+): Error {
+  const error = new Error(message);
+  if (context) {
+    (error as any).context = context;
+  }
+  if (source) {
+    (error as any).source = source;
+  }
+  return error;
 }
+
+// Re-export enums for legacy code
+export { ErrorLevel, ErrorSource };
