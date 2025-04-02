@@ -1,147 +1,123 @@
 
 /**
  * Error handling compatibility utilities
+ * 
+ * These utilities help maintain backward compatibility with older code
+ * that uses different error handling patterns.
  */
+import { ErrorHandlingOptions, ErrorLevel, ErrorSource } from './types';
 
-import { 
-  ErrorHandlingOptions, 
-  LegacyErrorHandlingOptions,
-  ErrorLevel,
-  ErrorSource
-} from './types';
+/**
+ * Legacy error handling options type
+ */
+export interface LegacyErrorHandlingOptions {
+  level?: string;
+  source?: string;
+  message?: string;
+  context?: any;
+  silent?: boolean;
+  technical?: boolean;
+  showToast?: boolean;
+  toastId?: string;
+  reportToAnalytics?: boolean;
+}
 
 /**
  * Convert legacy error options to the new format
  */
-export function convertErrorOptions(legacyOptions?: LegacyErrorHandlingOptions): Partial<ErrorHandlingOptions> {
-  if (!legacyOptions) {
+export function convertErrorOptions(
+  options?: LegacyErrorHandlingOptions | string
+): Partial<ErrorHandlingOptions> {
+  if (!options) {
     return {};
   }
-  
-  // Handle case where legacy options is just a string (assumed to be message)
-  if (typeof legacyOptions === 'string') {
-    return { message: legacyOptions };
+
+  // Handle string case (often used for just passing a message)
+  if (typeof options === 'string') {
+    return {
+      message: options
+    };
   }
+
+  // Convert legacy level strings to enum values
+  let level = options.level ? mapLegacyLevel(options.level) : undefined;
   
-  // Map legacy error level strings to ErrorLevel enum
-  let level: ErrorLevel | undefined;
-  if (legacyOptions.level) {
-    switch (legacyOptions.level.toLowerCase()) {
-      case 'debug':
-      case 'DEBUG':
-        level = ErrorLevel.Debug;
-        break;
-      case 'info':
-      case 'INFO':
-        level = ErrorLevel.Info;
-        break;
-      case 'warning':
-      case 'WARNING':
-      case 'warn':
-      case 'WARN':
-        level = ErrorLevel.Warning;
-        break;
-      case 'error':
-      case 'ERROR':
-        level = ErrorLevel.Error;
-        break;
-      case 'critical':
-      case 'CRITICAL':
-        level = ErrorLevel.Critical;
-        break;
-      default:
-        level = ErrorLevel.Error;
-    }
-  }
+  // Convert legacy source strings to enum values
+  let source = options.source ? mapLegacySource(options.source) : undefined;
   
-  // Map legacy source strings to ErrorSource enum
-  let source: ErrorSource | undefined;
-  if (legacyOptions.source) {
-    switch (legacyOptions.source.toLowerCase()) {
-      case 'database':
-      case 'db':
-        source = ErrorSource.Database;
-        break;
-      case 'api':
-        source = ErrorSource.API;
-        break;
-      case 'user':
-        source = ErrorSource.User;
-        break;
-      case 'system':
-        source = ErrorSource.System;
-        break;
-      case 'component':
-      case 'ui':
-        source = ErrorSource.Component;
-        break;
-      case 'hook':
-        source = ErrorSource.Hook;
-        break;
-      case 'service':
-        source = ErrorSource.Service;
-        break;
-      case 'auth':
-      case 'authentication':
-        source = ErrorSource.Authentication;
-        break;
-      case 'storage':
-        source = ErrorSource.Storage;
-        break;
-      case 'validation':
-        source = ErrorSource.Validation;
-        break;
-      case 'external':
-        source = ErrorSource.External;
-        break;
-      case 'app':
-        source = ErrorSource.App;
-        break;
-      default:
-        source = ErrorSource.Unknown;
-    }
-  }
-  
-  // Convert legacy options to new format
+  // Return converted options
   return {
     level,
     source,
-    message: legacyOptions.message,
-    context: legacyOptions.context,
-    reportToAnalytics: legacyOptions.shouldReport,
-    showToast: legacyOptions.showToast,
-    silent: legacyOptions.silent,
-    suppressToast: legacyOptions.suppressToast,
-    toastId: legacyOptions.toastId,
-    technical: legacyOptions.technical,
-    originalError: legacyOptions.originalError,
-    fingerprint: legacyOptions.fingerprint
+    message: options.message || '',
+    context: options.context,
+    silent: options.silent,
+    showToast: options.showToast,
+    toastId: options.toastId,
+    reportToAnalytics: options.reportToAnalytics
   };
 }
 
 /**
- * Make error options compatible with both old and new error handlers
- * for backward compatibility during migration
+ * Map legacy error level strings to ErrorLevel enum
  */
-export function compatibleErrorOptions(options?: Partial<ErrorHandlingOptions>): LegacyErrorHandlingOptions & ErrorHandlingOptions {
-  if (!options) {
-    return {
-      level: ErrorLevel.Error,
-      source: ErrorSource.Unknown,
-      shouldReport: true,
-      showToast: true,
-      silent: false,
-      reportToAnalytics: true
-    };
+function mapLegacyLevel(level: string): ErrorLevel {
+  switch (level.toLowerCase()) {
+    case 'debug':
+      return ErrorLevel.Debug;
+    case 'info':
+      return ErrorLevel.Info;
+    case 'warning':
+    case 'warn':
+      return ErrorLevel.Warning;
+    case 'critical':
+    case 'fatal':
+      return ErrorLevel.Critical;
+    case 'error':
+    default:
+      return ErrorLevel.Error;
   }
-  
-  return {
-    ...options,
-    level: options.level || ErrorLevel.Error,
-    source: options.source || ErrorSource.Unknown,
-    shouldReport: options.reportToAnalytics !== undefined ? options.reportToAnalytics : true,
-    reportToAnalytics: options.reportToAnalytics !== undefined ? options.reportToAnalytics : true,
-    showToast: options.showToast !== undefined ? options.showToast : true,
-    silent: options.silent !== undefined ? options.silent : false
-  };
+}
+
+/**
+ * Map legacy error source strings to ErrorSource enum
+ */
+function mapLegacySource(source: string): ErrorSource {
+  switch (source.toLowerCase()) {
+    case 'ui':
+      return ErrorSource.UI;
+    case 'component':
+      return ErrorSource.Component;
+    case 'hook':
+      return ErrorSource.Hook;
+    case 'api':
+      return ErrorSource.API;
+    case 'database':
+    case 'db':
+      return ErrorSource.Database;
+    case 'auth':
+    case 'authentication':
+      return ErrorSource.Authentication;
+    case 'authorization':
+      return ErrorSource.Authorization;
+    case 'validation':
+      return ErrorSource.Validation;
+    case 'external':
+      return ErrorSource.External;
+    case 'network':
+      return ErrorSource.Network;
+    case 'system':
+      return ErrorSource.System;
+    case 'service':
+      return ErrorSource.Service;
+    default:
+      return ErrorSource.Unknown;
+  }
+}
+
+/**
+ * Check if a value is a compatible error options object
+ */
+export function compatibleErrorOptions(value: any): boolean {
+  return value && typeof value === 'object' && !Array.isArray(value);
 }

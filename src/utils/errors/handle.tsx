@@ -1,14 +1,16 @@
 
 import React from 'react';
 import { toast } from '@/hooks/use-toast';
-import { ErrorHandlingOptions, ErrorLevel } from './types';
-import { convertErrorOptions, LegacyErrorHandlingOptions } from './compatibility';
+import { ErrorHandlingOptions, ErrorLevel, ErrorSource } from './types';
+import { isErrorDuplicate, storeErrorFingerprint, generateFingerprint } from '../errors/deduplication';
+import { convertErrorOptions } from './compatibility';
 
 /**
  * Default error handling options
  */
-const defaultOptions: ErrorHandlingOptions = {
+const defaultOptions: Partial<ErrorHandlingOptions> = {
   level: ErrorLevel.Error,
+  source: ErrorSource.Unknown,
   silent: false,
   reportToAnalytics: true,
   showToast: true
@@ -24,40 +26,64 @@ const defaultOptions: ErrorHandlingOptions = {
 export function handleError(
   error: unknown,
   userMessage?: string,
-  options?: Partial<ErrorHandlingOptions> | LegacyErrorHandlingOptions
+  options?: Partial<ErrorHandlingOptions>
 ): void {
-  // Convert legacy options if needed
-  const convertedOptions = convertErrorOptions(options as LegacyErrorHandlingOptions);
-  const opts: ErrorHandlingOptions = { ...defaultOptions, ...convertedOptions };
-  
-  const errorObj = error instanceof Error ? error : new Error(String(error));
-  
-  // Always log to console with appropriate level
-  switch (opts.level) {
-    case ErrorLevel.Debug:
-      console.debug(`[DEBUG] ${userMessage || errorObj.message}`, errorObj, opts.context);
-      break;
-    case ErrorLevel.Info:
-      console.info(`[INFO] ${userMessage || errorObj.message}`, errorObj, opts.context);
-      break;
-    case ErrorLevel.Warning:
-      console.warn(`[WARNING] ${userMessage || errorObj.message}`, errorObj, opts.context);
-      break;
-    case ErrorLevel.Error:
-    default:
-      console.error(`[ERROR] ${userMessage || errorObj.message}`, errorObj, opts.context);
-  }
-  
-  // Show toast notification if enabled
-  if (opts.showToast && !opts.silent) {
-    const toastId = opts.fingerprint ? `error-${opts.fingerprint}` : undefined;
+  try {
+    // Convert legacy options if needed
+    const convertedOptions = convertErrorOptions(options);
+    const opts: Partial<ErrorHandlingOptions> = { ...defaultOptions, ...convertedOptions };
     
-    toast({
-      id: toastId,
-      title: opts.toastTitle || (opts.level === ErrorLevel.Error ? 'Error' : opts.level === ErrorLevel.Warning ? 'Warning' : 'Notice'),
-      description: userMessage || errorObj.message,
-      variant: opts.level === ErrorLevel.Error ? 'destructive' : 'default',
-    });
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    
+    // Set message if provided
+    if (userMessage) {
+      opts.message = userMessage;
+    } else if (!opts.message) {
+      opts.message = errorObj.message;
+    }
+    
+    // Check for duplicate errors
+    const fingerprint = opts.fingerprint || generateFingerprint(error, opts);
+    if (fingerprint && isErrorDuplicate(fingerprint)) {
+      // Skip duplicate error
+      return;
+    }
+    
+    // Store error fingerprint to avoid duplicates
+    if (fingerprint) {
+      storeErrorFingerprint(fingerprint);
+    }
+    
+    // Always log to console with appropriate level
+    switch (opts.level) {
+      case ErrorLevel.Debug:
+        console.debug(`[DEBUG] ${opts.message || errorObj.message}`, errorObj, opts.context);
+        break;
+      case ErrorLevel.Info:
+        console.info(`[INFO] ${opts.message || errorObj.message}`, errorObj, opts.context);
+        break;
+      case ErrorLevel.Warning:
+        console.warn(`[WARNING] ${opts.message || errorObj.message}`, errorObj, opts.context);
+        break;
+      case ErrorLevel.Error:
+      default:
+        console.error(`[ERROR] ${opts.message || errorObj.message}`, errorObj, opts.context);
+    }
+    
+    // Show toast notification if enabled
+    if (opts.showToast && !opts.silent) {
+      const toastId = opts.fingerprint ? `error-${opts.fingerprint}` : undefined;
+      
+      toast({
+        ...(toastId ? { id: toastId } : {}),
+        title: opts.toastTitle || (opts.level === ErrorLevel.Error ? 'Error' : opts.level === ErrorLevel.Warning ? 'Warning' : 'Notice'),
+        description: opts.message || errorObj.message,
+        variant: opts.level === ErrorLevel.Error ? 'destructive' : 'default',
+      });
+    }
+  } catch (handlingError) {
+    console.error('[CRITICAL] Error occurred during error handling:', handlingError);
+    console.error('Original error:', error);
   }
 }
 
@@ -107,7 +133,7 @@ export function createErrorHandler(
 export function createComponentErrorHandler(componentName: string) {
   return createErrorHandler(componentName, { 
     level: ErrorLevel.Error,
-    context: { source: 'component', component: componentName }
+    source: ErrorSource.Component
   });
 }
 
@@ -117,7 +143,7 @@ export function createComponentErrorHandler(componentName: string) {
 export function createHookErrorHandler(hookName: string) {
   return createErrorHandler(hookName, {
     level: ErrorLevel.Error,
-    context: { source: 'hook', hook: hookName }
+    source: ErrorSource.Hook
   });
 }
 
@@ -127,42 +153,6 @@ export function createHookErrorHandler(hookName: string) {
 export function createServiceErrorHandler(serviceName: string) {
   return createErrorHandler(serviceName, {
     level: ErrorLevel.Error,
-    context: { source: 'service', service: serviceName }
+    source: ErrorSource.API
   });
-}
-
-/**
- * Higher-order function to wrap operations with error handling
- */
-export function withErrorHandling<T extends (...args: any[]) => any>(
-  fn: T,
-  errorHandler: (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => void,
-  userMessage?: string,
-  options?: Partial<ErrorHandlingOptions>
-): (...args: Parameters<T>) => ReturnType<T> | undefined {
-  return (...args: Parameters<T>): ReturnType<T> | undefined => {
-    try {
-      return fn(...args);
-    } catch (error) {
-      errorHandler(error, userMessage, options);
-      return undefined;
-    }
-  };
-}
-
-/**
- * Function to handle API and async operations safely
- */
-export async function tryAction<T>(
-  action: () => Promise<T>,
-  errorHandler: (error: unknown, message?: string, options?: Partial<ErrorHandlingOptions>) => void,
-  userMessage?: string,
-  options?: Partial<ErrorHandlingOptions>
-): Promise<T | undefined> {
-  try {
-    return await action();
-  } catch (error) {
-    errorHandler(error, userMessage, options);
-    return undefined;
-  }
 }

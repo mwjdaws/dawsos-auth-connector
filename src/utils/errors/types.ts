@@ -25,7 +25,8 @@ export enum ErrorSource {
   Validation = 'validation',
   External = 'external',
   Network = 'network',
-  System = 'system'
+  System = 'system',
+  Service = 'service'
 }
 
 // Options for error handling

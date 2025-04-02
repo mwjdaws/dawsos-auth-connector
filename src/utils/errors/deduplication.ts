@@ -1,46 +1,85 @@
-
 /**
  * Error deduplication utilities
  */
 import { ErrorHandlingOptions } from './types';
 import { generateErrorFingerprint } from './generateId';
 
-// Store seen error fingerprints
-const seenErrors = new Set<string>();
+// Store seen error fingerprints with a TTL (5 minutes)
+const seenErrors = new Map<string, number>();
+const ERROR_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 /**
  * Check if an error has been seen before
  * 
- * @param error The error to check
- * @param options Additional options
+ * @param fingerprint The error fingerprint to check
  * @returns Whether the error has been seen before
  */
-export function hasErrorBeenSeen(
-  error: Error,
-  options?: Partial<ErrorHandlingOptions>
-): boolean {
-  const fingerprint = options?.fingerprint || generateErrorFingerprint(error, options?.context);
-  return seenErrors.has(fingerprint);
+export function isErrorDuplicate(fingerprint: string): boolean {
+  // Check if the fingerprint exists and hasn't expired
+  if (seenErrors.has(fingerprint)) {
+    const expiryTime = seenErrors.get(fingerprint);
+    if (expiryTime && expiryTime > Date.now()) {
+      return true;
+    }
+    // Expired entry, remove it
+    seenErrors.delete(fingerprint);
+  }
+  return false;
 }
 
 /**
- * Mark an error as seen to prevent duplicate reporting
+ * Store an error fingerprint to prevent duplicate reporting
  * 
- * @param error The error to mark as seen
- * @param options Additional options
- * @returns The error (for chaining)
+ * @param fingerprint The error fingerprint to store
  */
-export function deduplicateError(
-  error: Error,
-  options?: Partial<ErrorHandlingOptions>
-): Error {
-  const fingerprint = options?.fingerprint || generateErrorFingerprint(error, options?.context);
-  seenErrors.add(fingerprint);
-  return error;
+export function storeErrorFingerprint(fingerprint: string): void {
+  // Store with expiry time
+  seenErrors.set(fingerprint, Date.now() + ERROR_TTL);
+  
+  // Cleanup old entries (optional, can be done less frequently in production)
+  cleanupExpiredErrors();
 }
 
 /**
- * Clear the set of seen errors
+ * Generate a fingerprint for an error
+ * 
+ * @param error The error to fingerprint
+ * @param context Additional context
+ * @returns A unique fingerprint for the error
+ */
+export function generateFingerprint(
+  error: Error | unknown,
+  options?: Partial<ErrorHandlingOptions>
+): string {
+  // If a fingerprint is provided in options, use it
+  if (options?.fingerprint) {
+    return options.fingerprint;
+  }
+  
+  // Otherwise generate a fingerprint based on the error
+  if (error instanceof Error) {
+    return generateErrorFingerprint(error, options?.context);
+  }
+  
+  // For non-Error objects, create a simple hash
+  const errorString = typeof error === 'string' ? error : JSON.stringify(error);
+  return `err_${errorString.substring(0, 100).replace(/\s+/g, '_')}`;
+}
+
+/**
+ * Clean up expired error entries
+ */
+function cleanupExpiredErrors(): void {
+  const now = Date.now();
+  seenErrors.forEach((expiryTime, fingerprint) => {
+    if (expiryTime <= now) {
+      seenErrors.delete(fingerprint);
+    }
+  });
+}
+
+/**
+ * Clear all seen errors
  * This is useful for testing or when context changes
  */
 export function clearSeenErrors(): void {

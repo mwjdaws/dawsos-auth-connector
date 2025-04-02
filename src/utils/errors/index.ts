@@ -15,14 +15,33 @@ export {
   createComponentErrorHandler,
   createHookErrorHandler,
   createServiceErrorHandler
-} from '@/utils/error-handling';
+} from './handle';
 
 // Export compatibility utils
 export { convertErrorOptions, compatibleErrorOptions } from './compatibility';
 export type { LegacyErrorHandlingOptions } from './compatibility';
 
-// For backward compatibility 
-export * from './categorize';
-export * from './handle';
-export * from './wrappers';
-export * from './generateId';
+// Export format utilities
+export { 
+  formatErrorMessage,
+  formatTechnicalError,
+  getUserFriendlyMessage
+} from './format';
+
+// Export deduplication utilities 
+export {
+  isErrorDuplicate,
+  storeErrorFingerprint,
+  generateFingerprint,
+  clearSeenErrors
+} from './deduplication';
+
+// Export ID generation utilities
+export {
+  generateErrorId,
+  generateErrorFingerprint,
+  generateShortId
+} from './generateId';
+
+// Export categorization utilities
+export { categorizeError } from './categorize';
