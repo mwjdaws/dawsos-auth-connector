@@ -2,30 +2,40 @@
 /**
  * Error deduplication utilities
  * 
- * These utilities help prevent duplicate error messages from being shown to users
- * by tracking error fingerprints and only showing each unique error once within
- * a certain time period.
+ * This file provides utilities to prevent duplicate error messages
+ * from being shown to the user.
  */
-import { ErrorHandlingOptions } from './types';
 
-// In-memory store for recent error fingerprints with TTL
-const recentErrorFingerprints: Map<string, number> = new Map();
+// Set of error fingerprints that have been seen
+let seenErrors = new Set<string>();
 
-// Default expiration time for fingerprints (5 seconds)
-const DEFAULT_FINGERPRINT_TTL = 5000;
+// Maximum number of errors to track for deduplication
+const MAX_CACHED_ERRORS = 100;
+
+// Time window for considering errors as duplicates (in ms)
+const ERROR_DEDUPLICATION_WINDOW = 5000; // 5 seconds
+
+// Timestamps for each error fingerprint
+const errorTimestamps: Record<string, number> = {};
 
 /**
- * Check if an error with the same fingerprint was recently reported
+ * Check if an error with the given fingerprint has been seen recently
+ * 
+ * @param fingerprint Unique identifier for the error
+ * @returns Whether the error is a duplicate
  */
 export function isErrorDuplicate(fingerprint: string): boolean {
-  if (!fingerprint) return false;
+  // Check if we've seen this error before
+  if (!seenErrors.has(fingerprint)) {
+    return false;
+  }
   
-  const expiration = recentErrorFingerprints.get(fingerprint);
-  if (!expiration) return false;
+  // Check if the error is within the deduplication window
+  const lastSeen = errorTimestamps[fingerprint] || 0;
+  const now = Date.now();
   
-  // Check if the fingerprint has expired
-  if (expiration < Date.now()) {
-    recentErrorFingerprints.delete(fingerprint);
+  // If the error was seen more than X ms ago, it's not considered a duplicate
+  if (now - lastSeen > ERROR_DEDUPLICATION_WINDOW) {
     return false;
   }
   
@@ -33,66 +43,94 @@ export function isErrorDuplicate(fingerprint: string): boolean {
 }
 
 /**
- * Store an error fingerprint to prevent duplicates
+ * Store an error fingerprint to prevent duplicate notifications
  * 
- * @param fingerprint The error fingerprint
- * @param ttl Time to live in milliseconds (default 5 seconds)
+ * @param fingerprint Unique identifier for the error
  */
-export function storeErrorFingerprint(fingerprint: string, ttl: number = DEFAULT_FINGERPRINT_TTL): void {
-  if (!fingerprint) return;
+export function storeErrorFingerprint(fingerprint: string): void {
+  // Record the timestamp of this error
+  errorTimestamps[fingerprint] = Date.now();
   
-  // Set expiration time
-  const expirationTime = Date.now() + ttl;
-  recentErrorFingerprints.set(fingerprint, expirationTime);
+  // Add to the set of seen errors
+  seenErrors.add(fingerprint);
   
-  // Schedule cleanup to prevent memory leaks
-  setTimeout(() => {
-    recentErrorFingerprints.delete(fingerprint);
-  }, ttl);
+  // If we're tracking too many errors, remove the oldest ones
+  if (seenErrors.size > MAX_CACHED_ERRORS) {
+    pruneOldErrors();
+  }
 }
 
 /**
- * Clear all stored error fingerprints
+ * Remove old error fingerprints to prevent memory leaks
+ */
+function pruneOldErrors(): void {
+  const now = Date.now();
+  const fingerprintsToRemove: string[] = [];
+  
+  // Find old fingerprints
+  for (const [fingerprint, timestamp] of Object.entries(errorTimestamps)) {
+    if (now - timestamp > ERROR_DEDUPLICATION_WINDOW) {
+      fingerprintsToRemove.push(fingerprint);
+    }
+  }
+  
+  // Remove old fingerprints
+  fingerprintsToRemove.forEach(fingerprint => {
+    seenErrors.delete(fingerprint);
+    delete errorTimestamps[fingerprint];
+  });
+}
+
+/**
+ * Clear all seen errors
+ * Useful for testing or when navigating to a new page
  */
 export function clearSeenErrors(): void {
-  recentErrorFingerprints.clear();
+  seenErrors.clear();
+  Object.keys(errorTimestamps).forEach(key => {
+    delete errorTimestamps[key];
+  });
 }
 
 /**
- * Generate a fingerprint for error deduplication
+ * Set the maximum number of errors to track
  * 
- * @param error The error to generate a fingerprint for
- * @param options Additional options that may influence the fingerprint
- * @returns A string fingerprint
+ * @param max Maximum number of errors to track
  */
-export function generateFingerprint(error: unknown, options?: Partial<ErrorHandlingOptions>): string {
-  // If a fingerprint is explicitly provided, use it
-  if (options?.fingerprint) {
-    return options.fingerprint;
+export function setMaxCachedErrors(max: number): void {
+  if (max < 1) {
+    throw new Error('Maximum cached errors must be at least 1');
   }
   
-  // For Error objects, use name, message and first stack line
-  if (error instanceof Error) {
-    const stackLine = error.stack?.split('\n')[1]?.trim() || '';
-    return `${error.name}:${error.message}:${stackLine}`;
+  // If we're reducing the max, prune existing errors
+  if (max < MAX_CACHED_ERRORS && seenErrors.size > max) {
+    const errorsToKeep = Array.from(seenErrors).slice(-max);
+    seenErrors = new Set(errorsToKeep);
+    
+    // Update timestamps
+    const newTimestamps: Record<string, number> = {};
+    errorsToKeep.forEach(fingerprint => {
+      if (errorTimestamps[fingerprint]) {
+        newTimestamps[fingerprint] = errorTimestamps[fingerprint];
+      }
+    });
+    
+    // Replace timestamps object
+    Object.keys(errorTimestamps).forEach(key => {
+      delete errorTimestamps[key];
+    });
+    
+    Object.keys(newTimestamps).forEach(key => {
+      errorTimestamps[key] = newTimestamps[key];
+    });
   }
-  
-  // For strings, use the string itself
-  if (typeof error === 'string') {
-    return error;
-  }
-  
-  // For user-provided messages, use that
-  if (options?.message) {
-    return options.message;
-  }
-  
-  // Fallback: combine error and context into a string
-  try {
-    const errorStr = String(error);
-    const contextStr = options?.context ? JSON.stringify(options.context) : '';
-    return `${errorStr}:${contextStr}`;
-  } catch (e) {
-    return `unknown-error-${Date.now()}`;
-  }
+}
+
+/**
+ * Get the number of currently tracked errors
+ * 
+ * @returns Number of errors being tracked
+ */
+export function getTrackedErrorCount(): number {
+  return seenErrors.size;
 }
