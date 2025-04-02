@@ -4,7 +4,7 @@ import { useMetadataContext } from './useMetadataContext';
 
 export interface UseMetadataPanelProps {
   contentId?: string;
-  onMetadataChange?: () => void;
+  onMetadataChange?: (() => void) | null;
   isCollapsible?: boolean;
   initialCollapsed?: boolean;
 }
@@ -14,14 +14,14 @@ export interface UseMetadataPanelProps {
  */
 export function useMetadataPanel({
   contentId,
-  onMetadataChange = () => {},
+  onMetadataChange = null,
   isCollapsible = false,
   initialCollapsed = false
 }: UseMetadataPanelProps) {
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed && isCollapsible);
   
   // Get metadata state from context
-  const { isLoading, error, fetchAllMetadata } = useMetadataContext();
+  const { isLoading, error, tags, ontologyTerms, externalSource } = useMetadataContext();
   
   // Reset collapsed state when content ID changes
   useEffect(() => {
@@ -32,12 +32,11 @@ export function useMetadataPanel({
   
   // Handle refresh button click
   const handleRefresh = useCallback(() => {
-    // Refetch all metadata
-    fetchAllMetadata();
-    
-    // Notify parent if needed
-    onMetadataChange();
-  }, [fetchAllMetadata, onMetadataChange]);
+    // Call onMetadataChange if needed
+    if (onMetadataChange) {
+      onMetadataChange();
+    }
+  }, [onMetadataChange]);
   
   return {
     isCollapsed,
@@ -45,6 +44,10 @@ export function useMetadataPanel({
     isCollapsible,
     isLoading,
     error,
+    contentId,
+    tags,
+    ontologyTerms,
+    externalSource,
     handleRefresh
   };
 }

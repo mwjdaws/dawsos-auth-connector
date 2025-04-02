@@ -161,7 +161,7 @@ export const Chart = React.forwardRef<
                 name={key}
                 fill={colors[index % colors.length]}
                 stroke={colors[index % colors.length]}
-                stackId={stackKeys?.[index]}
+                stackId={stackKeys?.[index] || undefined}
               />
             ))}
           </BarChart>
@@ -196,7 +196,7 @@ export const Chart = React.forwardRef<
             <Pie
               data={data}
               nameKey={xAxisKey}
-              dataKey={yAxisKeys[0]}
+              dataKey={yAxisKeys[0] || "value"}
               cx="50%"
               cy="50%"
               outerRadius={80}

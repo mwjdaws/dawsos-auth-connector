@@ -1,124 +1,55 @@
 
 /**
- * Error level enum
- * Used to categorize errors by severity
+ * Error handling types
  */
+
+// Error severity levels
 export enum ErrorLevel {
-  Debug = 'Debug',
-  Info = 'Info',
-  Warning = 'Warning',
-  Error = 'Error',
-  Critical = 'Critical'
+  Debug = 'debug',
+  Info = 'info',
+  Warning = 'warning',
+  Error = 'error',
+  Fatal = 'fatal'
 }
 
-/**
- * Error source enum
- * Used to categorize errors by origin/source
- */
+// Source of the error
 export enum ErrorSource {
-  Unknown = 'Unknown',
-  Component = 'Component',
-  Hook = 'Hook',
-  Service = 'Service',
-  API = 'API',
-  Database = 'Database',
-  Validation = 'Validation',
-  Network = 'Network',
-  Authentication = 'Authentication',
-  Authorization = 'Authorization',
-  App = 'App',
-  User = 'User'
+  API = 'api',
+  Hook = 'hook',
+  Component = 'component',
+  Validation = 'validation',
+  Database = 'database',
+  Authentication = 'authentication',
+  Unknown = 'unknown'
 }
 
-/**
- * Error handling options
- * Used to configure error handling behavior
- */
+// Base error handling options
 export interface ErrorHandlingOptions {
-  /**
-   * Error severity level
-   */
   level: ErrorLevel;
-  
-  /**
-   * Error source/origin
-   */
   source: ErrorSource;
-  
-  /**
-   * User-friendly error message
-   */
   message: string;
-  
-  /**
-   * Additional context for the error
-   */
-  context: Record<string, any>;
-  
-  /**
-   * Whether to report to analytics
-   */
-  reportToAnalytics: boolean;
-  
-  /**
-   * Whether to show toast notification
-   */
-  showToast: boolean;
-  
-  /**
-   * Whether to suppress toast notification
-   * (higher precedence than showToast)
-   */
-  suppressToast: boolean;
-  
-  /**
-   * Whether to silence all notifications
-   */
-  silent: boolean;
-  
-  /**
-   * Optional fingerprint for deduplication
-   */
+  context?: Record<string, any>;
+  reportToAnalytics?: boolean;
+  showToast?: boolean;
+  suppressToast?: boolean;
+  silent?: boolean;
   fingerprint?: string;
-  
-  /**
-   * Optional toast ID for updates
-   */
   toastId?: string;
-  
-  /**
-   * Optional custom toast title
-   */
   toastTitle?: string;
 }
 
-/**
- * Legacy error handling options
- * @deprecated Use ErrorHandlingOptions instead
- */
-export interface LegacyErrorHandlingOptions {
-  level?: ErrorLevel;
-  source?: ErrorSource;
-  context?: Record<string, any>;
-  silent?: boolean;
-  showToast?: boolean;
-  toastId?: string;
-  reportToAnalytics?: boolean;
-}
+// Default error handling options
+export const DEFAULT_ERROR_OPTIONS: ErrorHandlingOptions = {
+  level: ErrorLevel.Error,
+  source: ErrorSource.Unknown,
+  message: 'An error occurred',
+  context: {},
+  reportToAnalytics: true,
+  showToast: true,
+  suppressToast: false,
+  silent: false
+};
 
-/**
- * Basic error tracking info
- */
-export interface ErrorTrackingInfo {
-  timestamp: number;
-  count: number;
-}
-
-/**
- * Type alias for error fingerprints
- */
-export type ErrorFingerprint = string;
-
-// Re-export all error types from sub-modules
-export * from './api-errors';
-export * from './validation-errors';
+// Export for backward compatibility
+export const ERROR_LEVEL = ErrorLevel;
+export const ERROR_SOURCE = ErrorSource;

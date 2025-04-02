@@ -77,7 +77,7 @@ export const MetadataContent: React.FC<MetadataContentProps> = ({
         />
       )}
       
-      {showDomain && (
+      {showDomain && domain !== undefined && (
         <DomainSection 
           domain={domain}
         />

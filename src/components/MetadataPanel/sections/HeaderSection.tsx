@@ -1,56 +1,84 @@
 
 import React from 'react';
+import { ExternalLink, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, ChevronUp, ChevronDown } from 'lucide-react';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface HeaderSectionProps {
-  title: string;
-  handleRefresh: () => void;
-  setIsCollapsed: (value: boolean) => void;
-  isCollapsed: boolean;
-  needsExternalReview: boolean;
+  contentId: string;
+  title?: string;
+  isPublished?: boolean;
+  isCollapsible?: boolean;
+  isCollapsed?: boolean;
+  isLoading?: boolean;
+  hasValidationErrors?: boolean;
+  onToggleCollapse?: () => void;
+  onRefresh?: () => void;
 }
 
 export function HeaderSection({
-  title,
-  handleRefresh,
-  setIsCollapsed,
-  isCollapsed,
-  needsExternalReview
+  contentId,
+  title = 'Metadata',
+  isPublished,
+  isCollapsible = false,
+  isCollapsed = false,
+  isLoading = false,
+  hasValidationErrors = false,
+  onToggleCollapse,
+  onRefresh
 }: HeaderSectionProps) {
   return (
-    <div className="flex items-center justify-between py-2">
-      <div className="flex items-center gap-2">
-        <h2 className="text-lg font-semibold">{title}</h2>
-        {needsExternalReview && (
-          <Badge variant="warning">Review Required</Badge>
-        )}
-      </div>
-      <div className="flex items-center gap-1">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={handleRefresh}
-          aria-label="Refresh metadata"
-        >
-          <RefreshCw className="h-4 w-4" />
-        </Button>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          aria-label="Toggle panel"
-        >
-          {isCollapsed ? (
-            <ChevronDown className="h-4 w-4" />
-          ) : (
-            <ChevronUp className="h-4 w-4" />
-          )}
-        </Button>
-      </div>
-    </div>
+    <Card className="border-b rounded-t-lg rounded-b-none">
+      <CardHeader className="py-3 px-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-medium flex items-center gap-2">
+            {title}
+            {isPublished && (
+              <Badge variant="outline" className="ml-2">Published</Badge>
+            )}
+          </CardTitle>
+          
+          <div className="flex gap-2">
+            {onRefresh && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={onRefresh}
+                disabled={isLoading}
+                className="h-8 w-8 p-0"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                <span className="sr-only">Refresh</span>
+              </Button>
+            )}
+            
+            {isCollapsible && onToggleCollapse && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={onToggleCollapse}
+                className="h-8 w-8 p-0"
+              >
+                <ExternalLink className={`h-4 w-4 ${isCollapsed ? 'rotate-180' : ''}`} />
+                <span className="sr-only">
+                  {isCollapsed ? 'Expand' : 'Collapse'}
+                </span>
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      
+      {hasValidationErrors && (
+        <Alert variant="destructive" className="mx-4 mb-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Some metadata fields have validation errors.
+          </AlertDescription>
+        </Alert>
+      )}
+    </Card>
   );
 }
-
-export default HeaderSection;

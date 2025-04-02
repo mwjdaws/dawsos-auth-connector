@@ -53,12 +53,12 @@ export function useZoomPan({
       .on('zoom', (event: d3.D3ZoomEvent<HTMLCanvasElement, unknown>) => {
         setTransform(event.transform);
         setZoomState({
-          zoom: event.transform.k,  // Use k instead of scale
+          zoom: event.transform.k,
           translateX: event.transform.x,
           translateY: event.transform.y
         });
         if (onZoomChange) {
-          onZoomChange(event.transform.k);  // Use k instead of scale
+          onZoomChange(event.transform.k);
         }
       });
 

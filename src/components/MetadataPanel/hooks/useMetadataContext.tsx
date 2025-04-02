@@ -4,7 +4,7 @@ import { Tag } from '@/types/tag';
 import { OntologyTerm } from '@/types/ontology';
 import { ValidationResult } from '@/utils/validation/types';
 
-interface MetadataContextValue {
+export interface MetadataContextValue {
   contentId: string;
   tags: Tag[];
   ontologyTerms?: OntologyTerm[];
@@ -18,6 +18,7 @@ interface MetadataContextValue {
   isLoading: boolean;
   error: Error | null;
   validationResult?: ValidationResult;
+  refetchAll?: () => void;
 }
 
 const MetadataContext = createContext<MetadataContextValue | undefined>(undefined);

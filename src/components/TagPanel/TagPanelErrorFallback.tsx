@@ -1,19 +1,43 @@
 
-import React from "react";
+import React from 'react';
+import { AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
-export function TagPanelErrorFallback() {
+interface TagPanelErrorFallbackProps {
+  error?: Error;
+  onRetry?: () => void;
+}
+
+export function TagPanelErrorFallback({
+  error,
+  onRetry
+}: TagPanelErrorFallbackProps) {
   return (
-    <div className="p-4 border border-red-300 bg-red-50 rounded-md">
-      <h3 className="text-red-700 font-medium mb-2">Something went wrong with the tag generator</h3>
-      <p className="text-sm text-red-600 mb-4">
-        We encountered an error while processing your request. Please try again or contact support.
-      </p>
-      <button 
-        onClick={() => window.location.reload()}
-        className="px-3 py-1 bg-red-100 text-red-700 rounded-md text-sm hover:bg-red-200 transition-colors"
-      >
-        Reload Page
-      </button>
-    </div>
+    <Card className="w-full border-destructive/50">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium flex items-center gap-2 text-destructive">
+          <AlertTriangle className="h-4 w-4" />
+          Tag Management Error
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground">
+          {error?.message || "An error occurred while loading tags. Please try again."}
+        </p>
+      </CardContent>
+      {onRetry && (
+        <CardFooter>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onRetry}
+            className="w-full"
+          >
+            Retry
+          </Button>
+        </CardFooter>
+      )}
+    </Card>
   );
 }
