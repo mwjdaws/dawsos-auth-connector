@@ -1,10 +1,10 @@
 
 /**
- * Tag Types
+ * Type definitions for tag-related functionality
  */
 
 /**
- * Tag interface representing a tag associated with content
+ * Tag information
  */
 export interface Tag {
   id: string;
@@ -12,52 +12,11 @@ export interface Tag {
   content_id: string;
   type_id: string | null;
   display_order: number;
-  type_name: string | null;
-  color?: string | null;
-  icon?: string | null;
+  type_name: string;
 }
 
 /**
- * Tag type for API operations
- */
-export interface TagDto {
-  id: string;
-  name: string;
-  content_id: string;
-  type_id: string | null;
-  display_order: number;
-}
-
-/**
- * Group of tags with the same type
- */
-export interface TagGroup {
-  typeName: string | null;
-  typeId: string | null;
-  tags: Tag[];
-  color?: string | null; 
-  icon?: string | null;
-}
-
-/**
- * Type for tag creation payloads
- */
-export interface CreateTagPayload {
-  name: string;
-  content_id: string;
-  type_id?: string | null;
-}
-
-/**
- * Type for tag deletion payloads
- */
-export interface DeleteTagPayload {
-  tagId: string;
-  contentId: string;
-}
-
-/**
- * Type for tag position in reordering
+ * Tag position for reordering
  */
 export interface TagPosition {
   id: string;
@@ -65,52 +24,83 @@ export interface TagPosition {
 }
 
 /**
- * Type for grouped tag display
+ * Tag group for displaying tags grouped by type
  */
-export interface TagDisplay {
-  name: string;
+export interface TagGroup {
   id: string;
-  typeId: string | null;
-  typeName?: string | null;
-  color?: string | null;
-  icon?: string | null;
+  name: string;
+  tags: Tag[];
 }
 
 /**
- * Result of a tag operation
+ * Sort tags by display_order
  */
-export interface TagOperationResult {
-  success: boolean;
-  tag?: Tag | null;
-  error?: string | null;
+export function sortTagsByDisplayOrder(tags: Tag[]): Tag[] {
+  return [...tags].sort((a, b) => a.display_order - b.display_order);
 }
 
 /**
- * Convert from API tag model to frontend Tag model
+ * Filter out duplicate tags based on ID
  */
-export function convertApiTagToTag(apiTag: any): Tag {
+export function filterDuplicateTags(tags: Tag[]): Tag[] {
+  const uniqueIds = new Set<string>();
+  return tags.filter(tag => {
+    if (uniqueIds.has(tag.id)) {
+      return false;
+    }
+    uniqueIds.add(tag.id);
+    return true;
+  });
+}
+
+/**
+ * Map API tag to internal Tag format
+ */
+export function mapApiTagToTag(apiTag: any): Tag {
   return {
     id: apiTag.id,
     name: apiTag.name,
     content_id: apiTag.content_id,
     type_id: apiTag.type_id,
     display_order: apiTag.display_order || 0,
-    type_name: apiTag.type_name || null,
-    color: apiTag.color || null,
-    icon: apiTag.icon || null
+    type_name: apiTag.tag_types?.name || ''
   };
 }
 
 /**
- * Convert a tag to a display tag for UI rendering
+ * Map API tags to internal Tag format
  */
-export function convertTagToTagDisplay(tag: Tag): TagDisplay {
+export function mapApiTagsToTags(apiTags: any[]): Tag[] {
+  return apiTags.map(mapApiTagToTag);
+}
+
+/**
+ * Ensure tag is not nullable
+ */
+export function ensureNonNullableTag(tag: Tag | null | undefined): Tag | null {
+  if (!tag) return null;
   return {
-    id: tag.id,
-    name: tag.name,
-    typeId: tag.type_id,
-    typeName: tag.type_name || null,
-    color: tag.color || null,
-    icon: tag.icon || null
+    ...tag,
+    type_id: tag.type_id || null,
+    type_name: tag.type_name || ''
   };
+}
+
+/**
+ * Convert tag positions to tags
+ */
+export function convertTagPositionsToTags(
+  positions: TagPosition[], 
+  existingTags: Tag[]
+): Tag[] {
+  return positions.map(position => {
+    const matchingTag = existingTags.find(tag => tag.id === position.id);
+    if (!matchingTag) {
+      throw new Error(`Tag with ID ${position.id} not found in existing tags`);
+    }
+    return {
+      ...matchingTag,
+      display_order: position.position
+    };
+  });
 }

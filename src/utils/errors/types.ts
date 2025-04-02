@@ -1,9 +1,13 @@
 
 /**
  * Error handling type definitions
+ * 
+ * This file contains type definitions for the error handling system.
  */
 
-// Error levels for categorizing errors
+/**
+ * Error severity level
+ */
 export enum ErrorLevel {
   Debug = 'debug',
   Info = 'info',
@@ -12,93 +16,97 @@ export enum ErrorLevel {
   Critical = 'critical'
 }
 
-// Error sources for identifying where errors originated
+/**
+ * Error source categories
+ */
 export enum ErrorSource {
   Unknown = 'unknown',
-  UI = 'ui',
+  User = 'user',
   Component = 'component',
   Hook = 'hook',
+  Service = 'service',
   API = 'api',
   Database = 'database',
-  Authentication = 'authentication',
-  Authorization = 'authorization',
-  Validation = 'validation',
-  External = 'external',
   Network = 'network',
+  Auth = 'auth',
+  Storage = 'storage',
+  Edge = 'edge',
   System = 'system',
-  Service = 'service'
+  External = 'external',
+  Validation = 'validation'
 }
 
-// Options for error handling
+/**
+ * Options for error handling
+ */
 export interface ErrorHandlingOptions {
-  // Core properties
-  level?: ErrorLevel;
-  source?: ErrorSource;
+  /**
+   * The severity level of the error
+   */
+  level: ErrorLevel;
+
+  /**
+   * The source category of the error
+   */
+  source: ErrorSource;
+
+  /**
+   * A user-friendly message describing the error
+   */
   message: string;
+
+  /**
+   * Additional context about the error (for logging and debugging)
+   */
   context?: Record<string, any>;
-  
-  // Reporting options
+
+  /**
+   * Whether to report the error to analytics services
+   */
   reportToAnalytics?: boolean;
+
+  /**
+   * Whether to show a toast notification for the error
+   */
   showToast?: boolean;
+
+  /**
+   * Override to suppress toast even if showToast is true
+   * Useful for preventing duplicate notifications
+   */
   suppressToast?: boolean;
-  
-  // Additional options
+
+  /**
+   * Whether to suppress all notifications and logging
+   */
   silent?: boolean;
+
+  /**
+   * Optional ID for the toast notification
+   */
   toastId?: string;
+
+  /**
+   * Optional custom title for the toast notification
+   */
   toastTitle?: string;
+
+  /**
+   * Unique fingerprint for error deduplication
+   */
   fingerprint?: string;
+
+  /**
+   * The original error object
+   */
   originalError?: Error;
 }
 
-// Basic validation result interface
-export interface ValidationResult {
-  isValid: boolean;
-  errorMessage: string | null;
-  resultType: string;
-}
-
-// Content ID validation specific result
-export interface ContentIdValidationResult extends ValidationResult {
-  contentId: string | null;
-}
-
-// Tag validation specific result
-export interface TagValidationResult extends ValidationResult {
-  // Tag specific validation properties can be added here
-}
-
-// Helper functions to create validation results
-export function createValidationResult(
-  isValid: boolean,
-  errorMessage: string | null
-): ValidationResult {
-  return {
-    isValid,
-    errorMessage,
-    resultType: 'generic'
-  };
-}
-
-export function createContentIdValidationResult(
-  isValid: boolean,
-  errorMessage: string | null,
-  contentId: string | null
-): ContentIdValidationResult {
-  return {
-    isValid,
-    errorMessage,
-    contentId,
-    resultType: 'contentId'
-  };
-}
-
-export function createTagValidationResult(
-  isValid: boolean,
-  errorMessage: string | null
-): TagValidationResult {
-  return {
-    isValid,
-    errorMessage,
-    resultType: 'tag'
-  };
+/**
+ * Contextual error with additional metadata
+ */
+export interface ContextualError extends Error {
+  context?: Record<string, any>;
+  source?: ErrorSource;
+  level?: ErrorLevel;
 }

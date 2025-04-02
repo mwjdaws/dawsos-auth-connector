@@ -40,8 +40,10 @@ export function useValidatedTagOperations({ contentId }: UseValidatedTagOperatio
     if (!isValidContent) {
       handleError(
         new Error(errorMessage || 'Invalid content ID'),
-        errorMessage || 'Cannot add tag: invalid content ID',
-        { level: ErrorLevel.WARNING }
+        {
+          message: errorMessage || 'Cannot add tag: invalid content ID',
+          level: ErrorLevel.Warning
+        }
       );
       return;
     }
@@ -51,8 +53,10 @@ export function useValidatedTagOperations({ contentId }: UseValidatedTagOperatio
     if (!validation.isValid) {
       handleError(
         new Error(validation.errorMessage || 'Invalid tag'),
-        validation.errorMessage || 'Invalid tag',
-        { level: ErrorLevel.WARNING }
+        {
+          message: validation.errorMessage || 'Invalid tag',
+          level: ErrorLevel.Warning
+        }
       );
       return;
     }
@@ -68,8 +72,10 @@ export function useValidatedTagOperations({ contentId }: UseValidatedTagOperatio
     if (!isValidContent) {
       handleError(
         new Error(errorMessage || 'Invalid content ID'),
-        errorMessage || 'Cannot delete tag: invalid content ID',
-        { level: ErrorLevel.WARNING }
+        {
+          message: errorMessage || 'Cannot delete tag: invalid content ID',
+          level: ErrorLevel.Warning
+        }
       );
       return;
     }
@@ -84,8 +90,10 @@ export function useValidatedTagOperations({ contentId }: UseValidatedTagOperatio
     if (!isValidContent) {
       handleError(
         new Error(errorMessage || 'Invalid content ID'),
-        errorMessage || 'Cannot reorder tags: invalid content ID',
-        { level: ErrorLevel.WARNING }
+        {
+          message: errorMessage || 'Cannot reorder tags: invalid content ID',
+          level: ErrorLevel.Warning
+        }
       );
       return;
     }

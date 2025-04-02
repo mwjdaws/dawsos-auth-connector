@@ -87,8 +87,10 @@ export const usePublishHandler = ({ user }: UsePublishHandlerProps) => {
       console.error("Error checking published content:", error);
       errorHandler(
         error,
-        "There was an error verifying the published status. The content may still be published.",
-        { level: ErrorLevel.WARNING }
+        {
+          message: "There was an error verifying the published status. The content may still be published.",
+          level: ErrorLevel.Warning
+        }
       );
     }
   }, [user]);

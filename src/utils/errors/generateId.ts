@@ -1,3 +1,4 @@
+
 /**
  * Error ID generation utilities
  * 
@@ -107,4 +108,23 @@ function hashString(str: string): string {
  */
 export function generateUniqueErrorId(): string {
   return `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+/**
+ * Alias for generateFingerprint for backward compatibility
+ */
+export const generateErrorFingerprint = generateFingerprint;
+
+/**
+ * Generate a short unique identifier
+ */
+export function generateShortId(): string {
+  return Math.random().toString(36).substring(2, 10);
+}
+
+/**
+ * Generate an error ID for tracking purposes
+ */
+export function generateErrorId(): string {
+  return `err_${Date.now()}_${generateShortId()}`;
 }

@@ -54,11 +54,10 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
     try {
       await fetchTags();
     } catch (err) {
-      handleError(
-        err,
-        "Failed to refresh tags",
-        { level: ErrorLevel.Warning }
-      );
+      handleError(err, {
+        message: "Failed to refresh tags",
+        level: ErrorLevel.Warning
+      });
     }
   }, [fetchTags]);
   
@@ -74,8 +73,10 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
     if (newTag.trim().length < 2) {
       handleError(
         new Error('Tag must be at least 2 characters long'),
-        'Tag must be at least 2 characters long',
-        { level: ErrorLevel.Warning }
+        {
+          message: 'Tag must be at least 2 characters long',
+          level: ErrorLevel.Warning
+        }
       );
       return;
     }
@@ -91,11 +92,10 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
         setNewTag('');
       }
     } catch (err) {
-      handleError(
-        err,
-        "Failed to add tag",
-        { level: ErrorLevel.Warning }
-      );
+      handleError(err, {
+        message: "Failed to add tag",
+        level: ErrorLevel.Warning
+      });
     }
   };
   
@@ -108,11 +108,10 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
     try {
       await deleteTag({ tagId, contentId });
     } catch (err) {
-      handleError(
-        err,
-        "Failed to delete tag",
-        { level: ErrorLevel.Warning }
-      );
+      handleError(err, {
+        message: "Failed to delete tag",
+        level: ErrorLevel.Warning
+      });
     }
   };
   
@@ -132,11 +131,10 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
     try {
       await reorderTags(tagPositions);
     } catch (err) {
-      handleError(
-        err,
-        "Failed to reorder tags",
-        { level: ErrorLevel.Warning }
-      );
+      handleError(err, {
+        message: "Failed to reorder tags",
+        level: ErrorLevel.Warning
+      });
     }
   };
   

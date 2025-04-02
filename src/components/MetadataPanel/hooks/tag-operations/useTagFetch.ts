@@ -64,11 +64,10 @@ export const useTagFetch = ({
       
       setTags(formattedTags);
     } catch (err) {
-      handleError(
-        err,
-        `Failed to fetch tags for content: ${contentId}`,
-        { level: ErrorLevel.Warning } // Changed from WARNING to Warning
-      );
+      handleError(err, {
+        message: `Failed to fetch tags for content: ${contentId}`,
+        level: ErrorLevel.Warning
+      });
       setError(err instanceof Error ? err : new Error(String(err)));
       setTags([]);
     } finally {

@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCcw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { handleError } from "@/utils/error-handling";
-import { ErrorLevel } from "@/utils/errors/types";
+import { handleError, ErrorLevel } from "@/utils/errors";
 
 /**
  * Props for the DashboardHeader component
@@ -54,11 +53,10 @@ export function DashboardHeader({
         description: "Your dashboard statistics have been updated",
       });
     } catch (error) {
-      handleError(
-        error,
-        "Failed to refresh statistics",
-        { level: ErrorLevel.Error }
-      );
+      handleError(error, {
+        message: "Failed to refresh statistics",
+        level: ErrorLevel.Error
+      });
     } finally {
       setIsRefreshingStats(false);
     }

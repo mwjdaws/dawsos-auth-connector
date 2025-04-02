@@ -6,12 +6,19 @@
  * It exports functions for handling errors with different contexts and options.
  */
 import { toast } from '@/hooks/use-toast';
-import { ErrorLevel, ErrorSource, ErrorHandlingOptions, ContextualError } from './types';
+import { ErrorLevel, ErrorSource, ErrorHandlingOptions } from './types';
 import { formatErrorMessage, getUserFriendlyMessage } from './format';
 import { categorizeError } from './categorize';
 import { convertErrorOptions } from './compatibility';
 import { isErrorDuplicate, storeErrorFingerprint } from './deduplication';
 import { generateFingerprint } from './generateId';
+
+// Interface for errors with additional context
+interface ContextualError extends Error {
+  context?: Record<string, any>;
+  source?: ErrorSource;
+  level?: ErrorLevel;
+}
 
 // Default error options
 const DEFAULT_OPTIONS: Partial<ErrorHandlingOptions> = {
@@ -37,10 +44,10 @@ export function handleError(
     const convertedOptions = convertErrorOptions(options);
     
     // Merge with default options
-    const fullOptions: ErrorHandlingOptions = {
+    const fullOptions = {
       ...DEFAULT_OPTIONS,
       ...convertedOptions
-    };
+    } as ErrorHandlingOptions;
     
     // If source is not specified, try to categorize the error
     if (fullOptions.source === ErrorSource.Unknown) {
@@ -63,16 +70,15 @@ export function handleError(
     
     // Show toast notification unless suppressed
     if (fullOptions.showToast && !fullOptions.suppressToast && !fullOptions.silent) {
-      const toastTitle = fullOptions.toastTitle || getUserFriendlyMessage(fullOptions.level);
-      const toastMessage = formatErrorMessage(error, fullOptions.message);
+      const toastTitle = fullOptions.toastTitle || getUserFriendlyMessage(fullOptions.level || ErrorLevel.Error);
+      const toastMessage = formatErrorMessage(error, fullOptions.message || '');
       
       toast({
         title: toastTitle,
         description: toastMessage,
-        variant: fullOptions.level === ErrorLevel.Error || 
-                 fullOptions.level === ErrorLevel.Critical 
-                 ? 'destructive' : 'default',
-        id: fullOptions.toastId
+        variant: (fullOptions.level === ErrorLevel.Error || 
+                 fullOptions.level === ErrorLevel.Critical) 
+                 ? 'destructive' : 'default'
       });
     }
     
