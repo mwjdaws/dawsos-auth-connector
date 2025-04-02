@@ -1,87 +1,98 @@
+
 /**
  * Error deduplication utilities
+ * 
+ * These utilities help prevent duplicate error messages from being shown to users
+ * by tracking error fingerprints and only showing each unique error once within
+ * a certain time period.
  */
 import { ErrorHandlingOptions } from './types';
-import { generateErrorFingerprint } from './generateId';
 
-// Store seen error fingerprints with a TTL (5 minutes)
-const seenErrors = new Map<string, number>();
-const ERROR_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+// In-memory store for recent error fingerprints with TTL
+const recentErrorFingerprints: Map<string, number> = new Map();
+
+// Default expiration time for fingerprints (5 seconds)
+const DEFAULT_FINGERPRINT_TTL = 5000;
 
 /**
- * Check if an error has been seen before
- * 
- * @param fingerprint The error fingerprint to check
- * @returns Whether the error has been seen before
+ * Check if an error with the same fingerprint was recently reported
  */
 export function isErrorDuplicate(fingerprint: string): boolean {
-  // Check if the fingerprint exists and hasn't expired
-  if (seenErrors.has(fingerprint)) {
-    const expiryTime = seenErrors.get(fingerprint);
-    if (expiryTime && expiryTime > Date.now()) {
-      return true;
-    }
-    // Expired entry, remove it
-    seenErrors.delete(fingerprint);
-  }
-  return false;
-}
-
-/**
- * Store an error fingerprint to prevent duplicate reporting
- * 
- * @param fingerprint The error fingerprint to store
- */
-export function storeErrorFingerprint(fingerprint: string): void {
-  // Store with expiry time
-  seenErrors.set(fingerprint, Date.now() + ERROR_TTL);
+  if (!fingerprint) return false;
   
-  // Cleanup old entries (optional, can be done less frequently in production)
-  cleanupExpiredErrors();
+  const expiration = recentErrorFingerprints.get(fingerprint);
+  if (!expiration) return false;
+  
+  // Check if the fingerprint has expired
+  if (expiration < Date.now()) {
+    recentErrorFingerprints.delete(fingerprint);
+    return false;
+  }
+  
+  return true;
 }
 
 /**
- * Generate a fingerprint for an error
+ * Store an error fingerprint to prevent duplicates
  * 
- * @param error The error to fingerprint
- * @param context Additional context
- * @returns A unique fingerprint for the error
+ * @param fingerprint The error fingerprint
+ * @param ttl Time to live in milliseconds (default 5 seconds)
  */
-export function generateFingerprint(
-  error: Error | unknown,
-  options?: Partial<ErrorHandlingOptions>
-): string {
-  // If a fingerprint is provided in options, use it
+export function storeErrorFingerprint(fingerprint: string, ttl: number = DEFAULT_FINGERPRINT_TTL): void {
+  if (!fingerprint) return;
+  
+  // Set expiration time
+  const expirationTime = Date.now() + ttl;
+  recentErrorFingerprints.set(fingerprint, expirationTime);
+  
+  // Schedule cleanup to prevent memory leaks
+  setTimeout(() => {
+    recentErrorFingerprints.delete(fingerprint);
+  }, ttl);
+}
+
+/**
+ * Clear all stored error fingerprints
+ */
+export function clearSeenErrors(): void {
+  recentErrorFingerprints.clear();
+}
+
+/**
+ * Generate a fingerprint for error deduplication
+ * 
+ * @param error The error to generate a fingerprint for
+ * @param options Additional options that may influence the fingerprint
+ * @returns A string fingerprint
+ */
+export function generateFingerprint(error: unknown, options?: Partial<ErrorHandlingOptions>): string {
+  // If a fingerprint is explicitly provided, use it
   if (options?.fingerprint) {
     return options.fingerprint;
   }
   
-  // Otherwise generate a fingerprint based on the error
+  // For Error objects, use name, message and first stack line
   if (error instanceof Error) {
-    return generateErrorFingerprint(error, options?.context);
+    const stackLine = error.stack?.split('\n')[1]?.trim() || '';
+    return `${error.name}:${error.message}:${stackLine}`;
   }
   
-  // For non-Error objects, create a simple hash
-  const errorString = typeof error === 'string' ? error : JSON.stringify(error);
-  return `err_${errorString.substring(0, 100).replace(/\s+/g, '_')}`;
-}
-
-/**
- * Clean up expired error entries
- */
-function cleanupExpiredErrors(): void {
-  const now = Date.now();
-  seenErrors.forEach((expiryTime, fingerprint) => {
-    if (expiryTime <= now) {
-      seenErrors.delete(fingerprint);
-    }
-  });
-}
-
-/**
- * Clear all seen errors
- * This is useful for testing or when context changes
- */
-export function clearSeenErrors(): void {
-  seenErrors.clear();
+  // For strings, use the string itself
+  if (typeof error === 'string') {
+    return error;
+  }
+  
+  // For user-provided messages, use that
+  if (options?.message) {
+    return options.message;
+  }
+  
+  // Fallback: combine error and context into a string
+  try {
+    const errorStr = String(error);
+    const contextStr = options?.context ? JSON.stringify(options.context) : '';
+    return `${errorStr}:${contextStr}`;
+  } catch (e) {
+    return `unknown-error-${Date.now()}`;
+  }
 }

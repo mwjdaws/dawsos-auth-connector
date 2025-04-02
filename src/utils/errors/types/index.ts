@@ -1,87 +1,63 @@
 
 /**
- * Error Handling Types
- * 
- * Centralized type definitions for the error handling system
+ * Error handling types
  */
 
-// Error severity levels
+/**
+ * Error severity levels
+ */
 export enum ErrorLevel {
-  Debug = "debug",
-  Info = "info",
-  Warning = "warning",
-  Error = "error",
-  Critical = "critical"
+  Debug = 'debug',
+  Info = 'info',
+  Warning = 'warning',
+  Error = 'error',
+  Critical = 'critical'
 }
 
-// Source of errors for categorization
+/**
+ * Error sources
+ */
 export enum ErrorSource {
-  // Core sources
-  Unknown = "unknown",
-  Database = "database",
-  API = "api",
-  User = "user",
-  System = "system",
-  App = "app",
-  
-  // More specific sources
-  Utils = "utils",
-  Component = "component",
-  Hook = "hook",
-  Service = "service",
-  
-  // Specialized sources for better categorization
-  Authentication = "auth",
-  Storage = "storage",
-  Validation = "validation",
-  External = "external",
-  
-  // Legacy API compatibility
-  Network = "network",
-  Auth = "auth", 
-  Server = "server",
-  UI = "ui"
+  Unknown = 'unknown',
+  User = 'user',
+  Application = 'application',
+  Component = 'component',
+  Hook = 'hook',
+  API = 'api',
+  Database = 'database',
+  Network = 'network',
+  Validation = 'validation',
+  Service = 'service'
 }
 
-// Core error handling options
+/**
+ * Error handling options
+ */
 export interface ErrorHandlingOptions {
-  level?: ErrorLevel;
-  source?: ErrorSource;
-  message?: string;
+  // Error metadata
+  level: ErrorLevel;
+  source: ErrorSource;
+  message: string;
   context?: Record<string, any>;
-  reportToAnalytics?: boolean;
-  showToast?: boolean;
+  fingerprint?: string;
+  
+  // Behavior flags
   silent?: boolean;
+  showToast?: boolean;
+  suppressToast?: boolean;
+  toastId?: string;
   toastTitle?: string;
-  fingerprint?: string;
-  // New options
-  suppressToast?: boolean;
-  toastId?: string;
-  technical?: boolean;
-  originalError?: any;
+  
+  // Reporting options
+  reportToAnalytics?: boolean;
 }
 
-// Legacy format error handling options for backward compatibility
-export interface LegacyErrorHandlingOptions {
-  level?: string;
-  source?: string;
-  message?: string;
-  shouldReport?: boolean;
-  showToast?: boolean;
-  silent?: boolean;
-  technical?: boolean;
+/**
+ * Error with additional context
+ */
+export interface ContextualError extends Error {
   context?: Record<string, any>;
-  fingerprint?: string;
-  suppressToast?: boolean;
-  toastId?: string;
-  originalError?: any;
+  source?: ErrorSource;
+  level?: ErrorLevel;
 }
 
-// Default error options
-export const defaultErrorOptions: ErrorHandlingOptions = {
-  level: ErrorLevel.Error,
-  source: ErrorSource.Unknown,
-  reportToAnalytics: true,
-  showToast: true,
-  silent: false
-};

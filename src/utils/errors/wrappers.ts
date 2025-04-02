@@ -1,70 +1,116 @@
 
+/**
+ * Error handler wrappers
+ * 
+ * These utilities provide convenient ways to wrap functions with error handling.
+ */
 import { handleError } from './handle';
 import { ErrorHandlingOptions, ErrorLevel, ErrorSource } from './types';
-import { compatibleErrorOptions } from './compatibility';
 
 /**
- * Creates an error handler specifically for component usage
+ * Wrap a function with error handling
  * 
- * @param componentName The name of the component for context
- * @returns A function to handle errors in that component
+ * @param fn The function to wrap
+ * @param options Error handling options
+ * @returns A wrapped function with error handling
  */
-export function createComponentErrorHandler(componentName: string) {
-  return (error: unknown, message = 'Error in component', options?: Partial<ErrorHandlingOptions>) => {
-    // Apply compatibility fixes to options
-    const compatOptions = compatibleErrorOptions(options);
-    
-    handleError(error, message, {
-      context: { 
-        component: componentName,
-        ...compatOptions?.context
-      },
-      level: compatOptions?.level || ErrorLevel.Error,
-      ...compatOptions
-    });
+export function withErrorHandling<T extends (...args: any[]) => any>(
+  fn: T,
+  options: Partial<ErrorHandlingOptions> | string
+): (...args: Parameters<T>) => ReturnType<T> | undefined {
+  // Convert string options to object
+  const errorOptions = typeof options === 'string' 
+    ? { message: options } 
+    : options;
+  
+  // Return wrapped function
+  return (...args: Parameters<T>): ReturnType<T> | undefined => {
+    try {
+      return fn(...args);
+    } catch (error) {
+      handleError(error, {
+        ...errorOptions,
+        context: {
+          ...(errorOptions.context || {}),
+          functionName: fn.name,
+          arguments: args
+        }
+      });
+      return undefined;
+    }
   };
 }
 
 /**
- * Creates an error handler specifically for hook usage
+ * Wrap an async function with error handling
  * 
- * @param hookName The name of the hook for context
- * @returns A function to handle errors in that hook
+ * @param fn The async function to wrap
+ * @param options Error handling options
+ * @returns A wrapped async function with error handling
  */
-export function createHookErrorHandler(hookName: string) {
-  return (error: unknown, message = 'Error in hook', options?: Partial<ErrorHandlingOptions>) => {
-    // Apply compatibility fixes to options
-    const compatOptions = compatibleErrorOptions(options);
-    
-    handleError(error, message, {
-      context: { 
-        hook: hookName,
-        ...compatOptions?.context
-      },
-      level: compatOptions?.level || ErrorLevel.Error,
-      ...compatOptions
-    });
+export function withAsyncErrorHandling<T extends (...args: any[]) => Promise<any>>(
+  fn: T,
+  options: Partial<ErrorHandlingOptions> | string
+): (...args: Parameters<T>) => Promise<Awaited<ReturnType<T>> | undefined> {
+  // Convert string options to object
+  const errorOptions = typeof options === 'string' 
+    ? { message: options } 
+    : options;
+  
+  // Return wrapped async function
+  return async (...args: Parameters<T>): Promise<Awaited<ReturnType<T>> | undefined> => {
+    try {
+      return await fn(...args);
+    } catch (error) {
+      handleError(error, {
+        ...errorOptions,
+        context: {
+          ...(errorOptions.context || {}),
+          functionName: fn.name,
+          arguments: args
+        }
+      });
+      return undefined;
+    }
   };
 }
 
 /**
- * Creates an error handler specifically for service usage
- * 
- * @param serviceName The name of the service for context
- * @returns A function to handle errors in that service
+ * Wrap a component with error handling
  */
-export function createServiceErrorHandler(serviceName: string) {
-  return (error: unknown, message = 'Service error', options?: Partial<ErrorHandlingOptions>) => {
-    // Apply compatibility fixes to options
-    const compatOptions = compatibleErrorOptions(options);
-    
-    handleError(error, message, {
-      context: { 
-        service: serviceName,
-        ...compatOptions?.context
-      },
-      level: compatOptions?.level || ErrorLevel.Error,
-      ...compatOptions
-    });
+export function withComponentErrorHandling<T extends React.ComponentType<any>>(
+  Component: T,
+  options: Partial<ErrorHandlingOptions> | string
+): T {
+  // Convert string options to object
+  const errorOptions = typeof options === 'string' 
+    ? { message: options } 
+    : options;
+  
+  const displayName = Component.displayName || Component.name || 'Component';
+  
+  // Apply context/source defaults if not provided
+  const fullOptions = {
+    source: ErrorSource.Component,
+    ...errorOptions,
+    context: {
+      componentName: displayName,
+      ...(errorOptions.context || {})
+    }
   };
+  
+  // Create wrapped component with same type as original
+  const WrappedComponent = (props: any) => {
+    try {
+      return <Component {...props} />;
+    } catch (error) {
+      handleError(error, fullOptions);
+      return null;
+    }
+  };
+  
+  // Preserve display name for DevTools
+  WrappedComponent.displayName = `withErrorHandling(${displayName})`;
+  
+  return WrappedComponent as T;
 }

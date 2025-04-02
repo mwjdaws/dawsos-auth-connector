@@ -2,11 +2,20 @@
 /**
  * Error formatting utilities
  */
+import { ErrorLevel } from './types';
 
 /**
  * Format an error message for display
+ * 
+ * @param error The error object 
+ * @param userMessage Optional user-friendly message
+ * @returns Formatted error message string
  */
-export function formatErrorMessage(error: unknown): string {
+export function formatErrorMessage(error: unknown, userMessage?: string): string {
+  if (userMessage) {
+    return userMessage;
+  }
+  
   if (error instanceof Error) {
     return error.message;
   }
@@ -19,44 +28,32 @@ export function formatErrorMessage(error: unknown): string {
 }
 
 /**
- * Format a technical error message for developers
+ * Format a technical error message for logging
  */
 export function formatTechnicalError(error: unknown): string {
   if (error instanceof Error) {
-    return `${error.name}: ${error.message}\nStack: ${error.stack || 'No stack trace available'}`;
+    return `${error.name}: ${error.message}${error.stack ? `\n${error.stack}` : ''}`;
   }
   
-  return `Technical error: ${JSON.stringify(error)}`;
+  return String(error);
 }
 
 /**
- * Get a user-friendly error message
+ * Get user-friendly message based on error level
  */
-export function getUserFriendlyMessage(error: unknown): string {
-  // Map common error types to user-friendly messages
-  if (error instanceof Error) {
-    // Network errors
-    if (error.message.includes('network') || error.message.includes('connection')) {
-      return 'There was a problem with your internet connection. Please check your connection and try again.';
-    }
-    
-    // Authentication errors
-    if (error.message.includes('authentication') || error.message.includes('auth') || 
-        error.message.includes('login') || error.message.includes('permission')) {
-      return 'You may need to sign in again to continue. Please refresh the page and try again.';
-    }
-    
-    // Timeout errors
-    if (error.message.includes('timeout') || error.message.includes('timed out')) {
-      return 'The operation took too long to complete. Please try again later.';
-    }
-    
-    // Server errors
-    if (error.message.includes('server') || error.message.includes('500')) {
-      return 'There was a problem on our end. We\'re working to fix it. Please try again later.';
-    }
+export function getUserFriendlyMessage(level: ErrorLevel): string {
+  switch (level) {
+    case ErrorLevel.Debug:
+      return 'Debug information';
+    case ErrorLevel.Info:
+      return 'Information';
+    case ErrorLevel.Warning:
+      return 'Warning';
+    case ErrorLevel.Error:
+      return 'An error occurred';
+    case ErrorLevel.Critical:
+      return 'A critical error occurred';
+    default:
+      return 'An error occurred';
   }
-  
-  // Default friendly message
-  return 'Something went wrong. Please try again or contact support if the problem persists.';
 }
