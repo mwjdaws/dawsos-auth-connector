@@ -41,7 +41,7 @@ const MetadataPanel = ({
     handleRefresh
   } = useMetadataPanel({
     contentId,
-    onMetadataChange,
+    onMetadataChange: onMetadataChange || (() => {}),
     isCollapsible,
     initialCollapsed
   });

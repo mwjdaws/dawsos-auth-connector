@@ -1,3 +1,4 @@
+
 import { toast } from '@/hooks/use-toast';
 
 /**
@@ -38,7 +39,7 @@ export enum ErrorSource {
 export interface ErrorHandlingOptions {
   level?: ErrorLevel;
   source?: ErrorSource;
-  message?: string;
+  message: string;
   context?: Record<string, any>;
   reportToAnalytics?: boolean;
   showToast?: boolean;

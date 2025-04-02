@@ -1,22 +1,16 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Tag } from '@/types/tag';
+import { X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tag, TagGroup } from '@/types/tag';
-import { X, Tag as TagIcon, Plus } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { TagGroup, GroupedTagListProps } from './types';
 
-export interface GroupedTagListProps {
-  tags: Tag[];
-  groups: TagGroup[];
-  editable?: boolean;
-  onTagClick?: (tag: Tag) => void;
-  onTagDelete?: (tagId: string) => void;
-  isLoading?: boolean;
-  emptyMessage?: string;
-}
-
+/**
+ * GroupedTagList Component
+ * 
+ * Displays tags grouped by type or category
+ */
 export function GroupedTagList({
   tags,
   groups,
@@ -24,93 +18,173 @@ export function GroupedTagList({
   onTagClick,
   onTagDelete,
   isLoading = false,
-  emptyMessage = "No tags available"
+  emptyMessage = 'No tags found'
 }: GroupedTagListProps) {
-  // Helper to render a tag badge
-  const renderTag = (tag: Tag) => (
-    <div key={tag.id} className="flex items-center">
-      <Badge
-        variant={tag.color ? "outline" : "secondary"}
-        className={cn(
-          "mr-1 mb-1",
-          tag.color && `border-${tag.color}-400 text-${tag.color}-600 bg-${tag.color}-50`,
-          "hover:bg-accent cursor-pointer"
-        )}
-        onClick={() => onTagClick?.(tag)}
-      >
-        {tag.name}
-        {editable && onTagDelete && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-4 w-4 p-0 ml-1 hover:bg-transparent"
-            onClick={(e) => {
-              e.stopPropagation();
-              onTagDelete(tag.id);
-            }}
-          >
-            <X className="h-3 w-3" />
-            <span className="sr-only">Remove {tag.name}</span>
-          </Button>
-        )}
-      </Badge>
-    </div>
-  );
-
-  // Show loading state
-  if (isLoading) {
+  // If no groups are provided or the groups array is empty, just render all tags
+  if (!groups || groups.length === 0) {
     return (
-      <div className="flex flex-wrap mt-1">
-        {Array(4).fill(0).map((_, index) => (
-          <Skeleton key={index} className="h-5 w-16 mr-1 mb-1 rounded-full" />
-        ))}
+      <div className="space-y-4">
+        {isLoading ? (
+          <div className="animate-pulse space-y-2">
+            <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+            <div className="h-8 bg-gray-200 rounded"></div>
+          </div>
+        ) : tags.length === 0 ? (
+          <p className="text-sm text-gray-500">{emptyMessage}</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <TagBadge
+                key={tag.id}
+                tag={tag}
+                editable={editable}
+                onTagClick={onTagClick}
+                onTagDelete={onTagDelete}
+              />
+            ))}
+          </div>
+        )}
       </div>
     );
   }
 
-  // Show empty state
-  if ((!tags || tags.length === 0) && (!groups || groups.length === 0)) {
-    return (
-      <div className="mt-2 text-sm text-muted-foreground">{emptyMessage}</div>
-    );
-  }
-
-  // Determine if we should use groups or flat tags
-  const useGroups = groups && groups.length > 0;
-  const ungroupedTags = useGroups 
-    ? tags.filter(tag => !groups.some(group => group.tags.some(t => t.id === tag.id)))
-    : tags;
+  // Group tags by their type_id
+  const tagsByGroup: Record<string, Tag[]> = {};
+  
+  // Initialize groups with empty arrays
+  groups.forEach((group) => {
+    tagsByGroup[group.id] = [];
+  });
+  
+  // Add "Uncategorized" for tags without a type
+  tagsByGroup["uncategorized"] = [];
+  
+  // Sort tags into their respective groups
+  tags.forEach((tag) => {
+    if (tag.type_id && tagsByGroup[tag.type_id]) {
+      tagsByGroup[tag.type_id].push(tag);
+    } else {
+      tagsByGroup["uncategorized"].push(tag);
+    }
+  });
 
   return (
-    <div className="mt-1">
-      {/* Render grouped tags */}
-      {useGroups && groups.map(group => (
-        group.tags.length > 0 && (
-          <div key={group.id} className="mb-2">
-            <div className="flex items-center text-xs text-muted-foreground mb-1">
-              <TagIcon className="h-3 w-3 mr-1" />
-              <span>{group.name}</span>
-            </div>
-            <div className="flex flex-wrap">
-              {group.tags.map(renderTag)}
-            </div>
-          </div>
-        )
-      ))}
-
-      {/* Render ungrouped tags */}
-      {ungroupedTags.length > 0 && (
-        <div className={useGroups ? "mt-2" : "mt-1"}>
-          {useGroups && (
-            <div className="text-xs text-muted-foreground mb-1">
-              <span>Other Tags</span>
+    <div className="space-y-6">
+      {isLoading ? (
+        <div className="animate-pulse space-y-4">
+          <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-8 bg-gray-200 rounded"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-8 bg-gray-200 rounded"></div>
+        </div>
+      ) : (
+        <>
+          {/* Render each group */}
+          {groups.map((group) => {
+            const groupTags = tagsByGroup[group.id] || [];
+            if (groupTags.length === 0) return null;
+            
+            return (
+              <div key={group.id} className="space-y-2">
+                <h3 className="text-sm font-medium">{group.name}</h3>
+                <div className="flex flex-wrap gap-2">
+                  {groupTags.map((tag) => (
+                    <TagBadge
+                      key={tag.id}
+                      tag={tag}
+                      editable={editable}
+                      onTagClick={onTagClick}
+                      onTagDelete={onTagDelete}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          
+          {/* Render uncategorized tags */}
+          {tagsByGroup["uncategorized"].length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Uncategorized</h3>
+              <div className="flex flex-wrap gap-2">
+                {tagsByGroup["uncategorized"].map((tag) => (
+                  <TagBadge
+                    key={tag.id}
+                    tag={tag}
+                    editable={editable}
+                    onTagClick={onTagClick}
+                    onTagDelete={onTagDelete}
+                  />
+                ))}
+              </div>
             </div>
           )}
-          <div className="flex flex-wrap">
-            {ungroupedTags.map(renderTag)}
-          </div>
-        </div>
+          
+          {/* Show empty message if no tags */}
+          {tags.length === 0 && (
+            <p className="text-sm text-gray-500">{emptyMessage}</p>
+          )}
+        </>
       )}
     </div>
   );
 }
+
+// Helper component for rendering individual tag badges
+function TagBadge({
+  tag,
+  editable,
+  onTagClick,
+  onTagDelete
+}: {
+  tag: Tag;
+  editable?: boolean;
+  onTagClick?: (tag: Tag) => void;
+  onTagDelete?: (tagId: string) => void;
+}) {
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  
+  const handleClick = () => {
+    if (onTagClick) onTagClick(tag);
+  };
+  
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onTagDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await onTagDelete(tag.id);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+  
+  return (
+    <Badge
+      variant="secondary"
+      className={`cursor-pointer flex items-center ${onTagClick ? 'hover:bg-gray-200' : ''}`}
+      onClick={handleClick}
+    >
+      {tag.name}
+      {editable && onTagDelete && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleDelete}
+          disabled={isDeleting}
+          className="h-4 w-4 p-0 ml-1 hover:bg-gray-300 rounded-full"
+        >
+          {isDeleting ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <X className="h-3 w-3" />
+          )}
+        </Button>
+      )}
+    </Badge>
+  );
+}
+
+// Export as both default and named export for compatibility
+export default GroupedTagList;

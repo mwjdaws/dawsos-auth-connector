@@ -1,11 +1,16 @@
 
-// Export all section components for easy imports
-export { ContentIdSection } from './ContentIdSection';
-export { DomainSection } from './DomainSection';
-export { ExternalSourceSection } from './ExternalSourceSection';
+/**
+ * Metadata Panel Sections
+ * 
+ * Export all section components for the MetadataPanel
+ */
+
 export { HeaderSection } from './HeaderSection';
-export { OntologySection } from './OntologySection';
-export { OntologySuggestionsPanel } from './OntologySuggestionsPanel';
-export { OntologyTermsSection } from './OntologyTermsSection';
+export { ExternalSourceSection } from './ExternalSourceSection';
 export { TagsSection } from './TagsSection';
-export { LoadingState } from './LoadingState';
+export { OntologyTermsSection } from './OntologyTermsSection';
+export { DomainSection } from './DomainSection';
+export { ContentIdSection } from './ContentIdSection';
+
+// Additional components
+export { default as LoadingState } from '../components/LoadingState';

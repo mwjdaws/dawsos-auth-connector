@@ -1,76 +1,56 @@
 
 import React from 'react';
-import { RefreshCw, ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CardHeader, CardTitle } from '@/components/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { RefreshCw, ChevronUp, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
-export interface HeaderSectionProps {
-  title?: string;
-  needsExternalReview: boolean;
+interface HeaderSectionProps {
+  title: string;
   handleRefresh: () => void;
-  isCollapsible?: boolean;
-  isCollapsed: boolean;
   setIsCollapsed: (value: boolean) => void;
-  isLoading?: boolean;
+  isCollapsed: boolean;
+  needsExternalReview: boolean;
 }
 
-export const HeaderSection: React.FC<HeaderSectionProps> = ({
-  title = 'Content Metadata',
-  needsExternalReview,
+export function HeaderSection({
+  title,
   handleRefresh,
-  isCollapsible = false,
-  isCollapsed,
   setIsCollapsed,
-  isLoading = false
-}) => {
+  isCollapsed,
+  needsExternalReview
+}: HeaderSectionProps) {
   return (
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 py-4">
-      <div className="flex items-center space-x-2">
-        {isCollapsible && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="p-0 h-5 w-5"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-          >
-            {isCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </Button>
+    <div className="flex items-center justify-between py-2">
+      <div className="flex items-center gap-2">
+        <h2 className="text-lg font-semibold">{title}</h2>
+        {needsExternalReview && (
+          <Badge variant="warning">Review Required</Badge>
         )}
-        <CardTitle className="text-md flex items-center space-x-2">
-          <span>{title}</span>
-          {needsExternalReview && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
-                    <span>Needs Refresh</span>
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>The external source has been updated since last check</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </CardTitle>
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleRefresh}
-        disabled={isLoading}
-        className="h-7 w-7"
-      >
-        <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-        <span className="sr-only">Refresh metadata</span>
-      </Button>
-    </CardHeader>
+      <div className="flex items-center gap-1">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={handleRefresh}
+          aria-label="Refresh metadata"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          aria-label="Toggle panel"
+        >
+          {isCollapsed ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronUp className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+    </div>
   );
-};
+}
+
+export default HeaderSection;

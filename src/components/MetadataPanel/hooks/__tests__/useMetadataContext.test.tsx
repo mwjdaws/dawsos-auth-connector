@@ -13,7 +13,8 @@ const mockTags: Tag[] = [{
   name: 'tag1', 
   content_id: mockContentId, 
   display_order: 0,
-  type_id: null 
+  type_id: null,
+  type_name: '' // Add the missing type_name property
 }];
 const mockValidationResult: ValidationResult = { 
   isValid: true, 

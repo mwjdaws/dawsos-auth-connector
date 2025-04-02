@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,10 +10,10 @@ export interface TagsSectionProps {
   tags: Tag[];
   contentId: string;
   editable: boolean;
-  newTag: string;
-  setNewTag: (value: string) => void;
-  onAddTag: (typeId?: string | null) => Promise<void>;
-  onDeleteTag: (tagId: string) => Promise<void>;
+  newTag?: string;
+  setNewTag?: (value: string) => void;
+  onAddTag?: (typeId?: string | null) => Promise<void>;
+  onDeleteTag?: (tagId: string) => Promise<void>;
   onMetadataChange?: () => void;
   className?: string;
 }
@@ -27,25 +27,35 @@ export function TagsSection({
   tags,
   contentId,
   editable,
-  newTag,
-  setNewTag,
-  onAddTag,
-  onDeleteTag,
+  newTag = '',
+  setNewTag = () => {},
+  onAddTag = async () => {},
+  onDeleteTag = async () => {},
   onMetadataChange,
   className
 }: TagsSectionProps) {
   // State for tracking loading operations
   const [addingTag, setAddingTag] = React.useState(false);
   const [deletingTagId, setDeletingTagId] = React.useState<string | null>(null);
+  const [localNewTag, setLocalNewTag] = useState(newTag);
+  
+  // Handle local state updates
+  const handleLocalTagChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLocalNewTag(value);
+    setNewTag(value);
+  };
   
   // Handler for adding a new tag
   const handleAddTag = async () => {
-    if (!newTag || addingTag) return;
+    if (!localNewTag || addingTag) return;
     
     setAddingTag(true);
     try {
       await onAddTag();
       if (onMetadataChange) onMetadataChange();
+      setLocalNewTag('');
+      setNewTag('');
     } finally {
       setAddingTag(false);
     }
@@ -78,8 +88,8 @@ export function TagsSection({
       {editable && (
         <div className="flex space-x-2 mb-3">
           <Input
-            value={newTag}
-            onChange={(e) => setNewTag(e.target.value)}
+            value={localNewTag}
+            onChange={handleLocalTagChange}
             onKeyPress={handleKeyPress}
             placeholder="Add a tag..."
             disabled={addingTag}
@@ -89,7 +99,7 @@ export function TagsSection({
             size="sm"
             variant="outline"
             onClick={handleAddTag}
-            disabled={!newTag || addingTag}
+            disabled={!localNewTag || addingTag}
             className="h-8 px-2"
           >
             {addingTag ? (

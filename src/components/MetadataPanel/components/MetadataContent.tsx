@@ -1,37 +1,34 @@
 
 import React from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
-import { useMetadataContext } from '../providers/MetadataQueryProvider';
+import { useMetadataContext } from '../hooks/useMetadataContext';
+import { ExternalSourceSection } from '../sections/ExternalSourceSection';
 import { TagsSection } from '../sections/TagsSection';
+import { OntologyTermsSection } from '../sections/OntologyTermsSection';
+import { DomainSection } from '../sections/DomainSection';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 interface MetadataContentProps {
   showOntologyTerms?: boolean;
   showDomain?: boolean;
 }
 
-/**
- * MetadataContent Component
- * 
- * Displays metadata content including tags, external sources, and ontology terms
- */
-export function MetadataContent({ 
+export const MetadataContent: React.FC<MetadataContentProps> = ({
   showOntologyTerms = true,
   showDomain = false
-}: MetadataContentProps) {
+}) => {
   const {
+    contentId,
     tags,
-    ontologyTerms,
-    sourceMetadata,
+    ontologyTerms = [],
+    externalSource,
+    domain,
     isEditable,
     isLoading,
-    error,
-    refreshMetadata,
-    handleDeleteTag
+    error
   } = useMetadataContext();
-  
-  // Loading state
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -41,52 +38,50 @@ export function MetadataContent({
       </div>
     );
   }
-  
-  // Error state
+
   if (error) {
     return (
       <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
         <AlertDescription>
-          Failed to load metadata. {error.message}
+          {error.message || 'Failed to load metadata'}
         </AlertDescription>
       </Alert>
     );
   }
-  
+
   return (
-    <div className="space-y-6">
-      {/* Tags Section */}
-      <TagsSection
-        tags={tags}
-        contentId={tags.length > 0 ? tags[0].content_id : ''}
+    <div className="space-y-4">
+      <ExternalSourceSection 
+        contentId={contentId}
+        externalSource={{
+          external_source_url: externalSource?.external_source_url || null,
+          needs_external_review: externalSource?.needs_external_review || false,
+          external_source_checked_at: externalSource?.external_source_checked_at || null
+        }}
         editable={isEditable}
-        newTag=""
-        setNewTag={() => {}}
-        onAddTag={async () => {}}
-        onDeleteTag={handleDeleteTag}
       />
       
-      {/* Placeholder for other sections */}
+      <TagsSection 
+        tags={tags || []}
+        contentId={contentId}
+        editable={isEditable}
+      />
+      
       {showOntologyTerms && (
-        <div className="border-t pt-4">
-          <h3 className="text-sm font-medium mb-2">Ontology Terms</h3>
-          <p className="text-xs text-muted-foreground">
-            {ontologyTerms.length === 0 
-              ? 'No ontology terms associated with this content.'
-              : `${ontologyTerms.length} term(s) associated`}
-          </p>
-        </div>
+        <OntologyTermsSection 
+          contentId={contentId}
+          ontologyTerms={ontologyTerms}
+          editable={isEditable}
+        />
       )}
       
       {showDomain && (
-        <div className="border-t pt-4">
-          <h3 className="text-sm font-medium mb-2">Domain</h3>
-          <p className="text-xs text-muted-foreground">
-            No domain information available.
-          </p>
-        </div>
+        <DomainSection 
+          domain={domain}
+        />
       )}
     </div>
   );
-}
+};

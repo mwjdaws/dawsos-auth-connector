@@ -1,86 +1,60 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Tag } from '@/types/tag';
-import { OntologyTerm, MetadataProviderProps, SourceMetadata } from '../types';
-import { useTagOperations } from '../hooks/tag-operations/useTagOperations';
+import React from 'react';
+import { MetadataProvider } from '../hooks/useMetadataContext';
+import { useMetadataQuery } from '@/hooks/metadata/useMetadataQuery';
+import { useTagsQuery } from '@/hooks/metadata/useTagsQuery';
+import { useOntologyTermsQuery } from '@/hooks/metadata/useOntologyTermsQuery';
+import { MetadataQueryProviderProps } from '../types';
 
-// Context interface
-export interface MetadataContextData {
-  contentId: string;
-  tags: Tag[];
-  ontologyTerms: OntologyTerm[];
-  sourceMetadata: SourceMetadata | null;
-  isEditable: boolean;
-  isLoading: boolean;
-  error: Error | null;
-  refreshMetadata: () => void;
-  handleDeleteTag: (tagId: string) => Promise<void>;
-}
-
-// Create context
-const MetadataContext = createContext<MetadataContextData | undefined>(undefined);
-
-// Provider component
-export const MetadataQueryProvider: React.FC<MetadataProviderProps> = ({ 
-  contentId,
-  editable = false,
+/**
+ * MetadataQueryProvider Component
+ * 
+ * Provides metadata context data fetched from the backend
+ */
+export function MetadataQueryProvider({ 
+  contentId, 
+  editable, 
   children 
-}) => {
-  // State for ontology terms and source metadata
-  const [ontologyTerms, setOntologyTerms] = useState<OntologyTerm[]>([]);
-  const [sourceMetadata, setSourceMetadata] = useState<SourceMetadata | null>(null);
+}: MetadataQueryProviderProps) {
+  // Fetch metadata
+  const { data: metadata, isLoading: isMetadataLoading, error: metadataError } = useMetadataQuery(contentId);
   
-  // Tags operations
-  const {
-    tags,
-    isLoading: isTagsLoading,
-    error: tagsError,
-    handleRefresh: refreshTags,
-    handleDeleteTag
-  } = useTagOperations(contentId);
-
-  // For simplicity, we're using the tag loading state for now
-  const isLoading = isTagsLoading;
-  const error = tagsError;
+  // Fetch tags
+  const { data: tags = [], isLoading: isTagsLoading } = useTagsQuery(contentId, {
+    includeTypeInfo: true
+  });
   
-  // Refresh all metadata
-  const refreshMetadata = () => {
-    refreshTags();
-    // Additional refresh logic would go here
-  };
+  // Fetch ontology terms
+  const { data: ontologyTerms = [], isLoading: isOntologyLoading } = useOntologyTermsQuery(contentId);
   
-  // Load metadata when contentId changes
-  useEffect(() => {
-    refreshMetadata();
-  }, [contentId]);
+  // Combine loading states
+  const isLoading = isMetadataLoading || isTagsLoading || isOntologyLoading;
   
-  // Context value
-  const contextValue: MetadataContextData = {
+  // Get domain information from metadata if available
+  const domain = metadata?.domain || null;
+  
+  // Format external source information
+  const externalSource = metadata ? {
+    external_source_url: metadata.external_source_url,
+    needs_external_review: metadata.needs_external_review,
+    external_source_checked_at: metadata.external_source_checked_at
+  } : null;
+  
+  // Create context value
+  const contextValue = {
     contentId,
     tags,
     ontologyTerms,
-    sourceMetadata,
+    domain,
+    externalSource,
     isEditable: editable,
     isLoading,
-    error,
-    refreshMetadata,
-    handleDeleteTag
+    error: metadataError
   };
   
   return (
-    <MetadataContext.Provider value={contextValue}>
+    <MetadataProvider value={contextValue}>
       {children}
-    </MetadataContext.Provider>
+    </MetadataProvider>
   );
-};
-
-// Hook for accessing the metadata context
-export function useMetadataContext() {
-  const context = useContext(MetadataContext);
-  
-  if (!context) {
-    throw new Error('useMetadataContext must be used within a MetadataQueryProvider');
-  }
-  
-  return context;
 }

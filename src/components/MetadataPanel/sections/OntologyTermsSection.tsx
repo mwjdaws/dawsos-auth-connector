@@ -6,13 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tag, X, Plus, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { OntologyTerm } from '@/types';
+import { OntologyTerm } from '@/types/ontology';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export interface OntologyTermsSectionProps {
   contentId: string;
   ontologyTerms: OntologyTerm[];
   editable: boolean;
   isLoading?: boolean;
+  error?: Error | null;
+  showCreateTerm?: boolean;
   onAddTerm?: (term: string) => Promise<void>;
   onRemoveTerm?: (termId: string) => Promise<void>;
 }
@@ -22,13 +25,15 @@ export function OntologyTermsSection({
   ontologyTerms,
   editable,
   isLoading = false,
+  error = null,
+  showCreateTerm = false,
   onAddTerm,
   onRemoveTerm
 }: OntologyTermsSectionProps) {
   const [newTerm, setNewTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [isRemoving, setIsRemoving] = useState<string | null>(null);
-  const [showCreateTerm, setShowCreateTerm] = useState(false);
+  const [showTermInput, setShowTermInput] = useState(showCreateTerm);
 
   const handleNewTermChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewTerm(e.target.value);
@@ -41,7 +46,7 @@ export function OntologyTermsSection({
     try {
       await onAddTerm(newTerm.trim());
       setNewTerm('');
-      setShowCreateTerm(false);
+      setShowTermInput(false);
     } finally {
       setIsAdding(false);
     }
@@ -62,7 +67,7 @@ export function OntologyTermsSection({
     if (e.key === 'Enter') {
       handleAddTerm();
     } else if (e.key === 'Escape') {
-      setShowCreateTerm(false);
+      setShowTermInput(false);
       setNewTerm('');
     }
   };
@@ -75,6 +80,23 @@ export function OntologyTermsSection({
         </CardHeader>
         <CardContent>
           <Skeleton className="h-16 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="mt-4">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Ontology Terms</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertDescription>
+              {error.message}
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
     );
@@ -135,19 +157,19 @@ export function OntologyTermsSection({
           </div>
         )}
 
-        {editable && !showCreateTerm && onAddTerm && (
+        {editable && !showTermInput && onAddTerm && (
           <Button
             size="sm"
             variant="outline"
             className="mt-4"
-            onClick={() => setShowCreateTerm(true)}
+            onClick={() => setShowTermInput(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Term
           </Button>
         )}
 
-        {editable && showCreateTerm && onAddTerm && (
+        {editable && showTermInput && onAddTerm && (
           <div className="mt-4 space-y-2">
             <Input
               placeholder="Enter ontology term"
@@ -170,7 +192,7 @@ export function OntologyTermsSection({
                 size="sm"
                 variant="outline"
                 onClick={() => {
-                  setShowCreateTerm(false);
+                  setShowTermInput(false);
                   setNewTerm('');
                 }}
                 disabled={isAdding}

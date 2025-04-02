@@ -2,38 +2,30 @@
 import React, { createContext, useContext } from 'react';
 import { Tag } from '@/types/tag';
 import { OntologyTerm } from '@/types/ontology';
-import { SourceMetadata } from '../types';
 import { ValidationResult } from '@/utils/validation/types';
 
-// Define the context interface
-export interface MetadataContextProps {
+interface MetadataContextValue {
   contentId: string;
   tags: Tag[];
-  validationResult: ValidationResult | null;
+  ontologyTerms?: OntologyTerm[];
+  externalSource?: {
+    external_source_url: string | null;
+    needs_external_review: boolean;
+    external_source_checked_at: string | null;
+  } | null;
+  domain?: string | null;
   isEditable: boolean;
   isLoading: boolean;
   error: Error | null;
-  ontologyTerms?: OntologyTerm[];
-  sourceMetadata?: SourceMetadata | null;
-  refreshMetadata?: () => Promise<void>;
-  fetchTags?: () => Promise<Tag[]>;
-  handleAddTag?: (tagName: string, typeId?: string | null) => Promise<void>;
-  handleDeleteTag?: (tagId: string) => Promise<void>;
+  validationResult?: ValidationResult;
 }
 
-// Create the context with undefined as default value
-const MetadataContext = createContext<MetadataContextProps | undefined>(undefined);
+const MetadataContext = createContext<MetadataContextValue | undefined>(undefined);
 
-// Provider component
-export interface MetadataProviderProps {
-  value: MetadataContextProps;
+export const MetadataProvider: React.FC<{
+  value: MetadataContextValue;
   children: React.ReactNode;
-}
-
-export const MetadataProvider: React.FC<MetadataProviderProps> = ({ 
-  value, 
-  children 
-}) => {
+}> = ({ value, children }) => {
   return (
     <MetadataContext.Provider value={value}>
       {children}
@@ -41,19 +33,17 @@ export const MetadataProvider: React.FC<MetadataProviderProps> = ({
   );
 };
 
-// Hook for using the metadata context
-export const useMetadataContext = (requestedContentId?: string) => {
+export const useMetadataContext = (contentIdCheck?: string) => {
   const context = useContext(MetadataContext);
   
   if (!context) {
     throw new Error('useMetadataContext must be used within a MetadataProvider');
   }
   
-  // Warn if contentId doesn't match requested contentId (helps catch bugs)
-  if (requestedContentId && requestedContentId !== context.contentId) {
+  // Optional check to ensure the contentId matches what's expected
+  if (contentIdCheck && contentIdCheck !== context.contentId) {
     console.warn(
-      `Metadata context mismatch: Requested contentId "${requestedContentId}" ` +
-      `doesn't match context contentId "${context.contentId}"`
+      `Content ID mismatch in useMetadataContext. Expected: ${contentIdCheck}, Got: ${context.contentId}`
     );
   }
   

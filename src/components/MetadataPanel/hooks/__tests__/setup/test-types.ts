@@ -12,7 +12,7 @@ export function createMockTag(id: string, name: string, contentId: string): Tag 
     content_id: contentId,
     type_id: null,
     display_order: 0,
-    type_name: '' // Add the missing type_name property
+    type_name: '' // Add the type_name property
   };
 }
 
@@ -24,6 +24,7 @@ export function createMockOntologyTerm(id: string, term: string): OntologyTerm {
     id,
     term,
     description: 'Test description',
+    domain: 'Test Domain', // Add the required domain property
     review_required: false
   };
 }
@@ -38,7 +39,7 @@ export function createMockTags(contentId: string, count = 3): Tag[] {
     content_id: contentId,
     type_id: null,
     display_order: i,
-    type_name: '' // Add the missing type_name property
+    type_name: '' // Add the type_name property
   }));
 }
 
@@ -50,6 +51,7 @@ export function createMockOntologyTerms(count = 3): OntologyTerm[] {
     id: `term-${i + 1}`,
     term: `Mock Term ${i + 1}`,
     description: `Description for term ${i + 1}`,
+    domain: `Domain ${i + 1}`, // Add the required domain property
     review_required: false
   }));
 }
@@ -63,7 +65,7 @@ export const basicTag: Tag = {
   content_id: 'test-content-1',
   type_id: null,
   display_order: 0,
-  type_name: '' // Add the missing type_name property
+  type_name: '' // Add the type_name property
 };
 
 /**
