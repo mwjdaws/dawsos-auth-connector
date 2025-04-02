@@ -15,15 +15,39 @@ export type {
   GraphRendererRef
 };
 
+// Export sanitized graph data function needed by various components
+export function sanitizeGraphData(data: any): GraphData {
+  if (!data || typeof data !== 'object') {
+    return { nodes: [], links: [] };
+  }
+  
+  const sanitizedData: GraphData = {
+    nodes: Array.isArray(data.nodes) ? data.nodes.map(adaptGraphNode) : [],
+    links: Array.isArray(data.links) ? data.links.map(adaptGraphLink) : []
+  };
+  
+  return sanitizedData;
+}
+
 // Export any compatibility functions needed for different graph implementations
-export function adaptGraphNode(node: GraphNode): GraphNode {
+export function adaptGraphNode(node: any): GraphNode {
+  if (!node || typeof node !== 'object') {
+    return { id: 'unknown', name: 'Unknown Node' };
+  }
+  
   return {
     ...node,
+    id: node.id || 'unknown',
+    name: node.name || node.title || node.id || 'Unknown',
     title: node.title || node.name || node.id
   };
 }
 
-export function adaptGraphLink(link: GraphLink): GraphLink {
+export function adaptGraphLink(link: any): GraphLink {
+  if (!link || typeof link !== 'object') {
+    return { source: 'unknown', target: 'unknown' };
+  }
+  
   const source = typeof link.source === 'object' ? link.source.id : link.source;
   const target = typeof link.target === 'object' ? link.target.id : link.target;
   
@@ -40,3 +64,6 @@ export function adaptGraphData(data: GraphData): GraphData {
     links: data.links.map(adaptGraphLink)
   };
 }
+
+// Compatibility alias
+export const ensureValidGraphData = sanitizeGraphData;

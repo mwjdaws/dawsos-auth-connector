@@ -10,3 +10,11 @@ export { GraphRenderer } from './GraphRenderer';
 export { useGraphRenderStyles } from './useGraphRenderStyles';
 export { useNodeRenderer } from './useNodeRenderer';
 export { useLinkRenderer } from './useLinkRenderer';
+export { useZoomPan } from './useZoomPan';
+export type { 
+  GraphNode, 
+  GraphLink, 
+  GraphData, 
+  GraphRendererProps, 
+  GraphRendererRef 
+} from './GraphRendererTypes';

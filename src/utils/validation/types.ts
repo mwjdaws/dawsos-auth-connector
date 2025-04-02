@@ -10,6 +10,7 @@ export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
   resultType: string;
+  message?: string | null; // For compatibility with legacy code
 }
 
 /**
@@ -28,6 +29,20 @@ export interface TagValidationResult extends ValidationResult {
 }
 
 /**
+ * Document validation result
+ */
+export interface DocumentValidationResult extends ValidationResult {
+  resultType: 'document';
+}
+
+/**
+ * Ontology term validation result
+ */
+export interface OntologyTermValidationResult extends ValidationResult {
+  resultType: 'ontology-term';
+}
+
+/**
  * Create a basic validation result
  */
 export function createValidationResult(
@@ -38,7 +53,8 @@ export function createValidationResult(
   return {
     isValid,
     errorMessage,
-    resultType
+    resultType,
+    message: isValid ? null : errorMessage
   };
 }
 
@@ -48,13 +64,14 @@ export function createValidationResult(
 export function createContentIdValidationResult(
   isValid: boolean,
   errorMessage: string | null,
-  contentExists: boolean | null
+  contentExists?: boolean | null
 ): ContentIdValidationResult {
   return {
     isValid,
     errorMessage,
-    contentExists,
-    resultType: 'contentId'
+    contentExists: contentExists ?? null,
+    resultType: 'contentId',
+    message: isValid ? null : errorMessage
   };
 }
 
@@ -68,7 +85,38 @@ export function createTagValidationResult(
   return {
     isValid,
     errorMessage,
-    resultType: 'tag'
+    resultType: 'tag',
+    message: isValid ? null : errorMessage
+  };
+}
+
+/**
+ * Create an ontology term validation result
+ */
+export function createOntologyTermValidationResult(
+  isValid: boolean,
+  errorMessage: string | null
+): OntologyTermValidationResult {
+  return {
+    isValid,
+    errorMessage,
+    resultType: 'ontology-term',
+    message: isValid ? null : errorMessage
+  };
+}
+
+/**
+ * Create a document validation result
+ */
+export function createDocumentValidationResult(
+  isValid: boolean,
+  errorMessage: string | null
+): DocumentValidationResult {
+  return {
+    isValid,
+    errorMessage,
+    resultType: 'document',
+    message: isValid ? null : errorMessage
   };
 }
 
@@ -77,7 +125,8 @@ export function createValidResult(message?: string | null): ValidationResult {
   return {
     isValid: true,
     errorMessage: null,
-    resultType: 'generic'
+    resultType: 'generic',
+    message: message || null
   };
 }
 
@@ -85,7 +134,8 @@ export function createInvalidResult(errorMessage: string): ValidationResult {
   return {
     isValid: false,
     errorMessage,
-    resultType: 'generic'
+    resultType: 'generic',
+    message: errorMessage
   };
 }
 

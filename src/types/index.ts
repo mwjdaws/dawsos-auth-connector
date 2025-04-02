@@ -1,32 +1,51 @@
 
 /**
- * Central type definitions for the application
- * 
- * This file re-exports all type definitions from their respective modules
- * to provide a clean interface for importing types.
+ * Central export of all types used throughout the application
  */
 
-// Re-export tag types
-export type { Tag, TagData, TagDisplay, TagGroup, TagPosition } from './tag';
-export type { OntologyTerm, OntologyDomain, RelatedTerm } from './ontology';
-export type { ExternalSourceMetadata } from './metadata';
-export type { KnowledgeSource, ContentType } from './content';
-export type { User, UserProfile, UserSettings } from './user';
-export type { ValidationResult } from './validation';
-export type { ApiResponse, ApiError, RequestOptions } from './api';
-export type { SourceMetadata } from './sourceMetadata';
+// Core Data Models
+export * from './content';
+export * from './document';
+export * from './knowledge-source';
+export * from './source-metadata';
+export * from './validation';
+export * from './draft';
+export * from './ontology';
 
-// Re-export utility functions
-export { 
-  // Tag utilities
+// Tag System
+export * from './tag';
+
+// Re-export tag utility functions explicitly
+export {
+  Tag,
+  TagPosition,
+  TagGroup,
+  TagData,
+  TagDisplay,
+  CreateTagData,
+  DeleteTagData,
   mapApiTagToTag,
   mapApiTagsToTags,
   ensureNonNullableTag,
-  filterDuplicateTags,
-  convertTagPositionsToTags
+  convertTagPositionsToTags,
+  sortTagsByDisplayOrder,
+  filterDuplicateTags
 } from './tag';
 
-// Re-export constants
-export { ContentStatus } from './content';
-export { ErrorCode } from './errors';
-export { UserRole } from './user';
+// Compatibility Types
+export * from './compat';
+
+// Graph Types
+export * from './graph';
+
+// API Types
+export * from './api';
+
+// Error Types
+export * from './errors';
+
+// Authentication Types
+export * from './auth';
+
+// Utility Types
+export * from './utils';

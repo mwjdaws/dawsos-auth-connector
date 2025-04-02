@@ -17,11 +17,17 @@ export * from './contentIdValidation';
 // Export document validation
 export * from './documentValidation';
 
+// Export tag validation
+export * from './tagValidation';
+
 // Export with explicit names for backward compatibility
 export {
   createValidResult,
   createInvalidResult,
   createContentValidationResult,
+  createTagValidationResult,
+  createOntologyTermValidationResult,
+  createDocumentValidationResult,
   isValidResult,
   combineValidationResults
 } from './types';
@@ -29,3 +35,7 @@ export {
 // Export validation functions for different entity types
 export { validateContentId, isValidContentId, isUUID, isTempId } from './contentIdValidation';
 export { validateDocumentTitle, validateDocumentContent, validateUrl } from './documentValidation';
+export { validateTag } from './tagValidation';
+
+// Export compatibility utilities
+export * from './compatibility';
