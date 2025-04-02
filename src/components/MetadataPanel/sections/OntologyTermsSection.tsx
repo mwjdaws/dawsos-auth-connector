@@ -1,110 +1,186 @@
 
-import React from 'react';
-import { Badge } from '@/components/ui/badge';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, PlusCircle, X } from 'lucide-react';
-import { OntologyTerm } from '../types';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tag, X, Plus, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { OntologyTerm } from '@/types';
 
-interface OntologyTermsSectionProps {
-  ontologyTerms: OntologyTerm[];
+export interface OntologyTermsSectionProps {
   contentId: string;
+  ontologyTerms: OntologyTerm[];
   editable: boolean;
-  showDomain?: boolean;
-  className?: string;
+  isLoading?: boolean;
+  onAddTerm?: (term: string) => Promise<void>;
+  onRemoveTerm?: (termId: string) => Promise<void>;
 }
 
-/**
- * OntologyTermsSection Component
- * 
- * Displays and manages ontology terms for a content item
- */
 export function OntologyTermsSection({
-  ontologyTerms,
   contentId,
+  ontologyTerms,
   editable,
-  showDomain = false,
-  className = ''
+  isLoading = false,
+  onAddTerm,
+  onRemoveTerm
 }: OntologyTermsSectionProps) {
-  // Group terms by domain if needed
-  const groupedTerms = showDomain
-    ? groupTermsByDomain(ontologyTerms)
-    : { 'All Terms': ontologyTerms };
-  
+  const [newTerm, setNewTerm] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
+  const [isRemoving, setIsRemoving] = useState<string | null>(null);
+  const [showCreateTerm, setShowCreateTerm] = useState(false);
+
+  const handleNewTermChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewTerm(e.target.value);
+  };
+
+  const handleAddTerm = async () => {
+    if (!newTerm.trim() || !onAddTerm) return;
+
+    setIsAdding(true);
+    try {
+      await onAddTerm(newTerm.trim());
+      setNewTerm('');
+      setShowCreateTerm(false);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const handleRemoveTerm = async (termId: string) => {
+    if (!onRemoveTerm) return;
+
+    setIsRemoving(termId);
+    try {
+      await onRemoveTerm(termId);
+    } finally {
+      setIsRemoving(null);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleAddTerm();
+    } else if (e.key === 'Escape') {
+      setShowCreateTerm(false);
+      setNewTerm('');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card className="mt-4">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Ontology Terms</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-16 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const hasTerms = ontologyTerms && ontologyTerms.length > 0;
+
+  // Group terms by domain for better organization
+  const termsByDomain: Record<string, OntologyTerm[]> = {};
+  if (hasTerms) {
+    ontologyTerms.forEach(term => {
+      const domain = term.domain || 'Uncategorized';
+      if (!termsByDomain[domain]) {
+        termsByDomain[domain] = [];
+      }
+      termsByDomain[domain].push(term);
+    });
+  }
+
   return (
-    <div className={`space-y-3 ${className}`}>
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium flex items-center gap-1.5">
-          <Lightbulb className="h-4 w-4" />
-          Ontology Terms
-        </h3>
-        
-        {editable && (
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">
-              {ontologyTerms.length} terms
-            </span>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 p-0 px-1"
-            >
-              <PlusCircle className="h-3 w-3 mr-1" />
-              <span className="text-xs">Add</span>
-            </Button>
+    <Card className="mt-4">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium">Ontology Terms</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {hasTerms ? (
+          <div className="space-y-4">
+            {Object.entries(termsByDomain).map(([domain, terms]) => (
+              <div key={domain} className="space-y-2">
+                <h4 className="text-xs font-medium text-muted-foreground">{domain}</h4>
+                <div className="flex flex-wrap gap-2">
+                  {terms.map(term => (
+                    <Badge key={term.id} variant="secondary" className="gap-1">
+                      <Tag className="h-3 w-3 mr-1" />
+                      {term.term}
+                      {editable && onRemoveTerm && (
+                        <button
+                          onClick={() => handleRemoveTerm(term.id)}
+                          className="ml-1 hover:text-destructive"
+                          disabled={!!isRemoving}
+                        >
+                          {isRemoving === term.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <X className="h-3 w-3" />
+                          )}
+                        </button>
+                      )}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-sm text-muted-foreground">
+            No ontology terms associated with this content
           </div>
         )}
-      </div>
-      
-      {Object.entries(groupedTerms).map(([domain, terms]) => (
-        <div key={domain} className="space-y-2">
-          {showDomain && terms.length > 0 && (
-            <h4 className="text-xs font-medium text-muted-foreground">
-              {domain}
-            </h4>
-          )}
-          
-          <div className="flex flex-wrap gap-1.5">
-            {terms.length > 0 ? (
-              terms.map((term) => (
-                <Badge
-                  key={term.id}
-                  variant="outline"
-                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50"
-                >
-                  {term.term}
-                  {editable && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 hover:bg-transparent"
-                      onClick={() => {/* Handle delete */}}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  )}
-                </Badge>
-              ))
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                <span>No ontology terms</span>
-              </div>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
-// Helper function to group terms by domain
-function groupTermsByDomain(terms: OntologyTerm[]): Record<string, OntologyTerm[]> {
-  return terms.reduce<Record<string, OntologyTerm[]>>((groups, term) => {
-    const domain = term.domain || 'Uncategorized';
-    if (!groups[domain]) {
-      groups[domain] = [];
-    }
-    groups[domain].push(term);
-    return groups;
-  }, {});
+        {editable && !showCreateTerm && onAddTerm && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-4"
+            onClick={() => setShowCreateTerm(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Term
+          </Button>
+        )}
+
+        {editable && showCreateTerm && onAddTerm && (
+          <div className="mt-4 space-y-2">
+            <Input
+              placeholder="Enter ontology term"
+              value={newTerm}
+              onChange={handleNewTermChange}
+              onKeyDown={handleKeyDown}
+              disabled={isAdding}
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={handleAddTerm}
+                disabled={isAdding || !newTerm.trim()}
+              >
+                {isAdding && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Add
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setShowCreateTerm(false);
+                  setNewTerm('');
+                }}
+                disabled={isAdding}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }

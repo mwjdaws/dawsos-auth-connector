@@ -1,65 +1,95 @@
 
 /**
- * Type definitions for ontology-related entities
+ * Ontology Types
  */
 
-// Basic ontology term interface
+/**
+ * Base ontology term interface
+ */
 export interface OntologyTerm {
   id: string;
   term: string;
   description: string | null;
-  domain?: string | null;
-  review_required?: boolean;
-  associationId?: string; // Added for AttachedTermsList component
+  domain: string | null;
 }
 
-// Domain for grouping ontology terms
+/**
+ * Ontology term with additional relationship information
+ */
+export interface RelatedOntologyTerm extends OntologyTerm {
+  relation_type: string;
+}
+
+/**
+ * Ontology term with review status for knowledge sources
+ */
+export interface KnowledgeSourceOntologyTerm extends OntologyTerm {
+  review_required: boolean;
+}
+
+/**
+ * Type for ontology domain categorization
+ */
 export interface OntologyDomain {
   id: string;
   name: string;
   description: string;
 }
 
-// Represents a link between ontology terms
-export interface OntologyTermLink {
+/**
+ * Type for relationship between ontology terms
+ */
+export interface OntologyRelationship {
   id: string;
-  source_term_id: string;
-  target_term_id: string;
-  link_type: string;
-  created_at?: string;
-  created_by?: string | null;
+  term_id: string;
+  related_term_id: string;
+  relation_type: string;
 }
 
-// Represents a suggestion for an ontology term
-export interface OntologySuggestion {
-  id: string;
-  term: string;
-  description: string | null;
-  confidence: number;
-  source_id: string;
-  status: 'pending' | 'approved' | 'rejected';
-  domain?: string | null;
-  score?: number;
-  applied?: boolean;
-  rejected?: boolean;
+/**
+ * Payload for assigning an ontology term
+ */
+export interface AssignOntologyTermPayload {
+  ontologyTermId: string;
+  knowledgeSourceId: string;
+  reviewRequired?: boolean;
 }
 
-// Related term for graph visualization
-export interface RelatedTerm {
-  id: string;
-  term: string;
-  description?: string | null;
-  domain?: string | null;
-  score?: number;
-  applied?: boolean;
-  rejected?: boolean;
+/**
+ * Payload for removing an ontology term
+ */
+export interface RemoveOntologyTermPayload {
+  ontologyTermId: string;
+  knowledgeSourceId: string;
 }
 
-// Related note for suggestions
-export interface RelatedNote {
-  id: string;
-  title: string;
-  score?: number;
-  applied?: boolean;
-  rejected?: boolean;
+/**
+ * Result of ontology term operation
+ */
+export interface OntologyTermOperationResult {
+  success: boolean;
+  term?: OntologyTerm | null;
+  error?: string | null;
+}
+
+/**
+ * Convert from API model to frontend OntologyTerm model
+ */
+export function convertApiTermToOntologyTerm(apiTerm: any): OntologyTerm {
+  return {
+    id: apiTerm.id,
+    term: apiTerm.term,
+    description: apiTerm.description || null,
+    domain: apiTerm.domain || null
+  };
+}
+
+/**
+ * Convert from API model to KnowledgeSourceOntologyTerm model
+ */
+export function convertToKnowledgeSourceTerm(apiTerm: any): KnowledgeSourceOntologyTerm {
+  return {
+    ...convertApiTermToOntologyTerm(apiTerm),
+    review_required: apiTerm.review_required || false
+  };
 }

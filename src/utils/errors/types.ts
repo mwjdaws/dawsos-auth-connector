@@ -1,7 +1,9 @@
 
 /**
- * Error level enumeration
+ * Error handling type definitions
  */
+
+// Error levels for categorizing errors
 export enum ErrorLevel {
   Debug = 'debug',
   Info = 'info',
@@ -10,167 +12,92 @@ export enum ErrorLevel {
   Critical = 'critical'
 }
 
-/**
- * Error source enumeration
- */
+// Error sources for identifying where errors originated
 export enum ErrorSource {
   Unknown = 'unknown',
-  User = 'user',
-  App = 'app',
-  API = 'api',
-  Database = 'database',
-  Network = 'network',
-  Auth = 'auth',
-  Utils = 'utils',
+  UI = 'ui',
   Component = 'component',
   Hook = 'hook',
-  Service = 'service',
-  UI = 'ui',
+  API = 'api',
+  Database = 'database',
+  Authentication = 'authentication',
+  Authorization = 'authorization',
   Validation = 'validation',
-  Server = 'server'
+  External = 'external',
+  Network = 'network',
+  System = 'system'
 }
 
-/**
- * Base validation result interface
- */
+// Options for error handling
+export interface ErrorHandlingOptions {
+  // Core properties
+  level?: ErrorLevel;
+  source?: ErrorSource;
+  message: string;
+  context?: Record<string, any>;
+  
+  // Reporting options
+  reportToAnalytics?: boolean;
+  showToast?: boolean;
+  suppressToast?: boolean;
+  
+  // Additional options
+  silent?: boolean;
+  toastId?: string;
+  toastTitle?: string;
+  fingerprint?: string;
+  originalError?: Error;
+}
+
+// Basic validation result interface
 export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
-  resultType?: string;
-  message?: string | null;
+  resultType: string;
 }
 
-/**
- * Content ID validation result 
- */
+// Content ID validation specific result
 export interface ContentIdValidationResult extends ValidationResult {
-  contentExists?: boolean;
-  resultType: 'contentId';
+  contentId: string | null;
 }
 
-/**
- * Tag validation result
- */
+// Tag validation specific result
 export interface TagValidationResult extends ValidationResult {
-  resultType: 'tag';
+  // Tag specific validation properties can be added here
 }
 
-/**
- * Create a validation result with default values
- */
+// Helper functions to create validation results
 export function createValidationResult(
-  isValid: boolean, 
-  errorMessage: string | null = null,
-  resultType?: string
+  isValid: boolean,
+  errorMessage: string | null
 ): ValidationResult {
   return {
     isValid,
     errorMessage,
-    message: null,
-    resultType
+    resultType: 'generic'
   };
 }
 
-/**
- * Create a content ID validation result
- */
 export function createContentIdValidationResult(
   isValid: boolean,
-  errorMessage: string | null = null,
-  contentExists = false
+  errorMessage: string | null,
+  contentId: string | null
 ): ContentIdValidationResult {
   return {
     isValid,
     errorMessage,
-    message: null,
-    contentExists,
+    contentId,
     resultType: 'contentId'
   };
 }
 
-/**
- * Create a tag validation result
- */
 export function createTagValidationResult(
   isValid: boolean,
-  errorMessage: string | null = null
+  errorMessage: string | null
 ): TagValidationResult {
   return {
     isValid,
     errorMessage,
-    message: null,
     resultType: 'tag'
-  };
-}
-
-/**
- * Error handling options
- */
-export interface ErrorHandlingOptions {
-  source: ErrorSource;
-  level: ErrorLevel;
-  context?: Record<string, any>;
-  message: string;
-  silent?: boolean;
-  showToast?: boolean;
-  reportToAnalytics?: boolean;
-  suppressToast?: boolean;
-  toastTitle?: string;
-  toastDescription?: string;
-  toastId?: string;
-  fingerprint?: string;
-  technical?: string;
-  originalError?: Error;
-}
-
-/**
- * Creates a failed validation result
- */
-export function createInvalidResult(
-  errorMessage: string,
-  resultType?: string
-): ValidationResult {
-  return createValidationResult(false, errorMessage, resultType);
-}
-
-/**
- * Creates a successful validation result
- */
-export function createValidResult(resultType?: string): ValidationResult {
-  return createValidationResult(true, null, resultType);
-}
-
-// Add ontology term validation result
-export interface OntologyTermValidationResult extends ValidationResult {
-  resultType: 'ontologyTerm';
-}
-
-// Add document validation result
-export interface DocumentValidationResult extends ValidationResult {
-  resultType: 'document';
-}
-
-// Add creator functions
-export function createOntologyTermValidationResult(
-  isValid: boolean,
-  errorMessage: string | null = null
-): OntologyTermValidationResult {
-  return {
-    isValid,
-    errorMessage,
-    message: null,
-    resultType: 'ontologyTerm'
-  };
-}
-
-export function createDocumentValidationResult(
-  isValid: boolean,
-  errorMessage: string | null = null
-): DocumentValidationResult {
-  return {
-    isValid,
-    errorMessage,
-    message: null,
-    resultType: 'document'
   };
 }

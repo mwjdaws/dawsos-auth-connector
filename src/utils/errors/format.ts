@@ -1,86 +1,103 @@
 
-import { ErrorLevel, ErrorContext, ErrorMetadata } from './types';
-import { compatibleErrorOptions } from '../compatibility';
+/**
+ * Error message formatting utilities
+ */
+import { ErrorLevel, ErrorSource, ErrorHandlingOptions } from './types';
 
 /**
- * Formats an error object for consistent handling throughout the app
+ * Format an error message based on the error object and options
  * 
- * @param error The original error
- * @param message User-friendly message
- * @param options Additional options for error handling
- * @returns Formatted error metadata object
+ * @param error The error to format
+ * @param userMessage Optional user-friendly message to override
+ * @returns Formatted error message
  */
-export function formatError(
-  error: unknown, 
-  message: string = 'An error occurred',
-  options: Partial<{
-    level: ErrorLevel;
-    context: ErrorContext;
-    technical: boolean; // For backward compatibility
-  }> = {}
-): ErrorMetadata {
-  // Handle compatibility options
-  const compatOptions = compatibleErrorOptions(options);
-  const level = compatOptions.level || ErrorLevel.ERROR;
+export function formatErrorMessage(error: unknown, userMessage?: string): string {
+  // If a user message is provided, use it
+  if (userMessage) {
+    return userMessage;
+  }
   
-  // Extract original error message if available
-  const errorMessage = error instanceof Error 
-    ? error.message 
-    : typeof error === 'string'
-      ? error
-      : typeof error === 'object' && error !== null
-        ? JSON.stringify(error)
-        : 'Unknown error';
-
-  // Get stack trace if available
-  const stack = error instanceof Error ? error.stack : undefined;
+  // Handle different error types
+  if (error instanceof Error) {
+    return error.message;
+  }
   
-  // Generate a unique fingerprint for deduplication
-  const fingerprint = generateErrorFingerprint(error, message);
+  if (typeof error === 'string') {
+    return error;
+  }
   
-  // Determine if this should be shown to the user
-  const isUserVisible = level === ErrorLevel.ERROR || level === ErrorLevel.CRITICAL;
+  // Try to stringify objects
+  if (error !== null && typeof error === 'object') {
+    try {
+      return JSON.stringify(error);
+    } catch {
+      // If stringification fails, fall back to generic message
+      return 'An error occurred';
+    }
+  }
   
-  return {
-    timestamp: Date.now(),
-    level,
-    context: {
-      ...compatOptions.context
-    },
-    fingerprint,
-    stack,
-    isUserVisible,
-    message: message || errorMessage,
-    originalError: error,
-    code: error instanceof Error && 'code' in error ? (error as any).code : undefined
-  };
+  return 'An unknown error occurred';
 }
 
 /**
- * Generates a unique fingerprint for an error to help with deduplication
+ * Format a technical error message for logging
  * 
- * @param error The original error
- * @param message The error message
- * @returns A string fingerprint
+ * @param error The error object
+ * @param level Error level
+ * @param source Error source
+ * @param context Additional context
+ * @returns Formatted technical error message
  */
-function generateErrorFingerprint(error: unknown, message: string): string {
-  // Extract the most useful part of the stack trace for fingerprinting
-  let stackSignature = '';
-  if (error instanceof Error && error.stack) {
-    // Get first 3 lines of stack trace
-    stackSignature = error.stack.split('\n').slice(0, 3).join('');
+export function formatTechnicalError(
+  error: Error,
+  level: ErrorLevel = ErrorLevel.Error,
+  source: ErrorSource = ErrorSource.Unknown,
+  context?: Record<string, any>
+): string {
+  const severity = level === ErrorLevel.Error || level === ErrorLevel.Critical 
+    ? 'ERROR' 
+    : level.toUpperCase();
+  
+  const contextString = context 
+    ? `\nContext: ${JSON.stringify(context)}`
+    : '';
+  
+  const stack = error.stack 
+    ? `\nStack: ${error.stack.split('\n').slice(0, 5).join('\n')}` 
+    : '';
+  
+  return `[${severity}][${source}] ${error.message}${contextString}${stack}`;
+}
+
+/**
+ * Get a user-friendly error message from an error
+ * 
+ * @param error The error object
+ * @param fallbackMessage Optional fallback message
+ * @returns User-friendly error message
+ */
+export function getUserFriendlyMessage(error: unknown, fallbackMessage?: string): string {
+  // For technical errors, provide a simplified message
+  if (error instanceof Error) {
+    // Some errors have useful messages
+    if (error.message.includes('network') || error.message.includes('connection')) {
+      return 'Network connection issue. Please check your internet connection and try again.';
+    }
+    
+    if (error.message.includes('timeout') || error.message.includes('timed out')) {
+      return 'The operation timed out. Please try again.';
+    }
+    
+    if (error.message.includes('permission') || error.message.includes('access')) {
+      return 'You don\'t have permission to perform this action.';
+    }
+    
+    // Return the original message if it seems user-friendly
+    if (error.message.length < 100 && !error.message.includes('Error:')) {
+      return error.message;
+    }
   }
   
-  // Create fingerprint from error message and stack
-  const baseString = `${message}|${error instanceof Error ? error.message : ''}|${stackSignature}`;
-  
-  // Simple hash function
-  let hash = 0;
-  for (let i = 0; i < baseString.length; i++) {
-    const char = baseString.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit int
-  }
-  
-  return `err_${Math.abs(hash).toString(16)}`;
+  // Return fallback or default message
+  return fallbackMessage || 'An unexpected error occurred. Please try again.';
 }
