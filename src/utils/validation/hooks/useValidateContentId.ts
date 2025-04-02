@@ -1,31 +1,60 @@
 
-import { useState, useCallback } from 'react';
-import { validateContentId } from '../contentIdValidation';
+/**
+ * Hook for content ID validation only 
+ * 
+ * This is a simplified hook that only validates content IDs,
+ * useful for components that only need basic validation.
+ */
+import { useMemo } from 'react';
+import { 
+  isValidContentId, 
+  isTempId, 
+  isUUID, 
+  getContentIdValidationResult 
+} from '../contentIdValidation';
 import { ContentIdValidationResult } from '../types';
 
 /**
- * Custom hook for validating content IDs with state management
+ * Validates a content ID and provides validation information
  * 
- * @returns Object with validation state and functions
+ * @param contentId The content ID to validate
+ * @returns Object with validation information
  */
-export function useValidateContentId() {
-  const [validationResult, setValidationResult] = useState<ContentIdValidationResult | null>(null);
-  
-  const validate = useCallback((contentId: string, contentExists?: boolean) => {
-    const result = validateContentId(contentId, contentExists);
-    setValidationResult(result);
-    return result;
-  }, []);
-  
-  const reset = useCallback(() => {
-    setValidationResult(null);
-  }, []);
-  
+export function useValidateContentId(contentId?: string | null) {
+  // Memorize the validation result 
+  const result = useMemo<ContentIdValidationResult>(() => {
+    if (!contentId) {
+      return getContentIdValidationResult('');
+    }
+    return getContentIdValidationResult(contentId);
+  }, [contentId]);
+
+  // Determine if the content ID is valid
+  const isValid = useMemo(() => {
+    if (!contentId) return false;
+    return isValidContentId(contentId);
+  }, [contentId]);
+
+  // Determine if the content ID is a temporary ID
+  const isTemporary = useMemo(() => {
+    if (!contentId) return false;
+    return isTempId(contentId);
+  }, [contentId]);
+
+  // Determine if the content ID is a UUID
+  const isUuid = useMemo(() => {
+    if (!contentId) return false;
+    return isUUID(contentId);
+  }, [contentId]);
+
   return {
-    validationResult,
-    validate,
-    reset,
-    isValid: validationResult ? validationResult.isValid : false,
-    error: validationResult ? validationResult.errorMessage : null
+    isValid,
+    isTemporary,
+    isUuid,
+    validationResult: result,
+    errorMessage: result.errorMessage
   };
 }
+
+// Default export
+export default useValidateContentId;

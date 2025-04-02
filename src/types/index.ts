@@ -4,26 +4,49 @@
  */
 
 // Core Data Models
-export * from './content';
-export * from './document';
-export * from './knowledge-source';
-export * from './source-metadata';
-export * from './validation';
-export * from './draft';
-export * from './ontology';
+export type { 
+  DocumentMetadata, 
+  DocumentContent, 
+  Document,
+  DocumentValidationResult
+} from './document';
+
+export type {
+  KnowledgeSource,
+  KnowledgeSourceMetadata
+} from './knowledge-source';
+
+export type {
+  SourceMetadata,
+  ExternalSourceMetadata
+} from './source-metadata';
+
+export type {
+  Draft,
+  DraftMetadata,
+  DraftVersion
+} from './draft';
+
+export type {
+  OntologyTerm,
+  OntologyDomain
+} from './ontology';
 
 // Tag System
 export * from './tag';
 
 // Re-export tag utility functions explicitly
-export {
+export type {
   Tag,
   TagPosition,
   TagGroup,
   TagData,
   TagDisplay,
   CreateTagData,
-  DeleteTagData,
+  DeleteTagData
+} from './tag';
+
+export {
   mapApiTagToTag,
   mapApiTagsToTags,
   ensureNonNullableTag,
@@ -36,7 +59,13 @@ export {
 export * from './compat';
 
 // Graph Types
-export * from './graph';
+export type {
+  GraphNode,
+  GraphLink,
+  GraphData,
+  RelationshipGraphOptions,
+  GraphStats
+} from './graph';
 
 // API Types
 export * from './api';
@@ -45,7 +74,29 @@ export * from './api';
 export * from './errors';
 
 // Authentication Types
-export * from './auth';
+export type {
+  User,
+  UserProfile,
+  AuthSession,
+  AuthState
+} from './auth';
+
+export { UserRole } from './auth';
 
 // Utility Types
-export * from './utils';
+export type {
+  Nullable,
+  Optional,
+  NullableOptional,
+  IdType,
+  UUID,
+  ISODateString,
+  ApiResponse,
+  PaginatedResponse,
+  AsyncCallback,
+  ErrorCallback,
+  LoadingState,
+  FetchStatus,
+  SelectOption,
+  ChangeEvent
+} from './utils';

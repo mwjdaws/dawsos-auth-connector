@@ -3,6 +3,62 @@
  * Utility functions for compatibility across the application
  */
 
+// Import types from graph component
+import { GraphNode, GraphLink, GraphData } from '@/components/MarkdownViewer/RelationshipGraph/types';
+
+/**
+ * Sanitizes and validates graph data to ensure it's in the correct format
+ * 
+ * @param data The graph data to sanitize
+ * @returns A cleaned version of the graph data
+ */
+export function sanitizeGraphData(data: any): GraphData {
+  if (!data || typeof data !== 'object') {
+    return { nodes: [], links: [] };
+  }
+  
+  const sanitizedData: GraphData = {
+    nodes: Array.isArray(data.nodes) ? data.nodes.map(adaptGraphNode) : [],
+    links: Array.isArray(data.links) ? data.links.map(adaptGraphLink) : []
+  };
+  
+  return sanitizedData;
+}
+
+/**
+ * Adapts a node object to ensure it has all required fields
+ */
+function adaptGraphNode(node: any): GraphNode {
+  if (!node || typeof node !== 'object') {
+    return { id: 'unknown', name: 'Unknown Node' };
+  }
+  
+  return {
+    ...node,
+    id: node.id || 'unknown',
+    name: node.name || node.title || node.id || 'Unknown',
+    title: node.title || node.name || node.id
+  };
+}
+
+/**
+ * Adapts a link object to ensure it has all required fields
+ */
+function adaptGraphLink(link: any): GraphLink {
+  if (!link || typeof link !== 'object') {
+    return { source: 'unknown', target: 'unknown' };
+  }
+  
+  const source = typeof link.source === 'object' ? link.source.id : link.source;
+  const target = typeof link.target === 'object' ? link.target.id : link.target;
+  
+  return {
+    ...link,
+    source,
+    target
+  };
+}
+
 /**
  * Safely calls a callback function if it exists
  * 
@@ -96,21 +152,4 @@ export function ensureObject<T extends object>(value: any, defaultValue: T): T {
     return value as T;
   }
   return defaultValue;
-}
-
-/**
- * Creates a boolean validation result
- * 
- * @param isValid Whether the validation passed
- * @param errorMessage The error message if validation failed
- * @returns A validation result object
- */
-export function createBooleanValidationResult(
-  isValid: boolean,
-  errorMessage: string | null = null
-): { isValid: boolean; errorMessage: string | null } {
-  return {
-    isValid,
-    errorMessage: isValid ? null : errorMessage || 'Validation failed'
-  };
 }

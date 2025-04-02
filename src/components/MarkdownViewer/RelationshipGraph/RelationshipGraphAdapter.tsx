@@ -1,10 +1,9 @@
 
 import React from 'react';
 import { GraphRenderer } from './components/graph-renderer/GraphRenderer';
-import { GraphData } from './components/graph-renderer/GraphRendererTypes';
-import type { GraphRendererRef } from './components/graph-renderer/GraphRendererTypes';
+import { GraphData, GraphRendererRef } from './types';
 import { ensureString, ensureNumber } from '@/utils/compatibility';
-import { sanitizeGraphData } from './compatibility';
+import { sanitizeGraphData } from '@/utils/compatibility';
 
 interface RelationshipGraphAdapterProps {
   graphData: GraphData;

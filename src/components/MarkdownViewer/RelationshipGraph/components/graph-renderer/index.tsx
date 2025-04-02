@@ -17,4 +17,4 @@ export type {
   GraphData, 
   GraphRendererProps, 
   GraphRendererRef 
-} from './GraphRendererTypes';
+} from '../../types';

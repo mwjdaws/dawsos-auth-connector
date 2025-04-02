@@ -6,6 +6,7 @@
  * and ensures there's a consistent interface for the graph renderer components.
  */
 import { GraphNode, GraphLink, GraphData, GraphRendererRef } from './types';
+import { sanitizeGraphData as sanitizeGraphDataFn } from '@/utils/compatibility';
 
 // Re-export types
 export type {
@@ -17,16 +18,7 @@ export type {
 
 // Export sanitized graph data function needed by various components
 export function sanitizeGraphData(data: any): GraphData {
-  if (!data || typeof data !== 'object') {
-    return { nodes: [], links: [] };
-  }
-  
-  const sanitizedData: GraphData = {
-    nodes: Array.isArray(data.nodes) ? data.nodes.map(adaptGraphNode) : [],
-    links: Array.isArray(data.links) ? data.links.map(adaptGraphLink) : []
-  };
-  
-  return sanitizedData;
+  return sanitizeGraphDataFn(data);
 }
 
 // Export any compatibility functions needed for different graph implementations
