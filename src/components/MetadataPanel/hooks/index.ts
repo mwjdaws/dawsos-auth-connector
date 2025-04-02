@@ -28,3 +28,6 @@ export { useInlineMetadataEdit } from './useInlineMetadataEdit';
 
 // Export types
 export * from '../types';
+
+// Export type compatibility layers
+export { sanitizeOntologyTerm, sanitizeTag } from '@/utils/type-compatibility';

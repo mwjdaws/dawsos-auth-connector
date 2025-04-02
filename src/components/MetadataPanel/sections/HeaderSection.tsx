@@ -1,84 +1,69 @@
 
 import React from 'react';
-import { ExternalLink, AlertTriangle, RefreshCw } from 'lucide-react';
+import { RefreshCw, ChevronUp, ChevronDown, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
-interface HeaderSectionProps {
-  contentId: string;
-  title?: string;
-  isPublished?: boolean;
-  isCollapsible?: boolean;
-  isCollapsed?: boolean;
-  isLoading?: boolean;
-  hasValidationErrors?: boolean;
-  onToggleCollapse?: () => void;
-  onRefresh?: () => void;
+export interface HeaderSectionProps {
+  title: string;
+  handleRefresh?: () => void;
+  setIsCollapsed: (isCollapsed: boolean) => void;
+  isCollapsed: boolean;
+  needsExternalReview?: boolean;
+  className?: string;
 }
 
 export function HeaderSection({
-  contentId,
-  title = 'Metadata',
-  isPublished,
-  isCollapsible = false,
-  isCollapsed = false,
-  isLoading = false,
-  hasValidationErrors = false,
-  onToggleCollapse,
-  onRefresh
+  title,
+  handleRefresh,
+  setIsCollapsed,
+  isCollapsed,
+  needsExternalReview = false,
+  className
 }: HeaderSectionProps) {
   return (
-    <Card className="border-b rounded-t-lg rounded-b-none">
-      <CardHeader className="py-3 px-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-medium flex items-center gap-2">
+    <Card className={cn("mb-4", className)}>
+      <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
+        <div className="flex items-center">
+          <CardTitle className="text-lg font-medium">
             {title}
-            {isPublished && (
-              <Badge variant="outline" className="ml-2">Published</Badge>
-            )}
           </CardTitle>
-          
-          <div className="flex gap-2">
-            {onRefresh && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={onRefresh}
-                disabled={isLoading}
-                className="h-8 w-8 p-0"
-              >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                <span className="sr-only">Refresh</span>
-              </Button>
+          {needsExternalReview && (
+            <div className="ml-2 tooltip" data-tip="External source has been updated">
+              <AlertCircle className="h-4 w-4 text-amber-500" />
+            </div>
+          )}
+        </div>
+        <div className="flex items-center space-x-2">
+          {handleRefresh && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={handleRefresh}
+              aria-label="Refresh"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            aria-label={isCollapsed ? "Expand" : "Collapse"}
+          >
+            {isCollapsed ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronUp className="h-4 w-4" />
             )}
-            
-            {isCollapsible && onToggleCollapse && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={onToggleCollapse}
-                className="h-8 w-8 p-0"
-              >
-                <ExternalLink className={`h-4 w-4 ${isCollapsed ? 'rotate-180' : ''}`} />
-                <span className="sr-only">
-                  {isCollapsed ? 'Expand' : 'Collapse'}
-                </span>
-              </Button>
-            )}
-          </div>
+          </Button>
         </div>
       </CardHeader>
-      
-      {hasValidationErrors && (
-        <Alert variant="destructive" className="mx-4 mb-4">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Some metadata fields have validation errors.
-          </AlertDescription>
-        </Alert>
-      )}
     </Card>
   );
 }
+
+export default HeaderSection;

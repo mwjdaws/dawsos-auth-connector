@@ -1,97 +1,106 @@
 
-import { Tag } from "@/types/tag";
-import { OntologyTerm } from "@/types/ontology";
-import { SourceMetadata } from "@/types/sourceMetadata";
+/**
+ * Test type definitions
+ */
+import { Tag } from '@/types/tag';
+import { OntologyTerm } from '@/types/ontology';
 
 /**
- * Sample tag data for testing
+ * Sample Tag data for tests
  */
-export const sampleTag: Tag = {
-  id: "tag-1",
-  name: "Test Tag",
-  content_id: "content-123",
-  type_id: null,
+export const mockTag: Tag = {
+  id: '123e4567-e89b-12d3-a456-426614174000',
+  name: 'Test Tag',
+  content_id: '123e4567-e89b-12d3-a456-426614174001',
+  type_id: '123e4567-e89b-12d3-a456-426614174002',
   display_order: 0,
-  type_name: null // Added type_name property to fix type errors
+  type_name: 'Test Type'
 };
 
 /**
- * Sample ontology term for testing
+ * Sample OntologyTerm data for tests
  */
-export const sampleOntologyTerm: OntologyTerm = {
-  id: "term-1",
-  term: "Test Term",
-  description: "Test description",
-  domain: "Test Domain"
+export const mockOntologyTerm: OntologyTerm = {
+  id: '123e4567-e89b-12d3-a456-426614174003',
+  term: 'Test Term',
+  description: 'A term used for testing',
+  domain: 'Testing Domain',
+  review_required: false
 };
 
 /**
- * Sample source metadata for testing 
+ * Sample Tag collection for tests
  */
-export const sampleSourceMetadata: SourceMetadata = {
-  id: "source-1",
-  title: "Test Source",
-  content: "Test content",
-  created_at: "2023-01-01T00:00:00Z",
-  updated_at: "2023-01-01T00:00:00Z",
-  user_id: null,
-  created_by: null,
-  template_id: null,
-  external_source_url: "https://example.com",
-  external_source_checked_at: "2023-01-01T00:00:00Z",
-  external_content_hash: null,
-  needs_external_review: false,
-  published: false
-};
-
-/**
- * Sample tags array for testing
- */
-export const sampleTags: Tag[] = [
+export const mockTags: Tag[] = [
   {
-    id: "tag-1",
-    name: "Tag 1",
-    content_id: "content-123",
-    type_id: null,
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    name: 'React',
+    content_id: '123e4567-e89b-12d3-a456-426614174001',
+    type_id: '123e4567-e89b-12d3-a456-426614174002',
     display_order: 0,
-    type_name: null // Added type_name property to fix type errors
+    type_name: 'Technology'
   },
   {
-    id: "tag-2",
-    name: "Tag 2",
-    content_id: "content-123",
-    type_id: null,
+    id: '123e4567-e89b-12d3-a456-426614174010',
+    name: 'TypeScript',
+    content_id: '123e4567-e89b-12d3-a456-426614174001',
+    type_id: '123e4567-e89b-12d3-a456-426614174002',
     display_order: 1,
-    type_name: null // Added type_name property to fix type errors
-  }
-];
-
-/**
- * Sample new tag for testing
- */
-export const newTag: Tag = {
-  id: "new-tag",
-  name: "New Tag",
-  content_id: "content-123",
-  type_id: null,
-  display_order: 2,
-  type_name: null // Added type_name property to fix type errors
-};
-
-/**
- * Sample ontology terms array for testing
- */
-export const sampleOntologyTerms: OntologyTerm[] = [
-  {
-    id: "term-1",
-    term: "Term 1",
-    description: "Description 1",
-    domain: "Domain 1"
+    type_name: 'Technology'
   },
   {
-    id: "term-2",
-    term: "Term 2",
-    description: "Description 2",
-    domain: "Domain 2"
+    id: '123e4567-e89b-12d3-a456-426614174020',
+    name: 'Frontend',
+    content_id: '123e4567-e89b-12d3-a456-426614174001',
+    type_id: '123e4567-e89b-12d3-a456-426614174003',
+    display_order: 2,
+    type_name: 'Category'
   }
 ];
+
+/**
+ * Sample OntologyTerm collection for tests
+ */
+export const mockOntologyTerms: OntologyTerm[] = [
+  {
+    id: '123e4567-e89b-12d3-a456-426614174003',
+    term: 'Component',
+    description: 'A reusable UI element',
+    domain: 'Web Development',
+    review_required: false
+  },
+  {
+    id: '123e4567-e89b-12d3-a456-426614174004',
+    term: 'State Management',
+    description: 'Handling application state',
+    domain: 'Web Development',
+    review_required: false
+  }
+];
+
+/**
+ * Mock property data for HeaderSection tests
+ */
+export interface MockHeaderSectionProps {
+  title: string;
+  handleRefresh: () => void;
+  setIsCollapsed: (isCollapsed: boolean) => void;
+  isCollapsed: boolean;
+  needsExternalReview: boolean;
+}
+
+/**
+ * Mock data for MetadataPanel tests
+ */
+export interface MockMetadataPanelData {
+  contentId: string;
+  tags: Tag[];
+  ontologyTerms: OntologyTerm[];
+  externalSource: {
+    url: string;
+    lastCheckedAt: string;
+    needsReview: boolean;
+  } | null;
+  isLoading: boolean;
+  error: Error | null;
+}

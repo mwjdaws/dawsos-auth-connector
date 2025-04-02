@@ -2,6 +2,7 @@
 import { useRef, useCallback, useState } from 'react';
 import * as d3 from 'd3';
 import { GraphNode } from '../../types';
+import { D3ZoomBehavior } from '@/types/d3';
 
 interface UseZoomPanProps {
   width: number;
@@ -32,8 +33,8 @@ export function useZoomPan({
   onZoomChange
 }: UseZoomPanProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const zoomBehaviorRef = useRef<d3.ZoomBehavior<HTMLCanvasElement, unknown>>();
-  const [transform, setTransform] = useState<d3.ZoomTransform>(d3.zoomIdentity.scale(initialZoom));
+  const zoomBehaviorRef = useRef<D3ZoomBehavior<HTMLCanvasElement, unknown>>();
+  const [transform, setTransform] = useState<d3.ZoomTransform>(d3.zoomIdentity.translate(0, 0).scale(initialZoom));
   const [zoomState, setZoomState] = useState<ZoomState>({
     zoom: initialZoom,
     translateX: 0,
@@ -66,7 +67,7 @@ export function useZoomPan({
     zoomBehavior.filter(event => !(event.type === 'dblclick'));
 
     // Store zoom behavior reference
-    zoomBehaviorRef.current = zoomBehavior;
+    zoomBehaviorRef.current = zoomBehavior as D3ZoomBehavior<HTMLCanvasElement, unknown>;
 
     // Apply zoom behavior to canvas
     d3.select(canvasRef.current)

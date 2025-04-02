@@ -1,146 +1,100 @@
 
 /**
- * Type Compatibility Utilities
- * 
- * Helpers for ensuring type safety across different data shapes
+ * Type compatibility utilities for handling nullable fields
+ * and ensuring type safety across the application
  */
+
+import { Tag } from '@/types/tag';
+import { OntologyTerm } from '@/types/ontology';
 
 /**
- * Ensures a value is a string, or returns a default
+ * Ensures a tag object has all required properties with proper types
  */
-export function ensureString(value: any, defaultValue: string = ''): string {
-  if (value === null || value === undefined) return defaultValue;
-  return String(value);
-}
-
-/**
- * Ensures a value is a number, or returns a default
- */
-export function ensureNumber(value: any, defaultValue: number = 0): number {
-  if (value === null || value === undefined) return defaultValue;
-  const num = Number(value);
-  return isNaN(num) ? defaultValue : num;
-}
-
-/**
- * Ensures a value is a boolean, or returns a default
- */
-export function ensureBoolean(value: any, defaultValue: boolean = false): boolean {
-  if (value === null || value === undefined) return defaultValue;
-  return Boolean(value);
-}
-
-/**
- * Ensures a value is an array, or returns an empty array
- */
-export function ensureArray<T>(value: any, defaultValue: T[] = []): T[] {
-  if (Array.isArray(value)) return value;
-  return defaultValue;
-}
-
-/**
- * Converts null to undefined for optional params
- */
-export function nullToUndefined<T>(value: T | null): T | undefined {
-  return value === null ? undefined : value;
-}
-
-/**
- * Converts undefined to null for optional params
- */
-export function undefinedToNull<T>(value: T | undefined): T | null {
-  return value === undefined ? null : value;
-}
-
-/**
- * Ensures zoom level is within valid range
- */
-export function ensureValidZoom(zoom: number | undefined, min: number = 0.1, max: number = 2): number {
-  const validZoom = ensureNumber(zoom, 1);
-  return Math.min(Math.max(validZoom, min), max);
-}
-
-/**
- * Ensures graph data is valid and includes nodes and links
- */
-export function ensureValidGraphData(data: any): { nodes: any[]; links: any[] } {
-  if (!data) return { nodes: [], links: [] };
-  
-  return {
-    nodes: ensureArray(data.nodes),
-    links: ensureArray(data.links)
-  };
-}
-
-/**
- * Sanitizes graph data to ensure it meets expected type requirements
- */
-export function sanitizeGraphData(data: any): any {
-  if (!data) {
-    return { nodes: [], links: [] };
-  }
-
-  // Ensure nodes array exists
-  const nodes = Array.isArray(data.nodes) ? data.nodes : [];
-  
-  // Ensure links array exists
-  const links = Array.isArray(data.links) ? data.links : [];
-  
-  // Process nodes to ensure required properties
-  const processedNodes = nodes.map((node: any = {}) => ({
-    id: ensureString(node?.id || `node-${Math.random().toString(36).substr(2, 9)}`),
-    name: ensureString(node?.name || node?.title || node?.id || 'Unnamed'),
-    title: ensureString(node?.title || node?.name || ''),
-    type: ensureString(node?.type || 'default'),
-    color: ensureString(node?.color || '#6e56cf'),
-    ...node
-  }));
-  
-  // Process links to ensure required properties
-  const processedLinks = links.map((link: any = {}) => {
-    // Handle source and target as objects or strings
-    const source = typeof link?.source === 'object' && link?.source !== null
-      ? ensureString(link.source.id)
-      : ensureString(link?.source);
-    
-    const target = typeof link?.target === 'object' && link?.target !== null
-      ? ensureString(link.target.id)
-      : ensureString(link?.target);
-    
+export function sanitizeTag(tag: Partial<Tag> | null | undefined): Tag {
+  if (!tag) {
     return {
-      source,
-      target,
-      type: ensureString(link?.type || 'default'),
-      value: ensureNumber(link?.value || 1),
-      color: ensureString(link?.color || '#8b8b8b'),
-      ...link
+      id: '',
+      name: '',
+      content_id: '',
+      type_id: null,
+      display_order: 0,
+      type_name: ''
     };
-  });
+  }
   
   return {
-    nodes: processedNodes,
-    links: processedLinks
+    id: tag.id || '',
+    name: tag.name || '',
+    content_id: tag.content_id || '',
+    type_id: tag.type_id || null,
+    display_order: typeof tag.display_order === 'number' ? tag.display_order : 0,
+    type_name: tag.type_name || ''
   };
 }
 
 /**
- * Creates safe props for graph renderers
+ * Ensures an OntologyTerm object has all required properties with proper types
  */
-export function createSafeGraphProps(props: any = {}): any {
+export function sanitizeOntologyTerm(term: Partial<OntologyTerm> | null | undefined): OntologyTerm {
+  if (!term) {
+    return {
+      id: '',
+      term: '',
+      description: '',
+      domain: null,
+      review_required: false
+    };
+  }
+  
   return {
-    width: ensureNumber(props.width, 600),
-    height: ensureNumber(props.height, 400),
-    zoom: ensureValidZoom(props.zoom),
-    graphData: ensureValidGraphData(props.graphData),
-    highlightedNodeId: nullToUndefined(props.highlightedNodeId),
-    onNodeClick: typeof props.onNodeClick === 'function' ? props.onNodeClick : undefined,
-    onLinkClick: typeof props.onLinkClick === 'function' ? props.onLinkClick : undefined
+    id: term.id || '',
+    term: term.term || '',
+    description: term.description || '',
+    domain: term.domain || null,
+    review_required: typeof term.review_required === 'boolean' ? term.review_required : false,
+    associationId: term.associationId
   };
 }
 
 /**
- * Safely wrap a callback to handle null/undefined
+ * Safely converts a value that could be null/undefined to a string
  */
-export function safeCallback<T extends (...args: any[]) => any>(callback: T | undefined | null): T | ((...args: Parameters<T>) => void) {
-  return typeof callback === 'function' ? callback : () => {};
+export function safeString(value: string | null | undefined): string {
+  return value || '';
+}
+
+/**
+ * Safely converts a value that could be null/undefined to a number
+ */
+export function safeNumber(value: number | null | undefined, defaultValue = 0): number {
+  return typeof value === 'number' ? value : defaultValue;
+}
+
+/**
+ * Safely converts a value that could be null/undefined to a boolean
+ */
+export function safeBoolean(value: boolean | null | undefined, defaultValue = false): boolean {
+  return typeof value === 'boolean' ? value : defaultValue;
+}
+
+/**
+ * Safely converts a value that could be null/undefined to an array
+ */
+export function safeArray<T>(value: T[] | null | undefined): T[] {
+  return Array.isArray(value) ? value : [];
+}
+
+/**
+ * Safely handles functions that could be undefined
+ */
+export function safeFunction<T extends (...args: any[]) => any>(
+  fn: T | undefined,
+  defaultReturn?: ReturnType<T>
+): (...args: Parameters<T>) => ReturnType<T> {
+  return (...args: Parameters<T>): ReturnType<T> => {
+    if (typeof fn === 'function') {
+      return fn(...args);
+    }
+    return defaultReturn as ReturnType<T>;
+  };
 }
