@@ -4,6 +4,7 @@
  * 
  * These utilities provide convenient ways to wrap functions with error handling.
  */
+import React from 'react';
 import { handleError } from './handle';
 import { ErrorHandlingOptions, ErrorLevel, ErrorSource } from './types';
 
