@@ -8,7 +8,8 @@
  */
 import { useCallback, useEffect, useRef, useMemo } from 'react';
 import { GraphData } from '../../types';
-import { handleError, ErrorLevel } from '@/utils/errors';
+import { handleError } from '@/utils/errors';
+import { ErrorLevel } from '@/utils/errors/types';
 import { toast } from '@/hooks/use-toast';
 import { useGraphState } from './useGraphState';
 import { useFetchGraphData } from './useFetchGraphData';
@@ -157,9 +158,9 @@ export function useGraphData(startingNodeId = '') {
     
     handleError(
       new Error("Manually refreshing graph data"),
-      "Refreshing graph data",
       {
-        level: ErrorLevel.Info, // Changed from INFO to Info
+        message: "Refreshing graph data",
+        level: ErrorLevel.Info,
         context: { startingNodeId }
       }
     );

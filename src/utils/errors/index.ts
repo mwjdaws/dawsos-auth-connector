@@ -18,7 +18,8 @@ import handleErrorDefault, {
   handleError, 
   createComponentErrorHandler, 
   createHookErrorHandler, 
-  createServiceErrorHandler 
+  createServiceErrorHandler,
+  createErrorHandler
 } from './handle';
 
 // Export default handler
@@ -29,13 +30,14 @@ export {
   handleError,
   createComponentErrorHandler,
   createHookErrorHandler,
-  createServiceErrorHandler
+  createServiceErrorHandler,
+  createErrorHandler
 };
 
 // Error handling utilities
 export { generateFingerprint, cleanupFingerprintCache } from './deduplication';
 export { formatErrorForLogging, formatErrorForUser } from './formatter';
-export { isErrorIgnored, ignoreError, unignoreError, setMinimumErrorLevel } from './filtering';
+export { isErrorIgnored, isErrorLevelMet, ignoreError, unignoreError, setMinimumErrorLevel } from './filtering';
 export { trackError, getDuplicateCount, hasSeenError, resetErrorTracking } from './tracking';
 
 // Error handling compatibility layer
@@ -46,14 +48,5 @@ export {
   convertErrorOptions
 } from './compatibility';
 
-// Wrapper functions for safer error handling
-export {
-  withErrorHandling,
-  withAsyncErrorHandling,
-  withComponentErrorHandling
-} from './wrappers';
-
 // Type definitions
 export * from './types';
-export * from './types/validation-errors';
-export * from './types/api-errors';

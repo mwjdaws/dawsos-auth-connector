@@ -32,6 +32,11 @@ export interface Tag {
    * The display order for this tag
    */
   display_order: number;
+  
+  /**
+   * Optional color for tag display
+   */
+  color?: string;
 }
 
 /**
@@ -67,6 +72,16 @@ export interface TagGroup {
    * Tags in this group
    */
   tags: Tag[];
+  
+  /**
+   * Optional ID for the group
+   */
+  id?: string;
+  
+  /**
+   * Optional name for the group
+   */
+  name?: string;
 }
 
 /**

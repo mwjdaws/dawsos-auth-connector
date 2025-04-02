@@ -2,7 +2,8 @@
 import { useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tag } from '@/types/tag';
-import { handleError, ErrorLevel } from '@/utils/errors';
+import { handleError } from '@/utils/errors';
+import { ErrorLevel, ErrorSource } from '@/utils/errors/types';
 import { useAuth } from '@/hooks/useAuth';
 
 interface UseTagMutationsProps {
@@ -61,7 +62,7 @@ export const useTagMutations = ({
       // Add the new tag to the state, ensuring it has a type_name
       const newTag: Tag = {
         ...data,
-        type_name: '' // Add default type_name if needed
+        type_name: null // Add default type_name if needed
       };
       
       setTags([...tags, newTag]);
@@ -70,8 +71,12 @@ export const useTagMutations = ({
     } catch (err) {
       handleError(
         err,
-        `Failed to add tag "${name}"`,
-        { level: ErrorLevel.Warning }
+        {
+          message: `Failed to add tag "${name}"`,
+          level: ErrorLevel.Warning,
+          source: ErrorSource.Hook,
+          context: { contentId, tagName: name }
+        }
       );
       return false;
     } finally {
@@ -103,8 +108,12 @@ export const useTagMutations = ({
     } catch (err) {
       handleError(
         err,
-        `Failed to delete tag`,
-        { level: ErrorLevel.Warning }
+        {
+          message: `Failed to delete tag`,
+          level: ErrorLevel.Warning,
+          source: ErrorSource.Hook,
+          context: { contentId, tagId }
+        }
       );
       return false;
     } finally {
@@ -154,8 +163,12 @@ export const useTagMutations = ({
     } catch (err) {
       handleError(
         err,
-        `Failed to reorder tags`,
-        { level: ErrorLevel.Warning }
+        {
+          message: `Failed to reorder tags`,
+          level: ErrorLevel.Warning,
+          source: ErrorSource.Hook,
+          context: { contentId }
+        }
       );
       return false;
     } finally {

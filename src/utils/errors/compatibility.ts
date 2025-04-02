@@ -1,5 +1,5 @@
 
-import { handleError, createComponentErrorHandler, createHookErrorHandler, createServiceErrorHandler } from './handle';
+import handleError from './handle';
 import { ErrorLevel, ErrorSource, ErrorHandlingOptions } from './types';
 
 /**
@@ -18,11 +18,11 @@ export function legacyHandleError(
     message,
     level: options?.level || ErrorLevel.Error,
     source: options?.source || ErrorSource.Unknown,
-    context: options?.context,
-    silent: options?.silent,
-    showToast: options?.showToast,
+    context: options?.context || {},
+    silent: options?.silent === true,
+    showToast: options?.showToast !== false,
     toastId: options?.toastId,
-    reportToAnalytics: options?.reportToAnalytics
+    reportToAnalytics: options?.reportToAnalytics !== false
   });
 }
 
@@ -57,7 +57,7 @@ export function convertErrorOptions(legacyOptions: Record<string, any>): ErrorHa
   return {
     level: legacyOptions.level || ErrorLevel.Error,
     source: legacyOptions.source || ErrorSource.Unknown,
-    message: legacyOptions.message,
+    message: legacyOptions.message || '',
     context: legacyOptions.context || {},
     reportToAnalytics: legacyOptions.reportToAnalytics !== false,
     showToast: legacyOptions.showToast !== false, 
@@ -71,9 +71,6 @@ export function convertErrorOptions(legacyOptions: Record<string, any>): ErrorHa
 // Re-export for convenience
 export { 
   handleError, 
-  createComponentErrorHandler,
-  createHookErrorHandler,
-  createServiceErrorHandler,
   ErrorLevel, 
   ErrorSource 
 };

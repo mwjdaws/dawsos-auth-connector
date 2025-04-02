@@ -1,9 +1,9 @@
 
 import { toast } from '@/hooks/use-toast';
-import { ErrorLevel, ErrorSource, ErrorHandlingOptions, LegacyErrorHandlingOptions } from './types';
+import { ErrorLevel, ErrorSource, ErrorHandlingOptions } from './types';
 import { generateFingerprint } from './deduplication';
 import { formatErrorForLogging, formatErrorForUser } from './formatter';
-import { isErrorIgnored } from './filtering';
+import { isErrorIgnored, isErrorLevelMet } from './filtering';
 import { trackError, getDuplicateCount } from './tracking';
 
 /**
@@ -14,14 +14,14 @@ import { trackError, getDuplicateCount } from './tracking';
  * proper formatting, and appropriate user feedback.
  * 
  * @param error The error object or message
- * @param options Error handling options or a user-friendly message
+ * @param optionsOrMessage Error handling options or a user-friendly message
  */
 export function handleError(
   error: Error | unknown,
-  options?: string | ErrorHandlingOptions
+  optionsOrMessage?: string | Partial<ErrorHandlingOptions>
 ): void {
   // Set default options
-  let errorOptions: ErrorHandlingOptions = {
+  const errorOptions: ErrorHandlingOptions = {
     level: ErrorLevel.Error,
     source: ErrorSource.Unknown,
     message: typeof error === 'string' ? error : undefined,
@@ -29,19 +29,19 @@ export function handleError(
     reportToAnalytics: true,
     showToast: true,
     suppressToast: false,
-    silent: false
+    silent: false,
+    fingerprint: undefined,
+    toastId: undefined,
+    toastTitle: undefined
   };
 
   // Process options parameter
-  if (typeof options === 'string') {
+  if (typeof optionsOrMessage === 'string') {
     // String option is treated as a user-friendly message
-    errorOptions.message = options;
-  } else if (options) {
+    errorOptions.message = optionsOrMessage;
+  } else if (optionsOrMessage) {
     // Merge provided options with defaults
-    errorOptions = {
-      ...errorOptions,
-      ...options
-    };
+    Object.assign(errorOptions, optionsOrMessage);
   }
 
   // Extract actual error object
@@ -55,6 +55,11 @@ export function handleError(
   
   // Skip if error is configured to be ignored
   if (isErrorIgnored(fingerprint)) {
+    return;
+  }
+  
+  // Skip if error level doesn't meet threshold
+  if (!isErrorLevelMet(errorOptions.level)) {
     return;
   }
   
@@ -85,7 +90,8 @@ export function handleError(
   // Show toast notification if configured
   if (errorOptions.showToast && !errorOptions.suppressToast && !errorOptions.silent) {
     const title = errorOptions.toastTitle || 
-      (errorOptions.level === ErrorLevel.Warning ? 'Warning' : 'Error');
+      (errorOptions.level === ErrorLevel.Warning ? 'Warning' : 
+        errorOptions.level === ErrorLevel.Critical ? 'Critical Error' : 'Error');
     
     const description = formatErrorForUser(
       errorObject, 
@@ -108,41 +114,21 @@ export function handleError(
 }
 
 /**
- * Legacy error handler function for backward compatibility
- */
-export function handleErrorLegacy(
-  error: Error | unknown,
-  message: string,
-  options?: LegacyErrorHandlingOptions
-): void {
-  // Convert legacy options to new format
-  handleError(error, {
-    message,
-    level: options?.level || ErrorLevel.Error,
-    source: options?.source || ErrorSource.Unknown,
-    context: options?.context,
-    silent: options?.silent,
-    showToast: options?.showToast,
-    toastId: options?.toastId,
-    reportToAnalytics: options?.reportToAnalytics
-  });
-}
-
-/**
  * Create component-specific error handler
  */
 export function createComponentErrorHandler(componentName: string, defaultOptions?: Partial<ErrorHandlingOptions>) {
-  return (error: Error | unknown, options?: string | ErrorHandlingOptions): void => {
-    const mergedOptions = typeof options === 'string' 
-      ? { message: options, source: ErrorSource.Component } 
-      : { ...options, source: ErrorSource.Component };
+  return (error: Error | unknown, optionsOrMessage?: string | Partial<ErrorHandlingOptions>): void => {
+    const mergedOptions = typeof optionsOrMessage === 'string' 
+      ? { message: optionsOrMessage } 
+      : optionsOrMessage || {};
       
     handleError(error, {
       ...defaultOptions,
       ...mergedOptions,
+      source: ErrorSource.Component,
       context: {
         ...(defaultOptions?.context || {}),
-        ...(typeof options === 'object' ? options.context || {} : {}),
+        ...(mergedOptions.context || {}),
         componentName
       }
     });
@@ -153,17 +139,18 @@ export function createComponentErrorHandler(componentName: string, defaultOption
  * Create hook-specific error handler
  */
 export function createHookErrorHandler(hookName: string, defaultOptions?: Partial<ErrorHandlingOptions>) {
-  return (error: Error | unknown, options?: string | ErrorHandlingOptions): void => {
-    const mergedOptions = typeof options === 'string' 
-      ? { message: options, source: ErrorSource.Hook } 
-      : { ...options, source: ErrorSource.Hook };
+  return (error: Error | unknown, optionsOrMessage?: string | Partial<ErrorHandlingOptions>): void => {
+    const mergedOptions = typeof optionsOrMessage === 'string' 
+      ? { message: optionsOrMessage } 
+      : optionsOrMessage || {};
       
     handleError(error, {
       ...defaultOptions,
       ...mergedOptions,
+      source: ErrorSource.Hook,
       context: {
         ...(defaultOptions?.context || {}),
-        ...(typeof options === 'object' ? options.context || {} : {}),
+        ...(mergedOptions.context || {}),
         hookName
       }
     });
@@ -174,18 +161,45 @@ export function createHookErrorHandler(hookName: string, defaultOptions?: Partia
  * Create service-specific error handler
  */
 export function createServiceErrorHandler(serviceName: string, defaultOptions?: Partial<ErrorHandlingOptions>) {
-  return (error: Error | unknown, options?: string | ErrorHandlingOptions): void => {
-    const mergedOptions = typeof options === 'string' 
-      ? { message: options, source: ErrorSource.Service } 
-      : { ...options, source: ErrorSource.Service };
+  return (error: Error | unknown, optionsOrMessage?: string | Partial<ErrorHandlingOptions>): void => {
+    const mergedOptions = typeof optionsOrMessage === 'string' 
+      ? { message: optionsOrMessage } 
+      : optionsOrMessage || {};
       
     handleError(error, {
       ...defaultOptions,
       ...mergedOptions,
+      source: ErrorSource.Service,
       context: {
         ...(defaultOptions?.context || {}),
-        ...(typeof options === 'object' ? options.context || {} : {}),
+        ...(mergedOptions.context || {}),
         serviceName
+      }
+    });
+  };
+}
+
+// General error handler creator
+export function createErrorHandler(
+  source: ErrorSource,
+  contextName: string,
+  defaultOptions?: Partial<ErrorHandlingOptions>
+) {
+  return (error: Error | unknown, optionsOrMessage?: string | Partial<ErrorHandlingOptions>): void => {
+    const mergedOptions = typeof optionsOrMessage === 'string' 
+      ? { message: optionsOrMessage } 
+      : optionsOrMessage || {};
+      
+    handleError(error, {
+      ...defaultOptions,
+      ...mergedOptions,
+      source,
+      context: {
+        ...(defaultOptions?.context || {}),
+        ...(mergedOptions.context || {}),
+        [source === ErrorSource.Component ? 'componentName' : 
+         source === ErrorSource.Hook ? 'hookName' : 
+         source === ErrorSource.Service ? 'serviceName' : 'name']: contextName
       }
     });
   };

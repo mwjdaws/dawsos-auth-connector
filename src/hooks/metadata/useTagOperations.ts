@@ -2,7 +2,8 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tag } from '@/types';
-import { handleError, ErrorLevel } from '@/utils/errors';
+import { handleError } from '@/utils/errors';
+import { ErrorLevel, ErrorSource } from '@/utils/errors/types';
 
 interface UseTagOperationsProps {
   contentId: string;
@@ -57,9 +58,9 @@ export function useTagOperations({ contentId, tags, setTags }: UseTagOperationsP
     } catch (err) {
       handleError(
         err,
-        `Failed to add tag "${name}"`,
-        { 
-          level: ErrorLevel.WARNING,
+        {
+          message: `Failed to add tag "${name}"`,
+          level: ErrorLevel.Warning,
           context: { contentId, tagName: name }
         }
       );
@@ -94,9 +95,9 @@ export function useTagOperations({ contentId, tags, setTags }: UseTagOperationsP
     } catch (err) {
       handleError(
         err,
-        'Failed to delete tag',
-        { 
-          level: ErrorLevel.WARNING,
+        {
+          message: 'Failed to delete tag',
+          level: ErrorLevel.Warning,
           context: { contentId, tagId }
         }
       );

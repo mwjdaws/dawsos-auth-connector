@@ -1,113 +1,100 @@
 
 /**
- * Error handling type definitions
- */
-
-/**
- * Error severity level
+ * Error level enum
+ * Used to categorize errors by severity
  */
 export enum ErrorLevel {
-  Debug = 'debug',
-  Info = 'info',
-  Warning = 'warning',
-  Error = 'error',
-  Critical = 'critical'
+  Debug = 'Debug',
+  Info = 'Info',
+  Warning = 'Warning',
+  Error = 'Error',
+  Critical = 'Critical'
 }
 
 /**
- * Error source categories
+ * Error source enum
+ * Used to categorize errors by origin/source
  */
 export enum ErrorSource {
-  Unknown = 'unknown',
-  User = 'user',
-  Component = 'component',
-  Hook = 'hook',
-  Service = 'service',
-  API = 'api',
-  Database = 'database',
-  Network = 'network',
-  Auth = 'auth',
-  Storage = 'storage',
-  Edge = 'edge',
-  System = 'system',
-  External = 'external',
-  Validation = 'validation'
+  Unknown = 'Unknown',
+  Component = 'Component',
+  Hook = 'Hook',
+  Service = 'Service',
+  API = 'API',
+  Database = 'Database',
+  Validation = 'Validation',
+  Network = 'Network',
+  Authentication = 'Authentication',
+  Authorization = 'Authorization',
+  App = 'App',
+  User = 'User'
 }
 
 /**
- * Options for error handling
+ * Error handling options
+ * Used to configure error handling behavior
  */
 export interface ErrorHandlingOptions {
   /**
-   * The severity level of the error
-   * @default ErrorLevel.Error
+   * Error severity level
    */
-  level?: ErrorLevel;
-
+  level: ErrorLevel;
+  
   /**
-   * The source category of the error
-   * @default ErrorSource.Unknown
+   * Error source/origin
    */
-  source?: ErrorSource;
-
+  source: ErrorSource;
+  
   /**
-   * A user-friendly message describing the error
+   * User-friendly error message
    */
-  message?: string;
-
+  message: string;
+  
   /**
-   * Additional context about the error (for logging and debugging)
+   * Additional context for the error
    */
-  context?: Record<string, any>;
-
+  context: Record<string, any>;
+  
   /**
-   * Whether to report the error to analytics services
-   * @default true
+   * Whether to report to analytics
    */
-  reportToAnalytics?: boolean;
-
+  reportToAnalytics: boolean;
+  
   /**
-   * Whether to show a toast notification for the error
-   * @default true for ErrorLevel.Error and above
+   * Whether to show toast notification
    */
-  showToast?: boolean;
-
+  showToast: boolean;
+  
   /**
-   * Override to suppress toast even if showToast is true
-   * Useful for preventing duplicate notifications
-   * @default false
+   * Whether to suppress toast notification
+   * (higher precedence than showToast)
    */
-  suppressToast?: boolean;
-
+  suppressToast: boolean;
+  
   /**
-   * Whether to suppress all notifications and logging
-   * @default false
+   * Whether to silence all notifications
    */
-  silent?: boolean;
-
+  silent: boolean;
+  
   /**
-   * Optional ID for the toast notification
-   */
-  toastId?: string;
-
-  /**
-   * Optional custom title for the toast notification
-   */
-  toastTitle?: string;
-
-  /**
-   * Unique fingerprint for error deduplication
+   * Optional fingerprint for deduplication
    */
   fingerprint?: string;
-
+  
   /**
-   * The original error object
+   * Optional toast ID for updates
    */
-  originalError?: Error;
+  toastId?: string;
+  
+  /**
+   * Optional custom toast title
+   */
+  toastTitle?: string;
 }
 
 /**
- * Legacy interface for error handling options (backward compatibility)
+ * Legacy error handling options
+ * @deprecated Use ErrorHandlingOptions instead
  */
 export interface LegacyErrorHandlingOptions {
   level?: ErrorLevel;
@@ -120,31 +107,18 @@ export interface LegacyErrorHandlingOptions {
 }
 
 /**
- * Type for error handler function
+ * Basic error tracking info
  */
-export type ErrorHandler = (
-  error: Error | unknown,
-  options?: string | ErrorHandlingOptions
-) => void;
-
-/**
- * Contextual error with additional metadata
- */
-export interface ContextualError extends Error {
-  context?: Record<string, any>;
-  source?: ErrorSource;
-  level?: ErrorLevel;
+export interface ErrorTrackingInfo {
+  timestamp: number;
+  count: number;
 }
 
 /**
- * Error with a specific code
+ * Type alias for error fingerprints
  */
-export interface CodedError extends Error {
-  code: string | number;
-}
+export type ErrorFingerprint = string;
 
-/**
- * Export all error types from submodules
- */
-export * from './validation-errors';
+// Re-export all error types from sub-modules
 export * from './api-errors';
+export * from './validation-errors';

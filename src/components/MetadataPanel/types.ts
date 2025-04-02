@@ -54,6 +54,21 @@ export interface SourceMetadata {
    * Whether the external source needs review
    */
   needs_external_review: boolean;
+  
+  /**
+   * Alias for external_source_url (for backward compatibility)
+   */
+  externalSource?: string | null;
+  
+  /**
+   * Alias for external_source_checked_at (for backward compatibility)
+   */
+  lastCheckedAt?: string | null;
+  
+  /**
+   * Alias for needs_external_review (for backward compatibility)
+   */
+  needsExternalReview?: boolean;
 }
 
 /**
@@ -164,4 +179,25 @@ export interface RelatedTerm {
    * Relevance score
    */
   score?: number;
+}
+
+/**
+ * Props for external source section
+ */
+export interface ExternalSourceSectionProps {
+  contentId: string;
+  editable: boolean;
+  externalSource: string | null;
+  lastCheckedAt: string | null;
+  needsExternalReview: boolean;
+}
+
+/**
+ * Props for ontology terms section
+ */
+export interface OntologyTermsSectionProps {
+  contentId: string;
+  editable: boolean;
+  ontologyTerms: OntologyTerm[];
+  isLoading?: boolean;
 }

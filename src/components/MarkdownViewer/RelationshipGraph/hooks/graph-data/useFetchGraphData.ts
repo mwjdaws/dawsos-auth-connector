@@ -2,7 +2,8 @@
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { GraphData } from '../../types';
-import { handleError, ErrorLevel } from '@/utils/errors';
+import { handleError } from '@/utils/errors';
+import { ErrorLevel } from '@/utils/errors/types';
 
 /**
  * Custom hook for fetching and processing graph data from Supabase
@@ -102,8 +103,9 @@ export function useFetchGraphData() {
         error: null
       };
     } catch (error) {
-      handleError(error, 'Failed to fetch graph data', {
-        level: ErrorLevel.Error, // Changed from ERROR to Error
+      handleError(error, {
+        message: 'Failed to fetch graph data',
+        level: ErrorLevel.Error,
         context: { startingNodeId }
       });
       
