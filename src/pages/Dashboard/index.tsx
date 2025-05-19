@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardAuth } from "@/components/Dashboard/DashboardAuth";
 import { DashboardLoading } from "@/components/Dashboard/DashboardLoading";
@@ -28,11 +28,11 @@ const DashboardPage = () => {
   useDashboardEffects({ contentId, user });
   
   // Set initial active tab from user preferences
-  useState(() => {
+  useEffect(() => {
     if (preferences && preferences.defaultTab) {
       setActiveTab(preferences.defaultTab);
     }
-  });
+  }, [preferences]);
   
   // Handle tab change and save preference
   const handleTabChange = (tab: string) => {

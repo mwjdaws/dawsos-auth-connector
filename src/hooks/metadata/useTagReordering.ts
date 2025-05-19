@@ -5,7 +5,7 @@
  * This hook provides a consistent interface for handling tag reordering
  * operations, including optimistic updates and server synchronization.
  */
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Tag } from '@/types/tag';
 import { isValidContentId } from '@/utils/content-validation';
 import { toast } from '@/hooks/use-toast';
@@ -27,9 +27,9 @@ export function useTagReordering({
   const [localTags, setLocalTags] = useState<Tag[]>(initialTags);
   
   // Update local tags when props change
-  useState(() => {
+  useEffect(() => {
     setLocalTags(initialTags);
-  });
+  }, [initialTags]);
   
   /**
    * Reorder tags and update in database
