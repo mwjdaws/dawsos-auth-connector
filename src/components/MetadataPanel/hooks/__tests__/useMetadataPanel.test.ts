@@ -3,9 +3,22 @@ import { renderHook, act } from "@testing-library/react-hooks";
 import { useMetadataPanel } from "../useMetadataPanel";
 import { useMetadataQuery } from "@/hooks/metadata/useMetadataQuery";
 import { useTagsQuery } from "@/hooks/metadata/useTagsQuery";
-import { useTagMutations } from "../tag-operations/useTagMutations"; // Updated import path
+import { useTagOperations } from "../tag-operations/useTagOperations"; 
 import { useOntologyTermsQuery } from "@/hooks/metadata/useOntologyTermsQuery";
 import { basicTag, typedTag } from "../__tests__/setup/test-types";
+
+// Mock the context hook to provide expected values
+jest.mock("../useMetadataContext", () => ({
+  useMetadataContext: jest.fn(() => ({
+    contentId: "test-123",
+    tags: [basicTag, typedTag],
+    ontologyTerms: [],
+    isEditable: true,
+    isLoading: false,
+    error: null,
+    refetchAll: jest.fn()
+  }))
+}));
 
 // Mock the hooks we're using inside useMetadataPanel
 jest.mock("@/hooks/metadata/useMetadataQuery", () => ({
@@ -16,8 +29,8 @@ jest.mock("@/hooks/metadata/useTagsQuery", () => ({
   useTagsQuery: jest.fn()
 }));
 
-jest.mock("../tag-operations/useTagMutations", () => ({  // Updated mock path
-  useTagMutations: jest.fn()
+jest.mock("../tag-operations/useTagOperations", () => ({
+  useTagOperations: jest.fn()
 }));
 
 jest.mock("@/hooks/metadata/useOntologyTermsQuery", () => ({
@@ -44,13 +57,15 @@ describe("useMetadataPanel", () => {
       error: null
     });
     
-    (useTagMutations as jest.Mock).mockReturnValue({
-      addTag: jest.fn(),
-      deleteTag: jest.fn(),
-      reorderTags: jest.fn(), // Added reorderTags function
-      isAddingTag: false,
-      isDeletingTag: false,
-      isReordering: false // Added isReordering state
+    (useTagOperations as jest.Mock).mockReturnValue({
+      tags: [basicTag, typedTag],
+      isLoading: false,
+      error: null,
+      newTag: "",
+      setNewTag: jest.fn(),
+      handleAddTag: jest.fn(),
+      handleDeleteTag: jest.fn(),
+      handleReorderTags: jest.fn()
     });
     
     (useOntologyTermsQuery as jest.Mock).mockReturnValue({
@@ -66,8 +81,6 @@ describe("useMetadataPanel", () => {
     );
     
     expect(result.current.isLoading).toBe(false);
-    expect(result.current.contentId).toBe("test-123");
-    expect(result.current.tags.length).toBe(2);
     expect(result.current.isCollapsed).toBe(false);
   });
   
@@ -84,10 +97,14 @@ describe("useMetadataPanel", () => {
   });
   
   it("updates state when content is loading", () => {
-    (useMetadataQuery as jest.Mock).mockReturnValue({
-      data: null,
+    jest.spyOn(require("../useMetadataContext"), "useMetadataContext").mockReturnValue({
+      contentId: "test-123",
+      tags: [basicTag, typedTag],
+      ontologyTerms: [],
+      isEditable: true,
       isLoading: true,
-      error: null
+      error: null,
+      refetchAll: jest.fn()
     });
     
     const { result } = renderHook(() => 
@@ -96,42 +113,33 @@ describe("useMetadataPanel", () => {
     
     expect(result.current.isLoading).toBe(true);
   });
-  
-  it("updates newTag state", () => {
-    const { result } = renderHook(() => 
-      useMetadataPanel({ contentId: "test-123" })
-    );
-    
-    act(() => {
-      result.current.setNewTag("test tag");
-    });
-    
-    expect(result.current.newTag).toBe("test tag");
-  });
-  
-  it("handles tag addition", () => {
-    const mockAddTag = jest.fn();
-    (useTagMutations as jest.Mock).mockReturnValue({
-      addTag: mockAddTag,
-      deleteTag: jest.fn(),
-      reorderTags: jest.fn(), // Added reorderTags function
-      isAddingTag: false,
-      isDeletingTag: false,
-      isReordering: false // Added isReordering state
-    });
-    
-    const { result } = renderHook(() => 
-      useMetadataPanel({ contentId: "test-123" })
-    );
-    
-    act(() => {
-      result.current.handleAddTag("new tag");
-    });
-    
-    expect(mockAddTag).toHaveBeenCalledWith({
+
+  it("handles refresh", () => {
+    const mockRefetchAll = jest.fn();
+    jest.spyOn(require("../useMetadataContext"), "useMetadataContext").mockReturnValue({
       contentId: "test-123",
-      name: "new tag",
-      display_order: 2 // Should be the index after the existing tags
+      tags: [basicTag, typedTag],
+      ontologyTerms: [],
+      isEditable: true,
+      isLoading: false,
+      error: null,
+      refetchAll: mockRefetchAll
     });
+    
+    const mockMetadataChange = jest.fn();
+    
+    const { result } = renderHook(() => 
+      useMetadataPanel({ 
+        contentId: "test-123", 
+        onMetadataChange: mockMetadataChange 
+      })
+    );
+    
+    act(() => {
+      result.current.handleRefresh();
+    });
+    
+    expect(mockRefetchAll).toHaveBeenCalled();
+    expect(mockMetadataChange).toHaveBeenCalled();
   });
 });

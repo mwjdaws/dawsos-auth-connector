@@ -161,7 +161,7 @@ export const Chart = React.forwardRef<
                 name={key}
                 fill={colors[index % colors.length]}
                 stroke={colors[index % colors.length]}
-                stackId={stackKeys?.[index] || undefined}
+                stackId={stackKeys?.[index] ? stackKeys[index] : undefined}
               />
             ))}
           </BarChart>
@@ -183,7 +183,7 @@ export const Chart = React.forwardRef<
                 fill={colors[index % colors.length]}
                 strokeWidth={2}
                 activeDot={{ r: 5, style: { fill: "var(--chart-color)" } }}
-                stackId={stackKeys?.[index] || undefined}
+                stackId={stackKeys?.[index] ? stackKeys[index] : undefined}
               />
             ))}
           </AreaChart>

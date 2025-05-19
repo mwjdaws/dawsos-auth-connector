@@ -2,7 +2,7 @@
 import { useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tag } from '@/types/tag';
-import { handleError } from '@/utils/errors';
+import { handleErrorWithOptions } from '@/utils/errors/handleErrorWithOptions';
 import { ErrorLevel, ErrorSource } from '@/utils/errors/types';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -33,7 +33,15 @@ export const useTagMutations = ({
   /**
    * Add a new tag to the content
    */
-  const addTag = useCallback(async ({ name, contentId, typeId }: { name: string; contentId: string; typeId: string | null; }) => {
+  const addTag = useCallback(async ({ 
+    name, 
+    contentId, 
+    typeId 
+  }: { 
+    name: string; 
+    contentId: string; 
+    typeId?: string | null; 
+  }) => {
     if (!name.trim() || !contentId) return false;
     
     setIsAddingTag(true);
@@ -51,7 +59,7 @@ export const useTagMutations = ({
         .insert({
           name: name.trim(),
           content_id: contentId,
-          type_id: typeId,
+          type_id: typeId || null,
           display_order: maxOrderTag + 1
         })
         .select()
@@ -69,10 +77,10 @@ export const useTagMutations = ({
       
       return true;
     } catch (err) {
-      handleError(
+      handleErrorWithOptions(
         err,
+        `Failed to add tag "${name}"`,
         {
-          message: `Failed to add tag "${name}"`,
           level: ErrorLevel.Warning,
           source: ErrorSource.Hook,
           context: { contentId, tagName: name }
@@ -106,10 +114,10 @@ export const useTagMutations = ({
       
       return true;
     } catch (err) {
-      handleError(
+      handleErrorWithOptions(
         err,
+        `Failed to delete tag`,
         {
-          message: `Failed to delete tag`,
           level: ErrorLevel.Warning,
           source: ErrorSource.Hook,
           context: { contentId, tagId }
@@ -161,10 +169,10 @@ export const useTagMutations = ({
       
       return true;
     } catch (err) {
-      handleError(
+      handleErrorWithOptions(
         err,
+        `Failed to reorder tags`,
         {
-          message: `Failed to reorder tags`,
           level: ErrorLevel.Warning,
           source: ErrorSource.Hook,
           context: { contentId }

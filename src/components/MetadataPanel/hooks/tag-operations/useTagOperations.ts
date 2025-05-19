@@ -4,7 +4,8 @@ import { useTagState } from './useTagState';
 import { useTagFetch } from './useTagFetch';
 import { useTagMutations } from './useTagMutations';
 import { Tag } from '@/types/tag';
-import { handleError, ErrorLevel, ErrorSource } from '@/utils/errors';
+import { handleErrorWithOptions } from '@/utils/errors/handleErrorWithOptions';
+import { ErrorLevel, ErrorSource } from '@/utils/errors/types';
 import { isValidContentId } from '@/utils/validation/contentIdValidation';
 import { UseTagOperationsResult } from './types';
 
@@ -54,8 +55,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
     try {
       await fetchTags();
     } catch (err) {
-      handleError(err, {
-        message: "Failed to refresh tags",
+      handleErrorWithOptions(err, "Failed to refresh tags", {
         level: ErrorLevel.Warning,
         source: ErrorSource.Hook
       });
@@ -72,10 +72,10 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
     
     // Check if the tag name is valid
     if (newTag.trim().length < 2) {
-      handleError(
+      handleErrorWithOptions(
         new Error('Tag must be at least 2 characters long'),
+        "Tag must be at least 2 characters long",
         {
-          message: 'Tag must be at least 2 characters long',
           level: ErrorLevel.Warning,
           source: ErrorSource.Validation
         }
@@ -94,8 +94,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
         setNewTag('');
       }
     } catch (err) {
-      handleError(err, {
-        message: "Failed to add tag",
+      handleErrorWithOptions(err, "Failed to add tag", {
         level: ErrorLevel.Warning,
         source: ErrorSource.Hook
       });
@@ -111,8 +110,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
     try {
       await deleteTag({ tagId, contentId });
     } catch (err) {
-      handleError(err, {
-        message: "Failed to delete tag",
+      handleErrorWithOptions(err, "Failed to delete tag", {
         level: ErrorLevel.Warning,
         source: ErrorSource.Hook
       });
@@ -135,8 +133,7 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
     try {
       await reorderTags(tagPositions);
     } catch (err) {
-      handleError(err, {
-        message: "Failed to reorder tags",
+      handleErrorWithOptions(err, "Failed to reorder tags", {
         level: ErrorLevel.Warning,
         source: ErrorSource.Hook
       });
@@ -155,9 +152,6 @@ export const useTagOperations = (contentId: string): UseTagOperationsResult => {
     handleRefresh,
     isAddingTag,
     isDeletingTag,
-    isReordering,
-    // Backward compatibility properties
-    isTagsLoading: isLoading,
-    tagsError: error
+    isReordering
   };
 };

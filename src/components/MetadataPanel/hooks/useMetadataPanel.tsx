@@ -15,7 +15,15 @@ export function useMetadataPanel({
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed && isCollapsible);
   
   // Get metadata state from context
-  const { isLoading, error, refetchAll } = useMetadataContext();
+  const { 
+    isLoading, 
+    error, 
+    refetchAll,
+    contentId: contextContentId,
+    tags,
+    ontologyTerms,
+    externalSource
+  } = useMetadataContext();
   
   // Reset collapsed state when content ID changes
   useEffect(() => {
@@ -27,7 +35,9 @@ export function useMetadataPanel({
   // Handle refresh button click
   const handleRefresh = useCallback(() => {
     // Refetch all metadata
-    refetchAll();
+    if (typeof refetchAll === 'function') {
+      refetchAll();
+    }
     
     // Notify parent if needed
     if (onMetadataChange) {
@@ -41,6 +51,10 @@ export function useMetadataPanel({
     isCollapsible,
     isLoading,
     error,
+    contentId: contextContentId,
+    tags,
+    ontologyTerms,
+    externalSource,
     handleRefresh
   };
 }

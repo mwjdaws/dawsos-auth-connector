@@ -5,6 +5,8 @@ import { useMetadataQuery } from '@/hooks/metadata/useMetadataQuery';
 import { useTagsQuery } from '@/hooks/metadata/useTagsQuery';
 import { useOntologyTermsQuery } from '@/hooks/metadata/useOntologyTermsQuery';
 import { MetadataQueryProviderProps } from '../types';
+import { Tag } from '@/types/tag';
+import { OntologyTerm } from '@/types/ontology';
 
 /**
  * MetadataQueryProvider Component
@@ -20,24 +22,30 @@ export function MetadataQueryProvider({
   const { data: metadata, isLoading: isMetadataLoading, error: metadataError } = useMetadataQuery(contentId);
   
   // Fetch tags
-  const { data: tags = [], isLoading: isTagsLoading } = useTagsQuery(contentId, {
+  const { data: tagData = [], isLoading: isTagsLoading } = useTagsQuery(contentId, {
     includeTypeInfo: true
   });
   
+  // Cast tagData to the correct type
+  const tags: Tag[] = tagData as Tag[];
+  
   // Fetch ontology terms
-  const { data: ontologyTerms = [], isLoading: isOntologyLoading } = useOntologyTermsQuery(contentId);
+  const { data: ontologyData = [], isLoading: isOntologyLoading } = useOntologyTermsQuery(contentId);
+  
+  // Cast ontology data to the correct type
+  const ontologyTerms: OntologyTerm[] = ontologyData as OntologyTerm[];
   
   // Combine loading states
   const isLoading = isMetadataLoading || isTagsLoading || isOntologyLoading;
   
   // Get domain information from metadata if available
-  const domain = metadata?.domain || null;
+  const domain = metadata && 'domain' in metadata ? metadata.domain : null;
   
   // Format external source information
   const externalSource = metadata ? {
-    external_source_url: metadata.external_source_url,
-    needs_external_review: metadata.needs_external_review,
-    external_source_checked_at: metadata.external_source_checked_at
+    external_source_url: 'external_source_url' in metadata ? metadata.external_source_url : null,
+    needs_external_review: 'needs_external_review' in metadata ? metadata.needs_external_review : false,
+    external_source_checked_at: 'external_source_checked_at' in metadata ? metadata.external_source_checked_at : null
   } : null;
   
   // Create context value

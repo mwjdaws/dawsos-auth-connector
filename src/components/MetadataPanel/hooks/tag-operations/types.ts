@@ -66,6 +66,3 @@ export interface UseTagOperationsResult {
   isDeletingTag: boolean;
   isReordering: boolean;
 }
-
-// Remove the conflicting export that was causing the error
-// export type { TagPosition };
