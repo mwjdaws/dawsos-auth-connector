@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, AlertCircle } from "lucide-react";
 import { useOntologyTerms } from "@/hooks/markdown-editor/useOntologyTerms";
 import { useSourceLinks } from "@/hooks/markdown-editor/useNoteLinks";
+import { useKnowledgeSourceQuery } from "@/hooks/useKnowledgeSourceQuery";
 import { toast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { ensureString } from "@/utils/compatibility";
@@ -20,6 +21,7 @@ export function RelationshipGraphTab({ contentId }: RelationshipGraphTabProps) {
   
   const { sourceTerms, isLoading: isLoadingTerms } = useOntologyTerms(contentId);
   const { outboundLinks, inboundLinks, isLoading: isLoadingLinks, error: linksError } = useSourceLinks(contentId);
+  const { data: sourceInfo } = useKnowledgeSourceQuery(contentId);
   
   useEffect(() => {
     if (linksError) {
@@ -69,6 +71,13 @@ export function RelationshipGraphTab({ contentId }: RelationshipGraphTabProps) {
   // Prepare graph data
   const graphData = {
     nodes: [
+      {
+        id: contentId,
+        name: sourceInfo?.title || 'Current Source',
+        title: sourceInfo?.title || 'Current Source',
+        color: '#0ea5e9',
+        type: 'source'
+      },
       // Add nodes from source terms
       ...sourceTerms.map(term => ({
         id: term.id,
